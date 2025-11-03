@@ -3,8 +3,8 @@ from ChartModule.models import (
     CandleType,
     Candle,
     Chart,
-    Indicator,
     ChartData,
 )
+from ChartModule import Indicators
 
-__all__ = ["CandleType", "Candle", "Chart", "Indicator", "ChartData", "TimeFrame"]
+__all__ = ["CandleType", "Candle", "Chart", "Indicators", "ChartData", "TimeFrame"]

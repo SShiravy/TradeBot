@@ -1,5 +1,6 @@
 from enum import Enum
 from datetime import datetime, timedelta
+from typing import Any
 from dataclasses import dataclass, asdict, field
 from abc import ABC, abstractmethod
 
@@ -58,9 +59,10 @@ class TimeFrame(Enum):
         return self.value
 
 
-class CandleType(Enum):
-    Bullish = "bullish"
-    Bearish = "bearish"
+class MarketSide(Enum):
+    BULLISH = "Bullish"
+    BEARISH = "Bearish"
+    NEUTRAL = "Neutral"
 
 
 @dataclass(slots=True)
@@ -69,13 +71,13 @@ class Candle:
     close: float
     high: float
     low: float
+    volume: float
     time: datetime
-    volume: float | None = None
     timeframe: TimeFrame | str | None = None
 
     @property
-    def type(self):
-        return CandleType.Bullish if self.close > self.open else CandleType.Bearish
+    def side(self):
+        return MarketSide.BULLISH if self.close > self.open else MarketSide.BEARISH
 
     @property
     def body_bottom(self):
@@ -102,20 +104,36 @@ class Chart:
         return f"{self.symbol}_{self.timeframe}"
 
 
-class Indicator(ABC):
+class IndicatorBaseModel(ABC):
     def __init__(self) -> None:
+        self.values:Any = None
+        self.candles: list[Candle] = []
+
+    @abstractmethod
+    def _calculate(self,*args, **kwargs)->Any:
         pass
 
     @abstractmethod
-    def set(self):
+    def _forcast(self,*args, **kwargs)->MarketSide:
         pass
 
+    def forcast(self, *args, **kwargs)->MarketSide:
+        if self.values is None:
+            return MarketSide.NEUTRAL
+        else:
+            return self._forcast(*args, **kwargs)
+
+    def set(self,candles:list[Candle], *args, **kwargs)->Any:
+        self.candles = candles
+        self.values = self._calculate(*args, **kwargs)
+        return self.values
+        
 
 @dataclass(slots=True)
 class ChartData:
     chart: Chart
     candles: list[Candle] = field(default_factory=list)
-    indicators: list[Indicator] = field(default_factory=list)
+    indicators: list[IndicatorBaseModel] = field(default_factory=list)
 
     def __len__(self):
         return len(self.candles)
@@ -148,8 +166,8 @@ class ChartData:
                 ha_close,
                 ha_high,
                 ha_low,
-                first_candle.time,
                 first_candle.volume,
+                first_candle.time,
                 first_candle.timeframe,
             )
         )
@@ -172,8 +190,8 @@ class ChartData:
                     ha_close,
                     ha_high,
                     ha_low,
-                    candle.time,
                     candle.volume,
+                    candle.time,
                     candle.timeframe,
                 )
             )

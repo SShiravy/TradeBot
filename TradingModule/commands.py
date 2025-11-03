@@ -14,16 +14,16 @@ class TradeCommandStatus(Enum):
 
 
 class TradeCommand(ABC):
-    _pending_commands = []
-    _executed_commands = []
-    _failed_commands = []
+    all_pending_commands = []
+    all_executed_commands = []
+    all_failed_commands = []
 
     def __init__(self, position: Position, n_attempts: int = 2):
         self.position = position
         self.n_attempts = n_attempts
-        self._failed_attempt: int = 0
+        self.failed_attempt: int = 0
         self.status = TradeCommandStatus.PENDING
-        self._pending_commands.append(self)
+        self.all_pending_commands.append(self)
 
         logger.debug(self)
 
@@ -53,34 +53,34 @@ class TradeCommand(ABC):
 
         if self.command(exchange):
             self.status = TradeCommandStatus.EXECUTED
-            self._pending_commands.remove(self)
-            self._executed_commands.append(self)
+            self.all_pending_commands.remove(self)
+            self.all_executed_commands.append(self)
             logger.debug(f"{self}")
             return True
 
         else:
-            self._failed_attempt += 1
-            if self._failed_attempt > self.n_attempts:
+            self.failed_attempt += 1
+            if self.failed_attempt > self.n_attempts:
                 self.status = TradeCommandStatus.FAILED
-                self._pending_commands.remove(self)
-                self._failed_commands.append(self)
-            logger.error(f"{self} with {self._failed_attempt} failed attempts")
+                self.all_pending_commands.remove(self)
+                self.all_failed_commands.append(self)
+            logger.error(f"{self} with {self.failed_attempt} failed attempts")
             return False
 
     @classmethod
     def execute_pending_commands(cls, exchange: ExchangeAPI):
-        for command in cls._pending_commands:
+        for command in cls.all_pending_commands:
             command.execute(exchange)
 
     @classmethod
     def close_records(cls):
         msg = f"Trade Commands' Record:\n\
-                {len(cls._executed_commands)} Executed\n\
-                {len(cls._failed_commands)} Failed\n\
-                {len(cls._pending_commands)} still Pending"
+                {len(cls.all_executed_commands)} Executed\n\
+                {len(cls.all_failed_commands)} Failed\n\
+                {len(cls.all_pending_commands)} still Pending"
 
-        cls._executed_commands = []
-        cls._failed_commands = []
+        cls.all_executed_commands = []
+        cls.all_failed_commands = []
         logger.debug(msg)
         return msg
 
