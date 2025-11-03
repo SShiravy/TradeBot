@@ -11,7 +11,7 @@ class IndicatorCandleSource(Enum):
     Open = "open"
     Volume = "volume"
 
-    def __call__(self,candle:Candle)->float:
+    def __call__(self, candle: Candle) -> float:
         match self:
             case IndicatorCandleSource.High:
                 return candle.high

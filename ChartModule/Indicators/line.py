@@ -1,13 +1,12 @@
-from ChartModule.models import Candle, ChartData, MarketSide, IndicatorBaseModel
+from ChartModule.models import Candle, MarketSide, IndicatorBaseModel
 from ChartModule.Indicators.models import IndicatorCandleSource
 import numpy as np
 
 
-
 class Line:
-    
-    def __init__(self,source:IndicatorCandleSource,
-                 start_candle:Candle,end_candle:Candle) -> None:
+    def __init__(
+        self, source: IndicatorCandleSource, start_candle: Candle, end_candle: Candle
+    ) -> None:
         self.source = source
         self.start_candle = start_candle
         self.end_candle = end_candle
@@ -16,9 +15,8 @@ class Line:
     def slope(self) -> float:
         slope = self.source(self.start_candle) - self.source(self.start_candle) / (
             self.end_candle.time.timestamp() - self.start_candle.time.timestamp()
-        ) 
-        return round(slope,3)
-
+        )
+        return round(slope, 3)
 
     def direction(self) -> MarketSide:
         if not self.start_candle or not self.end_candle:
@@ -29,18 +27,18 @@ class Line:
             return MarketSide.BULLISH
         else:
             return MarketSide.NEUTRAL
-    
+
 
 class TrendLine(IndicatorBaseModel):
-
-    def __init__(self, source:IndicatorCandleSource,
-                 min_step:int, max_step:int) -> None:
+    def __init__(
+        self, source: IndicatorCandleSource, min_step: int, max_step: int
+    ) -> None:
         super().__init__()
         self.source = source
         self.min_step = min_step
         self.max_step = max_step
-        
-    def _calculate(self)->list[Line]:
+
+    def _calculate(self) -> list[Line]:
         lines = []
         last_candle = self.candles[-1]
         len_candles = len(self.candles)
@@ -71,4 +69,4 @@ class TrendLine(IndicatorBaseModel):
         return lines
 
     def _forcast(self) -> MarketSide:
-        return self.values[-1].direction        
+        return self.values[-1].direction

@@ -3,32 +3,31 @@ from ChartModule.Indicators.models import IndicatorCandleSource
 import pandas as pd
 
 
-
 class SMA(IndicatorBaseModel):
     """
     Calculate Simple Moving Average (SMA) over n_bar
     values: dict{time:sma}
     """
-    
-    def __init__(self, n_bar:int, source:IndicatorCandleSource) -> None:
+
+    def __init__(self, n_bar: int, source: IndicatorCandleSource) -> None:
         super().__init__()
         self.n_bar = n_bar
         self.source = source
 
-    def _calculate(self)->dict:
-        if len(self.candles)<self.n_bar:
+    def _calculate(self) -> dict:
+        if len(self.candles) < self.n_bar:
             return {}
         sma_values = {}
         values = []
-        for i,candle in enumerate(self.candles):
+        for i, candle in enumerate(self.candles):
             values.append(self.source(candle))
             if i < self.n_bar:
                 continue
-            sma = sum(values[i-self.n_bar+1:])/(self.n_bar)
+            sma = sum(values[i - self.n_bar + 1 :]) / (self.n_bar)
             sma_values[candle.time] = sma
-        
+
         return sma_values
-    
+
     def _forcast(self) -> MarketSide:
         last_candle = self.candles[-1]
         sma = self.values[last_candle.time]
@@ -38,16 +37,15 @@ class SMA(IndicatorBaseModel):
             return MarketSide.BEARISH
         else:
             return MarketSide.NEUTRAL
-        
-        
+
 
 class EMA(IndicatorBaseModel):
     """
     Calculate Exponential Moving Average (EMA) over n_bar
     values: dict{time:ema}
     """
-    
-    def __init__(self, n_bar:int, source:IndicatorCandleSource) -> None:
+
+    def __init__(self, n_bar: int, source: IndicatorCandleSource) -> None:
         super().__init__()
         self.n_bar = n_bar
         self.source = source
@@ -56,11 +54,10 @@ class EMA(IndicatorBaseModel):
         times = [c.time for c in self.candles]
         source_values = [self.source(c) for c in self.candles]
         # Create DataFrame
-        df = pd.DataFrame({'source': source_values}, index=pd.to_datetime(times))
-        df['sma'] = df['source'].ewm(com=self.n_bar, adjust=False).mean()
+        df = pd.DataFrame({"source": source_values}, index=pd.to_datetime(times))
+        df["sma"] = df["source"].ewm(com=self.n_bar, adjust=False).mean()
         # Return as dictionary {time: sma}
-        return df['sma'].dropna().to_dict()
-
+        return df["sma"].dropna().to_dict()
 
     def _forcast(self) -> MarketSide:
         last_candle = self.candles[-1]
@@ -71,4 +68,3 @@ class EMA(IndicatorBaseModel):
             return MarketSide.BEARISH
         else:
             return MarketSide.NEUTRAL
-        

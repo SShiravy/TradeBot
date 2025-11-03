@@ -1,8 +1,9 @@
-from enum import Enum
-from datetime import datetime, timedelta
-from typing import Any
 from dataclasses import dataclass, asdict, field
 from abc import ABC, abstractmethod
+from datetime import datetime, timedelta
+from typing import Any
+from enum import Enum
+import pandas as pd
 
 
 class TimeFrame(Enum):
@@ -104,30 +105,41 @@ class Chart:
         return f"{self.symbol}_{self.timeframe}"
 
 
+@dataclass(slots=True)
+class Signal:
+    chart: Chart
+    candle: Candle
+    side: MarketSide
+    source: str = "Unknown"
+
+    def __str__(self) -> str:
+        return f"{self.chart} {self.side} at {self.candle.time} from {self.source}"
+
+
 class IndicatorBaseModel(ABC):
     def __init__(self) -> None:
-        self.values:Any = None
+        self.values: Any = None
         self.candles: list[Candle] = []
 
     @abstractmethod
-    def _calculate(self,*args, **kwargs)->Any:
+    def _calculate(self, *args, **kwargs) -> Any:
         pass
 
     @abstractmethod
-    def _forcast(self,*args, **kwargs)->MarketSide:
+    def _forcast(self, *args, **kwargs) -> MarketSide:
         pass
 
-    def forcast(self, *args, **kwargs)->MarketSide:
+    def forcast(self, *args, **kwargs) -> MarketSide:
         if self.values is None:
             return MarketSide.NEUTRAL
         else:
             return self._forcast(*args, **kwargs)
 
-    def set(self,candles:list[Candle], *args, **kwargs)->Any:
+    def set(self, candles: list[Candle], *args, **kwargs) -> Any:
         self.candles = candles
         self.values = self._calculate(*args, **kwargs)
         return self.values
-        
+
 
 @dataclass(slots=True)
 class ChartData:
@@ -200,6 +212,34 @@ class ChartData:
 
     def give_heiking_ashi(self):
         return ChartData(self.chart, self.heikin_ashi_candles, self.indicators)
+
+    def generate_dataframe(self) -> pd.DataFrame:
+        open_list = []
+        high_list = []
+        low_list = []
+        close_list = []
+        volume_list = []
+        time_list = []
+
+        for candle in self.candles:
+            open_list.append(candle.open)
+            high_list.append(candle.high)
+            low_list.append(candle.low)
+            close_list.append(candle.close)
+            volume_list.append(candle.volume)
+            time_list.append(candle.time)
+
+        df = pd.DataFrame(
+            {
+                "open": open_list,
+                "high": high_list,
+                "low": low_list,
+                "close": close_list,
+                "volume": volume_list,
+            },
+            index=time_list,
+        )
+        return df
 
     @classmethod
     def give_crosspair(cls, first_chartdata, second_chartdata):

@@ -1,10 +1,12 @@
-from ChartModule.models import (
-    TimeFrame,
-    CandleType,
-    Candle,
-    Chart,
-    ChartData,
-)
+from ChartModule.models import TimeFrame, Candle, Chart, ChartData, Signal, MarketSide
 from ChartModule import Indicators
 
-__all__ = ["CandleType", "Candle", "Chart", "Indicators", "ChartData", "TimeFrame"]
+__all__ = [
+    "Signal",
+    "MarketSide",
+    "Candle",
+    "Chart",
+    "Indicators",
+    "ChartData",
+    "TimeFrame",
+]

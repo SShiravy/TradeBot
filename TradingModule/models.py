@@ -1,4 +1,4 @@
-from ChartModule import Candle, Chart, ChartData
+from ChartModule import Chart, ChartData, MarketSide
 from datetime import datetime
 from dataclasses import dataclass, field, asdict
 from abc import ABC, abstractmethod
@@ -10,23 +10,22 @@ class OrderSide(Enum):
     SELL = "Sell"
 
     @property
-    def position(self):
+    def position_side(self):
         match self:
             case OrderSide.BUY:
                 return "Long"
             case OrderSide.SELL:
                 return "Short"
 
-
-@dataclass(slots=True)
-class Signal:
-    chart: Chart
-    candle: Candle
-    side: OrderSide
-    source: str = "Unknown"
-
-    def __str__(self) -> str:
-        return f"{self.chart} {self.side} at {self.candle.time} from {self.source}"
+    @classmethod
+    def from_market_side(cls, market_side: MarketSide):
+        match market_side:
+            case MarketSide.BEARISH:
+                return cls.SELL
+            case MarketSide.BULLISH:
+                return cls.BUY
+            case MarketSide.NEUTRAL:
+                return None
 
 
 @dataclass(slots=True)

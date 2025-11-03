@@ -1,17 +1,13 @@
 from ChartModule.models import Candle, ChartData, Chart, MarketSide, IndicatorBaseModel
-from ChartModule.Indicators.models import IndicatorCandleSource
 from copy import copy as shallow_copy
 
 
-
 class CVD(IndicatorBaseModel):
-    
-    def __init__(self,chart:Chart) -> None:
+    def __init__(self, chart: Chart) -> None:
         super().__init__()
         self.chart = chart
-    
 
-    def _calculate(self)->ChartData:
+    def _calculate(self) -> ChartData:
         cvd_candles: list[Candle] = []
 
         current_cvd = 0
@@ -32,15 +28,17 @@ class CVD(IndicatorBaseModel):
             if current_cvd < min_cvd:
                 min_cvd = current_cvd
 
-            cvd_candle = Candle(open_cvd, current_cvd, max_cvd, min_cvd,0.0 ,candle.time)
+            cvd_candle = Candle(
+                open_cvd, current_cvd, max_cvd, min_cvd, 0.0, candle.time
+            )
             # Just to make it look like TradingView Indicator
             cvd_candle.low = cvd_candle.body_bottom
             cvd_candle.high = cvd_candle.body_top
             cvd_candles.append(cvd_candle)
-        
+
         cvd_chart = shallow_copy(self.chart)
         cvd_chart.symbol = "CVD_" + cvd_chart.symbol
         return ChartData(cvd_chart, cvd_candles)
-    
+
     def _forcast(self) -> MarketSide:
         return MarketSide.NEUTRAL
