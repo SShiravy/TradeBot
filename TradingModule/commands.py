@@ -1,4 +1,4 @@
-from TradingModule import Position, ExchangeAPI
+from TradingModule import Position, ExchangeAgent
 from datetime import datetime, timezone
 from abc import ABC, abstractmethod
 from enum import Enum
@@ -31,14 +31,14 @@ class TradeCommand(ABC):
         return f"{__class__.__name__} {self.status.value} on {self.position.chart}"
 
     @abstractmethod
-    def command(self, exchange: ExchangeAPI) -> bool:
+    def command(self, exchange: ExchangeAgent) -> bool:
         """
         Execute Command using proper methods in ExchangeAPI
         change position obj if its neccessary
         """
         pass
 
-    def execute(self, exchange: ExchangeAPI) -> bool:
+    def execute(self, exchange: ExchangeAgent) -> bool:
         """
         Execute Command and handle status
         """
@@ -68,7 +68,7 @@ class TradeCommand(ABC):
             return False
 
     @classmethod
-    def execute_pending_commands(cls, exchange: ExchangeAPI):
+    def execute_pending_commands(cls, exchange: ExchangeAgent):
         for command in cls.all_pending_commands:
             command.execute(exchange)
 
@@ -89,7 +89,7 @@ class TradeCommand(ABC):
 
 
 class OpenPosition(TradeCommand):
-    def command(self, exchange: ExchangeAPI):
+    def command(self, exchange: ExchangeAgent):
         pos_id = exchange.open_position(self.position)
         if pos_id:
             self.position.id = pos_id
@@ -103,7 +103,7 @@ class TrailStoploss(TradeCommand):
         super().__init__(position, n_attempts)
         self.stoploss_price = stoploss_price
 
-    def command(self, exchange: ExchangeAPI):
+    def command(self, exchange: ExchangeAgent):
         if exchange.change_stoploss(self.position, self.stoploss_price):
             self.position.stoploss = self.stoploss_price
             return True
@@ -117,7 +117,7 @@ class ChangeTakeProfit(TradeCommand):
         super().__init__(position, n_attempts)
         self.takeprofit_price = takeprofit_price
 
-    def command(self, exchange: ExchangeAPI) -> bool:
+    def command(self, exchange: ExchangeAgent) -> bool:
         if exchange.change_takeprofit(self.position, self.takeprofit_price):
             self.position.takeprofit = self.takeprofit_price
             return True
@@ -129,7 +129,7 @@ class ParitalTakeProfit(TradeCommand):
         super().__init__(position, n_attempts)
         self.volume = volume
 
-    def command(self, exchange: ExchangeAPI) -> bool:
+    def command(self, exchange: ExchangeAgent) -> bool:
         exec_price = exchange.partial_close(self.position, volume=self.volume)
         if exec_price:
             self.position.update_pnl(exec_price, self.volume)
@@ -138,7 +138,7 @@ class ParitalTakeProfit(TradeCommand):
 
 
 class ClosePosition(TradeCommand):
-    def command(self, exchange: ExchangeAPI):
+    def command(self, exchange: ExchangeAgent):
         exec_price = exchange.close_position(self.position)
         if exec_price:
             self.position.update_pnl(exec_price)
@@ -151,7 +151,7 @@ class StopLoss(TradeCommand):
     def __init__(self, position: Position, n_attempts: int = 2):
         super().__init__(position, n_attempts)
 
-    def command(self, exchange: ExchangeAPI) -> bool:
+    def command(self, exchange: ExchangeAgent) -> bool:
         self.position.closed = datetime.now(tz=timezone.utc)
         self.position.update_pnl(self.position.stoploss)
         return True
@@ -161,7 +161,7 @@ class TakeProfit(TradeCommand):
     def __init__(self, position: Position, n_attempts: int = 2):
         super().__init__(position, n_attempts)
 
-    def command(self, exchange: ExchangeAPI) -> bool:
+    def command(self, exchange: ExchangeAgent) -> bool:
         self.position.closed = datetime.now(tz=timezone.utc)
         self.position.update_pnl(self.position.takeprofit)
         return True

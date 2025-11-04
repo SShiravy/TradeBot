@@ -64,13 +64,13 @@ class Position:
         return f"{asdict(self)}"
 
 
-class ExchangeAPI(ABC):
+class ExchangeAgent(ABC):
     @abstractmethod
-    def give_chartdata(self, chart: Chart, n_bars: int = 100) -> ChartData:
+    def get_chartdata(self, chart: Chart, n_bars: int = 100) -> ChartData | None:
         pass
 
     @abstractmethod
-    def open_position(self, position: Position):
+    def open_position(self, position: Position)->str|None:
         """
         return position id if successful otherwise None
         its better to update position.entry_price to executed order price
@@ -78,7 +78,7 @@ class ExchangeAPI(ABC):
         pass
 
     @abstractmethod
-    def give_open_orders(self, chart: Chart):
+    def get_open_positions(self, chart: Chart):
         pass
 
     @abstractmethod
@@ -90,14 +90,14 @@ class ExchangeAPI(ABC):
         pass
 
     @abstractmethod
-    def partial_close(self, position: Position, volume):
+    def partial_close(self, position: Position, volume) -> float|None:
         """
         return executed price if successful otherwise None
         """
         pass
 
     @abstractmethod
-    def close_position(self, position: Position):
+    def close_position(self, position: Position)->float|None:
         """
         return executed price if successful otherwise None
         """

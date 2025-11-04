@@ -1,4 +1,4 @@
-from TradingModule.models import Position, Signal, OrderSide, ExchangeAPI
+from TradingModule.models import Position, Signal, OrderSide, ExchangeAgent
 
 
-__all__ = ["Position", "Signal", "OrderSide", "ExchangeAPI"]
+__all__ = ["Position", "Signal", "OrderSide", "ExchangeAgent"]
