@@ -5,7 +5,7 @@ from Coinex.api import CoinexFuturesAPI, CoinexTimeFrame
 import logging
 
 
-logger = logging.getLogger('CoinexAgent:')
+logger = logging.getLogger('CoinexAgent')
 
 class CoinexAgent(ExchangeAgent):
 
@@ -13,6 +13,12 @@ class CoinexAgent(ExchangeAgent):
         self.coinex_api = CoinexFuturesAPI(access_id,secret_key)
         logger.info("Initialized")
 
+    def check_chart(self,chart: Chart)->bool:
+        info = self.coinex_api.get_market_info(chart.symbol)
+        if not info:
+            return False
+        chart.precision = info[0]["quote_ccy_precision"]
+        return True
 
     def get_chartdata(self, chart: Chart, n_bars: int = 100) -> ChartData|None:
 
@@ -51,9 +57,9 @@ class CoinexAgent(ExchangeAgent):
                 )
             )
 
-        candle_chart = ChartData(chart,all_candles_list)
-        logger.debug(str(candle_chart)+" Generated")
-        return candle_chart
+        chartdata = ChartData(chart,all_candles_list)
+        logger.debug(str(chartdata)+" Generated")
+        return chartdata
     
     def open_position(self, position: Position):
         """
@@ -83,20 +89,24 @@ class CoinexAgent(ExchangeAgent):
             TrailStoploss(position,position.stoploss)
         if not tp_res:
             ChangeTakeProfit(position,position.takeprofit)
+
+        logging.info(f"Position Opened: {position}\n{order_result=}")
         return pos_id
 
     def change_stoploss(self, position: Position, price) -> bool:
         res = self.coinex_api.place_stoploss(position.chart.symbol,price)
         if not res:
-            logger.error(f"New SL Request Failed:\n{position=}")
+            logger.error(f"New SL Request Failed:{position=}\n{res=}")
             return False
+        logging.debug(f"SL Changed of {position=}\n{res=}")
         return True
 
     def change_takeprofit(self, position: Position, price) -> bool:
         res = self.coinex_api.place_takeprofit(position.chart.symbol,price)
         if not res:
-            logger.error(f"New TP Request Failed:\n{position=}")
+            logger.error(f"New TP Request Failed:{position=}\n{res=}")
             return False
+        logging.debug(f"TP Changed of {position=}\n{res=}")
         return True
     
 
@@ -106,8 +116,9 @@ class CoinexAgent(ExchangeAgent):
         """
         res = self.coinex_api.close_position(position.chart.symbol, amount=volume)
         if not res:
-            logger.error(f"Partial Close Failed: {position}")
+            logger.error(f"Partial Close Failed: {position}\n{res=}")
             return None
+        logging.debug(f"Partial Close for {position=}\n{res=}")
         return float(res["last_filled_price"])
 
     def close_position(self, position: Position):
@@ -116,8 +127,10 @@ class CoinexAgent(ExchangeAgent):
         """
         res = self.coinex_api.close_position(position.chart.symbol, amount='')
         if not res:
-            logger.error(f"Close Position Failed: {position}")
+            logger.error(f"Close Position Failed: {position}\n{res=}")
             return None
+        logging.debug(f"Position Close for {position=}\n{res=}")
+        return res["last_filled_price"]
 
     def get_open_positions(self, chart: Chart):
         pass

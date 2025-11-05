@@ -39,7 +39,7 @@ class Position:
     leverage: int = 1
     open_time: datetime | None = field(default=None)
     source: str = "Unknown"
-    id = None
+    id:str|None = None
 
     closed: datetime | None = field(default=None, init=False)
     pnl: float = field(default=0.0, init=False)
@@ -57,7 +57,7 @@ class Position:
         self.pnl_percent = round(
             (self.entry_price / executed_price - 1) * 100 * self.leverage, 2
         )
-        self.pnl = self.pnl * volume
+        self.pnl = self.pnl_percent * volume
         self.volume -= volume
 
     def __str__(self):
@@ -65,6 +65,16 @@ class Position:
 
 
 class ExchangeAgent(ABC):
+
+    @abstractmethod
+    def check_chart(self,chart: Chart)->bool:
+        """
+        check symbol exist or not and 
+        change chart.precision
+        """
+        pass
+
+
     @abstractmethod
     def get_chartdata(self, chart: Chart, n_bars: int = 100) -> ChartData | None:
         pass
@@ -82,15 +92,15 @@ class ExchangeAgent(ABC):
         pass
 
     @abstractmethod
-    def change_stoploss(self, position: Position, price) -> bool:
+    def change_stoploss(self, position: Position, price:float) -> bool:
         pass
 
     @abstractmethod
-    def change_takeprofit(self, position: Position, price) -> bool:
+    def change_takeprofit(self, position: Position, price:float) -> bool:
         pass
 
     @abstractmethod
-    def partial_close(self, position: Position, volume) -> float|None:
+    def partial_close(self, position: Position, volume:float) -> float|None:
         """
         return executed price if successful otherwise None
         """

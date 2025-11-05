@@ -1,2 +1,3 @@
 # TODO: Check all attr which will get obj or list or dict ...
 # TODO: check round with chart in creating position
+# TODO: add if not self.check_market_open(position.chart) on begining of bot

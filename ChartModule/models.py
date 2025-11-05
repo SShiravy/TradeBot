@@ -100,7 +100,7 @@ class Candle:
 class Chart:
     symbol: str
     timeframe: TimeFrame
-    precision: int = field(default=2)
+    precision: int = field(default=3)
 
     def __str__(self) -> str:
         return f"{self.symbol}_{self.timeframe}"
