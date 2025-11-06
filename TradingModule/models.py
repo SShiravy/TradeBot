@@ -27,6 +27,10 @@ class OrderSide(Enum):
             case MarketSide.NEUTRAL:
                 return None
 
+    @property
+    def direction(self):
+        return 1 if self is OrderSide.BUY else -1
+
 
 @dataclass(slots=True)
 class Position:
@@ -39,9 +43,10 @@ class Position:
     leverage: int = 1
     open_time: datetime | None = field(default=None)
     source: str = "Unknown"
-    id:str|None = None
+    id: str | None = None
 
     closed: datetime | None = field(default=None, init=False)
+    previous_check: datetime | None = field(default=None, init=False)
     pnl: float = field(default=0.0, init=False)
     pnl_percent: float = field(default=0, init=False)
 
@@ -65,25 +70,27 @@ class Position:
 
 
 class ExchangeAgent(ABC):
-
     @abstractmethod
-    def check_chart(self,chart: Chart)->bool:
+    def check_chart(self, chart: Chart) -> bool:
         """
-        check symbol exist or not and 
+        check symbol exist or not and
         change chart.precision
         """
         pass
-
 
     @abstractmethod
     def get_chartdata(self, chart: Chart, n_bars: int = 100) -> ChartData | None:
         pass
 
     @abstractmethod
-    def open_position(self, position: Position)->str|None:
+    def get_chartdata_since(self, chart: Chart, time: datetime) -> ChartData | None:
+        pass
+
+    @abstractmethod
+    def open_position(self, position: Position) -> float | None:
         """
-        return position id if successful otherwise None
-        its better to update position.entry_price to executed order price
+        return executed price if successful otherwise None
+        its better to update position id to executed order price
         """
         pass
 
@@ -92,22 +99,22 @@ class ExchangeAgent(ABC):
         pass
 
     @abstractmethod
-    def change_stoploss(self, position: Position, price:float) -> bool:
+    def change_stoploss(self, position: Position, price: float) -> bool:
         pass
 
     @abstractmethod
-    def change_takeprofit(self, position: Position, price:float) -> bool:
+    def change_takeprofit(self, position: Position, price: float) -> bool:
         pass
 
     @abstractmethod
-    def partial_close(self, position: Position, volume:float) -> float|None:
+    def partial_close(self, position: Position, volume: float) -> float | None:
         """
         return executed price if successful otherwise None
         """
         pass
 
     @abstractmethod
-    def close_position(self, position: Position)->float|None:
+    def close_position(self, position: Position) -> float | None:
         """
         return executed price if successful otherwise None
         """

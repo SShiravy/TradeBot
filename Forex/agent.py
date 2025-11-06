@@ -5,26 +5,25 @@ from datetime import datetime, timezone, timedelta
 import logging
 
 
-logger = logging.getLogger('ForexAgent')
+logger = logging.getLogger("ForexAgent")
+
 
 class ForexAgent(ExchangeAgent):
-
-    def __init__(self, check_market_is_open:bool=True) -> None:
+    def __init__(self, check_market_is_open: bool = True) -> None:
         if not mt5.initialize():
-                raise RuntimeError("MT5 initialize failed")
+            raise RuntimeError("MT5 initialize failed")
         logger.info("Initialized")
         self.check_market_is_open = check_market_is_open
-    
 
-    def check_chart(self,chart: Chart)->bool:
+    def check_chart(self, chart: Chart) -> bool:
         symbol_info = mt5.symbol_info(chart.symbol)
         if symbol_info is None:
             raise RuntimeError(f"Failed to get symbol info for {chart.symbol}")
 
-        chart.precision = len(str(symbol_info.point).split('.')[1])
+        chart.precision = len(str(symbol_info.point).split(".")[1])
         return True
-    
-    def prepare_chart(self,chart: Chart)->bool:
+
+    def prepare_chart(self, chart: Chart) -> bool:
         if not mt5.symbol_select(chart.symbol, True):
             raise ValueError(f"Failed to select symbol {chart.symbol}")
 
@@ -33,15 +32,18 @@ class ForexAgent(ExchangeAgent):
             raise RuntimeError(f"Failed to get symbol info for {chart.symbol}")
 
         return True
+
     @classmethod
-    def correct_time(cls,raw_time:datetime,chart:Chart):
+    def correct_time(cls, raw_time: datetime, chart: Chart):
         info = mt5.symbol_info(chart.symbol)
         if not info:
             return False
-        delta = datetime.fromtimestamp(info.time,timezone.utc)-datetime.now(timezone.utc)
-        return raw_time-delta
+        delta = datetime.fromtimestamp(info.time, timezone.utc) - datetime.now(
+            timezone.utc
+        )
+        return raw_time - delta
 
-    def check_market_open(self,chart:Chart)->bool:
+    def check_market_open(self, chart: Chart) -> bool:
         if not self.check_market_is_open:
             return True
         if not self.prepare_chart(chart):
@@ -51,14 +53,15 @@ class ForexAgent(ExchangeAgent):
         if tick is None:
             logger.error(f"Forex Failed to get tick data for {chart.symbol}")
             return False
-        last_tick_time = self.correct_time(datetime.fromtimestamp(tick.time),chart)
+        last_tick_time = self.correct_time(datetime.fromtimestamp(tick.time), chart)
         if not last_tick_time:
             return False
-        if abs(last_tick_time.replace(minute=0,second=0,microsecond=0)-\
-            now.replace(second=0,microsecond=0)) > timedelta(minutes=1):
+        if abs(
+            last_tick_time.replace(minute=0, second=0, microsecond=0)
+            - now.replace(second=0, microsecond=0)
+        ) > timedelta(minutes=1):
             return False
         return True
-
 
     def get_chartdata(self, chart: Chart, n_bars: int = 100) -> ChartData | None:
         if not self.check_market_open(chart):
@@ -72,16 +75,14 @@ class ForexAgent(ExchangeAgent):
         if ohlcv_res is None:
             logger.error(f"fetching chart data failed: {chart=}")
             return None
-        
+
         logger.info(f"{len(ohlcv_res)} ohlcv fetched for {chart}")
 
         all_candles_list = []
         for candle in ohlcv_res:
             candle_timestamp, open, high, low, close, volume, _, _ = candle
 
-            candle_time = (
-                datetime.fromtimestamp(candle_timestamp, tz=timezone.utc)
-            )
+            candle_time = datetime.fromtimestamp(candle_timestamp, tz=timezone.utc)
 
             all_candles_list.append(
                 Candle(
@@ -96,15 +97,14 @@ class ForexAgent(ExchangeAgent):
             )
 
         chartdata = ChartData(chart, all_candles_list)
-        logger.debug(str(chartdata)+" Generated")
+        logger.debug(str(chartdata) + " Generated")
 
         return chartdata
 
-
-    def open_position(self, position: Position)->str|None:
+    def open_position(self, position: Position) -> float | None:
         if not self.prepare_chart(position.chart):
             return None
-        
+
         tick = mt5.symbol_info_tick(position.chart.symbol)
         if tick is None:
             logger.error(f"Forex Failed to get tick data for {position.chart.symbol}")
@@ -137,10 +137,9 @@ class ForexAgent(ExchangeAgent):
         if not result:
             logging.error(f"Opening position failed: {position}\n{mt5.last_error()=}")
             return None
-        position.entry_price = result.price
+        position.id = str(result.order)
         logging.info(f"Position Opened: {position}\n{result=}")
-        return str(result.order)
-
+        return result.price
 
     def change_stoploss(self, position: Position, price) -> bool:
         if not position.id:
@@ -151,7 +150,7 @@ class ForexAgent(ExchangeAgent):
             "position": int(position.id),
             "symbol": position.chart.symbol,
             "sl": price,
-            "tp": position.takeprofit
+            "tp": position.takeprofit,
         }
 
         result = mt5.order_send(request)
@@ -170,7 +169,7 @@ class ForexAgent(ExchangeAgent):
             "position": int(position.id),
             "symbol": position.chart.symbol,
             "sl": position.takeprofit,
-            "tp": price
+            "tp": price,
         }
 
         result = mt5.order_send(request)
@@ -180,7 +179,7 @@ class ForexAgent(ExchangeAgent):
         logging.debug(f"TP Changed of {position=}\n{result=}")
         return True
 
-    def partial_close(self, position: Position, volume) -> float|None:
+    def partial_close(self, position: Position, volume) -> float | None:
         """
         return executed price if successful otherwise None
         """
@@ -209,7 +208,7 @@ class ForexAgent(ExchangeAgent):
         logging.debug(f"Partial Close for {position=}\n{result=}")
         return result.price
 
-    def close_position(self, position: Position)->float|None:
+    def close_position(self, position: Position) -> float | None:
         """
         return executed price if successful otherwise None
         """
@@ -240,8 +239,6 @@ class ForexAgent(ExchangeAgent):
 
     def get_open_positions(self, chart: Chart):
         pass
-
-
 
 
 def forex_timeframe_mapper(timeframe: TimeFrame):

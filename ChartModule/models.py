@@ -154,6 +154,9 @@ class ChartData:
     def __iter__(self):
         return iter(self.candles)
 
+    def __getitem__(self, index):
+        return self.candles[index]
+
     def __str__(self):
         return f"{self.chart} with {len(self.candles)} candles & {len(self.indicators)}"
 
@@ -244,4 +247,5 @@ class ChartData:
 
     @classmethod
     def give_crosspair(cls, first_chartdata, second_chartdata):
+        # TODO: complete this section
         pass

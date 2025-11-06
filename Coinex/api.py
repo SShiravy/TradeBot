@@ -10,8 +10,6 @@ from urllib.parse import urlparse, urlencode
 logger = logging.getLogger("coinex_api")
 
 
-
-
 class CoinexTimeFrame(Enum):
     ONE_MINUTE = "1min"
     THREE_MINUTES = "3min"
@@ -202,8 +200,8 @@ class CoinexFuturesAPI(CoinexAPI):
         if not result["data"]:
             logger.error(f"Coinex Failed on Placing TP: {result}")
         return result["data"]
-    
-    def close_position(self,symbol, amount):
+
+    def close_position(self, symbol, amount):
         end_point = "/futures/close-position"
         result = self._request(
             "POST",
@@ -216,6 +214,7 @@ class CoinexFuturesAPI(CoinexAPI):
             },
         )
         if not result["data"]:
-            logger.error(f"Coinex Failed on Closing Position with {amount=} on {symbol}: {result}")
+            logger.error(
+                f"Coinex Failed on Closing Position with {amount=} on {symbol}: {result}"
+            )
         return result["data"]
-

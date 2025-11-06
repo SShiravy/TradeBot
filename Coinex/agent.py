@@ -1,38 +1,38 @@
 from ChartModule import Chart, Candle, ChartData, TimeFrame
 from TradingModule import ExchangeAgent, Position
-from TradingModule.commands import ChangeTakeProfit,TrailStoploss
+from TradingModule.commands import ChangeTakeProfit, TrailStoploss
 from Coinex.api import CoinexFuturesAPI, CoinexTimeFrame
+from datetime import datetime, timezone
 import logging
 
 
-logger = logging.getLogger('CoinexAgent')
+logger = logging.getLogger("CoinexAgent")
+
 
 class CoinexAgent(ExchangeAgent):
-
-    def __init__(self,access_id: str, secret_key: str) -> None:
-        self.coinex_api = CoinexFuturesAPI(access_id,secret_key)
+    def __init__(self, access_id: str, secret_key: str) -> None:
+        self.coinex_api = CoinexFuturesAPI(access_id, secret_key)
         logger.info("Initialized")
 
-    def check_chart(self,chart: Chart)->bool:
+    def check_chart(self, chart: Chart) -> bool:
         info = self.coinex_api.get_market_info(chart.symbol)
         if not info:
             return False
         chart.precision = info[0]["quote_ccy_precision"]
         return True
 
-    def get_chartdata(self, chart: Chart, n_bars: int = 100) -> ChartData|None:
-
+    def get_chartdata(self, chart: Chart, n_bars: int = 100) -> ChartData | None:
         timeframe = coinex_timeframe_mapper(chart.timeframe)
         if not timeframe:
             logger.error(f"{chart.timeframe.value} not exist in coinex api")
         try:
-            kline_res = self.coinex_api.get_kline(chart.symbol, timeframe, limit=n_bars) # type: ignore
+            kline_res = self.coinex_api.get_kline(chart.symbol, timeframe, limit=n_bars)  # type: ignore
             if not kline_res:
                 raise ValueError(f"{kline_res=}")
         except Exception as e:
             logger.error(f"fetching chart data failed: {e}")
             return None
-        
+
         logger.info(f"{len(kline_res)} ohlcv fetched for {chart}")
 
         all_candles_list = []
@@ -43,7 +43,9 @@ class CoinexAgent(ExchangeAgent):
             low = candle["low"]
             close = candle["close"]
             volume = candle["volume"]
-            candle_time = datetime.fromtimestamp(candle_timestamp / 1000, tz=timezone.utc)  # type: ignore
+            candle_time = datetime.fromtimestamp(
+                candle_timestamp / 1000, tz=timezone.utc
+            )  # type: ignore
 
             all_candles_list.append(
                 Candle(
@@ -57,17 +59,17 @@ class CoinexAgent(ExchangeAgent):
                 )
             )
 
-        chartdata = ChartData(chart,all_candles_list)
-        logger.debug(str(chartdata)+" Generated")
+        chartdata = ChartData(chart, all_candles_list)
+        logger.debug(str(chartdata) + " Generated")
         return chartdata
-    
+
     def open_position(self, position: Position):
         """
         return position id if successful otherwise None
         its better to update position.entry_price to executed order price
         """
         self.coinex_api.set_leverage(position.chart.symbol, position.leverage)
-        
+
         order_result = self.coinex_api.place_order(
             position.chart.symbol,
             position.side.value.lower(),
@@ -79,22 +81,24 @@ class CoinexAgent(ExchangeAgent):
             logger.error(f"Opening Position Failed: {position}")
             return None
 
-        position.entry_price = float(order_result["last_filled_price"])
         pos_id = order_result["created_at"]
+        position.id = pos_id
 
         sl_res = self.change_stoploss(position, position.stoploss)
         tp_res = self.change_takeprofit(position, position.takeprofit)
 
         if not sl_res:
-            TrailStoploss(position,position.stoploss)
+            TrailStoploss(position, position.stoploss)
         if not tp_res:
-            ChangeTakeProfit(position,position.takeprofit)
+            ChangeTakeProfit(position, position.takeprofit)
 
         logging.info(f"Position Opened: {position}\n{order_result=}")
-        return pos_id
+        entry_price = float(order_result["last_filled_price"])
+
+        return entry_price
 
     def change_stoploss(self, position: Position, price) -> bool:
-        res = self.coinex_api.place_stoploss(position.chart.symbol,price)
+        res = self.coinex_api.place_stoploss(position.chart.symbol, price)
         if not res:
             logger.error(f"New SL Request Failed:{position=}\n{res=}")
             return False
@@ -102,13 +106,12 @@ class CoinexAgent(ExchangeAgent):
         return True
 
     def change_takeprofit(self, position: Position, price) -> bool:
-        res = self.coinex_api.place_takeprofit(position.chart.symbol,price)
+        res = self.coinex_api.place_takeprofit(position.chart.symbol, price)
         if not res:
             logger.error(f"New TP Request Failed:{position=}\n{res=}")
             return False
         logging.debug(f"TP Changed of {position=}\n{res=}")
         return True
-    
 
     def partial_close(self, position: Position, volume):
         """
@@ -125,7 +128,7 @@ class CoinexAgent(ExchangeAgent):
         """
         return executed price if successful otherwise None
         """
-        res = self.coinex_api.close_position(position.chart.symbol, amount='')
+        res = self.coinex_api.close_position(position.chart.symbol, amount="")
         if not res:
             logger.error(f"Close Position Failed: {position}\n{res=}")
             return None
@@ -134,6 +137,7 @@ class CoinexAgent(ExchangeAgent):
 
     def get_open_positions(self, chart: Chart):
         pass
+
 
 def coinex_timeframe_mapper(timeframe: TimeFrame):
     match timeframe:

@@ -140,9 +140,9 @@ if __name__ == "__main__":
     logging.debug("3")
     logging.error("4")
     logging.critical("5")
-    
-    other_logger = logging.getLogger('test_not_root')
-    other_logger.error('not roooooottt')
+
+    other_logger = logging.getLogger("test_not_root")
+    other_logger.error("not roooooottt")
 
 
 CustomLogger(
