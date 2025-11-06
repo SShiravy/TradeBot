@@ -34,10 +34,10 @@ class ForexAgent(ExchangeAgent):
         return True
 
     @classmethod
-    def correct_time(cls, raw_time: datetime, chart: Chart):
+    def correct_time(cls, raw_time: datetime, chart: Chart) -> datetime | None:
         info = mt5.symbol_info(chart.symbol)
         if not info:
-            return False
+            return None
         delta = datetime.fromtimestamp(info.time, timezone.utc) - datetime.now(
             timezone.utc
         )
@@ -82,8 +82,10 @@ class ForexAgent(ExchangeAgent):
         for candle in ohlcv_res:
             candle_timestamp, open, high, low, close, volume, _, _ = candle
 
-            candle_time = datetime.fromtimestamp(candle_timestamp, tz=timezone.utc)
-
+            candle_time = datetime.fromtimestamp(
+                candle_timestamp, tz=timezone.utc
+            ).replace(microsecond=0)
+            corrected_time = self.correct_time(candle_time, chart)
             all_candles_list.append(
                 Candle(
                     float(open),
@@ -91,7 +93,7 @@ class ForexAgent(ExchangeAgent):
                     float(high),
                     float(low),
                     float(volume),
-                    candle_time.replace(microsecond=0),
+                    corrected_time if corrected_time else candle_time,
                     chart.timeframe,
                 )
             )

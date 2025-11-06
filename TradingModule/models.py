@@ -27,8 +27,7 @@ class OrderSide(Enum):
             case MarketSide.NEUTRAL:
                 return None
 
-    @property
-    def direction(self):
+    def factor(self):
         return 1 if self is OrderSide.BUY else -1
 
 

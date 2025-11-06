@@ -1,6 +1,7 @@
 from ChartModule import Signal, MarketSide, ChartData
 from TradingModule import Position, OrderSide, ExchangeAgent
-from TradingModule.commands import TradeCommand, StopLoss, TakeProfit
+from TradingModule.commands import TradeCommand
+from TradingModule import commands
 from abc import ABC, abstractmethod
 import numpy as np
 import logging
@@ -9,7 +10,7 @@ import logging
 logger = logging.getLogger("PositionHandler")
 
 
-class PositionHandler(ABC):
+class AbcPositionHandler(ABC):
     def __init__(
         self,
         exchange_agent: ExchangeAgent,
@@ -39,6 +40,7 @@ class PositionHandler(ABC):
         elif signal.side is MarketSide.BULLISH:
             side = OrderSide.BUY
         else:
+            logger.warning(f"can not create position from {signal=}")
             return None
 
         if entry_price is None:
@@ -59,6 +61,7 @@ class PositionHandler(ABC):
             position_id,
         )
         self.open_positions.append(position)
+        logger.info(f"New Position Created: {position}")
         return position
 
     @abstractmethod
@@ -112,11 +115,14 @@ class PositionHandler(ABC):
         return all_commands
 
 
-class SimpleCryptoHandler(PositionHandler):
+# Simple ---------------------------------------------
+
+
+class SimpleCryptoHandler(AbcPositionHandler):
     def __init__(
         self,
         exchange_agent: ExchangeAgent,
-        initial_volume: float = 0,
+        initial_volume: float = 0.5,
         leverage: int = 1,
         stoploss_percent: int = 5,
         takeprofit_percent: int = 5,
@@ -126,61 +132,152 @@ class SimpleCryptoHandler(PositionHandler):
         self.takeprofit_percent = takeprofit_percent
 
     def init_stoploss(self, entry_price: float, side: OrderSide) -> float:
-        return abs(self.stoploss_percent / 100 - side.direction) * entry_price
+        return abs(self.stoploss_percent / 100 - side.factor()) * entry_price
 
     def init_takeprofit(self, entry_price: float, side: OrderSide) -> float:
-        return abs(self.takeprofit_percent / 100 + side.direction) * entry_price
+        return abs(self.takeprofit_percent / 100 + side.factor()) * entry_price
 
     def handler(
         self, position: Position, tick_prices: list[float]
     ) -> TradeCommand | None:
-        direction = position.side.direction
+        direction = position.side.factor()
         ticks = np.array(tick_prices) * direction
         sl = position.stoploss * direction
         tp = position.takeprofit * direction
         cross = np.logical_or(ticks <= sl, ticks >= tp)
         if not cross.any():
-            result = None
+            return None
         idx = np.argmax(cross)
         if ticks[idx] <= position.stoploss:
-            result = StopLoss(position)
+            return commands.StopLoss(position)
         else:
-            result = TakeProfit(position)
-        return result
+            return commands.TakeProfit(position)
 
 
-class SimpleForexHandler(PositionHandler):
+class SimpleForexHandler(AbcPositionHandler):
     def __init__(
         self,
         exchange_agent: ExchangeAgent,
-        initial_volume: float = 0,
-        leverage: int = 1,
+        initial_volume: float = 0.01,
         stoploss_pip: int = 20,
         takeprofit_pip: int = 20,
     ) -> None:
-        super().__init__(exchange_agent, initial_volume, leverage)
+        super().__init__(exchange_agent, initial_volume, 1)
         self.stoploss_pip = stoploss_pip
         self.takeprofit_pip = takeprofit_pip
 
     def init_stoploss(self, entry_price: float, side: OrderSide) -> float:
-        return entry_price - side.direction * self.stoploss_pip
+        return entry_price - side.factor() * self.stoploss_pip
 
     def init_takeprofit(self, entry_price: float, side: OrderSide) -> float:
-        return entry_price + side.direction * self.takeprofit_pip
+        return entry_price + side.factor() * self.takeprofit_pip
 
     def handler(
         self, position: Position, tick_prices: list[float]
     ) -> TradeCommand | None:
-        direction = position.side.direction
+        direction = position.side.factor()
         ticks = np.array(tick_prices) * direction
         sl = position.stoploss * direction
         tp = position.takeprofit * direction
         cross = np.logical_or(ticks <= sl, ticks >= tp)
         if not cross.any():
-            result = None
+            return None
         idx = np.argmax(cross)
         if ticks[idx] <= position.stoploss:
-            result = StopLoss(position)
+            return commands.StopLoss(position)
         else:
-            result = TakeProfit(position)
-        return result
+            return commands.TakeProfit(position)
+
+
+# RiskFree---------------------------------------------
+
+
+class RiskFreeCrypto(SimpleCryptoHandler):
+    def __init__(
+        self,
+        exchange_agent: ExchangeAgent,
+        initial_volume: float = 0.0,
+        leverage: int = 1,
+        stoploss_percent: int = 5,
+        takeprofit_percent: int = 5,
+        riskfree_trigger_percent: int = 2,
+    ) -> None:
+        super().__init__(
+            exchange_agent,
+            initial_volume,
+            leverage,
+            stoploss_percent,
+            takeprofit_percent,
+        )
+        self.riskfree_trigger_percent = riskfree_trigger_percent
+
+    def riskfree_trigger_price(self, position: Position) -> float:
+        if position.stoploss == position.entry_price:
+            # when already riskfree triggered
+            return position.takeprofit
+        else:
+            return (
+                abs(self.riskfree_trigger_percent / 100 + position.side.factor())
+                * position.entry_price
+            )
+
+    def handler(
+        self, position: Position, tick_prices: list[float]
+    ) -> TradeCommand | None:
+        direction = position.side.factor()
+        ticks = np.array(tick_prices) * direction
+        sl = position.stoploss * direction
+        tp = position.takeprofit * direction
+        trigger = self.riskfree_trigger_price(position) * direction
+        cross = np.logical_or(ticks <= sl, ticks >= tp, ticks >= trigger)
+        if not cross.any():
+            return None
+        idx = np.argmax(cross)
+        if ticks[idx] <= position.stoploss:
+            return commands.StopLoss(position)
+        elif ticks[idx] >= tp:
+            return commands.TakeProfit(position)
+        elif ticks[idx] >= trigger:
+            return commands.TrailStoploss(position, position.entry_price)
+
+
+class RiskFreeForex(SimpleForexHandler):
+    def __init__(
+        self,
+        exchange_agent: ExchangeAgent,
+        initial_volume: float = 0.01,
+        stoploss_pip: int = 20,
+        takeprofit_pip: int = 20,
+        riskfree_trigger_pip: int = 10,
+    ) -> None:
+        super().__init__(exchange_agent, initial_volume, stoploss_pip, takeprofit_pip)
+        self.riskfree_trigger_pip = riskfree_trigger_pip
+
+    def riskfree_trigger_price(self, position: Position) -> float:
+        if position.stoploss == position.entry_price:
+            # when already riskfree triggered
+            return position.takeprofit
+        else:
+            return (
+                self.riskfree_trigger_pip * position.side.factor()
+                + position.entry_price
+            )
+
+    def handler(
+        self, position: Position, tick_prices: list[float]
+    ) -> TradeCommand | None:
+        direction = position.side.factor()
+        ticks = np.array(tick_prices) * direction
+        sl = position.stoploss * direction
+        tp = position.takeprofit * direction
+        trigger = self.riskfree_trigger_price(position) * direction
+        cross = np.logical_or(ticks <= sl, ticks >= tp, ticks >= trigger)
+        if not cross.any():
+            return None
+        idx = np.argmax(cross)
+        if ticks[idx] <= position.stoploss:
+            return commands.StopLoss(position)
+        elif ticks[idx] >= tp:
+            return commands.TakeProfit(position)
+        elif ticks[idx] >= trigger:
+            return commands.TrailStoploss(position, position.entry_price)
