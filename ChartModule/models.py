@@ -160,12 +160,15 @@ class ChartData:
     def __str__(self):
         return f"{self.chart} with {len(self.candles)} candles & {len(self.indicators)}"
 
-    @property
-    def heikin_ashi_candles(self) -> list[Candle]:
+    def index(self, value):
+        return self.candles.index(value)
+
+    @classmethod
+    def heikinashi_candles(cls, candles: list[Candle]) -> list[Candle]:
         ha_candles = []
 
         # First HA candle
-        first_candle = self.candles[0]
+        first_candle = candles[0]
         ha_close = (
             first_candle.open
             + first_candle.high
@@ -189,7 +192,7 @@ class ChartData:
         )
 
         # Rest of HA candles
-        for candle in self.candles[1:]:
+        for candle in candles[1:]:
             prev_ha = ha_candles[-1]
             digits = len(str(candle.high).split(".")[-1])
 
@@ -214,8 +217,10 @@ class ChartData:
 
         return ha_candles
 
-    def give_heiking_ashi(self):
-        return ChartData(self.chart, self.heikin_ashi_candles, self.indicators)
+    def give_heikingashi_chartdata(self):
+        return ChartData(
+            self.chart, self.heikinashi_candles(self.candles), self.indicators
+        )
 
     def generate_dataframe(self) -> pd.DataFrame:
         open_list = []

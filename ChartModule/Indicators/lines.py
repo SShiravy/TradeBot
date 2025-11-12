@@ -1,5 +1,6 @@
 from ChartModule.models import Candle, MarketSide, IndicatorBaseModel
-from ChartModule.Indicators.models import IndicatorCandleSource
+from ChartModule.Indicators.models import IndicatorCandleSource, SupportConditions
+from copy import copy
 import numpy as np
 
 
@@ -31,12 +32,49 @@ class Line:
 
 class TrendLine(IndicatorBaseModel):
     def __init__(
-        self, source: IndicatorCandleSource, min_step: int, max_step: int
+        self,
+        source: IndicatorCandleSource,
+        min_step: int,
+        max_step: int,
+        ignore_shadow_cross=True,
+        support_conditions=SupportConditions.RAW,
     ) -> None:
         super().__init__()
         self.source = source
         self.min_step = min_step
         self.max_step = max_step
+        self.ignore_shadow_cross = ignore_shadow_cross
+        self.support_conditions = support_conditions
+
+    def valid_trendline(
+        self, candles: list[Candle], start_index: int, end_index: int
+    ) -> Line | None:
+        if len(candles) - start_index > self.max_step:
+            return None
+        source_list = []
+        time_list = []
+        start_candle = candles[start_index]
+        the_line = Line(self.source, start_candle, candles[end_index])
+
+        candle_source = copy(self.source)
+        if self.ignore_shadow_cross:
+            if self.source == IndicatorCandleSource.Low:
+                candle_source = IndicatorCandleSource.Bottom
+            elif self.source == IndicatorCandleSource.High:
+                candle_source = IndicatorCandleSource.Top
+
+        for candle in candles[end_index:start_index:-1]:
+            source_list.append(candle_source(candle))
+            time_list.append(candle.time.timestamp())
+
+        expected_low = (
+            np.array(time_list) - candles[start_index].time.timestamp()
+        ) * the_line.slope + self.source(start_candle)
+
+        if np.any(np.array(source_list) - expected_low < 0):
+            # invalid (line crossed candles)
+            return None
+        return the_line
 
     def _calculate(self) -> list[Line]:
         lines = []
@@ -44,12 +82,22 @@ class TrendLine(IndicatorBaseModel):
         len_candles = len(self.candles)
         source_list = []
         time_list = []
+
+        candle_source = copy(self.source)
+        if self.ignore_shadow_cross:
+            if self.source == IndicatorCandleSource.Low:
+                candle_source = IndicatorCandleSource.Bottom
+            elif self.source == IndicatorCandleSource.High:
+                candle_source = IndicatorCandleSource.Top
+
         for candle in self.candles[-2::-1]:
             candle_index = self.candles.index(candle)
             if len_candles - candle_index > self.max_step:
                 break
+            if not self.support_conditions.check(self.candles[: candle_index + 1]):
+                continue
 
-            source_list.append(self.source(candle))
+            source_list.append(candle_source(candle))
             time_list.append(candle.time.timestamp())
             if len_candles - 1 - candle_index < self.min_step:
                 continue
