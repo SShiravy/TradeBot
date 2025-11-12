@@ -1,5 +1,6 @@
 from ChartModule.models import IndicatorBaseModel, MarketSide, Candle
 from ChartModule.Indicators.models import IndicatorCandleSource
+from ChartModule.plot import PlotChart
 import numpy as np
 
 
@@ -48,3 +49,10 @@ class Pivot(IndicatorBaseModel):
 
     def _forcast(self) -> MarketSide:
         return MarketSide.NEUTRAL
+
+    def plot(self, plot: PlotChart, all=False):
+        if all:
+            for candle in self.values:
+                plot.mark_candle(candle, self.source)
+        else:
+            plot.mark_candle(self.values[-1], self.source)

@@ -135,19 +135,19 @@ class Divergence(Strategy):
         if (
             check_long
             and self.long_support_conditions.check(chartdata.candles)
-            and not MarketSide.BEARISH in confirmations
+            and MarketSide.BEARISH not in confirmations
         ):
             long_res = self.long_signal(chartdata, second_chartdata)
 
         if (
             check_short
             and self.long_support_conditions.check(chartdata.candles)
-            and not MarketSide.BULLISH in confirmations
+            and MarketSide.BULLISH not in confirmations
         ):
             short_res = self.short_signal(chartdata, second_chartdata)
 
         if long_res and short_res:
-            logger.warning(f"long and short signal in same time!")
+            logger.warning("long and short signal in same time!")
             return None
 
         if short_res:

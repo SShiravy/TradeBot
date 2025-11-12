@@ -53,11 +53,14 @@ class ForexAgent(ExchangeAgent):
         if tick is None:
             logger.error(f"Forex Failed to get tick data for {chart.symbol}")
             return False
-        last_tick_time = self.correct_time(datetime.fromtimestamp(tick.time), chart)
+        last_tick_time = self.correct_time(
+            datetime.fromtimestamp(tick.time, timezone.utc), chart
+        )
         if not last_tick_time:
             return False
+        print(last_tick_time, "|", now)
         if abs(
-            last_tick_time.replace(minute=0, second=0, microsecond=0)
+            last_tick_time.replace(second=0, microsecond=0)
             - now.replace(second=0, microsecond=0)
         ) > timedelta(minutes=1):
             return False
@@ -102,6 +105,9 @@ class ForexAgent(ExchangeAgent):
         logger.debug(str(chartdata) + " Generated")
 
         return chartdata
+
+    def get_chartdata_since(self, chart: Chart, time: datetime) -> ChartData | None:
+        pass
 
     def open_position(self, position: Position) -> float | None:
         if not self.prepare_chart(position.chart):

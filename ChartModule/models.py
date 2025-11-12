@@ -130,6 +130,10 @@ class IndicatorBaseModel(ABC):
     def _forcast(self, *args, **kwargs) -> MarketSide:
         pass
 
+    @abstractmethod
+    def plot(self, plot) -> Any:
+        pass
+
     def forcast(self, *args, **kwargs) -> MarketSide:
         if self.values is None:
             return MarketSide.NEUTRAL

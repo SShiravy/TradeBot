@@ -1,5 +1,6 @@
 from ChartModule.models import Candle, MarketSide, IndicatorBaseModel
 from ChartModule.Indicators.models import IndicatorCandleSource, SupportConditions
+from ChartModule.plot import PlotChart
 from copy import copy
 import numpy as np
 
@@ -14,7 +15,7 @@ class Line:
 
     @property
     def slope(self) -> float:
-        slope = self.source(self.start_candle) - self.source(self.start_candle) / (
+        slope = (self.source(self.end_candle) - self.source(self.start_candle)) / (
             self.end_candle.time.timestamp() - self.start_candle.time.timestamp()
         )
         return round(slope, 3)
@@ -28,6 +29,9 @@ class Line:
             return MarketSide.BULLISH
         else:
             return MarketSide.NEUTRAL
+
+    def plot(self, plot: PlotChart):
+        plot.draw_straight_line(self.start_candle, self.end_candle, self.source)
 
 
 class TrendLine(IndicatorBaseModel):
@@ -118,3 +122,8 @@ class TrendLine(IndicatorBaseModel):
 
     def _forcast(self) -> MarketSide:
         return self.values[-1].direction
+
+    def plot(self, plot: PlotChart):
+        plot.draw_straight_line(
+            self.values[-1].start_candle, self.values[-1].end_candle, self.source
+        )

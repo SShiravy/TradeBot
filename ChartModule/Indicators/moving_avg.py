@@ -1,5 +1,6 @@
 from ChartModule.models import IndicatorBaseModel, MarketSide
 from ChartModule.Indicators.models import IndicatorCandleSource
+from ChartModule.plot import PlotChart
 import pandas as pd
 
 
@@ -9,7 +10,7 @@ class SMA(IndicatorBaseModel):
     values: dict{time:sma}
     """
 
-    def __init__(self, n_bar: int, source: IndicatorCandleSource) -> None:
+    def __init__(self, n_bar: int, source=IndicatorCandleSource.Close) -> None:
         super().__init__()
         self.n_bar = n_bar
         self.source = source
@@ -38,6 +39,9 @@ class SMA(IndicatorBaseModel):
         else:
             return MarketSide.NEUTRAL
 
+    def plot(self, plot: PlotChart):
+        plot.linear_plot(self.values.keys(), self.values.values(), f"SMA{self.n_bar}")
+
 
 class EMA(IndicatorBaseModel):
     """
@@ -45,7 +49,7 @@ class EMA(IndicatorBaseModel):
     values: dict{time:ema}
     """
 
-    def __init__(self, n_bar: int, source: IndicatorCandleSource) -> None:
+    def __init__(self, n_bar: int, source=IndicatorCandleSource.Close) -> None:
         super().__init__()
         self.n_bar = n_bar
         self.source = source
@@ -68,3 +72,6 @@ class EMA(IndicatorBaseModel):
             return MarketSide.BEARISH
         else:
             return MarketSide.NEUTRAL
+
+    def plot(self, plot: PlotChart):
+        plot.linear_plot(self.values.keys(), self.values.values(), f"EMA{self.n_bar}")

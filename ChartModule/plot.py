@@ -1,6 +1,7 @@
 from ChartModule import ChartData, Candle, Signal, MarketSide
-from ChartModule.Indicators import Line, IndicatorCandleSource
+from ChartModule.Indicators.models import IndicatorCandleSource
 from datetime import datetime
+from typing import TypeAlias
 import finplot as fplt
 
 fplt.candle_bull_body_color = "#26a69a"
@@ -38,7 +39,7 @@ class PlotChart:
             self.plot()
         fplt.show()
 
-    def save_image(self, path="Images/", name=None) -> str:
+    def save_image(self, name=None, path="Images/") -> str:
         if not self.ax:
             self.plot()
         fplt.autoviewrestore(False)
@@ -68,9 +69,6 @@ class PlotChart:
             interactive=False,
             ax=self.ax,
         )
-
-    def draw_line(self, line: Line):
-        self.draw_straight_line(line.start_candle, line.end_candle, line.source)
 
     def draw_horizontal_line(
         self,
@@ -103,6 +101,7 @@ class PlotChart:
                 color="#1DBD1D",
                 width=3,
                 ax=self.ax,
+                legend=signal.source + "_Signal",
             )
         else:
             fplt.plot(
@@ -112,9 +111,12 @@ class PlotChart:
                 color="#BD1D1D",
                 width=3,
                 ax=self.ax,
+                legend=signal.source + "_Signal",
             )
 
-    def mark_candle(self, candle: Candle, source: IndicatorCandleSource):
+    def mark_candle(
+        self, candle: Candle, source: IndicatorCandleSource, legend: str | None = None
+    ):
         color = (
             "#e20000"
             if source in [IndicatorCandleSource.Top, IndicatorCandleSource.High]
@@ -127,15 +129,17 @@ class PlotChart:
             color=color,
             width=1,
             ax=self.ax,
+            legend=legend,
         )
+
+    def linear_plot(self, x, y, legend: str | None = None):
+        fplt.plot(x, y, legend=legend, style="-", ax=self.ax)
 
 
 class TwoChartPlot:
-    def __init__(
-        self, base_chartdata: ChartData, secondary_chartdata: ChartData
-    ) -> None:
+    def __init__(self, base_chartdata: ChartData, second_chartdata: ChartData) -> None:
         self.base_plot = PlotChart(base_chartdata)
-        self.secondary_plot = PlotChart(secondary_chartdata)
+        self.secondary_plot = PlotChart(second_chartdata)
 
         ax1, ax2 = fplt.create_plot(
             f"TimeFrame: {base_chartdata.chart.timeframe.value}", rows=2
@@ -150,5 +154,8 @@ class TwoChartPlot:
     def show(self):
         fplt.show()
 
-    def save_image(self, path="Images/", name=None) -> str:
-        return self.base_plot.save_image(path, name)
+    def save_image(self, name=None, path="Images/") -> str:
+        return self.base_plot.save_image(name, path)
+
+
+Plot: TypeAlias = PlotChart | TwoChartPlot
