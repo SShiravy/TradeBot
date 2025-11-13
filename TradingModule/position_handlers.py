@@ -10,7 +10,7 @@ import logging
 logger = logging.getLogger("PositionHandler")
 
 
-class AbcPositionHandler(ABC):
+class PositionHandler(ABC):
     def __init__(
         self,
         exchange_agent: ExchangeAgent,
@@ -31,7 +31,6 @@ class AbcPositionHandler(ABC):
     def init_takeprofit(self, entry_price: float, side: OrderSide) -> float:
         pass
 
-    @abstractmethod
     def generate_position(
         self, signal: Signal, entry_price: float | None = None, position_id: str = ""
     ) -> Position | None:
@@ -118,7 +117,7 @@ class AbcPositionHandler(ABC):
 # Simple ---------------------------------------------
 
 
-class SimpleCryptoHandler(AbcPositionHandler):
+class SimpleCryptoHandler(PositionHandler):
     def __init__(
         self,
         exchange_agent: ExchangeAgent,
@@ -154,7 +153,7 @@ class SimpleCryptoHandler(AbcPositionHandler):
             return commands.TakeProfit(position)
 
 
-class SimpleForexHandler(AbcPositionHandler):
+class SimpleForexHandler(PositionHandler):
     def __init__(
         self,
         exchange_agent: ExchangeAgent,

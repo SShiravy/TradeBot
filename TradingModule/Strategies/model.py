@@ -17,6 +17,8 @@ class Strategy(ABC):
         self.short_support_conditions = short_support_conditions
 
     def get_indicators_confirmation(self, chartdata: ChartData) -> list[MarketSide]:
+        if self.confirmation_indicators is []:
+            return [MarketSide.NEUTRAL]
         all_forcasts = []
         for indicator in self.confirmation_indicators:
             indicator.set(chartdata.candles)

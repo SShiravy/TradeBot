@@ -9,11 +9,14 @@ logger = logging.getLogger("ForexAgent")
 
 
 class ForexAgent(ExchangeAgent):
-    def __init__(self, check_market_is_open: bool = True) -> None:
-        if not mt5.initialize():
-            raise RuntimeError("MT5 initialize failed")
-        logger.info("Initialized")
-        self.check_market_is_open = check_market_is_open
+    def __new__(cls, check_market_is_open: bool = True):
+        if not hasattr(cls, "_instance"):
+            cls._instance = object.__new__(cls)
+            if not mt5.initialize():
+                raise RuntimeError("MT5 initialize failed")
+            logger.info("Initialized")
+        cls.check_market_is_open = check_market_is_open
+        return cls._instance
 
     def check_chart(self, chart: Chart) -> bool:
         symbol_info = mt5.symbol_info(chart.symbol)

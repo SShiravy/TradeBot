@@ -183,6 +183,6 @@ class Divergence(Strategy):
             signal.second_line.end_candle,
             signal.second_line.source,
         )
-        if draw_indicators:
+        if draw_indicators and self.confirmation_indicators:
             for indicator in self.confirmation_indicators:
                 indicator.plot(plot.base_plot)

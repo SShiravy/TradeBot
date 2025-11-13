@@ -31,8 +31,6 @@ class TelegramLogHandler(logging.Handler):
 
 
 class CustomLogger:
-    __instance = None
-
     def __new__(
         cls,
         consol_log: bool = True,
@@ -44,17 +42,17 @@ class CustomLogger:
         telegram_bot_token=None,
         telegram_report_log_level=logging.WARNING,
     ):
-        if cls.__instance is None:
-            cls.__instance = logging.getLogger()
-            cls.__instance.setLevel(logging.DEBUG)
+        if not hasattr(cls, "_instance"):
+            cls._instance = logging.getLogger()
+            cls._instance.setLevel(logging.DEBUG)
             if consol_log:
-                cls.__instance.addHandler(cls.__consol_handler(consol_log_level))
+                cls._instance.addHandler(cls.__consol_handler(consol_log_level))
             if log_file:
-                cls.__instance.addHandler(
+                cls._instance.addHandler(
                     cls.__file_handler(file_log_level, file_log_name)
                 )
             if telegram_report_channel and telegram_bot_token:
-                cls.__instance.addHandler(
+                cls._instance.addHandler(
                     cls.__telegram_reporter(
                         telegram_report_log_level,
                         telegram_bot_token,
@@ -62,7 +60,7 @@ class CustomLogger:
                     )
                 )
 
-        return cls.__instance
+        return cls._instance
 
     @classmethod
     def __consol_handler(cls, log_level):
