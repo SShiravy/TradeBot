@@ -1,11 +1,18 @@
 from ChartModule.Indicators.models import SupportConditions, IndicatorCandleSource
-from ChartModule.Indicators import TrendLine, Line
 from ChartModule.models import IndicatorBaseModel, Signal, ChartData, MarketSide
 from TradingModule.Strategies.model import Strategy
+from ChartModule.Indicators import TrendLine, Line
+from dataclasses import dataclass
 from copy import copy
 import logging
 
 logger = logging.getLogger("Divergence")
+
+
+@dataclass(slots=True)
+class DivergenceSignal(Signal):
+    base_line: Line
+    second_line: Line
 
 
 class Divergence(Strategy):
@@ -13,10 +20,10 @@ class Divergence(Strategy):
         self,
         min_step: int,
         max_step: int,
-        name: str,
         confirmation_indicators: list[IndicatorBaseModel],
         long_support_conditions=SupportConditions.RED_GREEN,
         short_support_conditions=SupportConditions.GREEN_RED,
+        name="Divergence",
         plot=True,
         inverse_diver_long: bool = False,
         inverse_diver_short: bool = False,
@@ -73,6 +80,8 @@ class Divergence(Strategy):
                 return base_chart_line, second_chart_line
 
     def long_signal(self, base_chartdata: ChartData, second_chartdata):
+        if not self.long_support_conditions.check(base_chartdata.candles):
+            return None
         res = self.find_divergence(
             TrendLine(
                 IndicatorCandleSource.Low,
@@ -88,15 +97,19 @@ class Divergence(Strategy):
         if res is None:
             return None
         base_line, second_line = res
-        signal = Signal(
+        signal = DivergenceSignal(
             base_chartdata.chart,
             base_line.end_candle,
             MarketSide.BULLISH,
-            source=self.name,
+            self.name,
+            base_line,
+            second_line,
         )
-        return signal, base_line, second_line
+        return signal
 
     def short_signal(self, base_chartdata: ChartData, second_chartdata):
+        if not self.long_support_conditions.check(base_chartdata.candles):
+            return None
         res = self.find_divergence(
             TrendLine(
                 IndicatorCandleSource.High,
@@ -112,13 +125,15 @@ class Divergence(Strategy):
         if res is None:
             return None
         base_line, second_line = res
-        signal = Signal(
+        signal = DivergenceSignal(
             base_chartdata.chart,
             base_line.end_candle,
             MarketSide.BEARISH,
-            source=self.name,
+            self.name,
+            base_line,
+            second_line,
         )
-        return signal, base_line, second_line
+        return signal
 
     def check_signal(
         self,
@@ -127,34 +142,28 @@ class Divergence(Strategy):
         check_long: bool = True,
         check_short: bool = True,
     ) -> Signal | None:
-        long_res = None
-        short_res = None
+        long_signal = None
+        short_signal = None
 
         confirmations = self.get_indicators_confirmation(chartdata)
 
-        if (
-            check_long
-            and self.long_support_conditions.check(chartdata.candles)
-            and MarketSide.BEARISH not in confirmations
-        ):
-            long_res = self.long_signal(chartdata, second_chartdata)
+        if check_long and MarketSide.BEARISH not in confirmations:
+            long_signal = self.long_signal(chartdata, second_chartdata)
 
-        if (
-            check_short
-            and self.long_support_conditions.check(chartdata.candles)
-            and MarketSide.BULLISH not in confirmations
-        ):
-            short_res = self.short_signal(chartdata, second_chartdata)
+        if check_short and MarketSide.BULLISH not in confirmations:
+            short_signal = self.short_signal(chartdata, second_chartdata)
 
-        if long_res and short_res:
+        if long_signal and short_signal:
             logger.warning("long and short signal in same time!")
             return None
 
-        if short_res:
-            pass
+        if short_signal:
+            logger.info(f"Short Signal:{short_signal}")
+            return short_signal
 
-        if long_res:
-            pass
+        if long_signal:
+            logger.info(f"Long Signal:{long_signal}")
+            return long_signal
 
         return None
 

@@ -111,7 +111,7 @@ class Signal:
     chart: Chart
     candle: Candle
     side: MarketSide
-    source: str = "Unknown"
+    source: str
 
     def __str__(self) -> str:
         return f"{self.chart} {self.side} at {self.candle.time} from {self.source}"
