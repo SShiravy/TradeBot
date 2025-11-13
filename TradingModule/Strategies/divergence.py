@@ -2,6 +2,7 @@ from ChartModule.Indicators.models import SupportConditions, IndicatorCandleSour
 from ChartModule.models import IndicatorBaseModel, Signal, ChartData, MarketSide
 from TradingModule.Strategies.model import Strategy
 from ChartModule.Indicators import TrendLine, Line
+from ChartModule.plot import TwoChartPlot
 from dataclasses import dataclass
 from copy import copy
 import logging
@@ -24,7 +25,6 @@ class Divergence(Strategy):
         long_support_conditions=SupportConditions.RED_GREEN,
         short_support_conditions=SupportConditions.GREEN_RED,
         name="Divergence",
-        plot=True,
         inverse_diver_long: bool = False,
         inverse_diver_short: bool = False,
         long_second_line_validation: bool = True,
@@ -35,7 +35,6 @@ class Divergence(Strategy):
             confirmation_indicators,
             long_support_conditions,
             short_support_conditions,
-            plot=plot,
         )
         self.min_step = min_step
         self.max_step = max_step
@@ -170,5 +169,20 @@ class Divergence(Strategy):
     def report(self):
         return ""
 
-    def plot(self):
-        pass
+    def plot(
+        self, plot: TwoChartPlot, signal: DivergenceSignal, draw_indicators: bool = True
+    ):
+        plot.base_plot.mark_signal(signal)
+        plot.base_plot.draw_straight_line(
+            signal.base_line.start_candle,
+            signal.base_line.end_candle,
+            signal.base_line.source,
+        )
+        plot.second_plot.draw_straight_line(
+            signal.second_line.start_candle,
+            signal.second_line.end_candle,
+            signal.second_line.source,
+        )
+        if draw_indicators:
+            for indicator in self.confirmation_indicators:
+                indicator.plot(plot.base_plot)

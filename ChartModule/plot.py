@@ -139,7 +139,7 @@ class PlotChart:
 class TwoChartPlot:
     def __init__(self, base_chartdata: ChartData, second_chartdata: ChartData) -> None:
         self.base_plot = PlotChart(base_chartdata)
-        self.secondary_plot = PlotChart(second_chartdata)
+        self.second_plot = PlotChart(second_chartdata)
 
         ax1, ax2 = fplt.create_plot(
             f"TimeFrame: {base_chartdata.chart.timeframe.value}", rows=2
@@ -148,8 +148,8 @@ class TwoChartPlot:
         self.base_plot.ax = ax1
         self.base_plot.plot()
 
-        self.secondary_plot.ax = ax2
-        self.secondary_plot.plot()
+        self.second_plot.ax = ax2
+        self.second_plot.plot()
 
     def show(self):
         fplt.show()

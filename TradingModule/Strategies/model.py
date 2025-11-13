@@ -11,14 +11,11 @@ class Strategy(ABC):
         confirmation_indicators: list[IndicatorBaseModel],
         long_support_conditions: SupportConditions,
         short_support_conditions: SupportConditions,
-        plot=True,
     ) -> None:
         self.name = name
         self.confirmation_indicators = confirmation_indicators
         self.long_support_conditions = long_support_conditions
         self.short_support_conditions = short_support_conditions
-        self._plot = plot
-        self.plot_obj: PlotChart
 
     def get_indicators_confirmation(self, chartdata: ChartData) -> list[MarketSide]:
         all_forcasts = []
