@@ -17,7 +17,7 @@ class Strategy(ABC):
         self.short_support_conditions = short_support_conditions
 
     def get_indicators_confirmation(self, chartdata: ChartData) -> list[MarketSide]:
-        if self.confirmation_indicators is []:
+        if self.confirmation_indicators == []:
             return [MarketSide.NEUTRAL]
         all_forcasts = []
         for indicator in self.confirmation_indicators:
@@ -31,7 +31,6 @@ class Strategy(ABC):
         chartdata: ChartData,
         long_signal: bool = True,
         short_signal: bool = True,
-        plot_ax=None,
         *args,
         **kwargs,
     ) -> Signal | None:
@@ -42,5 +41,5 @@ class Strategy(ABC):
         pass
 
     @abstractmethod
-    def plot(self, *args, **kwargs):
+    def draw(self, plot, signal, draw_indicators, *args, **kwargs):
         pass

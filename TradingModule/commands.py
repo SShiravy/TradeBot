@@ -93,7 +93,7 @@ class OpenPosition(TradeCommand):
         entry_price = exchange.open_position(self.position)
         if entry_price:
             self.position.entry_price = entry_price
-            self.position.open_time = datetime.now(tz=timezone.utc)
+            self.position.open_time = datetime.now(timezone.utc)
             return True
         return False
 
@@ -148,9 +148,6 @@ class ClosePosition(TradeCommand):
 
 
 class StopLoss(TradeCommand):
-    def __init__(self, position: Position, n_attempts: int = 1):
-        super().__init__(position, n_attempts)
-
     def command(self, exchange: ExchangeAgent) -> bool:
         self.position.closed = datetime.now(tz=timezone.utc)
         self.position.update_pnl(self.position.stoploss)
@@ -158,9 +155,6 @@ class StopLoss(TradeCommand):
 
 
 class TakeProfit(TradeCommand):
-    def __init__(self, position: Position, n_attempts: int = 1):
-        super().__init__(position, n_attempts)
-
     def command(self, exchange: ExchangeAgent) -> bool:
         self.position.closed = datetime.now(tz=timezone.utc)
         self.position.update_pnl(self.position.takeprofit)

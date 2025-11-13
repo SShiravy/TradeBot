@@ -169,7 +169,7 @@ class Divergence(Strategy):
     def report(self):
         return ""
 
-    def plot(
+    def draw(
         self, plot: TwoChartPlot, signal: DivergenceSignal, draw_indicators: bool = True
     ):
         plot.base_plot.mark_signal(signal)

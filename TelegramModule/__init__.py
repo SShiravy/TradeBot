@@ -1,3 +1,3 @@
-from TelegramModule.telegram_bot import TelegramBot
+from TelegramModule.model import TelegramBot
 
 __all__ = ["TelegramBot"]

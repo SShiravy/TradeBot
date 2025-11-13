@@ -33,15 +33,11 @@ class PositionHandler(ABC):
 
     def generate_position(
         self, signal: Signal, entry_price: float | None = None, position_id: str = ""
-    ) -> Position | None:
+    ) -> Position:
         if signal.side is MarketSide.BEARISH:
             side = OrderSide.SELL
-        elif signal.side is MarketSide.BULLISH:
+        else:  # signal.side is MarketSide.BULLISH:
             side = OrderSide.BUY
-        else:
-            logger.warning(f"can not create position from {signal=}")
-            return None
-
         if entry_price is None:
             entry_price = signal.candle.close
 
@@ -94,11 +90,9 @@ class PositionHandler(ABC):
                 self.closed_positions.append(pos)
                 self.open_positions.remove(pos)
                 continue
-            if not pos.previous_check and pos.open_time:
+            if not pos.previous_check:
                 pos.previous_check = pos.open_time
-            else:
-                logger.warning(f"Position Doesn't have any time: {pos}")
-                continue
+
             if not symbol_chartdata_dict.get(pos.chart.symbol):
                 chartdata = self.exchange_agent.get_chartdata_since(
                     pos.chart, pos.previous_check

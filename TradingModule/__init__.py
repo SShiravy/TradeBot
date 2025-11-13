@@ -1,4 +1,4 @@
 from TradingModule.models import Position, OrderSide, ExchangeAgent
-from TradingModule.trader_bot import TraderBot, TraderBotConfig
+from TradingModule.trader_bot import TraderBot, TradeConfig
 
-__all__ = ["Position", "OrderSide", "ExchangeAgent", "TraderBot", "TraderBotConfig"]
+__all__ = ["Position", "OrderSide", "ExchangeAgent", "TraderBot", "TradeConfig"]

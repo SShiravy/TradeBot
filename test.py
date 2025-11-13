@@ -2,9 +2,10 @@
 # TODO: add if not self.check_market_open(position.chart) on begining of bot
 
 
-def test_forex_cvd():
+async def test_forex_cvd(send_img=False):
     from Forex.agent import ForexAgent
     from ChartModule import Chart, TimeFrame
+    from TradingModule import TraderBot
     from ChartModule.Indicators import (
         CVD,
         SMA,
@@ -15,9 +16,9 @@ def test_forex_cvd():
     )
     from ChartModule.plot import TwoChartPlot
 
-    chart = Chart("XAUUSD!", TimeFrame.one_minute)
+    chart = Chart("XAUUSD!", TimeFrame.five_minutes)
     agent = ForexAgent()
-    chartdata = agent.get_chartdata(chart, 300)
+    chartdata = agent.get_chartdata(chart, 200)
     if not chartdata:
         raise TypeError("No chartdata")
     two_plot = TwoChartPlot(chartdata, CVD(chart).set(chartdata.candles))
@@ -33,8 +34,12 @@ def test_forex_cvd():
         indicator.plot(two_plot.base_plot)
 
     two_plot.show()
-    two_plot.save_image(name="ForexTestCVD")
+    img_path = two_plot.save_image(name="ForexTestCVD")
+    if send_img:
+        await TraderBot().telegram_bot.send_photo_to_channel(img_path, "CVD 5m test")
 
 
 if __name__ == "__main__":
-    test_forex_cvd()
+    import asyncio
+
+    asyncio.run(test_forex_cvd(True))

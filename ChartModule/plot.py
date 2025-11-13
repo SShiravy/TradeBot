@@ -86,10 +86,10 @@ class PlotChart:
             ax=self.ax,
         )
 
-    def draw_tp_line(self, start_time: datetime, end_time: datetime, tp_price: float):
+    def draw_sl_tp_lines(
+        self, start_time: datetime, end_time: datetime, tp_price: float, sl_price: float
+    ):
         self.draw_horizontal_line(start_time, end_time, tp_price, "#09ff00b5")
-
-    def draw_sl_line(self, start_time: datetime, end_time: datetime, sl_price: float):
         self.draw_horizontal_line(start_time, end_time, sl_price, "#ff0000d5")
 
     def mark_signal(self, signal: Signal):

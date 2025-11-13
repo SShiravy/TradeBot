@@ -1,7 +1,7 @@
 from dataclasses import dataclass, asdict, field
 from abc import ABC, abstractmethod
 from datetime import datetime, timedelta
-from typing import Any
+from typing import Any, Literal
 from enum import Enum
 import pandas as pd
 
@@ -110,7 +110,7 @@ class Chart:
 class Signal:
     chart: Chart
     candle: Candle
-    side: MarketSide
+    side: Literal[MarketSide.BEARISH, MarketSide.BULLISH]
     source: str
 
     def __str__(self) -> str:

@@ -1,6 +1,8 @@
 from ChartModule import Chart, ChartData, MarketSide
+from ChartModule.plot import PlotChart
 from datetime import datetime
 from dataclasses import dataclass, field, asdict
+from datetime import timezone
 from abc import ABC, abstractmethod
 from enum import Enum
 
@@ -40,7 +42,7 @@ class Position:
     stoploss: float
     takeprofit: float
     leverage: int = 1
-    open_time: datetime | None = field(default=None)
+    open_time: datetime = field(default=datetime.now(timezone.utc))
     source: str = "Unknown"
     id: str | None = None
 
@@ -66,6 +68,16 @@ class Position:
 
     def __str__(self):
         return f"{asdict(self)}"
+
+    def draw(self, plot: PlotChart):
+        if self.closed:
+            plot.draw_sl_tp_lines(
+                self.open_time, self.closed, self.takeprofit, self.stoploss
+            )
+        else:
+            end_time = self.open_time
+            start_time = self.open_time - self.chart.timeframe.time_delta * 10
+            plot.draw_sl_tp_lines(start_time, end_time, self.takeprofit, self.stoploss)
 
 
 class ExchangeAgent(ABC):
