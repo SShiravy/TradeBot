@@ -1,6 +1,5 @@
 from ChartModule.models import IndicatorBaseModel, ChartData, Signal, MarketSide
 from ChartModule.Indicators import SupportConditions
-from ChartModule.plot import PlotChart
 from abc import ABC, abstractmethod
 
 
