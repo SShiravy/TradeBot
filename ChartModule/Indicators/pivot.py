@@ -1,5 +1,9 @@
-from ChartModule.models import IndicatorBaseModel, MarketSide, Candle
-from ChartModule.Indicators.models import IndicatorCandleSource
+from ChartModule.models import (
+    IndicatorBaseModel,
+    MarketSide,
+    Candle,
+    IndicatorCandleSource,
+)
 from ChartModule.plot import PlotChart
 import numpy as np
 

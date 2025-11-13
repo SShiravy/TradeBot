@@ -1,4 +1,12 @@
-from ChartModule.models import TimeFrame, Candle, Chart, ChartData, Signal, MarketSide
+from ChartModule.models import (
+    TimeFrame,
+    Candle,
+    Chart,
+    ChartData,
+    Signal,
+    MarketSide,
+    IndicatorCandleSource,
+)
 
 __all__ = [
     "Signal",
@@ -7,4 +15,5 @@ __all__ = [
     "Chart",
     "ChartData",
     "TimeFrame",
+    "IndicatorCandleSource",
 ]

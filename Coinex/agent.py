@@ -60,7 +60,6 @@ class CoinexAgent(ExchangeAgent):
             )
 
         chartdata = ChartData(chart, all_candles_list)
-        logger.debug(str(chartdata) + " Generated")
         return chartdata
 
     def open_position(self, position: Position):

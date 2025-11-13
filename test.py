@@ -4,7 +4,7 @@
 
 async def test_forex_cvd(send_img=False):
     from Forex.agent import ForexAgent
-    from ChartModule import Chart, TimeFrame
+    from ChartModule import Chart, TimeFrame, IndicatorCandleSource
     from TradingModule import TraderBot
     from ChartModule.Indicators import (
         CVD,
@@ -12,7 +12,6 @@ async def test_forex_cvd(send_img=False):
         EMA,
         Pivot,
         TrendLine,
-        IndicatorCandleSource,
     )
     from ChartModule.plot import TwoChartPlot
 

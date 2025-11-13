@@ -141,11 +141,3 @@ if __name__ == "__main__":
 
     other_logger = logging.getLogger("test_not_root")
     other_logger.error("not roooooottt")
-
-
-CustomLogger(
-    consol_log_level=logging.DEBUG,
-    log_file=True,
-    file_log_level=logging.DEBUG,
-    file_log_name="TelegramBot",
-)

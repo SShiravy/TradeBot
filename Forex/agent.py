@@ -61,7 +61,6 @@ class ForexAgent(ExchangeAgent):
         )
         if not last_tick_time:
             return False
-        print(last_tick_time, "|", now)
         if abs(
             last_tick_time.replace(second=0, microsecond=0)
             - now.replace(second=0, microsecond=0)
@@ -105,7 +104,6 @@ class ForexAgent(ExchangeAgent):
             )
 
         chartdata = ChartData(chart, all_candles_list)
-        logger.debug(str(chartdata) + " Generated")
 
         return chartdata
 

@@ -1,5 +1,4 @@
-from ChartModule import ChartData, Candle, Signal, MarketSide
-from ChartModule.Indicators.models import IndicatorCandleSource
+from ChartModule import ChartData, Candle, Signal, MarketSide, IndicatorCandleSource
 from datetime import datetime
 from typing import TypeAlias
 import finplot as fplt

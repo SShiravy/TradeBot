@@ -1,5 +1,11 @@
-from ChartModule.Indicators.models import SupportConditions, IndicatorCandleSource
-from ChartModule.models import IndicatorBaseModel, Signal, ChartData, MarketSide
+from ChartModule.Indicators.models import SupportConditions
+from ChartModule.models import (
+    IndicatorBaseModel,
+    Signal,
+    ChartData,
+    MarketSide,
+    IndicatorCandleSource,
+)
 from TradingModule.Strategies.model import Strategy
 from ChartModule.Indicators import TrendLine, Line
 from ChartModule.plot import TwoChartPlot
@@ -140,7 +146,7 @@ class Divergence(Strategy):
         second_chartdata: ChartData,
         check_long: bool = True,
         check_short: bool = True,
-    ) -> Signal | None:
+    ) -> DivergenceSignal | None:
         long_signal = None
         short_signal = None
 

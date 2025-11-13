@@ -1,5 +1,4 @@
-from ChartModule.models import IndicatorBaseModel, MarketSide
-from ChartModule.Indicators.models import IndicatorCandleSource
+from ChartModule.models import IndicatorBaseModel, MarketSide, IndicatorCandleSource
 from ChartModule.plot import PlotChart
 import pandas as pd
 

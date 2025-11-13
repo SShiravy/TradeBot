@@ -6,7 +6,7 @@ from ChartModule.models import Chart, Candle
 from ChartModule.plot import PlotChart
 from TelegramModule import TelegramBot
 from TradingModule import commands
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from config import settings
 import tracemalloc
 import asyncio
@@ -20,14 +20,14 @@ class TradeConfig:
     strategy: Strategy
     position_handler: PositionHandler
 
-    long_signal = True
-    short_signal = True
+    long_signal: bool = field(default=True)
+    short_signal: bool = field(default=True)
 
-    long_trade = True
-    short_trade = True
+    long_trade: bool = field(default=True)
+    short_trade: bool = field(default=True)
 
-    bar_between_signals = 2
-    send_signal = True
+    bar_between_signals: int = field(default=2)
+    send_signal: bool = field(default=True)
 
     def msg_generator(self, position: Position):
         msg_list = [
@@ -52,10 +52,12 @@ class TradeConfig:
         if jump:
             delay *= self.bar_between_signals
 
+        print(f"{delay=}\n{last_candle.time=}\n{datetime.now(timezone.utc)}\n")
+
         return (
             (delay + last_candle.time)
             - datetime.now(timezone.utc)
-            - timedelta(seconds=1)
+            + timedelta(seconds=1)
         )
 
     async def task(self, telegram_bot: TelegramBot) -> timedelta:
@@ -96,7 +98,13 @@ class TradeConfig:
         pass
 
     def __str__(self) -> str:
-        return ""
+        msg_list = [
+            str(self.chart),
+            self.agent.__class__.__name__,
+            self.strategy.name,
+            self.position_handler.__class__.__name__,
+        ]
+        return "|".join(msg_list)
 
 
 class TraderBot:
@@ -114,11 +122,13 @@ class TraderBot:
         return cls._instance
 
     async def trade_task(self, config: TradeConfig):
+        logging.debug(f"Task with config:{str(config)} initilized")
         error_number = 0
         while True:
             try:
                 sleep_time = await config.task(self.telegram_bot)
                 # TODO: Check sub chartdata in old code
+                logging.debug(sleep_time)
                 await asyncio.sleep(sleep_time.seconds)
 
             except Exception as e:
