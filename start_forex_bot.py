@@ -14,6 +14,8 @@ one_m_diver = ForexDiverTradeConfig(
     second_chart=Chart("SOLUSD", TimeFrame.one_minute),
     strategy=Divergence(3, 100, [], name="ForexDiver"),
     position_handler=SimpleForexHandler(ForexAgent()),
+    long_trade=False,
+    short_trade=False,
 )
 
 
@@ -22,6 +24,8 @@ five_m_diver = ForexDiverTradeConfig(
     second_chart=Chart("SOLUSD", TimeFrame.five_minutes),
     strategy=Divergence(3, 100, [], name="ForexDiver"),
     position_handler=SimpleForexHandler(ForexAgent()),
+    long_trade=False,
+    short_trade=False,
 )
 
 fifteen_m_diver = ForexDiverTradeConfig(
@@ -29,6 +33,8 @@ fifteen_m_diver = ForexDiverTradeConfig(
     second_chart=Chart("SOLUSD", TimeFrame.fifteen_minutes),
     strategy=Divergence(3, 100, [], name="ForexDiver"),
     position_handler=SimpleForexHandler(ForexAgent()),
+    long_trade=False,
+    short_trade=False,
 )
 
 cvd_diver = Divergence(

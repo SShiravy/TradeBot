@@ -2,10 +2,10 @@ from TradingModule import ExchangeAgent, Position, OrderSide
 from TradingModule.position_handlers import PositionHandler
 from ChartModule.models import Chart, Candle, Signal, ChartData
 from TradingModule.Strategies.model import Strategy
-from datetime import datetime, timezone, timedelta
 from ChartModule.plot import PlotChart
 from TelegramModule import TelegramBot
 from TradingModule import commands
+from datetime import datetime, timezone, timedelta
 from dataclasses import dataclass, field
 from config import settings
 import tracemalloc
@@ -129,11 +129,17 @@ class TradeConfig:
 
 
 class TraderBot:
-    def __new__(cls, name: str = "", configs: list[TradeConfig] = []):
+    def __new__(
+        cls,
+        name: str = "",
+        configs: list[TradeConfig] = [],
+        report_period=timedelta(seconds=5),
+    ):
         if not hasattr(cls, "_instance"):
             cls._instance = object.__new__(cls)
             cls.name = name
             cls.configs = configs
+            cls.report_period = report_period
             cls.telegram_bot = TelegramBot(
                 settings.TELEGRAM_BOT_TOKEN,
                 settings.TELEGRAM_CHANNEL_ID,
@@ -163,7 +169,12 @@ class TraderBot:
                     await self.telegram_bot.send_report(
                         f"3 Times Error:{e}\non {config}"
                     )
-                elif error_number > 6:
+                # Delay for one candle
+                if error_number >= 3:
+                    await asyncio.sleep(config.chart.timeframe.time_delta.seconds)
+                    continue
+
+                if error_number > 6:
                     await self.telegram_bot.send_report(
                         f"Error:{e}\non {config}\nMore Than 6 Times\nTask removed"
                     )
@@ -177,8 +188,22 @@ class TraderBot:
             elapsed_time = str(
                 datetime.now(tz=timezone.utc).replace(microsecond=0) - self._start_time
             )
-            msg = f"{self.name}\n👋🤖\nLifespan⌛:\n{elapsed_time}\nMemory📝:\n{current / 1024 / 1024:.2f} MB\npeak: {peak / 1024 / 1024:.2f} MB"
-            await self.telegram_bot.send_report(msg)
+            msg = [
+                f"{self.name}",
+                f"👋🤖\nLifespan⌛:\n{elapsed_time}",
+                f"Memory📝:\n{current / 1024 / 1024:.2f} MB\npeak: {peak / 1024 / 1024:.2f} MB",
+            ]
+            await self.telegram_bot.send_report("\n".join(msg))
+
+    async def report(self):
+        while True:
+            await asyncio.sleep(self.report_period.seconds)
+            commands_report = commands.TradeCommand.close_records()
+            await self.telegram_bot.send_report(f"{self.name}\n" + commands_report)
+            for config in self.configs:
+                report = config.position_handler.report()
+                report = f"{self.name}\n{config.strategy.name} On {str(config.chart)}\n{str(report)}"
+                await self.telegram_bot.send_message_to_channel(report)
 
     async def start(self):
         tracemalloc.start()
@@ -187,6 +212,7 @@ class TraderBot:
         )
         tasks = [self.trade_task(config) for config in self.configs]
         tasks.append(self.heartbeat())
+        tasks.append(self.report())
         # TODO: add commend execute
         # TODO: add clear and report all
         # TODO: add other handlres and add get_chartdata_since

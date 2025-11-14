@@ -62,7 +62,10 @@ class Position:
         volume = self.volume if volume is None or self.volume - volume < 0 else volume
 
         self.pnl_percent = round(
-            (self.entry_price / executed_price - 1) * 100 * self.leverage, 2
+            ((self.entry_price - executed_price) / self.entry_price)
+            * 100
+            * self.leverage,
+            2,
         )
         self.pnl = self.pnl_percent * volume
         self.volume -= volume

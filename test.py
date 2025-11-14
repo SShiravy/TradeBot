@@ -47,8 +47,15 @@ def start_backtest():
     backtest.start_backtest()
 
 
-if __name__ == "__main__":
-    start_backtest()
+async def mio():
+    from TradingModule.trader_bot import TraderBot
+    from Backtest.trade_configs import coinex_one_h_diver
 
-    # import asyncio
-    # asyncio.run(test_forex_cvd(True))
+    await TraderBot(configs=[coinex_one_h_diver]).report()
+
+
+if __name__ == "__main__":
+    # start_backtest()
+    import asyncio
+
+    asyncio.run(mio())

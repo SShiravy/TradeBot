@@ -2,12 +2,43 @@ from ChartModule import Signal, MarketSide, ChartData
 from TradingModule import Position, OrderSide, ExchangeAgent
 from TradingModule.commands import TradeCommand
 from TradingModule import commands
+from dataclasses import dataclass, field
 from abc import ABC, abstractmethod
 import numpy as np
 import logging
 
 
 logger = logging.getLogger("PositionHandler")
+
+
+@dataclass
+class PositionsReport:
+    total_position: int
+    total_closed_position: int
+    long_win: int
+    long_lose: int
+    short_win: int
+    short_lose: int
+    pnl: float
+    pnl_percent: float
+    spot_pnl: float
+    spot_pnl_percent: float
+    total_pip: float | None = field(default=None, init=False)
+
+    def __str__(self) -> str:
+        doc = [
+            f"{self.total_position} position",
+            f"{self.total_closed_position} position",
+            f"Long: {self.long_win} Win & {self.long_lose} Lose",
+            f"Short: {self.short_win} Win & {self.short_lose} Lose",
+            f"PNL = {self.pnl}",
+            f"PNL% = {self.pnl_percent}",
+            f"Spot PNL = {self.spot_pnl}",
+            f"Spot PNL% = {self.spot_pnl_percent}",
+        ]
+        if self.total_pip:
+            doc.append(f"Total pip: {self.total_pip}")
+        return "\n".join(doc)
 
 
 class PositionHandler(ABC):
@@ -107,36 +138,45 @@ class PositionHandler(ABC):
                 all_commands.append(command)
         return all_commands
 
-    def report(self) -> str:
+    def report(self) -> PositionsReport:
         total_pnl = 0.0
         total_pnl_percent = 0.0
         total_spot_pnl = 0.0
         total_spot_pnl_percent = 0.0
-        long_pos = 0
-        short_pos = 0
+        win_long_pos = 0
+        win_short_pos = 0
+        lose_long_pos = 0
+        lose_short_pos = 0
         for pos in self.closed_positions:
             total_pnl += pos.pnl
             total_pnl_percent += pos.pnl_percent
             total_spot_pnl += pos.pnl / pos.leverage
             total_spot_pnl_percent += pos.pnl_percent / pos.leverage
             if pos.side is OrderSide.BUY:
-                long_pos += 1
+                if pos.pnl > 0:
+                    win_long_pos += 1
+                elif pos.pnl < 0:
+                    lose_long_pos += 1
             else:
-                short_pos += 1
+                if pos.pnl > 0:
+                    win_short_pos += 1
+                elif pos.pnl < 0:
+                    lose_short_pos += 1
 
-        doc = [
-            self.__class__.__name__,
-            f"{len(self.open_positions) + len(self.closed_positions)} position",
-            f"{len(self.closed_positions)} closed position",
-            f"{long_pos} Long",
-            f"{short_pos} Short",
-            f"PNL = {total_pnl}",
-            f"PNL% = {total_pnl_percent}",
-            f"SPOT PNL = {total_spot_pnl}",
-            f"SPOT PNL% = {total_spot_pnl_percent}",
-        ]
+        report = PositionsReport(
+            len(self.open_positions) + len(self.closed_positions),
+            len(self.closed_positions),
+            win_long_pos,
+            lose_long_pos,
+            win_short_pos,
+            lose_short_pos,
+            total_pnl,
+            total_pnl_percent,
+            total_spot_pnl,
+            total_spot_pnl_percent,
+        )
         self.closed_positions = []
-        return "\n".join(doc)
+        return report
 
 
 # Simple ---------------------------------------------
@@ -211,6 +251,14 @@ class SimpleForexHandler(PositionHandler):
             return commands.StopLoss(position)
         else:
             return commands.TakeProfit(position)
+
+    def report(self):
+        total_pip = 0
+        for pos in self.closed_positions:
+            total_pip += pos.pnl_percent / pos.leverage / 100 * pos.entry_price
+        report = super().report()
+        report.total_pip = total_pip
+        return report
 
 
 # RiskFree---------------------------------------------
