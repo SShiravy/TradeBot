@@ -293,6 +293,10 @@ class ChartData:
         second_index = 0
         n_bar = max(len(first_chartdata), len(second_chartdata))
         for _ in range(n_bar):
+            if first_index > len(first_chartdata):
+                break
+            if second_index > len(second_chartdata):
+                break
             first_candle = first_chartdata.candles[first_index]
             second_candle = second_chartdata.candles[second_index]
             if first_candle.time < second_candle.time:

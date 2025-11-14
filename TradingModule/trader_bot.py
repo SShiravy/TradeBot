@@ -31,6 +31,8 @@ class TradeConfig:
 
     n_bar_check: int = field(default=100)
 
+    heikingashi_chartdata: bool = field(default=False)
+
     def msg_generator(self, position: Position):
         msg_list = [
             position.source,
@@ -54,7 +56,9 @@ class TradeConfig:
         if jump:
             delay *= self.bar_between_signals
 
-        print(f"{delay=}\n{last_candle.time=}\n{datetime.now(timezone.utc)}\n")
+        logging.debug(
+            f"{delay=}\n{last_candle.time=}\n{last_candle.time.astimezone(timezone.utc)=}\nnow={datetime.now(timezone.utc)}\n"
+        )
 
         return (
             (delay + last_candle.time)
@@ -66,6 +70,8 @@ class TradeConfig:
         chartdata = self.agent.get_chartdata(self.chart, n_bars=self.n_bar_check)
         if chartdata is None:
             raise ValueError(f"chart data is None from {self.agent.__name__}")
+        if self.heikingashi_chartdata:
+            chartdata = chartdata.give_heikingashi_chartdata()
         return chartdata
 
     def find_signal(
@@ -159,7 +165,7 @@ class TraderBot:
                     )
                 elif error_number > 6:
                     await self.telegram_bot.send_report(
-                        f"Error:{e}\non {config}\nMore Than 6 Times\n Task removed"
+                        f"Error:{e}\non {config}\nMore Than 6 Times\nTask removed"
                     )
                     break
                 continue
@@ -181,5 +187,7 @@ class TraderBot:
         )
         tasks = [self.trade_task(config) for config in self.configs]
         tasks.append(self.heartbeat())
-
+        # TODO: add commend execute
+        # TODO: add clear and report all
+        # TODO: add other handlres and add get_chartdata_since
         await asyncio.gather(*tasks)

@@ -1,5 +1,4 @@
 # TODO: check round with chart in creating position
-# TODO: add if not self.check_market_open(position.chart) on begining of bot
 
 
 async def test_forex_cvd(send_img=False):
@@ -28,7 +27,6 @@ async def test_forex_cvd(send_img=False):
         TrendLine(IndicatorCandleSource.Low, 4, 100),
     ]
     for indicator in all_indicators:
-        print(indicator.__class__.__name__)
         indicator.set(chartdata.candles)
         indicator.plot(two_plot.base_plot)
 

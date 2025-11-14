@@ -206,6 +206,9 @@ class DivergenceTradeConfig(TradeConfig):
 
         if base_chartdata is None or second_chartdata is None:
             raise ValueError(f"chart data is None from {self.agent.__class__.__name__}")
+        if self.heikingashi_chartdata:
+            base_chartdata = base_chartdata.give_heikingashi_chartdata()
+            second_chartdata = second_chartdata.give_heikingashi_chartdata()
         return base_chartdata, second_chartdata
 
     def find_signal(
@@ -231,7 +234,9 @@ class DivergenceTradeConfig(TradeConfig):
         base_chartdata, second_chartdata = self.get_chartdata()
 
         res = self.find_signal(base_chartdata, second_chartdata)
-
+        # TODO: remove this
+        plot = TwoChartPlot(base_chartdata, second_chartdata)
+        plot.show()
         if res is None:
             return self.give_delay(base_chartdata[-1])
 

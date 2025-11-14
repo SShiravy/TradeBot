@@ -1,6 +1,6 @@
 from Coinex import CoinexAgent
 from ChartModule import Chart, ChartData
-from TradingModule.Strategies import Divergence, DivergenceTradeConfig
+from TradingModule.Strategies.divergence import Divergence, DivergenceTradeConfig
 from dataclasses import dataclass
 
 
@@ -26,5 +26,7 @@ class CoinexDiverTradeConfig(DivergenceTradeConfig):
         second_chartdata = ChartData.generate_crosspair(
             base_chartdata, other_chartdata, crosspair_chart
         )
-
+        if self.heikingashi_chartdata:
+            base_chartdata = base_chartdata.give_heikingashi_chartdata()
+            second_chartdata = second_chartdata.give_heikingashi_chartdata()
         return base_chartdata, second_chartdata

@@ -2,7 +2,7 @@ from Forex.agent import ForexAgent
 from ChartModule.Indicators import CVD
 from ChartModule import Chart, ChartData
 from TradingModule import ExchangeAgent
-from TradingModule.Strategies import Divergence, DivergenceTradeConfig
+from TradingModule.Strategies.divergence import Divergence, DivergenceTradeConfig
 from dataclasses import dataclass, field
 
 
@@ -29,5 +29,7 @@ class CvdDiverTradeConfig(DivergenceTradeConfig):
             raise ValueError(f"chart data is None from {self.agent.__class__.__name__}")
 
         second_chartdata = CVD(self.chart).set(base_chartdata.candles)
+        if self.heikingashi_chartdata:
+            base_chartdata.give_heikingashi_chartdata()
 
         return base_chartdata, second_chartdata
