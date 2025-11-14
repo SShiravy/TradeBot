@@ -1,14 +1,15 @@
-from ChartModule.Indicators.models import SupportConditions
 from ChartModule.models import (
+    Chart,
     IndicatorBaseModel,
     Signal,
     ChartData,
     MarketSide,
     IndicatorCandleSource,
 )
-from TradingModule.Strategies.model import Strategy
-from ChartModule.Indicators import TrendLine, Line
+from ChartModule.Indicators import TrendLine, Line, SupportConditions
 from ChartModule.plot import TwoChartPlot
+from TradingModule import TradeConfig, OrderSide, commands, Position
+from TradingModule.Strategies.model import Strategy
 from dataclasses import dataclass
 from copy import copy
 import logging
@@ -16,7 +17,7 @@ import logging
 logger = logging.getLogger("Divergence")
 
 
-@dataclass(slots=True)
+@dataclass(slots=True, frozen=True)
 class DivergenceSignal(Signal):
     base_line: Line
     second_line: Line
@@ -192,3 +193,57 @@ class Divergence(Strategy):
         if draw_indicators and self.confirmation_indicators:
             for indicator in self.confirmation_indicators:
                 indicator.plot(plot.base_plot)
+
+
+@dataclass(kw_only=True)
+class DivergenceTradeConfig(TradeConfig):
+    second_chart: Chart
+    strategy: Divergence  # type: ignore[override]
+
+    def get_chartdata(self) -> tuple[ChartData, ChartData]:  # type: ignore[override]
+        base_chartdata = self.agent.get_chartdata(self.chart, self.n_bar_check)
+        second_chartdata = self.agent.get_chartdata(self.second_chart, self.n_bar_check)
+
+        if base_chartdata is None or second_chartdata is None:
+            raise ValueError(f"chart data is None from {self.agent.__class__.__name__}")
+        return base_chartdata, second_chartdata
+
+    def find_signal(
+        self, chartdata: ChartData, second_chartdata: ChartData, *args, **kwargs
+    ) -> None | tuple[DivergenceSignal, Position]:
+        signal = self.strategy.check_signal(
+            chartdata, second_chartdata, self.long_signal, self.short_signal
+        )
+        if signal is None:
+            return None
+
+        position = self.position_handler.generate_position(signal)
+
+        if (self.long_trade and position.side is OrderSide.BUY) or (
+            self.short_trade and position.side is OrderSide.SELL
+        ):
+            command = commands.OpenPosition(position)
+            command.execute(self.agent)
+
+        return signal, position
+
+    async def task(self, telegram_bot):
+        base_chartdata, second_chartdata = self.get_chartdata()
+
+        res = self.find_signal(base_chartdata, second_chartdata)
+
+        if res is None:
+            return self.give_delay(base_chartdata[-1])
+
+        signal, position = res
+
+        if self.send_signal:
+            plot = TwoChartPlot(base_chartdata, second_chartdata)
+            self.strategy.draw(plot, signal, draw_indicators=True)
+            position.draw(plot.base_plot)
+            img_path = plot.save_image()
+            await telegram_bot.send_photo_to_channel(
+                img_path, self.msg_generator(position)
+            )
+
+        return self.give_delay(signal.candle, jump=True), signal, position

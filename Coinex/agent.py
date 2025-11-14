@@ -62,6 +62,9 @@ class CoinexAgent(ExchangeAgent):
         chartdata = ChartData(chart, all_candles_list)
         return chartdata
 
+    def get_chartdata_since(self, chart: Chart, time: datetime) -> ChartData | None:
+        return super().get_chartdata_since(chart, time)
+
     def open_position(self, position: Position):
         """
         return position id if successful otherwise None

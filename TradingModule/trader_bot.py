@@ -1,8 +1,8 @@
 from TradingModule import ExchangeAgent, Position, OrderSide
 from TradingModule.position_handlers import PositionHandler
+from ChartModule.models import Chart, Candle, Signal, ChartData
 from TradingModule.Strategies.model import Strategy
 from datetime import datetime, timezone, timedelta
-from ChartModule.models import Chart, Candle
 from ChartModule.plot import PlotChart
 from TelegramModule import TelegramBot
 from TradingModule import commands
@@ -28,6 +28,8 @@ class TradeConfig:
 
     bar_between_signals: int = field(default=2)
     send_signal: bool = field(default=True)
+
+    n_bar_check: int = field(default=100)
 
     def msg_generator(self, position: Position):
         msg_list = [
@@ -60,16 +62,20 @@ class TradeConfig:
             + timedelta(seconds=1)
         )
 
-    async def task(self, telegram_bot: TelegramBot) -> timedelta:
-        chartdata = self.agent.get_chartdata(self.chart, n_bars=200)
+    def get_chartdata(self) -> ChartData:
+        chartdata = self.agent.get_chartdata(self.chart, n_bars=self.n_bar_check)
         if chartdata is None:
             raise ValueError(f"chart data is None from {self.agent.__name__}")
+        return chartdata
 
+    def find_signal(
+        self, chartdata: ChartData, *args, **kwargs
+    ) -> None | tuple[Signal, Position]:
         signal = self.strategy.check_signal(
             chartdata, self.long_signal, self.short_signal
         )
         if signal is None:
-            return self.give_delay(chartdata[-1])
+            return None
 
         position = self.position_handler.generate_position(signal)
 
@@ -78,7 +84,16 @@ class TradeConfig:
         ):
             command = commands.OpenPosition(position)
             command.execute(self.agent)
+        return signal, position
 
+    async def task(
+        self, telegram_bot: TelegramBot
+    ) -> timedelta | tuple[timedelta, Signal, Position]:
+        chartdata = self.get_chartdata()
+        res = self.find_signal(chartdata)
+        if res is None:
+            return self.give_delay(chartdata[-1])
+        signal, position = res
         if self.send_signal:
             plot = PlotChart(chartdata)
             self.strategy.draw(plot, signal, draw_indicators=True)
@@ -88,7 +103,7 @@ class TradeConfig:
                 img_path, self.msg_generator(position)
             )
 
-        return self.give_delay(signal.candle, jump=True)
+        return self.give_delay(signal.candle, jump=True), signal, position
 
     def save_as_json(self, name: str):
         # TODO: merge all sub obj attr in a single dict
@@ -126,7 +141,11 @@ class TraderBot:
         error_number = 0
         while True:
             try:
-                sleep_time = await config.task(self.telegram_bot)
+                res = await config.task(self.telegram_bot)
+                if isinstance(res, timedelta):
+                    sleep_time = res
+                else:
+                    sleep_time = res[0]
                 # TODO: Check sub chartdata in old code
                 logging.debug(sleep_time)
                 await asyncio.sleep(sleep_time.seconds)

@@ -66,7 +66,7 @@ class MarketSide(Enum):
     NEUTRAL = "Neutral"
 
 
-@dataclass(slots=True)
+@dataclass(slots=True, frozen=True)
 class Candle:
     open: float
     close: float
@@ -106,7 +106,7 @@ class Chart:
         return f"{self.symbol}_{self.timeframe}"
 
 
-@dataclass(slots=True)
+@dataclass(slots=True, frozen=True)
 class Signal:
     chart: Chart
     candle: Candle
@@ -282,6 +282,39 @@ class ChartData:
         return df
 
     @classmethod
-    def give_crosspair(cls, first_chartdata, second_chartdata):
-        # TODO: complete this section
-        pass
+    def generate_crosspair(
+        cls,
+        first_chartdata: "ChartData",
+        second_chartdata: "ChartData",
+        crosspair_chart: Chart,
+    ):
+        all_candles_list = []
+        first_index = 0
+        second_index = 0
+        n_bar = max(len(first_chartdata), len(second_chartdata))
+        for _ in range(n_bar):
+            first_candle = first_chartdata.candles[first_index]
+            second_candle = second_chartdata.candles[second_index]
+            if first_candle.time < second_candle.time:
+                first_index += 1
+                continue
+            if second_candle.time < first_candle.time:
+                second_index += 1
+                continue
+
+            all_candles_list.append(
+                Candle(
+                    first_candle.open / second_candle.open,
+                    first_candle.close / second_candle.close,
+                    first_candle.high / second_candle.high,
+                    first_candle.low / second_candle.low,
+                    min(first_candle.volume, second_candle.volume),
+                    first_candle.time,
+                    timeframe=crosspair_chart.timeframe,
+                )
+            )
+            first_index += 1
+            second_index += 1
+
+        crosspair_candlestick = ChartData(crosspair_chart, all_candles_list)
+        return crosspair_candlestick
