@@ -1,4 +1,7 @@
 # TODO: check round with chart in creating position
+from custom_logger import CustomLogger
+
+CustomLogger(True)
 
 
 async def test_forex_cvd(send_img=False):
@@ -36,7 +39,16 @@ async def test_forex_cvd(send_img=False):
         await TraderBot().telegram_bot.send_photo_to_channel(img_path, "CVD 5m test")
 
 
-if __name__ == "__main__":
-    import asyncio
+def start_backtest():
+    from Backtest import Backtest
+    from Backtest.trade_configs import coinex_one_h_diver
 
-    asyncio.run(test_forex_cvd(True))
+    backtest = Backtest(coinex_one_h_diver, 1000)
+    backtest.start_backtest()
+
+
+if __name__ == "__main__":
+    start_backtest()
+
+    # import asyncio
+    # asyncio.run(test_forex_cvd(True))

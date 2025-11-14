@@ -11,8 +11,10 @@ class CoinexDiverTradeConfig(DivergenceTradeConfig):
     strategy: Divergence  # type: ignore[override]
 
     def get_chartdata(self) -> tuple[ChartData, ChartData]:  # type: ignore[override]
-        base_chartdata = self.agent.get_chartdata(self.chart, self.n_bar_check)
-        other_chartdata = self.agent.get_chartdata(self.second_chart, self.n_bar_check)
+        base_chartdata = self.agent.get_chartdata(self.chart, self.n_candle_check)
+        other_chartdata = self.agent.get_chartdata(
+            self.second_chart, self.n_candle_check
+        )
 
         if base_chartdata is None or other_chartdata is None:
             raise ValueError(f"chart data is None from {self.agent.__class__.__name__}")

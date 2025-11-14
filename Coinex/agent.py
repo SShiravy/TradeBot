@@ -21,7 +21,7 @@ class CoinexAgent(ExchangeAgent):
         chart.precision = info[0]["quote_ccy_precision"]
         return True
 
-    def get_chartdata(self, chart: Chart, n_bars: int = 100) -> ChartData | None:
+    def get_chartdata(self, chart: Chart, n_bars=100) -> ChartData | None:
         timeframe = coinex_timeframe_mapper(chart.timeframe)
         if not timeframe:
             logger.error(f"{chart.timeframe.value} not exist in coinex api")

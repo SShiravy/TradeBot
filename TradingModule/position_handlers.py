@@ -107,6 +107,37 @@ class PositionHandler(ABC):
                 all_commands.append(command)
         return all_commands
 
+    def report(self) -> str:
+        total_pnl = 0.0
+        total_pnl_percent = 0.0
+        total_spot_pnl = 0.0
+        total_spot_pnl_percent = 0.0
+        long_pos = 0
+        short_pos = 0
+        for pos in self.closed_positions:
+            total_pnl += pos.pnl
+            total_pnl_percent += pos.pnl_percent
+            total_spot_pnl += pos.pnl / pos.leverage
+            total_spot_pnl_percent += pos.pnl_percent / pos.leverage
+            if pos.side is OrderSide.BUY:
+                long_pos += 1
+            else:
+                short_pos += 1
+
+        doc = [
+            self.__class__.__name__,
+            f"{len(self.open_positions) + len(self.closed_positions)} position",
+            f"{len(self.closed_positions)} closed position",
+            f"{long_pos} Long",
+            f"{short_pos} Short",
+            f"PNL = {total_pnl}",
+            f"PNL% = {total_pnl_percent}",
+            f"SPOT PNL = {total_spot_pnl}",
+            f"SPOT PNL% = {total_spot_pnl_percent}",
+        ]
+        self.closed_positions = []
+        return "\n".join(doc)
+
 
 # Simple ---------------------------------------------
 

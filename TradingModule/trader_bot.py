@@ -29,7 +29,7 @@ class TradeConfig:
     bar_between_signals: int = field(default=2)
     send_signal: bool = field(default=True)
 
-    n_bar_check: int = field(default=100)
+    n_candle_check: int = field(default=100)
 
     heikingashi_chartdata: bool = field(default=False)
 
@@ -67,7 +67,7 @@ class TradeConfig:
         )
 
     def get_chartdata(self) -> ChartData:
-        chartdata = self.agent.get_chartdata(self.chart, n_bars=self.n_bar_check)
+        chartdata = self.agent.get_chartdata(self.chart, n_bars=self.n_candle_check)
         if chartdata is None:
             raise ValueError(f"chart data is None from {self.agent.__name__}")
         if self.heikingashi_chartdata:
@@ -190,4 +190,5 @@ class TraderBot:
         # TODO: add commend execute
         # TODO: add clear and report all
         # TODO: add other handlres and add get_chartdata_since
+        # TODO: delay after error on config task
         await asyncio.gather(*tasks)

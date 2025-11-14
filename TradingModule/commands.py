@@ -74,14 +74,10 @@ class TradeCommand(ABC):
 
     @classmethod
     def close_records(cls):
-        msg = f"Trade Commands' Record:\n\
-                {len(cls.all_executed_commands)} Executed\n\
-                {len(cls.all_failed_commands)} Failed\n\
-                {len(cls.all_pending_commands)} still Pending"
+        msg = f"Trade Commands' Record:\n{len(cls.all_executed_commands)} Executed\n{len(cls.all_failed_commands)} Failed\n{len(cls.all_pending_commands)} still Pending"
 
         cls.all_executed_commands = []
         cls.all_failed_commands = []
-        logger.debug(msg)
         return msg
 
 

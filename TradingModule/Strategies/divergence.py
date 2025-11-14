@@ -85,7 +85,7 @@ class Divergence(Strategy):
             ):
                 return base_chart_line, second_chart_line
 
-    def long_signal(self, base_chartdata: ChartData, second_chartdata):
+    def check_long_signal(self, base_chartdata: ChartData, second_chartdata: ChartData):
         if not self.long_support_conditions.check(base_chartdata.candles):
             return None
         res = self.find_divergence(
@@ -113,7 +113,9 @@ class Divergence(Strategy):
         )
         return signal
 
-    def short_signal(self, base_chartdata: ChartData, second_chartdata):
+    def check_short_signal(
+        self, base_chartdata: ChartData, second_chartdata: ChartData
+    ):
         if not self.long_support_conditions.check(base_chartdata.candles):
             return None
         res = self.find_divergence(
@@ -154,10 +156,10 @@ class Divergence(Strategy):
         confirmations = self.get_indicators_confirmation(chartdata)
 
         if check_long and MarketSide.BEARISH not in confirmations:
-            long_signal = self.long_signal(chartdata, second_chartdata)
+            long_signal = self.check_long_signal(chartdata, second_chartdata)
 
         if check_short and MarketSide.BULLISH not in confirmations:
-            short_signal = self.short_signal(chartdata, second_chartdata)
+            short_signal = self.check_short_signal(chartdata, second_chartdata)
 
         if long_signal and short_signal:
             logger.warning("long and short signal in same time!")
@@ -201,8 +203,10 @@ class DivergenceTradeConfig(TradeConfig):
     strategy: Divergence  # type: ignore[override]
 
     def get_chartdata(self) -> tuple[ChartData, ChartData]:  # type: ignore[override]
-        base_chartdata = self.agent.get_chartdata(self.chart, self.n_bar_check)
-        second_chartdata = self.agent.get_chartdata(self.second_chart, self.n_bar_check)
+        base_chartdata = self.agent.get_chartdata(self.chart, self.n_candle_check)
+        second_chartdata = self.agent.get_chartdata(
+            self.second_chart, self.n_candle_check
+        )
 
         if base_chartdata is None or second_chartdata is None:
             raise ValueError(f"chart data is None from {self.agent.__class__.__name__}")

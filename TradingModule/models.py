@@ -4,6 +4,7 @@ from datetime import datetime
 from dataclasses import dataclass, field, asdict
 from datetime import timezone
 from abc import ABC, abstractmethod
+from typing import Any
 from enum import Enum
 
 
@@ -106,7 +107,7 @@ class ExchangeAgent(ABC):
         pass
 
     @abstractmethod
-    def get_open_positions(self, chart: Chart):
+    def get_open_positions(self, chart: Chart) -> Any:
         pass
 
     @abstractmethod
