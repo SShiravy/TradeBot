@@ -60,7 +60,7 @@ class Divergence(Strategy):
         second_line_validation: bool = True,
     ) -> tuple[Line, Line] | None:
         direction = -1 if inverse else 1
-        trendline.set(base_chartdata.candles)
+        trendline.set(base_chartdata.candles[:-1])
         all_lines = copy(trendline.values)  # type: list[Line]
         for base_chart_line in all_lines:
             start_candle_index = base_chartdata.index(base_chart_line.start_candle)
@@ -69,6 +69,8 @@ class Divergence(Strategy):
                 second_chart_line = trendline.valid_trendline(
                     second_chartdata.candles, start_candle_index, end_candle_index
                 )
+                if second_chart_line is None:
+                    continue
             else:
                 second_chart_line = Line(
                     trendline.source,
@@ -76,12 +78,9 @@ class Divergence(Strategy):
                     second_chartdata[end_candle_index],
                 )
 
-            if second_chart_line is None:
-                continue
-
             if (
-                base_chart_line.slope * direction > 0
-                and second_chart_line.slope * direction < 0
+                base_chart_line.slope * direction < 0
+                and second_chart_line.slope * direction > 0
             ):
                 return base_chart_line, second_chart_line
 
@@ -105,7 +104,7 @@ class Divergence(Strategy):
         base_line, second_line = res
         signal = DivergenceSignal(
             base_chartdata.chart,
-            base_line.end_candle,
+            base_chartdata[-1],
             MarketSide.BULLISH,
             self.name,
             base_line,
@@ -135,7 +134,7 @@ class Divergence(Strategy):
         base_line, second_line = res
         signal = DivergenceSignal(
             base_chartdata.chart,
-            base_line.end_candle,
+            base_chartdata[-1],
             MarketSide.BEARISH,
             self.name,
             base_line,
@@ -229,8 +228,8 @@ class DivergenceTradeConfig(TradeConfig):
         if (self.long_trade and position.side is OrderSide.BUY) or (
             self.short_trade and position.side is OrderSide.SELL
         ):
-            command = commands.OpenPosition(position)
-            command.execute(self.agent)
+            command = commands.OpenPosition(position, self.agent)
+            command.execute()
 
         return signal, position
 

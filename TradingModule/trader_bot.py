@@ -88,8 +88,8 @@ class TradeConfig:
         if (self.long_trade and position.side is OrderSide.BUY) or (
             self.short_trade and position.side is OrderSide.SELL
         ):
-            command = commands.OpenPosition(position)
-            command.execute(self.agent)
+            command = commands.OpenPosition(position, self.agent)
+            command.execute()
         return signal, position
 
     async def task(
@@ -133,7 +133,7 @@ class TraderBot:
         cls,
         name: str = "",
         configs: list[TradeConfig] = [],
-        report_period=timedelta(seconds=5),
+        report_period=timedelta(hours=12),
     ):
         if not hasattr(cls, "_instance"):
             cls._instance = object.__new__(cls)

@@ -11,10 +11,12 @@ import logging
 logger = logging.getLogger("PositionHandler")
 
 
-@dataclass
+@dataclass(slots=True)
 class PositionsReport:
-    total_position: int
     total_closed_position: int
+    total_open_positions: int
+    long_zero_pnl: int
+    short_zero_pnl: int
     long_win: int
     long_lose: int
     short_win: int
@@ -27,17 +29,17 @@ class PositionsReport:
 
     def __str__(self) -> str:
         doc = [
-            f"{self.total_position} position",
-            f"{self.total_closed_position} position",
-            f"Long: {self.long_win} Win & {self.long_lose} Lose",
-            f"Short: {self.short_win} Win & {self.short_lose} Lose",
-            f"PNL = {self.pnl}",
-            f"PNL% = {self.pnl_percent}",
-            f"Spot PNL = {self.spot_pnl}",
-            f"Spot PNL% = {self.spot_pnl_percent}",
+            f"{self.total_closed_position} Closed Position",
+            f"{self.total_open_positions} position still open",
+            f"Long: {self.long_win} Win & {self.long_lose} Lose & {self.long_zero_pnl} Flat",
+            f"Short: {self.short_win} Win & {self.short_lose} Lose & {self.short_zero_pnl} Flat",
+            f"PNL = {round(self.pnl, 4)}",
+            f"PNL% = {round(self.pnl_percent, 4)}",
+            f"Spot PNL = {round(self.spot_pnl, 4)}",
+            f"Spot PNL% = {round(self.spot_pnl_percent, 4)}",
         ]
         if self.total_pip:
-            doc.append(f"Total pip: {self.total_pip}")
+            doc.append(f"Total pip: {round(self.total_pip, 2)}")
         return "\n".join(doc)
 
 
@@ -87,7 +89,8 @@ class PositionHandler(ABC):
             position_id,
         )
         self.open_positions.append(position)
-        logger.info(f"New Position Created: {position}")
+        logger.info(f"New Position on {position.chart}")
+        logger.debug(f"The New Position {position}")
         return position
 
     @abstractmethod
@@ -147,6 +150,8 @@ class PositionHandler(ABC):
         win_short_pos = 0
         lose_long_pos = 0
         lose_short_pos = 0
+        zero_pnl_long = 0
+        zero_pnl_short = 0
         for pos in self.closed_positions:
             total_pnl += pos.pnl
             total_pnl_percent += pos.pnl_percent
@@ -157,15 +162,22 @@ class PositionHandler(ABC):
                     win_long_pos += 1
                 elif pos.pnl < 0:
                     lose_long_pos += 1
+                else:
+                    zero_pnl_long += 1
+
             else:
                 if pos.pnl > 0:
                     win_short_pos += 1
                 elif pos.pnl < 0:
                     lose_short_pos += 1
+                else:
+                    zero_pnl_short += 1
 
         report = PositionsReport(
-            len(self.open_positions) + len(self.closed_positions),
             len(self.closed_positions),
+            len(self.open_positions),
+            zero_pnl_long,
+            zero_pnl_short,
             win_long_pos,
             lose_long_pos,
             win_short_pos,
@@ -213,9 +225,9 @@ class SimpleCryptoHandler(PositionHandler):
             return None
         idx = np.argmax(cross)
         if ticks[idx] <= position.stoploss:
-            return commands.StopLoss(position)
+            return commands.StopLoss(position, self.exchange_agent)
         else:
-            return commands.TakeProfit(position)
+            return commands.TakeProfit(position, self.exchange_agent)
 
 
 class SimpleForexHandler(PositionHandler):
@@ -248,14 +260,14 @@ class SimpleForexHandler(PositionHandler):
             return None
         idx = np.argmax(cross)
         if ticks[idx] <= position.stoploss:
-            return commands.StopLoss(position)
+            return commands.StopLoss(position, self.exchange_agent)
         else:
-            return commands.TakeProfit(position)
+            return commands.TakeProfit(position, self.exchange_agent)
 
     def report(self):
         total_pip = 0
         for pos in self.closed_positions:
-            total_pip += pos.pnl_percent / pos.leverage / 100 * pos.entry_price
+            total_pip += pos.pnl_in_pip
         report = super().report()
         report.total_pip = total_pip
         return report
@@ -268,7 +280,7 @@ class RiskFreeCrypto(SimpleCryptoHandler):
     def __init__(
         self,
         exchange_agent: ExchangeAgent,
-        initial_volume: float = 0.0,
+        initial_volume: float = 0.05,
         leverage: int = 1,
         stoploss_percent: int = 5,
         takeprofit_percent: int = 5,
@@ -306,11 +318,13 @@ class RiskFreeCrypto(SimpleCryptoHandler):
             return None
         idx = np.argmax(cross)
         if ticks[idx] <= position.stoploss:
-            return commands.StopLoss(position)
+            return commands.StopLoss(position, self.exchange_agent)
         elif ticks[idx] >= tp:
-            return commands.TakeProfit(position)
+            return commands.TakeProfit(position, self.exchange_agent)
         elif ticks[idx] >= trigger:
-            return commands.TrailStoploss(position, position.entry_price)
+            return commands.TrailStoploss(
+                position, self.exchange_agent, position.entry_price
+            )
 
 
 class RiskFreeForex(SimpleForexHandler):
@@ -343,13 +357,17 @@ class RiskFreeForex(SimpleForexHandler):
         sl = position.stoploss * direction
         tp = position.takeprofit * direction
         trigger = self.riskfree_trigger_price(position) * direction
-        cross = np.logical_or(ticks <= sl, ticks >= tp, ticks >= trigger)
+        cross = np.logical_or(ticks <= sl, ticks >= trigger, ticks >= tp)
         if not cross.any():
             return None
+
         idx = np.argmax(cross)
+
         if ticks[idx] <= position.stoploss:
-            return commands.StopLoss(position)
+            return commands.StopLoss(position, self.exchange_agent)
         elif ticks[idx] >= tp:
-            return commands.TakeProfit(position)
+            return commands.TakeProfit(position, self.exchange_agent)
         elif ticks[idx] >= trigger:
-            return commands.TrailStoploss(position, position.entry_price)
+            return commands.TrailStoploss(
+                position, self.exchange_agent, position.entry_price
+            )

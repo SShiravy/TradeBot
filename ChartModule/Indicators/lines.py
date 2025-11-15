@@ -20,10 +20,10 @@ class Line:
 
     @property
     def slope(self) -> float:
-        slope = (self.source(self.end_candle) - self.source(self.start_candle)) / (
-            self.end_candle.time.timestamp() - self.start_candle.time.timestamp()
-        )
-        return round(slope, 3)
+        slope = round(
+            self.source(self.end_candle) - self.source(self.start_candle), 10
+        ) / (self.end_candle.time.timestamp() - self.start_candle.time.timestamp())
+        return slope
 
     def direction(self) -> MarketSide:
         if not self.start_candle or not self.end_candle:
@@ -99,11 +99,11 @@ class TrendLine(IndicatorBaseModel):
             elif self.source == IndicatorCandleSource.High:
                 candle_source = IndicatorCandleSource.Top
 
-        for candle in self.candles[-2::-1]:
+        for candle in self.candles[-self.min_step : -self.max_step : -1]:
             candle_index = self.candles.index(candle)
             if len_candles - candle_index > self.max_step:
                 break
-            if not self.support_conditions.check(self.candles[: candle_index + 1]):
+            if not self.support_conditions.check(self.candles[: candle_index + 2]):
                 continue
 
             source_list.append(candle_source(candle))
@@ -120,7 +120,6 @@ class TrendLine(IndicatorBaseModel):
             if np.any(np.array(source_list) - expected_low < 0):
                 # invalid (line crossed candles)
                 continue
-
             lines.append(the_line)
 
         return lines

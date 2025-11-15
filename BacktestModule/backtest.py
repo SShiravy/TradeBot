@@ -1,7 +1,7 @@
 from ChartModule import ChartData, Chart, Signal
 from ChartModule.plot import PlotChart, TwoChartPlot
 from TradingModule import TradeConfig, ExchangeAgent, Position
-from TradingModule.commands import TradeCommand
+from TradingModule import commands
 from TradingModule.Strategies.divergence import DivergenceTradeConfig, DivergenceSignal
 from datetime import datetime, timezone
 import logging
@@ -24,6 +24,8 @@ class DummyAgent(ExchangeAgent):
         return self.get_chartdata_since(chart, time)
 
     def open_position(self, position: Position) -> float | None:
+        last_pos_id = len(Backtest.all_positions)
+        position.id = last_pos_id + 1  # type: ignore
         return position.entry_price
 
     def get_open_positions(self, chart: Chart):
@@ -52,6 +54,8 @@ class Backtest:
             config.agent = dummy_agent
             cls.len_sub_data = len_sub_data if len_sub_data else config.n_candle_check
             config.n_candle_check = n_bar
+            config.long_trade = False
+            config.short_trade = False
             cls.config = config
             cls.n_bar = n_bar
             cls.current_price = 0.0
@@ -63,27 +67,42 @@ class Backtest:
     def diver_backtest(self, show_image=True):
         if not isinstance(self.config, DivergenceTradeConfig):
             return
+        jump = 0
         base_chartdata, second_chartdata = self.config.get_chartdata()
-        for i in range(self.len_sub_data, len(base_chartdata) - 1):
-            sub_base_data = ChartData(
+        for i in range(self.len_sub_data, len(base_chartdata) - 2):
+            base_sub_data = ChartData(
                 base_chartdata.chart, base_chartdata[:i], base_chartdata.indicators
             )
-            sub_seocnd_data = ChartData(
+            seocnd_sub_data = ChartData(
                 second_chartdata.chart,
                 second_chartdata[:i],
                 second_chartdata.indicators,
             )
 
-            self.current_price = base_chartdata[i + 1]
+            candle = base_chartdata[i]
+            self.current_price = candle.open
+            for pos in self.config.position_handler.open_positions:
+                if pos.closed:
+                    self.config.position_handler.closed_positions.append(pos)
+                    self.config.position_handler.open_positions.remove(pos)
+                    continue
+                self.config.position_handler.handler(
+                    pos, [candle.open, candle.high, candle.low, candle.high]
+                )
+            commands.TradeCommand.execute_pending_commands(candle.time)
 
-            TradeCommand.execute_pending_commands(self.config.agent)
-
-            res = self.config.find_signal(sub_base_data, sub_seocnd_data)
+            if jump > 0:
+                jump -= 1
+                continue
+            res = self.config.find_signal(base_sub_data, seocnd_sub_data)
             if res is None:
                 continue
+            jump = self.config.bar_between_signals
             signal, position = res
             self.all_signals.append(signal)
             self.all_positions.append(position)
+            open = commands.OpenPosition(position, self.config.agent)
+            open.execute(candle.time)
 
         plot = TwoChartPlot(base_chartdata, second_chartdata)
         for signal in self.all_signals:
@@ -96,9 +115,9 @@ class Backtest:
             f"backtest_{str(self.config.chart)}{str(self.config.strategy.name)}",
             path="Backtest/Images/",
         )
-        commands_report = TradeCommand.close_records()
+        commands_report = commands.TradeCommand.close_records()
         positions_report = self.config.position_handler.report()
-        logger.info("Result:\n\n" + commands_report + "\n\n" + positions_report)
+        logger.info("Result:\n\n" + commands_report + "\n\n" + str(positions_report))
         if show_image:
             plot.show()
         return commands_report, positions_report, img_path
@@ -110,7 +129,7 @@ class Backtest:
         for i in range(self.len_sub_data, len(chartdata) - 1):
             sub_data = chartdata[:i]
             self.current_price = chartdata[i + 1]
-            TradeCommand.execute_pending_commands(self.config.agent)
+            commands.TradeCommand.execute_pending_commands(chartdata[i].time)
 
             res = self.config.find_signal(sub_data)
             if res is None:
@@ -130,9 +149,9 @@ class Backtest:
             f"backtest_{str(self.config.chart)}{str(self.config.strategy.name)}",
             path="Backtest/Images/",
         )
-        commands_report = TradeCommand.close_records()
+        commands_report = commands.TradeCommand.close_records()
         positions_report = self.config.position_handler.report()
-        logger.info(commands_report + "\n\n" + positions_report)
+        logger.info(commands_report + "\n\n" + str(positions_report))
         if show_image:
             plot.show()
         return commands_report, positions_report, img_path

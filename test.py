@@ -1,7 +1,8 @@
 # TODO: check round with chart in creating position
 from custom_logger import CustomLogger
+import logging
 
-CustomLogger(True)
+CustomLogger(True, consol_log_level=logging.INFO)
 
 
 async def test_forex_cvd(send_img=False):
@@ -40,22 +41,15 @@ async def test_forex_cvd(send_img=False):
 
 
 def start_backtest():
-    from Backtest import Backtest
-    from Backtest.trade_configs import coinex_one_h_diver
+    from BacktestModule import Backtest
+    from BacktestModule.forex_configs import forex_fifteen_m_diver
 
-    backtest = Backtest(coinex_one_h_diver, 1000)
-    backtest.start_backtest()
-
-
-async def mio():
-    from TradingModule.trader_bot import TraderBot
-    from Backtest.trade_configs import coinex_one_h_diver
-
-    await TraderBot(configs=[coinex_one_h_diver]).report()
+    backtest = Backtest(forex_fifteen_m_diver, 1000)
+    backtest.start_backtest(show_image=True)
 
 
 if __name__ == "__main__":
-    # start_backtest()
-    import asyncio
+    start_backtest()
+    # import asyncio
 
-    asyncio.run(mio())
+    # asyncio.run(mio())

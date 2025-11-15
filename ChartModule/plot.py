@@ -51,6 +51,16 @@ class PlotChart:
 
         return image_path_name
 
+    def draw_line(self, x1, y1, x2, y2, color="#cb00e2"):
+        fplt.add_line(
+            (x1, y1),
+            (x2, y2),
+            color=color,
+            width=1,
+            interactive=False,
+            ax=self.ax,
+        )
+
     def draw_straight_line(
         self, start_candle: Candle, end_candle: Candle, source: IndicatorCandleSource
     ):
@@ -100,7 +110,7 @@ class PlotChart:
                 color="#1DBD1D",
                 width=3,
                 ax=self.ax,
-                legend=signal.source + "_Signal",
+                # legend=signal.source + "_Signal",
             )
         else:
             fplt.plot(
@@ -110,7 +120,7 @@ class PlotChart:
                 color="#BD1D1D",
                 width=3,
                 ax=self.ax,
-                legend=signal.source + "_Signal",
+                # legend=signal.source + "_Signal",
             )
 
     def mark_candle(

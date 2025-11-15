@@ -49,8 +49,10 @@ class Position:
 
     closed: datetime | None = field(default=None, init=False)
     previous_check: datetime | None = field(default=None, init=False)
+    last_update: datetime | None = field(default=None, init=False)
     pnl: float = field(default=0.0, init=False)
     pnl_percent: float = field(default=0, init=False)
+    pnl_in_pip: float = field(default=0, init=False)
 
     def update_pnl(self, executed_price: float, volume: float | None = None):
         """
@@ -60,14 +62,15 @@ class Position:
         if self.volume < 0:
             return
         volume = self.volume if volume is None or self.volume - volume < 0 else volume
-
+        direction = 1 if self.side is OrderSide.BUY else -1
         self.pnl_percent = round(
-            ((self.entry_price - executed_price) / self.entry_price)
+            ((executed_price - self.entry_price) * direction / self.entry_price)
             * 100
             * self.leverage,
             2,
         )
         self.pnl = self.pnl_percent * volume
+        self.pnl_in_pip += (executed_price - self.entry_price) * direction
         self.volume -= volume
 
     def __str__(self):
@@ -76,12 +79,50 @@ class Position:
     def draw(self, plot: PlotChart):
         if self.closed:
             plot.draw_sl_tp_lines(
-                self.open_time, self.closed, self.takeprofit, self.stoploss
+                self.last_update if self.last_update else self.open_time,
+                self.closed,
+                self.takeprofit,
+                self.stoploss,
             )
+            if self.last_update:
+                plot.draw_line(
+                    self.open_time,
+                    self.entry_price,
+                    self.last_update,
+                    self.stoploss,
+                    "#e20000",
+                )
+                plot.draw_line(
+                    self.open_time,
+                    self.entry_price,
+                    self.last_update,
+                    self.takeprofit,
+                    "#00e208",
+                )
+            else:
+                plot.draw_line(
+                    self.open_time,
+                    self.entry_price,
+                    self.open_time,
+                    self.stoploss,
+                    "#e20000",
+                )
+                plot.draw_line(
+                    self.open_time,
+                    self.entry_price,
+                    self.open_time,
+                    self.takeprofit,
+                    "#2de200",
+                )
+
         else:
-            end_time = self.open_time
             start_time = self.open_time - self.chart.timeframe.time_delta * 10
-            plot.draw_sl_tp_lines(start_time, end_time, self.takeprofit, self.stoploss)
+            plot.draw_sl_tp_lines(
+                start_time,
+                self.last_update if self.last_update else self.open_time,
+                self.takeprofit,
+                self.stoploss,
+            )
 
 
 class ExchangeAgent(ABC):
@@ -106,6 +147,7 @@ class ExchangeAgent(ABC):
         """
         return executed price if successful otherwise None
         its better to update position id to executed order price
+        and position open_time
         """
         pass
 
