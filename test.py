@@ -3,11 +3,12 @@ import logging
 
 CustomLogger(True, consol_log_level=logging.INFO)
 
+
 def start_backtest():
     from BacktestModule import Backtest
-    from BacktestModule.forex_configs import forex_five_m_cvd
+    from BacktestModule.coinex_configs import coinex_five_m_diver
 
-    backtest = Backtest(forex_five_m_cvd, 500)
+    backtest = Backtest(coinex_five_m_diver, 500)
     backtest.start_backtest(show_image=True)
 
 

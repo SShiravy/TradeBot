@@ -115,7 +115,7 @@ class Divergence(Strategy):
     def check_short_signal(
         self, base_chartdata: ChartData, second_chartdata: ChartData
     ):
-        if not self.long_support_conditions.check(base_chartdata.candles):
+        if not self.short_support_conditions.check(base_chartdata.candles):
             return None
         res = self.find_divergence(
             TrendLine(

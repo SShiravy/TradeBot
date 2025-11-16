@@ -98,11 +98,18 @@ class PositionHandler(ABC):
     def handler(
         self, position: Position, tick_prices: list[float]
     ) -> TradeCommand | None:
-        """
-        every tick price after position.previous_check
-        all logic of Position Handlers will develop here
-        """
-        pass
+        direction = position.side.factor()
+        ticks = np.array(tick_prices) * direction
+        sl = position.stoploss * direction
+        tp = position.takeprofit * direction
+        cross = np.logical_or(ticks <= sl, ticks >= tp)
+        if not cross.any():
+            return None
+        idx = np.argmax(cross)
+        if ticks[idx] <= sl:
+            return commands.StopLoss(position, self.exchange_agent)
+        else:
+            return commands.TakeProfit(position, self.exchange_agent)
 
     def candles_check(
         self, candles: list[Candle], position: Position
@@ -217,22 +224,6 @@ class SimpleCryptoHandler(PositionHandler):
     def init_takeprofit(self, entry_price: float, side: OrderSide) -> float:
         return abs(self.takeprofit_percent / 100 + side.factor()) * entry_price
 
-    def handler(
-        self, position: Position, tick_prices: list[float]
-    ) -> TradeCommand | None:
-        direction = position.side.factor()
-        ticks = np.array(tick_prices) * direction
-        sl = position.stoploss * direction
-        tp = position.takeprofit * direction
-        cross = np.logical_or(ticks <= sl, ticks >= tp)
-        if not cross.any():
-            return None
-        idx = np.argmax(cross)
-        if ticks[idx] <= position.stoploss:
-            return commands.StopLoss(position, self.exchange_agent)
-        else:
-            return commands.TakeProfit(position, self.exchange_agent)
-
 
 class SimpleForexHandler(PositionHandler):
     def __init__(
@@ -251,22 +242,6 @@ class SimpleForexHandler(PositionHandler):
 
     def init_takeprofit(self, entry_price: float, side: OrderSide) -> float:
         return entry_price + side.factor() * self.takeprofit_pip
-
-    def handler(
-        self, position: Position, tick_prices: list[float]
-    ) -> TradeCommand | None:
-        direction = position.side.factor()
-        ticks = np.array(tick_prices) * direction
-        sl = position.stoploss * direction
-        tp = position.takeprofit * direction
-        cross = np.logical_or(ticks <= sl, ticks >= tp)
-        if not cross.any():
-            return None
-        idx = np.argmax(cross)
-        if ticks[idx] <= position.stoploss:
-            return commands.StopLoss(position, self.exchange_agent)
-        else:
-            return commands.TakeProfit(position, self.exchange_agent)
 
     def report(self):
         total_pip = 0
@@ -299,7 +274,7 @@ class RiskFreeCrypto(SimpleCryptoHandler):
         )
         self.riskfree_trigger_percent = riskfree_trigger_percent
 
-    def riskfree_trigger_price(self, position: Position) -> float:
+    def give_trigger_price(self, position: Position) -> float:
         if position.stoploss == position.entry_price:
             # when already riskfree triggered
             return position.takeprofit
@@ -312,26 +287,17 @@ class RiskFreeCrypto(SimpleCryptoHandler):
     def handler(
         self, position: Position, tick_prices: list[float]
     ) -> TradeCommand | None:
+        res = super().handler(position, tick_prices)
+        if res:
+            return res
         direction = position.side.factor()
+
         ticks = np.array(tick_prices) * direction
-        sl = position.stoploss * direction
-        tp = position.takeprofit * direction
-        trigger = self.riskfree_trigger_price(position) * direction
-        cross = np.column_stack(
-            [
-                ticks >= trigger,
-                ticks >= tp,
-                ticks <= sl,
-            ]
-        )
-        if not cross.any(axis=1):
-            return None
-        idx = np.argmax(cross, axis=1)
-        if ticks[idx] <= position.stoploss:
-            return commands.StopLoss(position, self.exchange_agent)
-        elif ticks[idx] >= tp:
-            return commands.TakeProfit(position, self.exchange_agent)
-        elif ticks[idx] >= trigger:
+        trigger = self.give_trigger_price(position) * direction
+
+        cross = ticks >= trigger
+
+        if cross.any():
             return commands.TrailStoploss(
                 position, self.exchange_agent, position.entry_price
             )
@@ -349,7 +315,7 @@ class RiskFreeForex(SimpleForexHandler):
         super().__init__(exchange_agent, initial_volume, stoploss_pip, takeprofit_pip)
         self.riskfree_trigger_pip = riskfree_trigger_pip
 
-    def riskfree_trigger_price(self, position: Position) -> float:
+    def give_trigger_price(self, position: Position) -> float:
         if position.stoploss == position.entry_price:
             # when already riskfree triggered
             return position.takeprofit
@@ -363,21 +329,17 @@ class RiskFreeForex(SimpleForexHandler):
         self, position: Position, tick_prices: list[float]
     ) -> TradeCommand | None:
         direction = position.side.factor()
+        res = super().handler(position, tick_prices)
+        if res:
+            return res
+        direction = position.side.factor()
+
         ticks = np.array(tick_prices) * direction
-        sl = position.stoploss * direction
-        tp = position.takeprofit * direction
-        trigger = self.riskfree_trigger_price(position) * direction
-        cross = np.logical_or(ticks <= sl, ticks >= trigger, ticks >= tp)
-        if not cross.any():
-            return None
+        trigger = self.give_trigger_price(position) * direction
 
-        idx = np.argmax(cross)
+        cross = ticks >= trigger
 
-        if ticks[idx] <= position.stoploss:
-            return commands.StopLoss(position, self.exchange_agent)
-        elif ticks[idx] >= tp:
-            return commands.TakeProfit(position, self.exchange_agent)
-        elif ticks[idx] >= trigger:
+        if cross.any():
             return commands.TrailStoploss(
                 position, self.exchange_agent, position.entry_price
             )

@@ -3,7 +3,7 @@ from ChartModule.plot import PlotChart, TwoChartPlot
 from TradingModule import TradeConfig, ExchangeAgent, Position
 from TradingModule import commands
 from TradingModule.Strategies.divergence import DivergenceTradeConfig, DivergenceSignal
-from datetime import datetime, timezone
+from datetime import datetime
 from copy import copy
 import logging
 
@@ -63,7 +63,6 @@ class Backtest:
             cls.current_price = 0.0
             cls.all_positions: list[Position] = []
             cls.all_signals: list[Signal | DivergenceSignal] = []
-            cls._start_time = datetime.now(tz=timezone.utc).replace(microsecond=0)
         return cls._instance
 
     def diver_backtest(self, show_image=True):
@@ -121,11 +120,15 @@ class Backtest:
         commands_report = commands.TradeCommand.close_records()
         positions_report = self.config.position_handler.report()
         logger.info("Result:\n\n" + commands_report + "\n\n" + str(positions_report))
+        logger.info(
+            f"Backtest on {base_chartdata[-1].time - base_chartdata[0].time} with {len(base_chartdata)} candles"
+        )
         if show_image:
             plot.show()
         return commands_report, positions_report, img_path
 
     def start_backtest(self, show_image=True):
+        # TODO: update here
         if isinstance(self.config, DivergenceTradeConfig):
             return self.diver_backtest(show_image)
         chartdata = self.config.get_chartdata()

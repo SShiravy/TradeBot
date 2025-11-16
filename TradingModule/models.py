@@ -53,6 +53,7 @@ class Position:
     pnl: float = field(default=0.0, init=False)
     pnl_percent: float = field(default=0, init=False)
     pnl_in_pip: float = field(default=0, init=False)
+    pnl_for_lot: float = field(default=0, init=False)
 
     def update_pnl(self, executed_price: float, volume: float | None = None):
         """
@@ -60,7 +61,6 @@ class Position:
         if argument volume is None, then whole volume will considered
         """
         if self.volume <= 0:
-            print("000000 VOloum eee")
             return
         volume = self.volume if volume is None or self.volume - volume < 0 else volume
         direction = 1 if self.side is OrderSide.BUY else -1
@@ -70,15 +70,9 @@ class Position:
             * self.leverage,
             2,
         )
-        self.pnl = self.pnl_percent * volume
+        self.pnl = self.pnl_percent * volume / 100
+        self.pnl_for_lot = self.pnl * 10000
         self.pnl_in_pip += (executed_price - self.entry_price) * direction
-        if abs(self.pnl_in_pip) > 20:
-            print(
-                self.id,
-                self.stoploss - self.entry_price,
-                self.takeprofit - self.entry_price,
-                self.entry_price - executed_price,
-            )
         self.volume -= volume
 
     def __str__(self):
@@ -93,41 +87,28 @@ class Position:
                 self.stoploss,
             )
             if self.last_update:
-                plot.draw_line(
-                    self.open_time,
-                    self.entry_price,
-                    self.last_update,
-                    self.stoploss,
-                    "#e20000",
-                )
-                plot.draw_line(
-                    self.open_time,
-                    self.entry_price,
-                    self.last_update,
-                    self.takeprofit,
-                    "#00e208",
-                )
+                end_of_line = self.last_update
             else:
-                plot.draw_line(
-                    self.open_time,
-                    self.entry_price,
-                    self.open_time,
-                    self.stoploss,
-                    "#e20000",
-                )
-                plot.draw_line(
-                    self.open_time,
-                    self.entry_price,
-                    self.open_time,
-                    self.takeprofit,
-                    "#2de200",
-                )
-
+                end_of_line = self.open_time
+            plot.draw_line(
+                self.open_time,
+                self.entry_price,
+                end_of_line,
+                self.stoploss,
+                "#FFD562",
+            )
+            plot.draw_line(
+                self.open_time,
+                self.entry_price,
+                end_of_line,
+                self.takeprofit,
+                "#7fff86",
+            )
         else:
             start_time = self.open_time - self.chart.timeframe.time_delta * 10
             plot.draw_sl_tp_lines(
                 start_time,
-                self.last_update if self.last_update else self.open_time,
+                self.open_time,
                 self.takeprofit,
                 self.stoploss,
             )
