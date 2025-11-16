@@ -1,13 +1,15 @@
 from ChartModule import Chart, TimeFrame
 from TradingModule.Strategies.divergence import Divergence
 from Forex import ForexAgent, CvdDiverTradeConfig, ForexDiverTradeConfig
-from TradingModule.position_handlers import SimpleForexHandler
+from TradingModule.position_handlers import SimpleForexHandler, RiskFreeForex
 
 forex_one_m_diver = ForexDiverTradeConfig(
     chart=Chart("XAUUSD!", TimeFrame.one_minute),
     second_chart=Chart("SOLUSD", TimeFrame.one_minute),
     strategy=Divergence(3, 100, [], name="ForexDiver"),
-    position_handler=SimpleForexHandler(ForexAgent()),
+    position_handler=SimpleForexHandler(
+        ForexAgent(), takeprofit_pip=10, stoploss_pip=10
+    ),
 )
 
 
@@ -15,7 +17,7 @@ forex_five_m_diver = ForexDiverTradeConfig(
     chart=Chart("XAUUSD!", TimeFrame.five_minutes),
     second_chart=Chart("SOLUSD", TimeFrame.five_minutes),
     strategy=Divergence(3, 100, [], name="ForexDiver"),
-    position_handler=SimpleForexHandler(ForexAgent()),
+    position_handler=(RiskFreeForex(ForexAgent())),
 )
 
 forex_fifteen_m_diver = ForexDiverTradeConfig(
@@ -42,7 +44,9 @@ cvd_diver = Divergence(
 forex_one_m_cvd = CvdDiverTradeConfig(
     chart=Chart("XAUUSD!", TimeFrame.one_minute),
     strategy=cvd_diver,
-    position_handler=SimpleForexHandler(ForexAgent()),
+    position_handler=SimpleForexHandler(
+        ForexAgent(), stoploss_pip=10, takeprofit_pip=10
+    ),
 )
 
 forex_five_m_cvd = CvdDiverTradeConfig(

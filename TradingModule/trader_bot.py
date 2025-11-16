@@ -197,7 +197,7 @@ class TraderBot:
 
     async def heartbeat(self):
         while True:
-            await asyncio.sleep(360)
+            await asyncio.sleep(3600)
             current, peak = tracemalloc.get_traced_memory()
             elapsed_time = str(
                 datetime.now(tz=timezone.utc).replace(microsecond=0) - self._start_time

@@ -1,7 +1,7 @@
 from Forex import ForexAgent, CvdDiverTradeConfig, ForexDiverTradeConfig
 from ChartModule import Chart, TimeFrame
 from TradingModule import TraderBot
-from TradingModule.position_handlers import SimpleForexHandler
+from TradingModule.position_handlers import SimpleForexHandler, RiskFreeForex
 from TradingModule.Strategies.divergence import Divergence
 from custom_logger import CustomLogger
 import asyncio
@@ -9,33 +9,23 @@ import asyncio
 CustomLogger(log_file=True, file_log_name="ForexBot")
 
 
-one_m_diver = ForexDiverTradeConfig(
+forex_one_m_diver = ForexDiverTradeConfig(
     chart=Chart("XAUUSD!", TimeFrame.one_minute),
     second_chart=Chart("SOLUSD", TimeFrame.one_minute),
     strategy=Divergence(3, 100, [], name="ForexDiver"),
-    position_handler=SimpleForexHandler(ForexAgent()),
-    long_trade=False,
-    short_trade=False,
+    position_handler=SimpleForexHandler(
+        ForexAgent(), takeprofit_pip=10, stoploss_pip=10
+    ),
 )
 
 
-five_m_diver = ForexDiverTradeConfig(
+forex_five_m_diver = ForexDiverTradeConfig(
     chart=Chart("XAUUSD!", TimeFrame.five_minutes),
     second_chart=Chart("SOLUSD", TimeFrame.five_minutes),
     strategy=Divergence(3, 100, [], name="ForexDiver"),
-    position_handler=SimpleForexHandler(ForexAgent()),
-    long_trade=False,
-    short_trade=False,
+    position_handler=(RiskFreeForex(ForexAgent())),
 )
 
-fifteen_m_diver = ForexDiverTradeConfig(
-    chart=Chart("XAUUSD!", TimeFrame.fifteen_minutes),
-    second_chart=Chart("SOLUSD", TimeFrame.fifteen_minutes),
-    strategy=Divergence(3, 100, [], name="ForexDiver"),
-    position_handler=SimpleForexHandler(ForexAgent()),
-    long_trade=False,
-    short_trade=False,
-)
 
 cvd_diver = Divergence(
     3,
@@ -46,21 +36,24 @@ cvd_diver = Divergence(
     short_second_line_validation=False,
 )
 
-one_m_cvd = CvdDiverTradeConfig(
+forex_one_m_cvd = CvdDiverTradeConfig(
     chart=Chart("XAUUSD!", TimeFrame.one_minute),
     strategy=cvd_diver,
-    position_handler=SimpleForexHandler(ForexAgent()),
+    position_handler=SimpleForexHandler(
+        ForexAgent(), stoploss_pip=10, takeprofit_pip=10
+    ),
 )
 
-five_m_cvd = CvdDiverTradeConfig(
+forex_five_m_cvd = CvdDiverTradeConfig(
     chart=Chart("XAUUSD!", TimeFrame.five_minutes),
     strategy=cvd_diver,
     position_handler=SimpleForexHandler(ForexAgent()),
 )
 
 
+
 TraderBot(
-    "ForexBot", [one_m_diver, five_m_diver, fifteen_m_diver, one_m_cvd, five_m_cvd]
+    "ForexBot", [forex_one_m_cvd, forex_five_m_cvd, forex_one_m_diver, forex_five_m_diver]
 )
 
 
