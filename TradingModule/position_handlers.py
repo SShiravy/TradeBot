@@ -1,9 +1,10 @@
-from ChartModule import Signal, MarketSide, ChartData
+from ChartModule import Signal, MarketSide, Candle
 from TradingModule import Position, OrderSide, ExchangeAgent
 from TradingModule.commands import TradeCommand
 from TradingModule import commands
 from dataclasses import dataclass, field
 from abc import ABC, abstractmethod
+from copy import copy
 import numpy as np
 import logging
 
@@ -103,23 +104,26 @@ class PositionHandler(ABC):
         """
         pass
 
-    def chartdata_check(
-        self, chartdata: ChartData, position: Position
+    def candles_check(
+        self, candles: list[Candle], position: Position
     ) -> TradeCommand | None:
         if not position.previous_check:
             return None
         ticks = []
-        for candle in chartdata:
+        for candle in candles:
+            if position.previous_check is None:
+                position.previous_check = position.open_time
             if candle.time < position.previous_check:
                 continue
             ticks += [candle.open, candle.low, candle.high, candle.close]
-            position.previous_check = chartdata.candles[-1].time
+            position.previous_check = candle.time
         return self.handler(position, ticks)
 
     def manage_positions(self) -> list[TradeCommand] | None:
         all_commands = []
-        symbol_chartdata_dict: dict[str, ChartData] = {}
-        for pos in self.open_positions:
+        symbol_candles_dict: dict[str, list[Candle]] = {}
+        all_pos = copy(self.open_positions)
+        for pos in all_pos:
             if pos.closed:
                 self.closed_positions.append(pos)
                 self.open_positions.remove(pos)
@@ -127,16 +131,16 @@ class PositionHandler(ABC):
             if not pos.previous_check:
                 pos.previous_check = pos.open_time
 
-            if not symbol_chartdata_dict.get(pos.chart.symbol):
-                chartdata = self.exchange_agent.get_chartdata_since(
+            if not symbol_candles_dict.get(pos.chart.symbol):
+                candles = self.exchange_agent.get_candles_since(
                     pos.chart, pos.previous_check
                 )
-                if not chartdata:
-                    logger.error(f"getting chartdata failed for {pos=}")
+                if not candles:
+                    logger.warning(f"getting candles failed for {pos=}")
                     continue
-                symbol_chartdata_dict[pos.chart.symbol] = chartdata
+                symbol_candles_dict[pos.chart.symbol] = candles
 
-            command = self.chartdata_check(symbol_chartdata_dict[pos.chart.symbol], pos)
+            command = self.candles_check(symbol_candles_dict[pos.chart.symbol], pos)
             if command:
                 all_commands.append(command)
         return all_commands
@@ -200,8 +204,8 @@ class SimpleCryptoHandler(PositionHandler):
         exchange_agent: ExchangeAgent,
         initial_volume: float = 0.5,
         leverage: int = 1,
-        stoploss_percent: int = 5,
-        takeprofit_percent: int = 5,
+        stoploss_percent: float = 5,
+        takeprofit_percent: float = 5,
     ) -> None:
         super().__init__(exchange_agent, initial_volume, leverage)
         self.stoploss_percent = stoploss_percent
@@ -282,9 +286,9 @@ class RiskFreeCrypto(SimpleCryptoHandler):
         exchange_agent: ExchangeAgent,
         initial_volume: float = 0.05,
         leverage: int = 1,
-        stoploss_percent: int = 5,
-        takeprofit_percent: int = 5,
-        riskfree_trigger_percent: int = 2,
+        stoploss_percent: float = 5,
+        takeprofit_percent: float = 5,
+        riskfree_trigger_percent: float = 2,
     ) -> None:
         super().__init__(
             exchange_agent,
@@ -313,10 +317,16 @@ class RiskFreeCrypto(SimpleCryptoHandler):
         sl = position.stoploss * direction
         tp = position.takeprofit * direction
         trigger = self.riskfree_trigger_price(position) * direction
-        cross = np.logical_or(ticks <= sl, ticks >= tp, ticks >= trigger)
-        if not cross.any():
+        cross = np.column_stack(
+            [
+                ticks >= trigger,
+                ticks >= tp,
+                ticks <= sl,
+            ]
+        )
+        if not cross.any(axis=1):
             return None
-        idx = np.argmax(cross)
+        idx = np.argmax(cross, axis=1)
         if ticks[idx] <= position.stoploss:
             return commands.StopLoss(position, self.exchange_agent)
         elif ticks[idx] >= tp:

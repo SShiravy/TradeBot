@@ -62,8 +62,8 @@ class CoinexAgent(ExchangeAgent):
         chartdata = ChartData(chart, all_candles_list)
         return chartdata
 
-    def get_chartdata_since(self, chart: Chart, time: datetime) -> ChartData | None:
-        return super().get_chartdata_since(chart, time)
+    def get_candles_since(self, chart: Chart, time: datetime):
+        return super().get_candles_since(chart, time)
 
     def open_position(self, position: Position):
         """
@@ -90,9 +90,9 @@ class CoinexAgent(ExchangeAgent):
         tp_res = self.change_takeprofit(position, position.takeprofit)
 
         if not sl_res:
-            TrailStoploss(position, position.stoploss)
+            TrailStoploss(position, self, position.stoploss)
         if not tp_res:
-            ChangeTakeProfit(position, position.takeprofit)
+            ChangeTakeProfit(position, self, position.takeprofit)
 
         logging.info(f"Position Opened: {position}\n{order_result=}")
         entry_price = float(order_result["last_filled_price"])

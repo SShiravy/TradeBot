@@ -4,6 +4,7 @@ from TradingModule import TradeConfig, ExchangeAgent, Position
 from TradingModule import commands
 from TradingModule.Strategies.divergence import DivergenceTradeConfig, DivergenceSignal
 from datetime import datetime, timezone
+from copy import copy
 import logging
 
 logger = logging.getLogger("Backtest")
@@ -20,8 +21,8 @@ class DummyAgent(ExchangeAgent):
     def get_chartdata(self, chart: Chart, n_bars=100) -> ChartData | None:
         return self.real_agent.get_chartdata(chart, n_bars)
 
-    def get_chartdata_since(self, chart: Chart, time: datetime) -> ChartData | None:
-        return self.get_chartdata_since(chart, time)
+    def get_candles_since(self, chart: Chart, time: datetime):
+        return self.real_agent.get_candles_since(chart, time)
 
     def open_position(self, position: Position) -> float | None:
         last_pos_id = len(Backtest.all_positions)
@@ -52,6 +53,7 @@ class Backtest:
             cls._instance = object.__new__(cls)
             dummy_agent = DummyAgent(config.agent)
             config.agent = dummy_agent
+            config.position_handler.exchange_agent = dummy_agent
             cls.len_sub_data = len_sub_data if len_sub_data else config.n_candle_check
             config.n_candle_check = n_bar
             config.long_trade = False
@@ -81,13 +83,14 @@ class Backtest:
 
             candle = base_chartdata[i]
             self.current_price = candle.open
-            for pos in self.config.position_handler.open_positions:
+            all_pos = copy(self.config.position_handler.open_positions)
+            for pos in all_pos:
                 if pos.closed:
                     self.config.position_handler.closed_positions.append(pos)
                     self.config.position_handler.open_positions.remove(pos)
                     continue
                 self.config.position_handler.handler(
-                    pos, [candle.open, candle.high, candle.low, candle.high]
+                    pos, [candle.open, candle.low, candle.high, candle.close]
                 )
             commands.TradeCommand.execute_pending_commands(candle.time)
 

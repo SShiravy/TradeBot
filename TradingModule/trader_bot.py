@@ -1,10 +1,9 @@
-from TradingModule import ExchangeAgent, Position, OrderSide
+from TradingModule import ExchangeAgent, Position, OrderSide, commands
 from TradingModule.position_handlers import PositionHandler
 from ChartModule.models import Chart, Candle, Signal, ChartData
 from TradingModule.Strategies.model import Strategy
 from ChartModule.plot import PlotChart
 from TelegramModule import TelegramBot
-from TradingModule import commands
 from datetime import datetime, timezone, timedelta
 from dataclasses import dataclass, field
 from config import settings
@@ -34,6 +33,7 @@ class TradeConfig:
     heikingashi_chartdata: bool = field(default=False)
 
     def msg_generator(self, position: Position):
+        # TODO: move this to position handler
         msg_list = [
             position.source,
             f"📊 {position.chart.symbol}",
@@ -148,6 +148,17 @@ class TraderBot:
             cls._start_time = datetime.now(tz=timezone.utc).replace(microsecond=0)
         return cls._instance
 
+    async def manage(self):
+        while True:
+            try:
+                for config in self.configs:
+                    config.position_handler.manage_positions()
+                commands.TradeCommand.execute_pending_commands()
+                await asyncio.sleep(5)
+            except Exception as e:
+                logging.error(f"Manage Failed: {e}")
+                await asyncio.sleep(30)
+
     async def trade_task(self, config: TradeConfig):
         logging.debug(f"Task with config:{str(config)} initilized")
         error_number = 0
@@ -213,8 +224,8 @@ class TraderBot:
         tasks = [self.trade_task(config) for config in self.configs]
         tasks.append(self.heartbeat())
         tasks.append(self.report())
-        # TODO: add commend execute
-        # TODO: add clear and report all
-        # TODO: add other handlres and add get_chartdata_since
-        # TODO: delay after error on config task
+        tasks.append(self.manage())
         await asyncio.gather(*tasks)
+
+
+# TODO: Trailing Stop report

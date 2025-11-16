@@ -22,9 +22,12 @@ forex_fifteen_m_diver = ForexDiverTradeConfig(
     chart=Chart("XAUUSD!", TimeFrame.fifteen_minutes),
     second_chart=Chart("SOLUSD", TimeFrame.fifteen_minutes),
     strategy=Divergence(3, 100, [], name="ForexDiver"),
-    position_handler=RiskFreeForex(
-        ForexAgent(), stoploss_pip=30, takeprofit_pip=30, riskfree_trigger_pip=10
+    position_handler=SimpleForexHandler(
+        ForexAgent(),
+        stoploss_pip=40,
+        takeprofit_pip=40,
     ),
+    short_signal=False,
 )
 
 cvd_diver = Divergence(

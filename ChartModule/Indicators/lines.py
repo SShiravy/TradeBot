@@ -66,10 +66,13 @@ class TrendLine(IndicatorBaseModel):
         the_line = Line(self.source, start_candle, candles[end_index])
 
         candle_source = copy(self.source)
-        if self.ignore_shadow_cross:
-            if self.source == IndicatorCandleSource.Low:
+        if self.source in [IndicatorCandleSource.Low, IndicatorCandleSource.Bottom]:
+            cross_multiplier = 1
+            if self.ignore_shadow_cross:
                 candle_source = IndicatorCandleSource.Bottom
-            elif self.source == IndicatorCandleSource.High:
+        else:
+            cross_multiplier = -1
+            if self.ignore_shadow_cross:
                 candle_source = IndicatorCandleSource.Top
 
         for candle in candles[end_index:start_index:-1]:
@@ -80,7 +83,7 @@ class TrendLine(IndicatorBaseModel):
             np.array(time_list) - candles[start_index].time.timestamp()
         ) * the_line.slope + self.source(start_candle)
 
-        if np.any(np.array(source_list) - expected_low < 0):
+        if np.any((np.array(source_list) - expected_low) * cross_multiplier < 0):
             # invalid (line crossed candles)
             return None
         return the_line
@@ -93,10 +96,14 @@ class TrendLine(IndicatorBaseModel):
         time_list = []
 
         candle_source = copy(self.source)
-        if self.ignore_shadow_cross:
-            if self.source == IndicatorCandleSource.Low:
+
+        if self.source in [IndicatorCandleSource.Low, IndicatorCandleSource.Bottom]:
+            cross_multiplier = 1
+            if self.ignore_shadow_cross:
                 candle_source = IndicatorCandleSource.Bottom
-            elif self.source == IndicatorCandleSource.High:
+        else:
+            cross_multiplier = -1
+            if self.ignore_shadow_cross:
                 candle_source = IndicatorCandleSource.Top
 
         for candle in self.candles[-self.min_step : -self.max_step : -1]:
@@ -117,7 +124,7 @@ class TrendLine(IndicatorBaseModel):
                 np.array(time_list) - candle.time.timestamp()
             ) * the_line.slope + self.source(candle)
 
-            if np.any(np.array(source_list) - expected_low < 0):
+            if np.any((np.array(source_list) - expected_low) * cross_multiplier < 0):
                 # invalid (line crossed candles)
                 continue
             lines.append(the_line)

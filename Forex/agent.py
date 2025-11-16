@@ -107,8 +107,8 @@ class ForexAgent(ExchangeAgent):
 
         return chartdata
 
-    def get_chartdata_since(self, chart: Chart, time: datetime) -> ChartData | None:
-        pass
+    def get_candles_since(self, chart: Chart, time: datetime):
+        return super().get_candles_since(chart, time)
 
     def open_position(self, position: Position) -> float | None:
         if not self.prepare_chart(position.chart):

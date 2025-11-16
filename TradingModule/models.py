@@ -1,4 +1,4 @@
-from ChartModule import Chart, ChartData, MarketSide
+from ChartModule import Chart, ChartData, MarketSide, Candle
 from ChartModule.plot import PlotChart
 from datetime import datetime
 from dataclasses import dataclass, field, asdict
@@ -59,7 +59,8 @@ class Position:
         calculate pnl based on volume and percent
         if argument volume is None, then whole volume will considered
         """
-        if self.volume < 0:
+        if self.volume <= 0:
+            print("000000 VOloum eee")
             return
         volume = self.volume if volume is None or self.volume - volume < 0 else volume
         direction = 1 if self.side is OrderSide.BUY else -1
@@ -71,6 +72,13 @@ class Position:
         )
         self.pnl = self.pnl_percent * volume
         self.pnl_in_pip += (executed_price - self.entry_price) * direction
+        if abs(self.pnl_in_pip) > 20:
+            print(
+                self.id,
+                self.stoploss - self.entry_price,
+                self.takeprofit - self.entry_price,
+                self.entry_price - executed_price,
+            )
         self.volume -= volume
 
     def __str__(self):
@@ -139,8 +147,16 @@ class ExchangeAgent(ABC):
         pass
 
     @abstractmethod
-    def get_chartdata_since(self, chart: Chart, time: datetime) -> ChartData | None:
-        pass
+    def get_candles_since(self, chart: Chart, time: datetime) -> list[Candle]:
+        chartdata = self.get_chartdata(chart, 5)
+        if chartdata is None:
+            return []
+        candles = []
+        for candle in chartdata:
+            if candle.time < time:
+                continue
+            candles.append(candle)
+        return candles
 
     @abstractmethod
     def open_position(self, position: Position) -> float | None:

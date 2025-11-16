@@ -2,6 +2,7 @@ from TradingModule import Position, ExchangeAgent
 from datetime import datetime, timezone
 from abc import ABC, abstractmethod
 from enum import Enum
+from copy import copy
 import logging
 
 logger = logging.getLogger("TradeCommand")
@@ -90,13 +91,14 @@ class TradeCommand(ABC):
     def execute_pending_commands(cls, time: datetime | None = None):
         if time is None:
             time = datetime.now(timezone.utc)
-        for command in TradeCommand.all_pending_commands:
+        all_commands = copy(TradeCommand.all_pending_commands)
+        for command in all_commands:
             command.execute(time)
 
     @classmethod
     def close_records(cls):
         msg = [
-            "Trade Commands' Record:",
+            "Trade Commands Summary:",
             f"Executed: {cls.__recorded_executed_commands}",
             f"Failed: {cls.__recorded_failed_commands}",
             f"Pending: {len(cls.all_pending_commands)}",
