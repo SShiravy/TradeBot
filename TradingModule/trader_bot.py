@@ -169,7 +169,6 @@ class TraderBot:
                     sleep_time = res
                 else:
                     sleep_time = res[0]
-                # TODO: Check sub chartdata in old code
                 logging.debug(sleep_time)
                 await asyncio.sleep(sleep_time.seconds)
 
@@ -226,6 +225,3 @@ class TraderBot:
         tasks.append(self.report())
         tasks.append(self.manage())
         await asyncio.gather(*tasks)
-
-
-# TODO: Trailing Stop report

@@ -6,9 +6,6 @@ from TradingModule.Strategies.divergence import Divergence, DivergenceTradeConfi
 from dataclasses import dataclass, field
 
 
-# TODO: implement two days off in task , and one houre off
-
-
 @dataclass(kw_only=True)
 class ForexDiverTradeConfig(DivergenceTradeConfig):
     second_chart: Chart

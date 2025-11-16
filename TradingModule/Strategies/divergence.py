@@ -60,6 +60,7 @@ class Divergence(Strategy):
         second_line_validation: bool = True,
     ) -> tuple[Line, Line] | None:
         direction = -1 if inverse else 1
+
         trendline.set(base_chartdata.candles[:-1])
         all_lines = copy(trendline.values)  # type: list[Line]
         for base_chart_line in all_lines:
@@ -236,14 +237,20 @@ class DivergenceTradeConfig(TradeConfig):
     async def task(self, telegram_bot):
         base_chartdata, second_chartdata = self.get_chartdata()
 
-        res = self.find_signal(base_chartdata, second_chartdata)
+        base_data = copy(base_chartdata)
+        base_data.candles = base_data.candles[:-1]
+
+        second_data = copy(second_chartdata)
+        second_data = second_data[:-1]
+
+        res = self.find_signal(base_data, second_data)
         if res is None:
-            return self.give_delay(base_chartdata[-1])
+            return self.give_delay(base_data[-1])
 
         signal, position = res
 
         if self.send_signal:
-            plot = TwoChartPlot(base_chartdata, second_chartdata)
+            plot = TwoChartPlot(base_data, second_data)
             self.strategy.draw(plot, signal, draw_indicators=True)
             position.draw(plot.base_plot)
             img_path = plot.save_image()

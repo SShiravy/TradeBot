@@ -1,7 +1,7 @@
 from ChartModule import Chart, TimeFrame
 from TradingModule.Strategies.divergence import Divergence
 from Forex import ForexAgent, CvdDiverTradeConfig, ForexDiverTradeConfig
-from TradingModule.position_handlers import SimpleForexHandler, RiskFreeForex
+from TradingModule.position_handlers import SimpleForexHandler
 
 forex_one_m_diver = ForexDiverTradeConfig(
     chart=Chart("XAUUSD!", TimeFrame.one_minute),

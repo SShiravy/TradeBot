@@ -94,7 +94,6 @@ class PositionHandler(ABC):
         logger.debug(f"The New Position {position}")
         return position
 
-    @abstractmethod
     def handler(
         self, position: Position, tick_prices: list[float]
     ) -> TradeCommand | None:
