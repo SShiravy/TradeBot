@@ -241,11 +241,11 @@ class DivergenceTradeConfig(TradeConfig):
         base_data.candles = base_data.candles[:-1]
 
         second_data = copy(second_chartdata)
-        second_data = second_data[:-1]
+        second_data.candles = second_data[:-1]
 
         res = self.find_signal(base_data, second_data)
         if res is None:
-            return self.give_delay(base_data[-1])
+            return self.give_delay(base_chartdata[-1])
 
         signal, position = res
 
@@ -258,4 +258,4 @@ class DivergenceTradeConfig(TradeConfig):
                 img_path, self.msg_generator(position)
             )
 
-        return self.give_delay(signal.candle, jump=True), signal, position
+        return self.give_delay(base_chartdata[-1], jump=True), signal, position

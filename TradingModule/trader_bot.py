@@ -57,7 +57,11 @@ class TradeConfig:
             delay *= self.bar_between_signals
 
         logging.debug(
-            f"{delay=}\n{last_candle.time=}\n{last_candle.time.astimezone(timezone.utc)=}\nnow={datetime.now(timezone.utc)}\n"
+            f"{delay=}\n{last_candle}\n{last_candle.time=}\n{last_candle.time.astimezone(timezone.utc)=}\nnow={datetime.now(timezone.utc)}"
+        )
+        logging.debug(f"delay + lastcandl.time: {delay + last_candle.time}")
+        logging.debug(
+            f"delay + lastcandl.time - now: {(delay + last_candle.time) - datetime.now(timezone.utc)}"
         )
 
         return (
@@ -169,7 +173,7 @@ class TraderBot:
                     sleep_time = res
                 else:
                     sleep_time = res[0]
-                logging.debug(sleep_time)
+                logging.debug(f"{config.chart.timeframe} sleep: {sleep_time}")
                 await asyncio.sleep(sleep_time.seconds)
 
             except Exception as e:
