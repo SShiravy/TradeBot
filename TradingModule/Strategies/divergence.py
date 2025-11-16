@@ -126,7 +126,7 @@ class Divergence(Strategy):
             ),
             base_chartdata,
             second_chartdata,
-            self.inverse_diver_short,
+            not self.inverse_diver_short,
             self.short_second_line_validation,
         )
         if res is None:
