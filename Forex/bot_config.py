@@ -37,6 +37,7 @@ class ForexDiverTradeConfig(DivergenceTradeConfig):
                 second_candles.append(second_chartdata[second_index])
                 base_index += 1
                 second_index += 1
+                continue
 
             elif base_time > second_time:
                 second_index += 1

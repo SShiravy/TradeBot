@@ -15,7 +15,7 @@ forex_one_m_diver = ForexDiverTradeConfig(
     strategy=Divergence(3, 100, [], name="ForexDiver"),
     position_handler=SimpleForexHandler(
         ForexAgent(), takeprofit_pip=10, stoploss_pip=10
-    ),
+    )
 )
 
 
@@ -23,7 +23,7 @@ forex_five_m_diver = ForexDiverTradeConfig(
     chart=Chart("XAUUSD!", TimeFrame.five_minutes),
     second_chart=Chart("SOLUSD", TimeFrame.five_minutes),
     strategy=Divergence(3, 100, [], name="ForexDiver"),
-    position_handler=(RiskFreeForex(ForexAgent())),
+    position_handler=(RiskFreeForex(ForexAgent()))
 )
 
 
@@ -41,13 +41,13 @@ forex_one_m_cvd = CvdDiverTradeConfig(
     strategy=cvd_diver,
     position_handler=SimpleForexHandler(
         ForexAgent(), stoploss_pip=10, takeprofit_pip=10
-    ),
+    )
 )
 
 forex_five_m_cvd = CvdDiverTradeConfig(
     chart=Chart("XAUUSD!", TimeFrame.five_minutes),
     strategy=cvd_diver,
-    position_handler=SimpleForexHandler(ForexAgent()),
+    position_handler=SimpleForexHandler(ForexAgent())
 )
 
 
@@ -55,6 +55,10 @@ forex_five_m_cvd = CvdDiverTradeConfig(
 TraderBot(
     "ForexBot", [forex_one_m_cvd, forex_five_m_cvd, forex_one_m_diver, forex_five_m_diver]
 )
+
+# TODO: fix forex diver two chart get chart problem on live 
+# TODO: Trailing Stop when its Trade off
+# TODO: sl tp msg
 
 
 if __name__ == "__main__":

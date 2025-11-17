@@ -16,10 +16,12 @@ def start_backtest():
 if __name__ == "__main__":
     start_backtest()
     # import asyncio
-    # TODO: check forex two chart same candle time in divergence
     # TODO: implement two days off in task , and one houre off
-    # TODO: wrong short sl triggering
-    # TODO: worong sl trailing in reports
     # TODO: Trailing Stop report
+    # TODO: sma ema check 
+    # TODO: seperate sl tp for long short
+    # TODO: position handler with MA and control tp sl with it
+    # TODO: multiple loss in a row for long and short handler
 
     # asyncio.run(mio())
+
