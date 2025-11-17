@@ -9,13 +9,12 @@ logger = logging.getLogger("ForexAgent")
 
 
 class ForexAgent(ExchangeAgent):
-    def __new__(cls, check_market_is_open: bool = True):
+    def __new__(cls):
         if not hasattr(cls, "_instance"):
             cls._instance = object.__new__(cls)
             if not mt5.initialize():
                 raise RuntimeError("MT5 initialize failed")
             logger.info("Initialized")
-        cls.check_market_is_open = check_market_is_open
         return cls._instance
 
     def check_chart(self, chart: Chart) -> bool:
@@ -47,8 +46,6 @@ class ForexAgent(ExchangeAgent):
         return raw_time - delta
 
     def check_market_open(self, chart: Chart) -> bool:
-        if not self.check_market_is_open:
-            return True
         if not self.prepare_chart(chart):
             return False
         now = datetime.now(tz=timezone.utc)
@@ -61,6 +58,16 @@ class ForexAgent(ExchangeAgent):
         )
         if not last_tick_time:
             return False
+        logger.debug(
+            f"Market Open or Not: (last_tick-now)={
+                abs(
+                    last_tick_time.replace(second=0, microsecond=0)
+                    - now.replace(second=0, microsecond=0)
+                )
+            }\nlast_tick={last_tick_time.replace(second=0, microsecond=0)}\nnow={
+                now.replace(second=0, microsecond=0)
+            }"
+        )
         if abs(
             last_tick_time.replace(second=0, microsecond=0)
             - now.replace(second=0, microsecond=0)
@@ -69,11 +76,8 @@ class ForexAgent(ExchangeAgent):
         return True
 
     def get_chartdata(self, chart: Chart, n_bars: int = 100) -> ChartData | None:
-        if not self.check_market_open(chart):
-            return None
         if not self.prepare_chart(chart):
             return None
-
         ohlcv_res = mt5.copy_rates_from_pos(
             chart.symbol, forex_timeframe_mapper(chart.timeframe), 0, n_bars
         )

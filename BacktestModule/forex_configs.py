@@ -10,6 +10,7 @@ forex_one_m_diver = ForexDiverTradeConfig(
     position_handler=SimpleForexHandler(
         ForexAgent(), takeprofit_pip=10, stoploss_pip=10
     ),
+    merge_two_chart_time=True,
 )
 
 
@@ -18,6 +19,7 @@ forex_five_m_diver = ForexDiverTradeConfig(
     second_chart=Chart("SOLUSD", TimeFrame.five_minutes),
     strategy=Divergence(3, 100, [], name="ForexDiver"),
     position_handler=(RiskFreeForex(ForexAgent())),
+    merge_two_chart_time=True,
 )
 
 forex_fifteen_m_diver = ForexDiverTradeConfig(
@@ -29,7 +31,7 @@ forex_fifteen_m_diver = ForexDiverTradeConfig(
         stoploss_pip=40,
         takeprofit_pip=40,
     ),
-    short_signal=False,
+    merge_two_chart_time=True,
 )
 
 cvd_diver = Divergence(

@@ -137,7 +137,7 @@ class TraderBot:
         cls,
         name: str = "",
         configs: list[TradeConfig] = [],
-        report_period=timedelta(hours=12),
+        report_period=timedelta(hours=6),
     ):
         if not hasattr(cls, "_instance"):
             cls._instance = object.__new__(cls)
