@@ -13,6 +13,8 @@ class PlotChart:
     def __init__(self, chartdata: ChartData) -> None:
         self.chartdata = chartdata
         self._ax = None
+        self._y_max = 0
+        self._y_min = 100000000
 
     @property
     def ax(self):
@@ -27,20 +29,28 @@ class PlotChart:
     def ax(self, value):
         self._ax = value
 
+    def set_y_range(self, boundaries: tuple[float, float]):
+        self._y_min = min(self._y_min, boundaries[0] * 0.9995, boundaries[1] * 0.9995)
+        self._y_max = max(self._y_max, boundaries[0] * 1.0001, boundaries[1] * 1.0001)
+
     def plot(self):
         df = self.chartdata.generate_dataframe()
         fplt.add_legend(ax=self.ax, text=f"{self.chartdata.chart.symbol}")
 
         fplt.candlestick_ochl(df[["open", "close", "high", "low"]], ax=self.ax)
 
+        self.set_y_range((float(df["high"].max()), float(df["low"].min())))
+
     def show(self):
         if not self.ax:
             self.plot()
+        fplt.set_y_range(self._y_min, self._y_max, self.ax)
         fplt.show()
 
     def save_image(self, name=None, path="Images/") -> str:
         if not self.ax:
             self.plot()
+        fplt.set_y_range(self._y_min, self._y_max, self.ax)
         fplt.autoviewrestore(False)
         fplt.refresh()
         screenshot = self.ax.vb.win.grab()  # type: ignore
@@ -138,11 +148,11 @@ class PlotChart:
             color=color,
             width=1,
             ax=self.ax,
-            legend=legend,
+            # legend=legend,
         )
 
     def linear_plot(self, x, y, legend: str | None = None):
-        fplt.plot(x, y, legend=legend, style="-", ax=self.ax)
+        fplt.plot(x, y, style="-", ax=self.ax)
 
 
 class TwoChartPlot:
@@ -161,7 +171,7 @@ class TwoChartPlot:
         self.second_plot.plot()
 
     def show(self):
-        fplt.show()
+        self.base_plot.show()
 
     def save_image(self, name=None, path="Images/") -> str:
         return self.base_plot.save_image(name, path)

@@ -1,4 +1,4 @@
-from ChartModule import Signal, MarketSide, Candle
+from ChartModule import Signal, MarketSide, Chart, TimeFrame
 from TradingModule import Position, OrderSide, ExchangeAgent
 from TradingModule.commands import TradeCommand
 from TradingModule import commands
@@ -120,15 +120,17 @@ class PositionHandler(ABC):
         else:
             return commands.TakeProfit(position, self.exchange_agent)
 
-    def candles_check(
-        self, candles: list[Candle], position: Position
-    ) -> TradeCommand | None:
-        if not position.previous_check:
-            return None
+    def candles_check(self, position: Position) -> TradeCommand | None:
         ticks = []
+        if position.previous_check is None:
+            position.previous_check = position.open_time
+
+        m_chart = Chart(position.chart.symbol, TimeFrame.one_minute)
+        candles = self.exchange_agent.get_chartdata(m_chart, 3)
+        if not candles:
+            logger.warning(f"getting candles failed for {position}")
+            return
         for candle in candles:
-            if position.previous_check is None:
-                position.previous_check = position.open_time
             if candle.time < position.previous_check:
                 continue
             ticks += [candle.open, candle.low, candle.high, candle.close]
@@ -137,26 +139,13 @@ class PositionHandler(ABC):
 
     def manage_positions(self) -> list[TradeCommand] | None:
         all_commands = []
-        symbol_candles_dict: dict[str, list[Candle]] = {}
         all_pos = copy(self.open_positions)
         for pos in all_pos:
             if pos.closed:
                 self.closed_positions.append(pos)
                 self.open_positions.remove(pos)
                 continue
-            if not pos.previous_check:
-                pos.previous_check = pos.open_time
-
-            if not symbol_candles_dict.get(pos.chart.symbol):
-                candles = self.exchange_agent.get_candles_since(
-                    pos.chart, pos.previous_check
-                )
-                if not candles:
-                    logger.warning(f"getting candles failed for {pos=}")
-                    continue
-                symbol_candles_dict[pos.chart.symbol] = candles
-
-            command = self.candles_check(symbol_candles_dict[pos.chart.symbol], pos)
+            command = self.candles_check(pos)
             if command:
                 all_commands.append(command)
         return all_commands

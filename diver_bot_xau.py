@@ -4,9 +4,12 @@ from TradingModule import TraderBot
 from TradingModule.position_handlers import SimpleForexHandler, RiskFreeForex
 from TradingModule.Strategies.divergence import Divergence
 from custom_logger import CustomLogger
+import logging
 import asyncio
 
-CustomLogger(log_file=True, file_log_name="ForexDiverBot")
+CustomLogger(
+    log_file=True, file_log_name="ForexDiverBot", consol_log_level=logging.DEBUG
+)
 
 
 one_m = ForexDiverTradeConfig(

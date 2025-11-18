@@ -30,7 +30,7 @@ class Divergence(Strategy):
         self,
         min_step: int,
         max_step: int,
-        confirmation_indicators: list[IndicatorBaseModel],
+        confirmation_indicators: list[IndicatorBaseModel] = [],
         long_support_conditions=SupportConditions.RED_GREEN,
         short_support_conditions=SupportConditions.GREEN_RED,
         name="Divergence",
@@ -41,9 +41,9 @@ class Divergence(Strategy):
     ) -> None:
         super().__init__(
             name,
-            confirmation_indicators,
             long_support_conditions,
             short_support_conditions,
+            confirmation_indicators,
         )
         self.min_step = min_step
         self.max_step = max_step

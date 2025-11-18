@@ -7,9 +7,9 @@ class Strategy(ABC):
     def __init__(
         self,
         name: str,
-        confirmation_indicators: list[IndicatorBaseModel],
         long_support_conditions: SupportConditions,
         short_support_conditions: SupportConditions,
+        confirmation_indicators: list[IndicatorBaseModel] = [],
     ) -> None:
         self.name = name
         self.confirmation_indicators = confirmation_indicators

@@ -55,7 +55,6 @@ class Position:
     pnl: float = field(default=0.0, init=False)
     pnl_percent: float = field(default=0, init=False)
     pnl_in_pip: float = field(default=0, init=False)
-    pnl_for_lot: float = field(default=0, init=False)
 
     def update_pnl(self, executed_price: float, volume: float | None = None):
         """
@@ -72,8 +71,7 @@ class Position:
             * self.leverage,
             2,
         )
-        self.pnl = self.pnl_percent * volume / 100
-        self.pnl_for_lot = self.pnl * 10000
+        self.pnl = round(self.pnl_percent * volume / 100, 2)
         self.pnl_in_pip += (executed_price - self.entry_price) * direction
         self.volume -= volume
 
@@ -114,6 +112,7 @@ class Position:
                 self.takeprofit,
                 self.stoploss,
             )
+        plot.set_y_range((self.stoploss, self.takeprofit))
 
 
 class ExchangeAgent(ABC):
@@ -131,7 +130,7 @@ class ExchangeAgent(ABC):
 
     @abstractmethod
     def get_candles_since(self, chart: Chart, time: datetime) -> list[Candle]:
-        chartdata = self.get_chartdata(chart, 5)
+        chartdata = self.get_chartdata(chart, 3)
         if chartdata is None:
             return []
         candles = []

@@ -58,20 +58,21 @@ class TelegramReporter:
         res = await self.send_msg(self._public_channel, msg, img_path)
         self.msg_id_dict[position.id] = res.message_id
 
-    async def position_closed(self, position: Position):
+    async def position_closed(self, position: Position, filled_price=None):
         close_time = position.closed if position.closed else datetime.now(timezone.utc)
         duration = close_time.replace(
             microsecond=0, second=0
         ) - position.open_time.replace(microsecond=0, second=0)
 
         close_type_msg = "⭕ Flat Close"
-        close_price = position.entry_price
+        close_price = filled_price
         if position.pnl > 0:
             close_type_msg = "✅ TP Triggered"
             close_price = position.takeprofit
         elif position.pnl < 0:
             close_type_msg = "⛔️ SL Triggered"
             close_price = position.stoploss
+        close_price = filled_price if filled_price else position.entry_price
 
         msg_list = [
             close_type_msg,
@@ -83,7 +84,7 @@ class TelegramReporter:
         ]
         msg = "\n\n".join(msg_list)
         await self.send_msg(
-            self._public_channel, msg, reply_id=self.msg_id_dict.get(position)
+            self._public_channel, msg, reply_id=self.msg_id_dict.get(position.id)
         )
 
     async def trailing_sl(self, position: Position):
@@ -101,7 +102,7 @@ class TelegramReporter:
         msg = "\n\n".join(msg_list)
 
         await self.send_msg(
-            self._public_channel, msg, reply_id=self.msg_id_dict.get(position)
+            self._public_channel, msg, reply_id=self.msg_id_dict.get(position.id)
         )
 
     async def public_report(self, msg: str):

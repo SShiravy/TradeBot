@@ -125,7 +125,7 @@ class TraderBot:
                 await asyncio.sleep(5)
             except Exception as e:
                 logging.error(f"Manage Failed: {e}")
-                await asyncio.sleep(30)
+                await asyncio.sleep(10)
 
     async def trade_task(self, config: TradeConfig):
         logging.debug(f"Task with config:{str(config)} initilized")
@@ -140,18 +140,17 @@ class TraderBot:
                     sleep_time = res[0]
                 logging.debug(f"{config.chart.timeframe} sleep: {sleep_time}")
                 await asyncio.sleep(sleep_time.seconds)
+                error_number = 0
 
             except Exception as e:
                 error_number += 1
-                logging.error(f"{error_number} Times Error:{e}\non {config}")
+                logging.error(f"{error_number} Times Task failed :{e}\n{config}")
                 if error_number == 3:
                     await TelegramReporter().log_report(
                         f"3 Times Error:{e}\non {config}"
                     )
-                # Delay for one candle
-                if error_number >= 3:
-                    await asyncio.sleep(config.chart.timeframe.time_delta.seconds)
-                    continue
+                # Delay for half candle
+                await asyncio.sleep(int(config.chart.timeframe.time_delta.seconds / 2))
 
                 if error_number > 6:
                     await TelegramReporter().log_report(

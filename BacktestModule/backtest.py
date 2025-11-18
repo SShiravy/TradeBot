@@ -69,6 +69,7 @@ class Backtest:
             return
         jump = 0
         base_chartdata, second_chartdata = self.config.get_chartdata()
+        print(base_chartdata, second_chartdata)
         for i in range(self.len_sub_data, len(base_chartdata) - 2):
             base_sub_data = ChartData(
                 base_chartdata.chart, base_chartdata[:i], base_chartdata.indicators
@@ -90,7 +91,7 @@ class Backtest:
                 self.config.position_handler.handler(
                     pos, [candle.open, candle.low, candle.high, candle.close]
                 )
-            await commands.TradeCommand.execute_pending_commands(candle.time)
+            await commands.TradeCommand.execute_pending_commands(candle.time, False)
 
             if jump > 0:
                 jump -= 1
@@ -109,7 +110,7 @@ class Backtest:
         for signal in self.all_signals:
             self.config.strategy.draw(plot, signal)  # type: ignore
         for indicator in self.config.strategy.confirmation_indicators:
-            indicator.plot(plot)
+            indicator.plot(plot.base_plot)
         for pos in self.all_positions:
             pos.draw(plot.base_plot)
         img_path = plot.save_image(
@@ -134,7 +135,9 @@ class Backtest:
         for i in range(self.len_sub_data, len(chartdata) - 1):
             sub_data = chartdata[:i]
             self.current_price = chartdata[i + 1]
-            await commands.TradeCommand.execute_pending_commands(chartdata[i].time)
+            await commands.TradeCommand.execute_pending_commands(
+                chartdata[i].time, report=False
+            )
 
             res = self.config.find_signal(sub_data)
             if res is None:

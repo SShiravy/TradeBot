@@ -25,14 +25,12 @@ class TradeCommand(ABC):
         position: Position,
         exchange: ExchangeAgent,
         n_attempts: int = 2,
-        report=True,
     ):
         self.position = position
         self.exchange = exchange
         self.n_attempts = n_attempts
         self.failed_attempt: int = 0
         self.__status = TradeCommandStatus.PENDING
-        self.report = report
         TradeCommand.all_pending_commands.append(self)
 
         logger.debug(self)
@@ -72,7 +70,7 @@ class TradeCommand(ABC):
         """
         pass
 
-    async def execute(self, time: datetime | None = None) -> bool:
+    async def execute(self, time: datetime | None = None, report=True) -> bool:
         """
         Execute Command and handle status
         """
@@ -90,7 +88,7 @@ class TradeCommand(ABC):
         if self.command(time):
             self.status = TradeCommandStatus.EXECUTED
             logger.info(str(self) + f" for {self.position.id}")
-            if self.report:
+            if report:
                 await self.execution_report()
             return True
 
@@ -98,7 +96,7 @@ class TradeCommand(ABC):
             self.failed_attempt += 1
             if self.failed_attempt > self.n_attempts:
                 self.status = TradeCommandStatus.FAILED
-                if self.report:
+                if report:
                     await TelegramReporter().log_report(
                         f"{self} with {self.failed_attempt} failed attempts"
                     )
@@ -106,12 +104,12 @@ class TradeCommand(ABC):
             return False
 
     @classmethod
-    async def execute_pending_commands(cls, time: datetime | None = None):
+    async def execute_pending_commands(cls, time: datetime | None = None, report=True):
         if time is None:
             time = datetime.now(timezone.utc)
         all_commands = copy(TradeCommand.all_pending_commands)
         for command in all_commands:
-            await command.execute(time)
+            await command.execute(time, report)
 
     @classmethod
     def close_records(cls):

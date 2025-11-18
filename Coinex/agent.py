@@ -33,7 +33,7 @@ class CoinexAgent(ExchangeAgent):
             logger.error(f"fetching chart data failed: {e}")
             return None
 
-        logger.info(f"{len(kline_res)} ohlcv fetched for {chart}")
+        logger.debug(f"{len(kline_res)} ohlcv fetched for {chart}")
 
         all_candles_list = []
         for candle in kline_res:

@@ -78,7 +78,7 @@ class ForexAgent(ExchangeAgent):
             logger.error(f"fetching chart data failed: {chart=}")
             return None
 
-        logger.info(f"{len(ohlcv_res)} ohlcv fetched for {chart}")
+        logger.debug(f"{len(ohlcv_res)} ohlcv fetched for {chart}")
 
         all_candles_list = []
         for candle in ohlcv_res:
