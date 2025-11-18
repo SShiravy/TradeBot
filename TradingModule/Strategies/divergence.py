@@ -14,6 +14,8 @@ from dataclasses import dataclass
 from copy import copy
 import logging
 
+from TradingModule.reporter import TelegramReporter
+
 logger = logging.getLogger("Divergence")
 
 
@@ -226,15 +228,13 @@ class DivergenceTradeConfig(TradeConfig):
 
         position = self.position_handler.generate_position(signal)
 
-        if (self.long_trade and position.side is OrderSide.BUY) or (
-            self.short_trade and position.side is OrderSide.SELL
+        if (self.position_handler.long_trade and position.side is OrderSide.BUY) or (
+            self.position_handler.short_trade and position.side is OrderSide.SELL
         ):
-            command = commands.OpenPosition(position, self.agent)
-            command.execute()
-
+            commands.OpenPosition(position, self.agent)
         return signal, position
 
-    async def task(self, telegram_bot):
+    async def task(self):
         base_chartdata, second_chartdata = self.get_chartdata()
 
         base_data = copy(base_chartdata)
@@ -252,10 +252,5 @@ class DivergenceTradeConfig(TradeConfig):
         if self.send_signal:
             plot = TwoChartPlot(base_data, second_data)
             self.strategy.draw(plot, signal, draw_indicators=True)
-            position.draw(plot.base_plot)
-            img_path = plot.save_image()
-            await telegram_bot.send_photo_to_channel(
-                img_path, self.msg_generator(position)
-            )
-
+            await TelegramReporter().new_position(position, plot.base_plot)
         return self.give_delay(base_chartdata[-1], jump=True), signal, position

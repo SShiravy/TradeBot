@@ -17,7 +17,7 @@ class ForexDiverTradeConfig(DivergenceTradeConfig):
     def get_chartdata(self) -> tuple[ChartData, ChartData]:  # type: ignore[override]
         base_chartdata = self.agent.get_chartdata(self.chart, self.n_candle_check)
         second_chartdata = self.agent.get_chartdata(
-            self.second_chart, self.n_candle_check * 2
+            self.second_chart, self.n_candle_check
         )
 
         if base_chartdata is None or second_chartdata is None:
@@ -60,10 +60,10 @@ class ForexDiverTradeConfig(DivergenceTradeConfig):
             second_chartdata = second_chartdata.give_heikingashi_chartdata()
         return base_chartdata, second_chartdata
 
-    async def task(self, telegram_bot):
+    async def task(self):
         if not ForexAgent().check_market_open(self.chart):
             return timedelta(hours=2)
-        return await super().task(telegram_bot)
+        return await super().task()
 
 
 @dataclass(kw_only=True)
@@ -84,7 +84,7 @@ class CvdDiverTradeConfig(DivergenceTradeConfig):
 
         return base_chartdata, second_chartdata
 
-    async def task(self, telegram_bot):
+    async def task(self):
         if not ForexAgent().check_market_open(self.chart):
             return timedelta(hours=2)
-        return await super().task(telegram_bot)
+        return await super().task()

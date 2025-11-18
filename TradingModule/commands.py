@@ -1,4 +1,5 @@
 from TradingModule import Position, ExchangeAgent
+from TradingModule.reporter import TelegramReporter
 from datetime import datetime, timezone
 from abc import ABC, abstractmethod
 from enum import Enum
@@ -20,14 +21,19 @@ class TradeCommand(ABC):
     __recorded_failed_commands = {}
 
     def __init__(
-        self, position: Position, exchange: ExchangeAgent, n_attempts: int = 2
+        self,
+        position: Position,
+        exchange: ExchangeAgent,
+        n_attempts: int = 2,
+        report=True,
     ):
         self.position = position
+        self.exchange = exchange
         self.n_attempts = n_attempts
         self.failed_attempt: int = 0
         self.__status = TradeCommandStatus.PENDING
+        self.report = report
         TradeCommand.all_pending_commands.append(self)
-        self.exchange = exchange
 
         logger.debug(self)
 
@@ -60,7 +66,13 @@ class TradeCommand(ABC):
         """
         pass
 
-    def execute(self, time: datetime | None = None) -> bool:
+    async def execution_report(self):
+        """
+        report after successfull execution
+        """
+        pass
+
+    async def execute(self, time: datetime | None = None) -> bool:
         """
         Execute Command and handle status
         """
@@ -78,22 +90,28 @@ class TradeCommand(ABC):
         if self.command(time):
             self.status = TradeCommandStatus.EXECUTED
             logger.info(str(self) + f" for {self.position.id}")
+            if self.report:
+                await self.execution_report()
             return True
 
         else:
             self.failed_attempt += 1
             if self.failed_attempt > self.n_attempts:
                 self.status = TradeCommandStatus.FAILED
+                if self.report:
+                    await TelegramReporter().log_report(
+                        f"{self} with {self.failed_attempt} failed attempts"
+                    )
             logger.error(f"{self} with {self.failed_attempt} failed attempts")
             return False
 
     @classmethod
-    def execute_pending_commands(cls, time: datetime | None = None):
+    async def execute_pending_commands(cls, time: datetime | None = None):
         if time is None:
             time = datetime.now(timezone.utc)
         all_commands = copy(TradeCommand.all_pending_commands)
         for command in all_commands:
-            command.execute(time)
+            await command.execute(time)
 
     @classmethod
     def close_records(cls):
@@ -115,12 +133,14 @@ class TradeCommand(ABC):
 
 class OpenPosition(TradeCommand):
     def command(self, time):
-        entry_price = self.exchange.open_position(self.position)
-        if entry_price:
-            self.position.entry_price = entry_price
-            self.position.open_time = time
-            return True
-        return False
+        if self.position.real_trade:
+            entry_price = self.exchange.open_position(self.position)
+            if entry_price:
+                self.position.entry_price = entry_price
+            else:
+                return False
+        self.position.open_time = time
+        return True
 
 
 class TrailStoploss(TradeCommand):
@@ -134,12 +154,17 @@ class TrailStoploss(TradeCommand):
         super().__init__(position, exchange, n_attempts)
         self.stoploss_price = stoploss_price
 
+    async def execution_report(self):
+        await TelegramReporter().trailing_sl(self.position)
+
     def command(self, time):
-        if self.exchange.change_stoploss(self.position, self.stoploss_price):
-            self.position.stoploss = self.stoploss_price
-            self.position.last_update = time
-            return True
-        return False
+        if self.position.real_trade and not self.exchange.change_stoploss(
+            self.position, self.stoploss_price
+        ):
+            return False
+        self.position.stoploss = self.stoploss_price
+        self.position.last_update = time
+        return True
 
 
 class ChangeTakeProfit(TradeCommand):
@@ -154,44 +179,72 @@ class ChangeTakeProfit(TradeCommand):
         self.takeprofit_price = takeprofit_price
 
     def command(self, time) -> bool:
-        if self.exchange.change_takeprofit(self.position, self.takeprofit_price):
-            self.position.takeprofit = self.takeprofit_price
-            self.position.last_update = time
-            return True
-        return False
+        if self.position.real_trade and not self.exchange.change_takeprofit(
+            self.position, self.takeprofit_price
+        ):
+            return False
+        self.position.takeprofit = self.takeprofit_price
+        self.position.last_update = time
+        return True
 
 
-class ParitalTakeProfit(TradeCommand):
+class ParitalClose(TradeCommand):
     def __init__(
         self,
         position: Position,
         exchange: ExchangeAgent,
         volume: float,
         n_attempts: int = 2,
+        exec_price=None,
     ):
         super().__init__(position, exchange, n_attempts)
         self.volume = volume
+        self.exec_price = exec_price
 
     def command(self, time) -> bool:
-        exec_price = self.exchange.partial_close(self.position, volume=self.volume)
-        if exec_price:
-            self.position.update_pnl(exec_price, self.volume)
-            self.position.last_update = time
-            return True
-        return False
+        if self.position.real_trade:
+            exec_price = self.exchange.partial_close(self.position, volume=self.volume)
+            if exec_price:
+                self.position.update_pnl(exec_price, self.volume)
+            else:
+                return False
+        elif self.exec_price:
+            self.position.update_pnl(self.exec_price, self.volume)
+        self.position.last_update = time
+        return True
 
 
 class ClosePosition(TradeCommand):
+    def __init__(
+        self,
+        position: Position,
+        exchange: ExchangeAgent,
+        n_attempts: int = 2,
+        exec_price=None,
+    ):
+        super().__init__(position, exchange, n_attempts)
+        self.exec_price = exec_price
+
+    async def execution_report(self):
+        await TelegramReporter().position_closed(self.position)
+
     def command(self, time):
-        exec_price = self.exchange.close_position(self.position)
-        if exec_price:
-            self.position.update_pnl(exec_price)
-            self.position.closed = time
-            return True
-        return False
+        if self.position.real_trade:
+            exec_price = self.exchange.close_position(self.position)
+            if exec_price:
+                self.position.update_pnl(exec_price)
+            else:
+                return False
+        elif self.exec_price:
+            self.position.update_pnl(self.exec_price)
+        self.position.closed = time
+        return True
 
 
 class StopLoss(TradeCommand):
+    async def execution_report(self):
+        await TelegramReporter().position_closed(self.position)
+
     def command(self, time) -> bool:
         self.position.closed = time
         self.position.update_pnl(self.position.stoploss)
@@ -199,6 +252,9 @@ class StopLoss(TradeCommand):
 
 
 class TakeProfit(TradeCommand):
+    async def execution_report(self):
+        await TelegramReporter().position_closed(self.position)
+
     def command(self, time) -> bool:
         self.position.closed = time
         self.position.update_pnl(self.position.takeprofit)

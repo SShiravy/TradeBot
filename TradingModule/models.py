@@ -6,6 +6,7 @@ from datetime import timezone
 from abc import ABC, abstractmethod
 from typing import Any
 from enum import Enum
+import uuid
 
 
 class OrderSide(Enum):
@@ -45,7 +46,8 @@ class Position:
     leverage: int = 1
     open_time: datetime = field(default=datetime.now(timezone.utc))
     source: str = "Unknown"
-    id: str | None = None
+    id: uuid.UUID | str = field(default_factory=uuid.uuid4)
+    real_trade: bool = field(default=True)
 
     closed: datetime | None = field(default=None, init=False)
     previous_check: datetime | None = field(default=None, init=False)

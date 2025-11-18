@@ -50,12 +50,16 @@ class PositionHandler(ABC):
         exchange_agent: ExchangeAgent,
         initial_volume: float = 0.0,
         leverage: int = 1,
+        long_trade: bool = True,
+        short_trade: bool = True,
     ) -> None:
         self.exchange_agent = exchange_agent
         self.initial_volume = initial_volume
         self.leverage = leverage
         self.open_positions: list[Position] = []
         self.closed_positions: list[Position] = []
+        self.long_trade: bool = long_trade
+        self.short_trade: bool = short_trade
 
     @abstractmethod
     def init_stoploss(self, entry_price: float, side: OrderSide) -> float:
@@ -68,10 +72,15 @@ class PositionHandler(ABC):
     def generate_position(
         self, signal: Signal, entry_price: float | None = None, position_id: str = ""
     ) -> Position:
+        real_trade = False
         if signal.side is MarketSide.BEARISH:
             side = OrderSide.SELL
+            if self.short_trade:
+                real_trade = True
         else:  # signal.side is MarketSide.BULLISH:
             side = OrderSide.BUY
+            if self.long_trade:
+                real_trade = True
         if entry_price is None:
             entry_price = signal.candle.close
 
@@ -88,6 +97,7 @@ class PositionHandler(ABC):
             signal.candle.time,
             signal.source,
             position_id,
+            real_trade=real_trade,
         )
         self.open_positions.append(position)
         logger.info(f"New Position on {position.chart}")
@@ -212,8 +222,12 @@ class SimpleCryptoHandler(PositionHandler):
         leverage: int = 1,
         stoploss_percent: float = 5,
         takeprofit_percent: float = 5,
+        long_trade: bool = True,
+        short_trade: bool = True,
     ) -> None:
-        super().__init__(exchange_agent, initial_volume, leverage)
+        super().__init__(
+            exchange_agent, initial_volume, leverage, long_trade, short_trade
+        )
         self.stoploss_percent = stoploss_percent
         self.takeprofit_percent = takeprofit_percent
 
@@ -231,8 +245,10 @@ class SimpleForexHandler(PositionHandler):
         initial_volume: float = 0.01,
         stoploss_pip: int = 20,
         takeprofit_pip: int = 20,
+        long_trade: bool = True,
+        short_trade: bool = True,
     ) -> None:
-        super().__init__(exchange_agent, initial_volume, 1)
+        super().__init__(exchange_agent, initial_volume, 1, long_trade, short_trade)
         self.stoploss_pip = stoploss_pip
         self.takeprofit_pip = takeprofit_pip
 
@@ -263,6 +279,8 @@ class RiskFreeCrypto(SimpleCryptoHandler):
         stoploss_percent: float = 5,
         takeprofit_percent: float = 5,
         riskfree_trigger_percent: float = 2,
+        long_trade=True,
+        short_trade=True,
     ) -> None:
         super().__init__(
             exchange_agent,
@@ -270,6 +288,8 @@ class RiskFreeCrypto(SimpleCryptoHandler):
             leverage,
             stoploss_percent,
             takeprofit_percent,
+            long_trade=long_trade,
+            short_trade=short_trade,
         )
         self.riskfree_trigger_percent = riskfree_trigger_percent
 
@@ -310,8 +330,17 @@ class RiskFreeForex(SimpleForexHandler):
         stoploss_pip: int = 20,
         takeprofit_pip: int = 20,
         riskfree_trigger_pip: int = 10,
+        long_trade: bool = True,
+        short_trade: bool = True,
     ) -> None:
-        super().__init__(exchange_agent, initial_volume, stoploss_pip, takeprofit_pip)
+        super().__init__(
+            exchange_agent,
+            initial_volume,
+            stoploss_pip,
+            takeprofit_pip,
+            long_trade,
+            short_trade,
+        )
         self.riskfree_trigger_pip = riskfree_trigger_pip
 
     def give_trigger_price(self, position: Position) -> float:

@@ -7,7 +7,7 @@ from custom_logger import CustomLogger
 from config import settings
 import asyncio
 
-CustomLogger(log_file=True, file_log_name="CoinexBot")
+CustomLogger(log_file=True, file_log_name="CoinexDiverBot")
 
 coinex_agent = CoinexAgent(settings.COINEX_ACCESS_ID, settings.COINEX_SECRET_KEY)
 
@@ -22,10 +22,10 @@ five_m_diver = CoinexDiverTradeConfig(
         takeprofit_percent=0.5,
         leverage=5,
         initial_volume=1,
+        long_trade=False,
+        short_trade=False,
     ),
     agent=coinex_agent,
-    long_trade=False,
-    short_trade=False,
     heikingashi_chartdata=True,
 )
 
@@ -40,14 +40,14 @@ one_h_diver = CoinexDiverTradeConfig(
         initial_volume=2,
         riskfree_trigger_percent=1,
         leverage=10,
+        long_trade=False,
+        short_trade=False,
     ),
     agent=coinex_agent,
-    long_trade=False,
-    short_trade=False,
     heikingashi_chartdata=True,
 )
 
-TraderBot("CoinexBot", [five_m_diver, one_h_diver])
+TraderBot("CoinexDiverBot", [five_m_diver, one_h_diver])
 
 
 if __name__ == "__main__":

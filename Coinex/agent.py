@@ -66,10 +66,6 @@ class CoinexAgent(ExchangeAgent):
         return super().get_candles_since(chart, time)
 
     def open_position(self, position: Position):
-        """
-        return position id if successful otherwise None
-        its better to update position.entry_price to executed order price
-        """
         self.coinex_api.set_leverage(position.chart.symbol, position.leverage)
 
         order_result = self.coinex_api.place_order(
@@ -116,9 +112,6 @@ class CoinexAgent(ExchangeAgent):
         return True
 
     def partial_close(self, position: Position, volume):
-        """
-        return executed price if successful otherwise None
-        """
         res = self.coinex_api.close_position(position.chart.symbol, amount=volume)
         if not res:
             logger.error(f"Partial Close Failed: {position}\n{res=}")

@@ -1,12 +1,11 @@
 from TradingModule import ExchangeAgent, Position, OrderSide, commands
+from TradingModule.reporter import TelegramReporter
 from TradingModule.position_handlers import PositionHandler
 from ChartModule.models import Chart, Candle, Signal, ChartData
 from TradingModule.Strategies.model import Strategy
 from ChartModule.plot import PlotChart
-from TelegramModule import TelegramBot
 from datetime import datetime, timezone, timedelta
 from dataclasses import dataclass, field
-from config import settings
 import tracemalloc
 import asyncio
 import logging
@@ -22,34 +21,12 @@ class TradeConfig:
     long_signal: bool = field(default=True)
     short_signal: bool = field(default=True)
 
-    long_trade: bool = field(default=True)
-    short_trade: bool = field(default=True)
-
     bar_between_signals: int = field(default=2)
     send_signal: bool = field(default=True)
 
     n_candle_check: int = field(default=100)
 
     heikingashi_chartdata: bool = field(default=False)
-
-    def msg_generator(self, position: Position):
-        # TODO: move this to position handler
-        msg_list = [
-            position.source,
-            f"📊 {position.chart.symbol}",
-            f"⌛ Timeframe: {position.chart.timeframe.value}",
-            "🟢 LONG" if position.side is OrderSide.BUY else "🔴 SHORT",
-            f"📣 Entry = {position.entry_price}",
-            f"🎯 TP =  {position.takeprofit}",
-            f"⛔️ SL = {position.stoploss}",
-            f"⚡Volume: {position.volume}",
-        ]
-
-        msg = "\n\n".join(msg_list)
-
-        if position.leverage not in [1, 0]:
-            msg += f"\n\n⚡Leverage: {position.leverage}"
-        return msg
 
     def give_delay(self, last_candle: Candle, jump=False) -> timedelta:
         delay = self.chart.timeframe.time_delta
@@ -89,16 +66,13 @@ class TradeConfig:
 
         position = self.position_handler.generate_position(signal)
 
-        if (self.long_trade and position.side is OrderSide.BUY) or (
-            self.short_trade and position.side is OrderSide.SELL
+        if (self.position_handler.long_trade and position.side is OrderSide.BUY) or (
+            self.position_handler.short_trade and position.side is OrderSide.SELL
         ):
-            command = commands.OpenPosition(position, self.agent)
-            command.execute()
+            commands.OpenPosition(position, self.agent)
         return signal, position
 
-    async def task(
-        self, telegram_bot: TelegramBot
-    ) -> timedelta | tuple[timedelta, Signal, Position]:
+    async def task(self) -> timedelta | tuple[timedelta, Signal, Position]:
         chartdata = self.get_chartdata()
         res = self.find_signal(chartdata)
         if res is None:
@@ -107,13 +81,8 @@ class TradeConfig:
         if self.send_signal:
             plot = PlotChart(chartdata)
             self.strategy.draw(plot, signal, draw_indicators=True)
-            position.draw(plot)
-            img_path = plot.save_image()
-            await telegram_bot.send_photo_to_channel(
-                img_path, self.msg_generator(position)
-            )
-
-        return self.give_delay(signal.candle, jump=True), signal, position
+            await TelegramReporter().new_position(position, plot)
+        return self.give_delay(chartdata[-1], jump=True), signal, position
 
     def save_as_json(self, name: str):
         # TODO: merge all sub obj attr in a single dict
@@ -144,11 +113,6 @@ class TraderBot:
             cls.name = name
             cls.configs = configs
             cls.report_period = report_period
-            cls.telegram_bot = TelegramBot(
-                settings.TELEGRAM_BOT_TOKEN,
-                settings.TELEGRAM_CHANNEL_ID,
-                settings.TELEGRAM_REPORT_CHANNEL,
-            )
             cls._start_time = datetime.now(tz=timezone.utc).replace(microsecond=0)
         return cls._instance
 
@@ -157,7 +121,7 @@ class TraderBot:
             try:
                 for config in self.configs:
                     config.position_handler.manage_positions()
-                commands.TradeCommand.execute_pending_commands()
+                await commands.TradeCommand.execute_pending_commands()
                 await asyncio.sleep(5)
             except Exception as e:
                 logging.error(f"Manage Failed: {e}")
@@ -168,7 +132,8 @@ class TraderBot:
         error_number = 0
         while True:
             try:
-                res = await config.task(self.telegram_bot)
+                logging.info(f"Checking {config.strategy.name} on {config.chart}")
+                res = await config.task()
                 if isinstance(res, timedelta):
                     sleep_time = res
                 else:
@@ -180,7 +145,7 @@ class TraderBot:
                 error_number += 1
                 logging.error(f"{error_number} Times Error:{e}\non {config}")
                 if error_number == 3:
-                    await self.telegram_bot.send_report(
+                    await TelegramReporter().log_report(
                         f"3 Times Error:{e}\non {config}"
                     )
                 # Delay for one candle
@@ -189,7 +154,7 @@ class TraderBot:
                     continue
 
                 if error_number > 6:
-                    await self.telegram_bot.send_report(
+                    await TelegramReporter().log_report(
                         f"Error:{e}\non {config}\nMore Than 6 Times\nTask removed"
                     )
                     break
@@ -207,21 +172,21 @@ class TraderBot:
                 f"👋🤖\nLifespan⌛:\n{elapsed_time}",
                 f"Memory📝:\n{current / 1024 / 1024:.2f} MB\npeak: {peak / 1024 / 1024:.2f} MB",
             ]
-            await self.telegram_bot.send_report("\n".join(msg))
+            await TelegramReporter().log_report("\n".join(msg))
 
     async def report(self):
         while True:
             await asyncio.sleep(self.report_period.seconds)
             commands_report = commands.TradeCommand.close_records()
-            await self.telegram_bot.send_report(f"{self.name}\n" + commands_report)
+            await TelegramReporter().log_report(f"{self.name}\n{commands_report}")
             for config in self.configs:
                 report = config.position_handler.report()
                 report = f"{self.name}\n{config.strategy.name} On {str(config.chart)}\n{str(report)}"
-                await self.telegram_bot.send_message_to_channel(report)
+                await TelegramReporter().public_report(report)
 
     async def start(self):
         tracemalloc.start()
-        await self.telegram_bot.send_report(
+        await TelegramReporter().log_report(
             f"--{self.name}--\n⚡⚡\nStart at\n{self._start_time} utc\n⚡⚡"
         )
         tasks = [self.trade_task(config) for config in self.configs]

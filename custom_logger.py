@@ -34,7 +34,7 @@ class CustomLogger:
     def __new__(
         cls,
         consol_log: bool = True,
-        consol_log_level=logging.DEBUG,
+        consol_log_level=logging.INFO,
         log_file: bool = False,
         file_log_level=logging.DEBUG,
         file_log_name: str = "app",

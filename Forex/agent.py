@@ -1,5 +1,5 @@
 from ChartModule import Chart, Candle, ChartData, TimeFrame
-from TradingModule import ExchangeAgent, Position, OrderSide
+from TradingModule.models import ExchangeAgent, Position, OrderSide
 import mt5_wrapper as mt5
 from datetime import datetime, timezone, timedelta
 import logging
@@ -59,14 +59,7 @@ class ForexAgent(ExchangeAgent):
         if not last_tick_time:
             return False
         logger.debug(
-            f"Market Open or Not: (last_tick-now)={
-                abs(
-                    last_tick_time.replace(second=0, microsecond=0)
-                    - now.replace(second=0, microsecond=0)
-                )
-            }\nlast_tick={last_tick_time.replace(second=0, microsecond=0)}\nnow={
-                now.replace(second=0, microsecond=0)
-            }"
+            f"Market Open or Not: (last_tick-now)={abs(last_tick_time.replace(second=0, microsecond=0) - now.replace(second=0, microsecond=0))}\nlast_tick={last_tick_time.replace(second=0, microsecond=0)}\nnow={now.replace(second=0, microsecond=0)}"
         )
         if abs(
             last_tick_time.replace(second=0, microsecond=0)
@@ -155,9 +148,6 @@ class ForexAgent(ExchangeAgent):
         return result.price
 
     def change_stoploss(self, position: Position, price) -> bool:
-        if not position.id:
-            logger.error(f"position have no id:\n{position=}")
-            return False
         request = {
             "action": mt5.TRADE_ACTION_SLTP,
             "position": int(position.id),
@@ -174,9 +164,6 @@ class ForexAgent(ExchangeAgent):
         return True
 
     def change_takeprofit(self, position: Position, price) -> bool:
-        if not position.id:
-            logger.error(f"position have no id:\n{position=}")
-            return False
         request = {
             "action": mt5.TRADE_ACTION_SLTP,
             "position": int(position.id),
@@ -193,13 +180,6 @@ class ForexAgent(ExchangeAgent):
         return True
 
     def partial_close(self, position: Position, volume) -> float | None:
-        """
-        return executed price if successful otherwise None
-        """
-        if not position.id:
-            logger.error(f"position have no id:\n{position=}")
-            return None
-
         if position.side == OrderSide.BUY:
             trade_side = mt5.ORDER_TYPE_BUY
         else:
@@ -208,7 +188,7 @@ class ForexAgent(ExchangeAgent):
         request = {
             "action": mt5.TRADE_ACTION_DEAL,
             "symbol": position.chart.symbol,
-            "position": position.id,
+            "position": int(position.id),
             "type": trade_side,
             "volume": volume,
             "deviation": 20,
@@ -222,13 +202,6 @@ class ForexAgent(ExchangeAgent):
         return result.price
 
     def close_position(self, position: Position) -> float | None:
-        """
-        return executed price if successful otherwise None
-        """
-        if not position.id:
-            logger.error(f"position have no id:\n{position=}")
-            return None
-
         if position.side == OrderSide.BUY:
             trade_side = mt5.ORDER_TYPE_BUY
         else:
@@ -237,7 +210,7 @@ class ForexAgent(ExchangeAgent):
         request = {
             "action": mt5.TRADE_ACTION_DEAL,
             "symbol": position.chart.symbol,
-            "position": position.id,
+            "position": int(position.id),
             "type": trade_side,
             "volume": position.volume,
             "deviation": 20,

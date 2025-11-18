@@ -103,7 +103,7 @@ class Chart:
     precision: int = field(default=3)
 
     def __str__(self) -> str:
-        return f"{self.symbol}_{self.timeframe}"
+        return f"{self.symbol} {self.timeframe}"
 
 
 @dataclass(slots=True, frozen=True)

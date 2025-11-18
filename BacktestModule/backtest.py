@@ -25,8 +25,6 @@ class DummyAgent(ExchangeAgent):
         return self.real_agent.get_candles_since(chart, time)
 
     def open_position(self, position: Position) -> float | None:
-        last_pos_id = len(Backtest.all_positions)
-        position.id = last_pos_id + 1  # type: ignore
         return position.entry_price
 
     def get_open_positions(self, chart: Chart):
@@ -56,8 +54,9 @@ class Backtest:
             config.position_handler.exchange_agent = dummy_agent
             cls.len_sub_data = len_sub_data if len_sub_data else config.n_candle_check
             config.n_candle_check = n_bar
-            config.long_trade = False
-            config.short_trade = False
+            config.position_handler.long_trade = False
+            config.position_handler.short_trade = False
+            config.send_signal = False
             cls.config = config
             cls.n_bar = n_bar
             cls.current_price = 0.0
@@ -65,7 +64,7 @@ class Backtest:
             cls.all_signals: list[Signal | DivergenceSignal] = []
         return cls._instance
 
-    def diver_backtest(self, show_image=True):
+    async def diver_backtest(self, show_image=True):
         if not isinstance(self.config, DivergenceTradeConfig):
             return
         jump = 0
@@ -91,7 +90,7 @@ class Backtest:
                 self.config.position_handler.handler(
                     pos, [candle.open, candle.low, candle.high, candle.close]
                 )
-            commands.TradeCommand.execute_pending_commands(candle.time)
+            await commands.TradeCommand.execute_pending_commands(candle.time)
 
             if jump > 0:
                 jump -= 1
@@ -104,7 +103,7 @@ class Backtest:
             self.all_signals.append(signal)
             self.all_positions.append(position)
             open = commands.OpenPosition(position, self.config.agent)
-            open.execute(candle.time)
+            await open.execute(candle.time)
 
         plot = TwoChartPlot(base_chartdata, second_chartdata)
         for signal in self.all_signals:
@@ -127,15 +126,15 @@ class Backtest:
             plot.show()
         return commands_report, positions_report, img_path
 
-    def start_backtest(self, show_image=True):
+    async def start_backtest(self, show_image=True):
         # TODO: update here
         if isinstance(self.config, DivergenceTradeConfig):
-            return self.diver_backtest(show_image)
+            return await self.diver_backtest(show_image)
         chartdata = self.config.get_chartdata()
         for i in range(self.len_sub_data, len(chartdata) - 1):
             sub_data = chartdata[:i]
             self.current_price = chartdata[i + 1]
-            commands.TradeCommand.execute_pending_commands(chartdata[i].time)
+            await commands.TradeCommand.execute_pending_commands(chartdata[i].time)
 
             res = self.config.find_signal(sub_data)
             if res is None:
