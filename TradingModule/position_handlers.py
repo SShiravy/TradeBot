@@ -1,8 +1,7 @@
 from ChartModule import Signal, MarketSide, Chart, TimeFrame
-from TradingModule import Position, OrderSide, ExchangeAgent
+from TradingModule import Position, OrderSide, ExchangeAgent, PositionsReport
 from TradingModule.commands import TradeCommand
 from TradingModule import commands
-from dataclasses import dataclass, field
 from abc import ABC, abstractmethod
 from copy import copy
 import numpy as np
@@ -10,38 +9,6 @@ import logging
 
 
 logger = logging.getLogger("PositionHandler")
-
-
-@dataclass(slots=True)
-class PositionsReport:
-    total_closed_position: int
-    total_open_positions: int
-    long_zero_pnl: int
-    short_zero_pnl: int
-    long_win: int
-    long_lose: int
-    short_win: int
-    short_lose: int
-    pnl: float
-    pnl_percent: float
-    spot_pnl: float
-    spot_pnl_percent: float
-    total_pip: float | None = field(default=None, init=False)
-
-    def __str__(self) -> str:
-        doc = [
-            f"{self.total_closed_position} Closed Position",
-            f"{self.total_open_positions} position still open",
-            f"Long: {self.long_win} Win & {self.long_lose} Lose & {self.long_zero_pnl} Flat",
-            f"Short: {self.short_win} Win & {self.short_lose} Lose & {self.short_zero_pnl} Flat",
-            f"PNL = {round(self.pnl, 4)}",
-            f"PNL% = {round(self.pnl_percent, 4)}",
-            f"Spot PNL = {round(self.spot_pnl, 4)}",
-            f"Spot PNL% = {round(self.spot_pnl_percent, 4)}",
-        ]
-        if self.total_pip:
-            doc.append(f"Total pip: {round(self.total_pip, 2)}")
-        return "\n".join(doc)
 
 
 class PositionHandler(ABC):
@@ -150,54 +117,10 @@ class PositionHandler(ABC):
                 all_commands.append(command)
         return all_commands
 
-    def report(self) -> PositionsReport:
-        total_pnl = 0.0
-        total_pnl_percent = 0.0
-        total_spot_pnl = 0.0
-        total_spot_pnl_percent = 0.0
-        win_long_pos = 0
-        win_short_pos = 0
-        lose_long_pos = 0
-        lose_short_pos = 0
-        zero_pnl_long = 0
-        zero_pnl_short = 0
-        for pos in self.closed_positions:
-            total_pnl += pos.pnl
-            total_pnl_percent += pos.pnl_percent
-            total_spot_pnl += pos.pnl / pos.leverage
-            total_spot_pnl_percent += pos.pnl_percent / pos.leverage
-            if pos.side is OrderSide.BUY:
-                if pos.pnl > 0:
-                    win_long_pos += 1
-                elif pos.pnl < 0:
-                    lose_long_pos += 1
-                else:
-                    zero_pnl_long += 1
-
-            else:
-                if pos.pnl > 0:
-                    win_short_pos += 1
-                elif pos.pnl < 0:
-                    lose_short_pos += 1
-                else:
-                    zero_pnl_short += 1
-
-        report = PositionsReport(
-            len(self.closed_positions),
-            len(self.open_positions),
-            zero_pnl_long,
-            zero_pnl_short,
-            win_long_pos,
-            lose_long_pos,
-            win_short_pos,
-            lose_short_pos,
-            total_pnl,
-            total_pnl_percent,
-            total_spot_pnl,
-            total_spot_pnl_percent,
-        )
+    def report(self) -> list[PositionsReport]:
+        reports = PositionsReport.generate_reports(self.closed_positions)
         self.closed_positions = []
-        return report
+        return reports
 
 
 # Simple ---------------------------------------------
@@ -247,13 +170,12 @@ class SimpleForexHandler(PositionHandler):
     def init_takeprofit(self, entry_price: float, side: OrderSide) -> float:
         return entry_price + side.factor() * self.takeprofit_pip
 
-    def report(self):
-        total_pip = 0
-        for pos in self.closed_positions:
-            total_pip += pos.pnl_in_pip
-        report = super().report()
-        report.total_pip = total_pip
-        return report
+    def generate_position(
+        self, signal: Signal, entry_price: float | None = None, position_id: str = ""
+    ) -> Position:
+        pos = super().generate_position(signal, entry_price, position_id)
+        pos.in_forex = True
+        return pos
 
 
 # RiskFree---------------------------------------------

@@ -2,6 +2,7 @@ from Coinex import CoinexAgent, CoinexDiverTradeConfig
 from ChartModule import Chart, TimeFrame
 from TradingModule.position_handlers import RiskFreeCrypto
 from TradingModule.Strategies.divergence import Divergence
+from ChartModule.Indicators import EMA
 from config import settings
 
 
@@ -10,18 +11,16 @@ coinex_agent = CoinexAgent(settings.COINEX_ACCESS_ID, settings.COINEX_SECRET_KEY
 coinex_five_m_diver = CoinexDiverTradeConfig(
     chart=Chart("SOLUSDT", TimeFrame.five_minutes),
     second_chart=Chart("BTCUSDT", TimeFrame.five_minutes),
-    strategy=Divergence(3, 100, [], name="CoinexDiver", inverse_diver_long=True),
+    strategy=Divergence(3, 100, [EMA(50)], name="CoinexDiver", inverse_diver_long=True),
     position_handler=RiskFreeCrypto(
         coinex_agent,
-        riskfree_trigger_percent=0.25,
-        stoploss_percent=0.5,
-        takeprofit_percent=0.5,
-        leverage=5,
+        riskfree_trigger_percent=0.5,
+        stoploss_percent=1,
+        takeprofit_percent=1,
+        leverage=10,
         initial_volume=10,
     ),
     agent=coinex_agent,
-    long_trade=False,
-    short_trade=False,
     heikingashi_chartdata=True,
 )
 
@@ -38,7 +37,5 @@ coinex_one_h_diver = CoinexDiverTradeConfig(
         leverage=10,
     ),
     agent=coinex_agent,
-    long_trade=False,
-    short_trade=False,
     heikingashi_chartdata=True,
 )

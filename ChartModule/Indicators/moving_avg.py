@@ -59,7 +59,7 @@ class EMA(IndicatorBaseModel):
         # Create DataFrame
         df = pd.DataFrame({"source": source_values}, index=pd.to_datetime(times))
         df["sma"] = df["source"].ewm(com=self.n_bar, adjust=False).mean()
-        # Return as dictionary {time: sma}
+        # Return as dictionary {time: ema}
         return df["sma"].dropna().to_dict()
 
     def _forcast(self) -> MarketSide:

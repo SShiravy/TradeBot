@@ -65,21 +65,20 @@ class TelegramReporter:
         ) - position.open_time.replace(microsecond=0, second=0)
 
         close_type_msg = "⭕ Flat Close"
-        close_price = filled_price
+        close_price = filled_price if filled_price else position.entry_price
         if position.pnl > 0:
             close_type_msg = "✅ TP Triggered"
             close_price = position.takeprofit
         elif position.pnl < 0:
             close_type_msg = "⛔️ SL Triggered"
             close_price = position.stoploss
-        close_price = filled_price if filled_price else position.entry_price
 
         msg_list = [
             close_type_msg,
             position.source,
             f"📊 {position.chart}",
-            f"💲 Price = {close_price}",
-            f"💵 PNL = {position.pnl}",
+            f"💲 Close Price = {close_price}",
+            f"💵 PNL = {round(position.pnl, 5)}",
             f"⌛ Duration = {duration}",
         ]
         msg = "\n\n".join(msg_list)
@@ -89,21 +88,23 @@ class TelegramReporter:
 
     async def trailing_sl(self, position: Position):
         trail_type_msg = (
-            "⭕ Risk Free"
+            "📝 Risk Free"
             if position.stoploss == position.entry_price
-            else "⭕ Trailing Stop"
+            else "📝 Trailing Stop"
         )
         msg_list = [
             trail_type_msg,
             position.source,
             f"📊 {position.chart}",
-            f"💲 Price = {position.stoploss}",
+            f"💲 New SL = {position.stoploss}",
         ]
         msg = "\n\n".join(msg_list)
 
         await self.send_msg(
             self._public_channel, msg, reply_id=self.msg_id_dict.get(position.id)
         )
+        if self.msg_id_dict.get(position.id):
+            self.msg_id_dict.pop(position.id)
 
     async def public_report(self, msg: str):
         await self.send_msg(self._public_channel, msg)

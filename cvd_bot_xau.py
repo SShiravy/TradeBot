@@ -1,8 +1,8 @@
 from Forex import ForexAgent, CvdDiverTradeConfig
 from ChartModule import Chart, TimeFrame
-from TradingModule import TraderBot
-from TradingModule.position_handlers import SimpleForexHandler
+from TradingModule.position_handlers import SimpleForexHandler, RiskFreeForex
 from TradingModule.Strategies.divergence import Divergence
+from TradingModule import TraderBot
 from custom_logger import CustomLogger
 import asyncio
 
@@ -21,15 +21,15 @@ cvd_diver = Divergence(
 one_m_cvd = CvdDiverTradeConfig(
     chart=Chart("XAUUSD!", TimeFrame.one_minute),
     strategy=cvd_diver,
-    position_handler=SimpleForexHandler(
-        ForexAgent(), stoploss_pip=10, takeprofit_pip=10
-    ),
+    position_handler=SimpleForexHandler(ForexAgent(), stoploss_pip=5, takeprofit_pip=5),
 )
 
 five_m_cvd = CvdDiverTradeConfig(
     chart=Chart("XAUUSD!", TimeFrame.five_minutes),
     strategy=cvd_diver,
-    position_handler=SimpleForexHandler(ForexAgent()),
+    position_handler=RiskFreeForex(
+        ForexAgent(), riskfree_trigger_pip=5, stoploss_pip=10, takeprofit_pip=10
+    ),
 )
 
 

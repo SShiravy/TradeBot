@@ -87,7 +87,7 @@ class TradeCommand(ABC):
 
         if self.command(time):
             self.status = TradeCommandStatus.EXECUTED
-            logger.info(str(self) + f" for {self.position.id}")
+            logger.info(str(self) + f" for {self.position.exchange_id}")
             if report:
                 await self.execution_report()
             return True

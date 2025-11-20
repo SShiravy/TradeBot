@@ -17,9 +17,9 @@ five_m_diver = CoinexDiverTradeConfig(
     strategy=Divergence(3, 100, [], name="CoinexDiver", inverse_diver_long=True),
     position_handler=RiskFreeCrypto(
         coinex_agent,
-        riskfree_trigger_percent=0.25,
-        stoploss_percent=0.5,
-        takeprofit_percent=0.5,
+        riskfree_trigger_percent=0.5,
+        stoploss_percent=1,
+        takeprofit_percent=1,
         leverage=5,
         initial_volume=1,
         long_trade=False,

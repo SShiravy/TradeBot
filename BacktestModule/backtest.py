@@ -1,6 +1,6 @@
 from ChartModule import ChartData, Chart, Signal
 from ChartModule.plot import PlotChart, TwoChartPlot
-from TradingModule import TradeConfig, ExchangeAgent, Position
+from TradingModule import TradeConfig, ExchangeAgent, Position, PositionsReport
 from TradingModule import commands
 from TradingModule.Strategies.divergence import DivergenceTradeConfig, DivergenceSignal
 from datetime import datetime
@@ -69,7 +69,6 @@ class Backtest:
             return
         jump = 0
         base_chartdata, second_chartdata = self.config.get_chartdata()
-        print(base_chartdata, second_chartdata)
         for i in range(self.len_sub_data, len(base_chartdata) - 2):
             base_sub_data = ChartData(
                 base_chartdata.chart, base_chartdata[:i], base_chartdata.indicators
@@ -112,20 +111,24 @@ class Backtest:
         for indicator in self.config.strategy.confirmation_indicators:
             indicator.plot(plot.base_plot)
         for pos in self.all_positions:
+            if not pos.closed:
+                continue
             pos.draw(plot.base_plot)
         img_path = plot.save_image(
             f"backtest_{str(self.config.chart)}{str(self.config.strategy.name)}",
             path="Backtest/Images/",
         )
         commands_report = commands.TradeCommand.close_records()
-        positions_report = self.config.position_handler.report()
-        logger.info("Result:\n\n" + commands_report + "\n\n" + str(positions_report))
-        logger.info(
-            f"Backtest on {base_chartdata[-1].time - base_chartdata[0].time} with {len(base_chartdata)} candles"
-        )
+        all_reports = self.config.position_handler.report()
+        logger.info("Result:\n\n" + commands_report)
+        for poses_report in all_reports:
+            logger.info("\n" + str(poses_report))
+        overal_report = PositionsReport.give_overal_report(all_reports)
+        logger.info("\n" + str(overal_report))
+
         if show_image:
             plot.show()
-        return commands_report, positions_report, img_path
+        return commands_report, img_path
 
     async def start_backtest(self, show_image=True):
         # TODO: update here
@@ -158,8 +161,10 @@ class Backtest:
             path="Backtest/Images/",
         )
         commands_report = commands.TradeCommand.close_records()
-        positions_report = self.config.position_handler.report()
-        logger.info(commands_report + "\n\n" + str(positions_report))
+        positions_reports = self.config.position_handler.report()
+        logger.info(commands_report)
+        for poses_report in positions_reports:
+            logger.info(str(poses_report))
         if show_image:
             plot.show()
-        return commands_report, positions_report, img_path
+        return commands_report, positions_reports, img_path

@@ -143,14 +143,14 @@ class ForexAgent(ExchangeAgent):
         if not result:
             logging.error(f"Opening position failed: {position}\n{mt5.last_error()=}")
             return None
-        position.id = str(result.order)
+        position.exchange_id = str(result.order)
         logging.info(f"Position Opened: {position}\n{result=}")
         return result.price
 
     def change_stoploss(self, position: Position, price) -> bool:
         request = {
             "action": mt5.TRADE_ACTION_SLTP,
-            "position": int(position.id),
+            "position": int(position.exchange_id),
             "symbol": position.chart.symbol,
             "sl": price,
             "tp": position.takeprofit,
@@ -166,7 +166,7 @@ class ForexAgent(ExchangeAgent):
     def change_takeprofit(self, position: Position, price) -> bool:
         request = {
             "action": mt5.TRADE_ACTION_SLTP,
-            "position": int(position.id),
+            "position": int(position.exchange_id),
             "symbol": position.chart.symbol,
             "sl": position.takeprofit,
             "tp": price,
@@ -188,7 +188,7 @@ class ForexAgent(ExchangeAgent):
         request = {
             "action": mt5.TRADE_ACTION_DEAL,
             "symbol": position.chart.symbol,
-            "position": int(position.id),
+            "position": int(position.exchange_id),
             "type": trade_side,
             "volume": volume,
             "deviation": 20,
@@ -210,7 +210,7 @@ class ForexAgent(ExchangeAgent):
         request = {
             "action": mt5.TRADE_ACTION_DEAL,
             "symbol": position.chart.symbol,
-            "position": int(position.id),
+            "position": int(position.exchange_id),
             "type": trade_side,
             "volume": position.volume,
             "deviation": 20,

@@ -80,7 +80,7 @@ class CoinexAgent(ExchangeAgent):
             return None
 
         pos_id = order_result["created_at"]
-        position.id = pos_id
+        position.exchange_id = pos_id
 
         sl_res = self.change_stoploss(position, position.stoploss)
         tp_res = self.change_takeprofit(position, position.takeprofit)
