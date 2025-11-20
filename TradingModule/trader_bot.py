@@ -106,7 +106,7 @@ class TraderBot:
         cls,
         name: str = "",
         configs: list[TradeConfig] = [],
-        report_period=timedelta(hours=6),
+        report_period=timedelta(minutes=30),
     ):
         if not hasattr(cls, "_instance"):
             cls._instance = object.__new__(cls)
@@ -180,8 +180,7 @@ class TraderBot:
             await TelegramReporter().log_report(f"{self.name}\n{commands_report}")
             for config in self.configs:
                 report = config.position_handler.report()
-                report = f"{self.name}\n{config.strategy.name} On {str(config.chart)}\n{str(report)}"
-                await TelegramReporter().public_report(report)
+                await TelegramReporter().public_report(str(report))
 
     async def start(self):
         tracemalloc.start()

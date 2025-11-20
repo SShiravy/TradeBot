@@ -202,7 +202,6 @@ class PositionsReport:
             report.total_positions = self.flats + other.total_positions
 
             if self.identifier != other.identifier:
-                print(self.identifier, other.identifier)
                 report.overal_report = True
             return report
 
@@ -262,7 +261,6 @@ class PositionsReport:
         return report
 
     def __str__(self) -> str:
-        print(self.identifier, "------------")
         report_msg = [
             f"{self.identifier if not self.overal_report else 'Overall'}",
             f"Total Positions = {self.total_positions}",

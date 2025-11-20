@@ -1,5 +1,5 @@
 from ChartModule import Chart, TimeFrame
-from ChartModule.Indicators import EMA
+from ChartModule.Indicators import EMA, SMA
 from TradingModule.Strategies.divergence import Divergence
 from Forex import ForexAgent, CvdDiverTradeConfig, ForexDiverTradeConfig
 from TradingModule.position_handlers import SimpleForexHandler, RiskFreeForex
@@ -36,7 +36,7 @@ forex_fifteen_m_diver = ForexDiverTradeConfig(
 cvd_diver = Divergence(
     3,
     100,
-    [],
+    [EMA(50)],
     name="ForexCVD",
     long_second_line_validation=False,
     short_second_line_validation=False,

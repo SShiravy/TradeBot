@@ -17,7 +17,6 @@ async def start_backtest():
 if __name__ == "__main__":
     import asyncio
 
-    # TODO: sma check
     # TODO: seperate sl tp for long short
     # TODO: position handler with MA and control tp sl with it
     # TODO: multiple loss in a row for long and short handler

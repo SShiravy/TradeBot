@@ -85,6 +85,8 @@ class TelegramReporter:
         await self.send_msg(
             self._public_channel, msg, reply_id=self.msg_id_dict.get(position.id)
         )
+        if self.msg_id_dict.get(position.id):
+            self.msg_id_dict.pop(position.id)
 
     async def trailing_sl(self, position: Position):
         trail_type_msg = (
@@ -103,8 +105,6 @@ class TelegramReporter:
         await self.send_msg(
             self._public_channel, msg, reply_id=self.msg_id_dict.get(position.id)
         )
-        if self.msg_id_dict.get(position.id):
-            self.msg_id_dict.pop(position.id)
 
     async def public_report(self, msg: str):
         await self.send_msg(self._public_channel, msg)

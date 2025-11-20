@@ -21,14 +21,16 @@ cvd_diver = Divergence(
 one_m_cvd = CvdDiverTradeConfig(
     chart=Chart("XAUUSD!", TimeFrame.one_minute),
     strategy=cvd_diver,
-    position_handler=SimpleForexHandler(ForexAgent(), stoploss_pip=5, takeprofit_pip=5),
+    position_handler=RiskFreeForex(
+        ForexAgent(), stoploss_pip=5, takeprofit_pip=5, riskfree_trigger_pip=2
+    ),
 )
 
 five_m_cvd = CvdDiverTradeConfig(
     chart=Chart("XAUUSD!", TimeFrame.five_minutes),
     strategy=cvd_diver,
     position_handler=RiskFreeForex(
-        ForexAgent(), riskfree_trigger_pip=5, stoploss_pip=10, takeprofit_pip=10
+        ForexAgent(), stoploss_pip=10, takeprofit_pip=10, riskfree_trigger_pip=5
     ),
 )
 

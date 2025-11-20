@@ -30,13 +30,14 @@ class SMA(IndicatorBaseModel):
 
     def _forcast(self) -> MarketSide:
         last_candle = self.candles[-1]
-        sma = self.values[last_candle.time]
+        sma = self.values.get(last_candle.time)
+        if sma is None:
+            return MarketSide.NEUTRAL
         if sma < last_candle.body_bottom:
             return MarketSide.BULLISH
-        elif sma > last_candle.body_top:
+        if sma > last_candle.body_top:
             return MarketSide.BEARISH
-        else:
-            return MarketSide.NEUTRAL
+        return MarketSide.NEUTRAL
 
     def plot(self, plot: PlotChart):
         plot.linear_plot(self.values.keys(), self.values.values(), f"SMA{self.n_bar}")
