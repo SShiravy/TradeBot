@@ -65,6 +65,15 @@ class MarketSide(Enum):
     BEARISH = "Bearish"
     NEUTRAL = "Neutral"
 
+    @property
+    def number(self):
+        match self:
+            case MarketSide.BEARISH:
+                return -1
+            case MarketSide.BULLISH:
+                return 1
+        return 0
+
 
 @dataclass(slots=True, frozen=True)
 class Candle:
@@ -89,7 +98,7 @@ class Candle:
         return max(self.open, self.close)
 
     @property
-    def body_lenght(self):
+    def body_length(self):
         return self.body_top - self.body_bottom
 
     def __str__(self) -> str:

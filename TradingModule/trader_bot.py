@@ -1,4 +1,4 @@
-from TradingModule import ExchangeAgent, Position, OrderSide, commands
+from TradingModule import ExchangeAgent, Position, OrderSide, commands, PositionsReport
 from TradingModule.reporter import TelegramReporter
 from TradingModule.position_handlers import PositionHandler
 from ChartModule.models import Chart, Candle, Signal, ChartData
@@ -178,9 +178,16 @@ class TraderBot:
             await asyncio.sleep(self.report_period.seconds)
             commands_report = commands.TradeCommand.close_records()
             await TelegramReporter().log_report(f"{self.name}\n{commands_report}")
+            overall_report = []
             for config in self.configs:
-                report = config.position_handler.report()
-                await TelegramReporter().public_report(str(report))
+                all_reports = config.position_handler.report()
+                for report in all_reports:
+                    await TelegramReporter().log_report(str(report))
+                overall_report.append(PositionsReport.give_overall_report(all_reports))
+
+            overall_report = sum(overall_report)
+            if overall_report:
+                await TelegramReporter().public_report(str(overall_report))
 
     async def start(self):
         tracemalloc.start()

@@ -123,7 +123,7 @@ class Backtest:
         logger.info("Result:\n\n" + commands_report)
         for poses_report in all_reports:
             logger.info("\n" + str(poses_report))
-        overal_report = PositionsReport.give_overal_report(all_reports)
+        overal_report = PositionsReport.give_overall_report(all_reports)
         logger.info("\n" + str(overal_report))
 
         if show_image:

@@ -1,13 +1,13 @@
 from ChartModule import Chart, ChartData, MarketSide, Candle
 from ChartModule.plot import PlotChart
-from datetime import datetime
 from dataclasses import dataclass, field
-from datetime import timezone
+from datetime import datetime, timedelta
 from abc import ABC, abstractmethod
+from datetime import timezone
 from typing import Any
+from enum import Enum
 import hashlib
 import json
-from enum import Enum
 import uuid
 
 
@@ -256,7 +256,7 @@ class PositionsReport:
         return list(reports_dict.values())
 
     @classmethod
-    def give_overal_report(cls, all_reports: list):
+    def give_overall_report(cls, all_reports: list):
         report = sum(all_reports)
         return report
 
@@ -276,11 +276,12 @@ class PositionsReport:
             report_msg.append(f"Spot PNL = {round(self.spot_pnl, 4)} $")
             report_msg.append(f"spot pnl percent = {round(self.spot_pnl_percent, 2)} %")
 
-        report_msg.append(
-            f"Win Rate = {round(self.wins / (self.wins + self.loses) * 100, 2)} %"
-        )
-
-        report_msg.append(f"Duration = {self.last_time - self.first_time}")
+        if (self.wins + self.loses) != 0:
+            report_msg.append(
+                f"Win Rate = {round(self.wins / (self.wins + self.loses) * 100, 2)} %"
+            )
+        duration = timedelta(seconds=(self.last_time - self.first_time).seconds)
+        report_msg.append(f"Duration = {duration}")
         return "\n".join(report_msg)
 
 

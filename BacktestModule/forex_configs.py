@@ -2,14 +2,24 @@ from ChartModule import Chart, TimeFrame
 from ChartModule.Indicators import EMA, SMA
 from TradingModule.Strategies.divergence import Divergence
 from Forex import ForexAgent, CvdDiverTradeConfig, ForexDiverTradeConfig
-from TradingModule.position_handlers import SimpleForexHandler, RiskFreeForex
+from TradingModule.position_handlers import (
+    SimpleForexHandler,
+    RiskFreeForex,
+    LongShortForexHandler,
+)
 
 forex_one_m_diver = ForexDiverTradeConfig(
     chart=Chart("XAUUSD!", TimeFrame.one_minute),
     second_chart=Chart("SOLUSD", TimeFrame.one_minute),
     strategy=Divergence(10, 100, [], name="ForexDiver"),
-    position_handler=RiskFreeForex(
-        ForexAgent(), takeprofit_pip=4, stoploss_pip=4, riskfree_trigger_pip=2
+    position_handler=LongShortForexHandler(
+        ForexAgent(),
+        long_takeprofit_pip=3,
+        long_stoploss_pip=3,
+        long_riskfree_trigger_pip=2,
+        short_takeprofit_pip=5,
+        short_stoploss_pip=5,
+        short_riskfree_trigger_pip=3,
     ),
     merge_two_chart_time=True,
 )

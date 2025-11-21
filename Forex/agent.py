@@ -134,7 +134,7 @@ class ForexAgent(ExchangeAgent):
             "tp": position.takeprofit,
             "deviation": 20,
             "magic": 80713,
-            "comment": "Python Trader Bot",
+            "comment": "PythonTraderBot",
             "type_time": mt5.ORDER_TIME_GTC,
             "type_filling": mt5.ORDER_FILLING_IOC,
         }
