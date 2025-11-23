@@ -1,5 +1,4 @@
-from ChartModule.models import IndicatorBaseModel, MarketSide, IndicatorCandleSource
-from ChartModule.plot import PlotChart
+from ChartModule.models import IndicatorBaseModel, MarketSide
 import finplot as fplt
 
 

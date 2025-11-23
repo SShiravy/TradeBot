@@ -7,7 +7,6 @@ CustomLogger(True, consol_log_level=logging.INFO)
 def test_moving_color():
     from BacktestModule.forex_configs import forex_one_m_diver
     from ChartModule.Indicators import MovingColor, MovingCandleLength
-    from ChartModule.plot import TwoChartPlot
     import finplot as fplt
 
     config = forex_one_m_diver
@@ -32,7 +31,6 @@ def test_moving_color():
 async def start_backtest():
     from BacktestModule import Backtest
     from BacktestModule.forex_configs import forex_one_m_diver
-    from BacktestModule.coinex_configs import coinex_one_h_diver
 
     # Check forex
     backtest = Backtest(forex_one_m_diver, 1000)
@@ -42,11 +40,9 @@ async def start_backtest():
 if __name__ == "__main__":
     # test_moving_color()
     import asyncio
-
+    # TODO: partial close
     # TODO: position handler with MA and control tp sl with it
     # TODO: multiple loss in a row for long and short handler
-    # TODO: duration remove second and micro second = 0
-    # TODO: report overal for every
     # TODO: pos open candle should not check in position handler
     # TODO: add backtest bot
 

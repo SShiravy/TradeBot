@@ -199,7 +199,7 @@ class PositionsReport:
 
             report.forex_report = self.forex_report
 
-            report.total_positions = self.flats + other.total_positions
+            report.total_positions = self.total_positions + other.total_positions
 
             if self.identifier != other.identifier:
                 report.overal_report = True
@@ -267,7 +267,7 @@ class PositionsReport:
             f"Wins = {self.wins}",
             f"Loses = {self.loses}",
             f"Flats = {self.flats}",
-            f"PNL = {round(self.pnl, 4)} $",
+            f"PNL = {round(self.pnl, 2)} $",
         ]
         if self.pnl_in_pip is not None:
             report_msg.append(f"PNL in pip = {round(self.pnl_in_pip, 2)}")

@@ -78,7 +78,7 @@ class TelegramReporter:
             position.source,
             f"📊 {position.chart}",
             f"💲 Close Price = {close_price}",
-            f"💵 PNL = {round(position.pnl, 5)}",
+            f"💵 PNL = {round(position.pnl, 2)}",
             f"⌛ Duration = {duration}",
         ]
         msg = "\n\n".join(msg_list)
