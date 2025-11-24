@@ -8,8 +8,8 @@ from TradingModule.position_handlers import (
 )
 
 forex_one_m_diver = ForexDiverTradeConfig(
-    chart=Chart("XAUUSD!", TimeFrame.one_day),
-    second_chart=Chart("SOLUSD", TimeFrame.one_day),
+    chart=Chart("XAUUSD!", TimeFrame.one_minute),
+    second_chart=Chart("SOLUSD", TimeFrame.one_minute),
     strategy=Divergence(3, 100, [], name="ForexDiver"),
     position_handler=LongShortForexHandler(
         ForexAgent(),

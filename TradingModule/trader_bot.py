@@ -106,7 +106,7 @@ class TraderBot:
         cls,
         name: str = "",
         configs: list[TradeConfig] = [],
-        report_period=timedelta(minutes=30),
+        report_period=timedelta(hours=24),
     ):
         if not hasattr(cls, "_instance"):
             cls._instance = object.__new__(cls)
@@ -139,7 +139,7 @@ class TraderBot:
                 else:
                     sleep_time = res[0]
                 logging.debug(f"{config.chart.timeframe} sleep: {sleep_time}")
-                await asyncio.sleep(sleep_time.seconds)
+                await asyncio.sleep(sleep_time.total_seconds())
                 error_number = 0
 
             except Exception as e:
@@ -150,7 +150,9 @@ class TraderBot:
                         f"3 Times Error:{e}\non {config}"
                     )
                 # Delay for half candle
-                await asyncio.sleep(int(config.chart.timeframe.time_delta.seconds / 2))
+                await asyncio.sleep(
+                    int(config.chart.timeframe.time_delta.total_seconds() / 2)
+                )
 
                 if error_number > 6:
                     await TelegramReporter().log_report(
@@ -175,7 +177,7 @@ class TraderBot:
 
     async def report(self):
         while True:
-            await asyncio.sleep(self.report_period.seconds)
+            await asyncio.sleep(self.report_period.total_seconds())
             commands_report = commands.TradeCommand.close_records()
             await TelegramReporter().log_report(f"{self.name}\n{commands_report}")
             overall_report = []

@@ -46,25 +46,21 @@ class ForexAgent(ExchangeAgent):
         return raw_time - delta
 
     def check_market_open(self, chart: Chart) -> bool:
-        if not self.prepare_chart(chart):
-            return False
+        one_m_chart = Chart(chart.symbol, timeframe=TimeFrame.one_minute)
+        last_data = self.get_chartdata(one_m_chart, 1)
         now = datetime.now(tz=timezone.utc)
-        tick = mt5.symbol_info_tick(chart.symbol)
-        if tick is None:
-            logger.error(f"Forex Failed to get tick data for {chart.symbol}")
+        if last_data is None:
+            logger.error(f"Forex Failed to get last candle data for {chart.symbol}")
             return False
-        last_tick_time = self.correct_time(
-            datetime.fromtimestamp(tick.time, timezone.utc), chart
-        )
-        if not last_tick_time:
-            return False
-        logger.debug(
-            f"Market Open or Not: (last_tick-now)={abs(last_tick_time.replace(second=0, microsecond=0) - now.replace(second=0, microsecond=0))}\nlast_tick={last_tick_time.replace(second=0, microsecond=0)}\nnow={now.replace(second=0, microsecond=0)}"
-        )
-        if abs(
-            last_tick_time.replace(second=0, microsecond=0)
+        last_candle = last_data.candles[0]
+        delta = abs(
+            last_candle.time.replace(second=0, microsecond=0)
             - now.replace(second=0, microsecond=0)
-        ) > timedelta(minutes=1):
+        )
+        logger.debug(
+            f"delta between last candle time & now: {delta}|{last_candle.time=}|{now=}"
+        )
+        if delta > timedelta(minutes=2):
             return False
         return True
 
@@ -101,7 +97,6 @@ class ForexAgent(ExchangeAgent):
             )
 
         chartdata = ChartData(chart, all_candles_list)
-
         return chartdata
 
     def get_candles_since(self, chart: Chart, time: datetime):

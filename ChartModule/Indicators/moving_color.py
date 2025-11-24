@@ -15,7 +15,7 @@ class MovingColor(IndicatorBaseModel):
         if len(self.candles) < self.n_bar:
             return {}
         values = {}
-        self.length_values = {}  # TODO: complete here
+        self.length_values = {}
         color_number = []  # -1 for red and 1 for green
         for i, candle in enumerate(self.candles):
             color_number.append(candle.side.number)
@@ -61,7 +61,7 @@ class MovingCandleLength(IndicatorBaseModel):
         if len(self.candles) < self.n_bar:
             return {}
         values = {}
-        self.length_values = {}  # TODO: complete here
+        self.length_values = {}
         length_number = []  # - for red and + for green
         for i, candle in enumerate(self.candles):
             length_number.append(candle.side.number * candle.body_length)

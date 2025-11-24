@@ -1,7 +1,7 @@
 from ChartModule import Chart, ChartData, MarketSide, Candle
 from ChartModule.plot import PlotChart
 from dataclasses import dataclass, field
-from datetime import datetime, timedelta
+from datetime import datetime
 from abc import ABC, abstractmethod
 from datetime import timezone
 from typing import Any
@@ -280,7 +280,7 @@ class PositionsReport:
             report_msg.append(
                 f"Win Rate = {round(self.wins / (self.wins + self.loses) * 100, 2)} %"
             )
-        duration = timedelta(seconds=(self.last_time - self.first_time).seconds)
+        duration = self.last_time - self.first_time
         report_msg.append(f"Duration = {duration}")
         return "\n".join(report_msg)
 

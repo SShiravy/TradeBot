@@ -33,7 +33,7 @@ async def start_backtest():
     from BacktestModule.forex_configs import forex_one_m_diver
 
     # Check forex
-    backtest = Backtest(forex_one_m_diver, 1000)
+    backtest = Backtest(forex_one_m_diver, 10000)
     await backtest.start_backtest(show_image=True)
 
 
@@ -45,5 +45,6 @@ if __name__ == "__main__":
     # TODO: multiple loss in a row for long and short handler
     # TODO: pos open candle should not check in position handler
     # TODO: add backtest bot
+    # TODO: check market is open not woking! last tick is just now always
 
     asyncio.run(start_backtest())
