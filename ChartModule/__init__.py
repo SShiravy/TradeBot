@@ -6,6 +6,7 @@ from ChartModule.models import (
     Signal,
     MarketSide,
     IndicatorCandleSource,
+    TickPrice,
 )
 
 __all__ = [
@@ -16,4 +17,5 @@ __all__ = [
     "ChartData",
     "TimeFrame",
     "IndicatorCandleSource",
+    "TickPrice",
 ]

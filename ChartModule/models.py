@@ -4,6 +4,7 @@ from datetime import datetime, timedelta
 from typing import Any, Literal
 from enum import Enum
 import pandas as pd
+import numpy as np
 
 
 class TimeFrame(Enum):
@@ -76,6 +77,27 @@ class MarketSide(Enum):
 
 
 @dataclass(slots=True, frozen=True)
+class TickPrice:
+    price: float
+    time: datetime
+
+    def __str__(self) -> str:
+        return f"{asdict(self)}"
+
+    def check_upward_cross(self, tick_prices: list[float]):
+        res = np.array(tick_prices) - self.price
+        if np.any(res > 0):
+            return True
+        return False
+
+    def check_downward_cross(self, tick_prices: list[float]):
+        res = np.array(tick_prices) - self.price
+        if np.any(res < 0):
+            return True
+        return False
+
+
+@dataclass(slots=True, frozen=True)
 class Candle:
     open: float
     close: float
@@ -130,6 +152,7 @@ class IndicatorBaseModel(ABC):
     def __init__(self) -> None:
         self.values: Any = None
         self.candles: list[Candle] = []
+        self.last_checked_candle: Candle | None = None
 
     @abstractmethod
     def _calculate(self, *args, **kwargs) -> Any:
@@ -140,7 +163,7 @@ class IndicatorBaseModel(ABC):
         pass
 
     @abstractmethod
-    def plot(self, plot) -> Any:
+    def plot(self, plot, *args, **kwargs) -> Any:
         pass
 
     def forcast(self, *args, **kwargs) -> MarketSide:
@@ -149,9 +172,24 @@ class IndicatorBaseModel(ABC):
         else:
             return self._forcast(*args, **kwargs)
 
-    def set(self, candles: list[Candle], *args, **kwargs) -> Any:
+    def update(self, candles: list[Candle], *args, **kwargs) -> Any:
         self.candles = candles
-        self.values = self._calculate(*args, **kwargs)
+        new_values = self._calculate(*args, **kwargs)
+        last_value = self.values[-1]
+        if new_values and new_values[-1] != last_value and last_value in new_values:
+            new_values = new_values[new_values.index(last_value) :]
+
+        self.values += new_values
+        self.last_checked_candle = candles[-1]
+        return new_values
+
+    def set(self, candles: list[Candle], *args, **kwargs) -> Any:
+        if self.values is None:
+            self.candles = candles
+            self.values = self._calculate(*args, **kwargs)
+            self.last_checked_candle = candles[-1]
+        else:
+            self.update(candles, *args, **kwargs)
         return self.values
 
 

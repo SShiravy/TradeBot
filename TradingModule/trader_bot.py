@@ -50,7 +50,7 @@ class TradeConfig:
     def get_chartdata(self) -> ChartData:
         chartdata = self.agent.get_chartdata(self.chart, n_bars=self.n_candle_check)
         if chartdata is None:
-            raise ValueError(f"chart data is None from {self.agent.__name__}")
+            raise ValueError(f"chart data is None from {self.agent.__class__.__name__}")
         if self.heikingashi_chartdata:
             chartdata = chartdata.give_heikingashi_chartdata()
         return chartdata

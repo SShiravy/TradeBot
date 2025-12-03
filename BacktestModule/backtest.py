@@ -108,8 +108,6 @@ class Backtest:
         plot = TwoChartPlot(base_chartdata, second_chartdata)
         for signal in self.all_signals:
             self.config.strategy.draw(plot, signal)  # type: ignore
-        for indicator in self.config.strategy.confirmation_indicators:
-            indicator.plot(plot.base_plot)
         for pos in self.all_positions:
             if not pos.closed:
                 continue
@@ -131,40 +129,57 @@ class Backtest:
         return commands_report, img_path
 
     async def start_backtest(self, show_image=True):
-        # TODO: update here
         if isinstance(self.config, DivergenceTradeConfig):
-            return await self.diver_backtest(show_image)
+            return self.diver_backtest(show_image)
+        jump = 0
         chartdata = self.config.get_chartdata()
-        for i in range(self.len_sub_data, len(chartdata) - 1):
-            sub_data = chartdata[:i]
-            self.current_price = chartdata[i + 1]
-            await commands.TradeCommand.execute_pending_commands(
-                chartdata[i].time, report=False
-            )
+        for i in range(self.len_sub_data, len(chartdata) - 2):
+            sub_data = ChartData(chartdata.chart, chartdata[:i], chartdata.indicators)
+            candle = chartdata[i]
+            self.current_price = candle.open
+            all_pos = copy(self.config.position_handler.open_positions)
+            for pos in all_pos:
+                if pos.closed:
+                    self.config.position_handler.closed_positions.append(pos)
+                    self.config.position_handler.open_positions.remove(pos)
+                    continue
+                self.config.position_handler.handler(
+                    pos, [candle.open, candle.low, candle.high, candle.close]
+                )
+            await commands.TradeCommand.execute_pending_commands(candle.time, False)
 
+            if jump > 0:
+                jump -= 1
+                continue
             res = self.config.find_signal(sub_data)
             if res is None:
                 continue
+            jump = self.config.bar_between_signals
             signal, position = res
             self.all_signals.append(signal)
             self.all_positions.append(position)
+            open = commands.OpenPosition(position, self.config.agent)
+            await open.execute(candle.time)
 
         plot = PlotChart(chartdata)
         for signal in self.all_signals:
-            plot.mark_signal(signal)
-        for indicator in self.config.strategy.confirmation_indicators:
-            indicator.plot(plot)
+            self.config.strategy.draw(plot, signal)  # type: ignore
         for pos in self.all_positions:
+            if not pos.closed:
+                continue
             pos.draw(plot)
         img_path = plot.save_image(
             f"backtest_{str(self.config.chart)}{str(self.config.strategy.name)}",
             path="Backtest/Images/",
         )
         commands_report = commands.TradeCommand.close_records()
-        positions_reports = self.config.position_handler.report()
-        logger.info(commands_report)
-        for poses_report in positions_reports:
-            logger.info(str(poses_report))
+        all_reports = self.config.position_handler.report()
+        logger.info("Result:\n\n" + commands_report)
+        for poses_report in all_reports:
+            logger.info("\n" + str(poses_report))
+        overal_report = PositionsReport.give_overall_report(all_reports)
+        logger.info("\n" + str(overal_report))
+
         if show_image:
             plot.show()
-        return commands_report, positions_reports, img_path
+        return commands_report, img_path

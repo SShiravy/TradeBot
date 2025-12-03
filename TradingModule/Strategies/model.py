@@ -29,8 +29,8 @@ class Strategy(ABC):
     def check_signal(
         self,
         chartdata: ChartData,
-        long_signal: bool = True,
-        short_signal: bool = True,
+        check_long: bool = True,
+        check_short: bool = True,
         *args,
         **kwargs,
     ) -> Signal | None:
@@ -41,5 +41,7 @@ class Strategy(ABC):
         pass
 
     @abstractmethod
-    def draw(self, plot, signal, draw_indicators, *args, **kwargs):
-        pass
+    def draw(self, plot, signal, draw_indicators: bool = True, *args, **kwargs):
+        if draw_indicators and self.confirmation_indicators:
+            for indicator in self.confirmation_indicators:
+                indicator.plot(plot)

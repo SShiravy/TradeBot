@@ -161,8 +161,8 @@ class SimpleForexHandler(PositionHandler):
         short_trade: bool = True,
     ) -> None:
         super().__init__(exchange_agent, initial_volume, 1, long_trade, short_trade)
-        self.stoploss_pip = stoploss_pip
-        self.takeprofit_pip = takeprofit_pip
+        self.stoploss_pip = stoploss_pip / 10
+        self.takeprofit_pip = takeprofit_pip / 10
 
     def init_stoploss(self, entry_price: float, side: OrderSide) -> float:
         return entry_price - side.factor() * self.stoploss_pip

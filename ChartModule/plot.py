@@ -61,12 +61,12 @@ class PlotChart:
 
         return image_path_name
 
-    def draw_line(self, x1, y1, x2, y2, color="#cb00e2"):
+    def draw_line(self, x1, y1, x2, y2, color="#cb00e2", width=1):
         fplt.add_line(
             (x1, y1),
             (x2, y2),
             color=color,
-            width=1,
+            width=width,
             interactive=False,
             ax=self.ax,
         )
