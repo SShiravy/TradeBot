@@ -2,7 +2,7 @@ from ChartModule import ChartData, Chart, Signal
 from ChartModule.plot import PlotChart, TwoChartPlot
 from TradingModule import TradeConfig, ExchangeAgent, Position, PositionsReport
 from TradingModule import commands
-from TradingModule.Strategies.divergence import DivergenceTradeConfig, DivergenceSignal
+from DivergenceStrategy.divergence import DivergenceTradeConfig, DivergenceSignal
 from datetime import datetime
 from copy import copy
 import logging

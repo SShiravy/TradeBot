@@ -9,7 +9,7 @@ from ChartModule.models import (
 from ChartModule.Indicators import TrendLine, Line, SupportConditions
 from ChartModule.plot import TwoChartPlot
 from TradingModule import TradeConfig, OrderSide, commands, Position
-from TradingModule.Strategies.model import Strategy
+from TradingModule.models import Strategy
 from dataclasses import dataclass
 from copy import copy
 import logging

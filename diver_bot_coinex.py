@@ -2,7 +2,7 @@ from Coinex import CoinexAgent, CoinexDiverTradeConfig
 from ChartModule import Chart, TimeFrame
 from TradingModule import TraderBot
 from TradingModule.position_handlers import RiskFreeCrypto
-from TradingModule.Strategies.divergence import Divergence
+from DivergenceStrategy.divergence import Divergence
 from custom_logger import CustomLogger
 from config import settings
 import asyncio

@@ -1,6 +1,6 @@
 from Coinex import CoinexAgent
 from ChartModule import Chart, ChartData
-from TradingModule.Strategies.divergence import Divergence, DivergenceTradeConfig
+from DivergenceStrategy.divergence import Divergence, DivergenceTradeConfig
 from dataclasses import dataclass
 
 

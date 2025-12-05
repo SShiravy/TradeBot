@@ -2,7 +2,7 @@ from Forex.agent import ForexAgent
 from ChartModule.Indicators import CVD
 from ChartModule import Chart, ChartData
 from TradingModule import ExchangeAgent
-from TradingModule.Strategies.divergence import Divergence, DivergenceTradeConfig
+from DivergenceStrategy.divergence import Divergence, DivergenceTradeConfig
 from dataclasses import dataclass, field
 from datetime import timedelta
 

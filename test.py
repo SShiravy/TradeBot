@@ -7,7 +7,7 @@ CustomLogger(True, consol_log_level=logging.DEBUG)
 
 async def start_fibochoch_backtest():
     from BacktestModule import Backtest
-    from BacktestModule.FiboChochStrategy.forex_configs import five_m
+    from FiboChochStrategy.backtest_configs import five_m
 
     # Check forex
     backtest = Backtest(five_m, 900)
@@ -16,7 +16,7 @@ async def start_fibochoch_backtest():
 
 async def start_diver_backtest():
     from BacktestModule import Backtest
-    from BacktestModule.DivergenceStrategy.forex_configs import forex_one_m_diver
+    from DivergenceStrategy.backtest_configs import forex_one_m_diver
 
     # Check forex
     backtest = Backtest(forex_one_m_diver, 100)

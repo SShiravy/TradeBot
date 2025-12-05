@@ -2,7 +2,7 @@ from TradingModule import ExchangeAgent, Position, OrderSide, commands, Position
 from TradingModule.reporter import TelegramReporter
 from TradingModule.position_handlers import PositionHandler
 from ChartModule.models import Chart, Candle, Signal, ChartData
-from TradingModule.Strategies.model import Strategy
+from TradingModule.models import Strategy
 from ChartModule.plot import PlotChart
 from datetime import datetime, timezone, timedelta
 from dataclasses import dataclass, field

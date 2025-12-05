@@ -1,4 +1,12 @@
-from ChartModule import Chart, ChartData, MarketSide, Candle
+from ChartModule.models import (
+    Chart,
+    ChartData,
+    MarketSide,
+    Candle,
+    IndicatorBaseModel,
+    Signal,
+)
+from ChartModule.Indicators import SupportConditions
 from ChartModule.plot import PlotChart
 from dataclasses import dataclass, field
 from datetime import datetime
@@ -344,3 +352,47 @@ class ExchangeAgent(ABC):
         return executed price if successful otherwise None
         """
         pass
+
+
+class Strategy(ABC):
+    def __init__(
+        self,
+        name: str,
+        long_support_conditions: SupportConditions,
+        short_support_conditions: SupportConditions,
+        confirmation_indicators: list[IndicatorBaseModel] = [],
+    ) -> None:
+        self.name = name
+        self.confirmation_indicators = confirmation_indicators
+        self.long_support_conditions = long_support_conditions
+        self.short_support_conditions = short_support_conditions
+
+    def get_indicators_confirmation(self, chartdata: ChartData) -> list[MarketSide]:
+        if self.confirmation_indicators == []:
+            return [MarketSide.NEUTRAL]
+        all_forcasts = []
+        for indicator in self.confirmation_indicators:
+            indicator.set(chartdata.candles)
+            all_forcasts.append(indicator.forcast())
+        return all_forcasts
+
+    @abstractmethod
+    def check_signal(
+        self,
+        chartdata: ChartData,
+        check_long: bool = True,
+        check_short: bool = True,
+        *args,
+        **kwargs,
+    ) -> Signal | None:
+        pass
+
+    @abstractmethod
+    def report(self, *args, **kwargs) -> str:
+        pass
+
+    @abstractmethod
+    def draw(self, plot, signal, draw_indicators: bool = True, *args, **kwargs):
+        if draw_indicators and self.confirmation_indicators:
+            for indicator in self.confirmation_indicators:
+                indicator.plot(plot)

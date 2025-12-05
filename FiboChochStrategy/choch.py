@@ -15,7 +15,7 @@ from ChartModule.Indicators import (
 )
 from ChartModule.plot import PlotChart
 from TradingModule import TradeConfig
-from TradingModule.Strategies.model import Strategy
+from TradingModule.models import Strategy
 from dataclasses import dataclass, field
 from copy import copy
 import numpy as np
