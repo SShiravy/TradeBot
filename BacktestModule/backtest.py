@@ -123,6 +123,9 @@ class Backtest:
             logger.info("\n" + str(poses_report))
         overal_report = PositionsReport.give_overall_report(all_reports)
         logger.info("\n" + str(overal_report))
+        logger.info(
+            f"total time: {base_chartdata[-1].time - base_chartdata[0].time} with {len(base_chartdata)} candles"
+        )
 
         if show_image:
             plot.show()
@@ -130,7 +133,7 @@ class Backtest:
 
     async def start_backtest(self, show_image=True):
         if isinstance(self.config, DivergenceTradeConfig):
-            return self.diver_backtest(show_image)
+            return await self.diver_backtest(show_image)
         jump = 0
         chartdata = self.config.get_chartdata()
         for i in range(self.len_sub_data, len(chartdata) - 2):
@@ -179,6 +182,9 @@ class Backtest:
             logger.info("\n" + str(poses_report))
         overal_report = PositionsReport.give_overall_report(all_reports)
         logger.info("\n" + str(overal_report))
+        logger.info(
+            f"total time: {chartdata[-1].time - chartdata[0].time} with {len(chartdata)} candles"
+        )
 
         if show_image:
             plot.show()

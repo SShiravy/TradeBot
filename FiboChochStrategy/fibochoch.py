@@ -14,8 +14,8 @@ from ChartModule.Indicators import (
     SupportConditions,
 )
 from ChartModule.plot import PlotChart
-from TradingModule import TradeConfig
-from TradingModule.models import Strategy
+from TradingModule import TradeConfig, commands
+from TradingModule.models import OrderSide, Position, Strategy
 from dataclasses import dataclass, field
 from copy import copy
 import numpy as np
@@ -141,11 +141,17 @@ class FiboChoch(Strategy):
 
         if model.fibo:
             fibo_res = model.fibo.forcast(
-                self.all_low_price[top_index:], self.fibo_level
+                self.all_low_price[top_index + 1 :], self.fibo_level
             )
             logger.debug(f"{fibo_res=}")
             if fibo_res != MarketSide.NEUTRAL:
                 model.available = False
+                for indicator in self.confirmation_indicators:
+                    indicator.set(self.all_checked_candles)
+                    res = indicator.forcast()
+                    if res != MarketSide.BULLISH:
+                        logger.debug(f"indicator {indicator} not confirmed the signal")
+                        return None
                 return FiboChochSignal(
                     self.chart, self.all_checked_candles[-1], fibo_res, model
                 )
@@ -188,7 +194,7 @@ class FiboChoch(Strategy):
         check_short: bool = True,
         *args,
         **kwargs,
-    ) -> Signal | None:
+    ) -> FiboChochSignal | None:
         if not self.initilied:
             logger.info("start initilizing FiboChochs")
             self.init_fibochochs(chartdata)
@@ -222,10 +228,6 @@ class FiboChoch(Strategy):
         **kwargs,
     ):
         super().draw(plot, signal, draw_indicators)
-        # for candle in self.test_all_down:
-        #     plot.mark_candle(candle,IndicatorCandleSource.Low)
-        # for candle in set(self.test_all_top):
-        #     plot.mark_candle(candle,IndicatorCandleSource.High)
         for model in self.all_models:
             if model.fibo:
                 model.fibo.plot(plot)
@@ -240,3 +242,24 @@ class FiboChoch(Strategy):
 
 class FiboChochConfig(TradeConfig):
     strategy: FiboChoch  # type: ignore[override]
+    fibo_stoploss: bool = field(default=True)
+
+    def find_signal(self, chartdata: ChartData) -> None | tuple[Signal, Position]:
+        signal = self.strategy.check_signal(
+            chartdata, self.long_signal, self.short_signal
+        )
+        if signal is None or signal.fibochoch_model.fibo is None:
+            return None
+
+        position = self.position_handler.generate_position(signal)
+        if self.fibo_stoploss:
+            sl = self.position_handler.init_stoploss(
+                signal.fibochoch_model.fibo.start_tick.price, position.side
+            )
+            position.stoploss = sl
+
+        if (self.position_handler.long_trade and position.side is OrderSide.BUY) or (
+            self.position_handler.short_trade and position.side is OrderSide.SELL
+        ):
+            commands.OpenPosition(position, self.agent)
+        return signal, position

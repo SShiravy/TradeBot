@@ -33,13 +33,7 @@ class TradeConfig:
         if jump:
             delay *= self.bar_between_signals
 
-        logging.debug(
-            f"{delay=}\n{last_candle}\n{last_candle.time=}\n{last_candle.time.astimezone(timezone.utc)=}\nnow={datetime.now(timezone.utc)}"
-        )
         logging.debug(f"delay + lastcandl.time: {delay + last_candle.time}")
-        logging.debug(
-            f"delay + lastcandl.time - now: {(delay + last_candle.time) - datetime.now(timezone.utc)}"
-        )
 
         return (
             (delay + last_candle.time)

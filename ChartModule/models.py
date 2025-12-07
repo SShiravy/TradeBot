@@ -184,7 +184,7 @@ class IndicatorBaseModel(ABC):
         return new_values
 
     def set(self, candles: list[Candle], *args, **kwargs) -> Any:
-        if self.values is None:
+        if not self.values:
             self.candles = candles
             self.values = self._calculate(*args, **kwargs)
             self.last_checked_candle = candles[-1]

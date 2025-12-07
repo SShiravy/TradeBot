@@ -79,7 +79,7 @@ forex_one_m_diver = ForexDiverTradeConfig(
         short_riskfree_trigger_pip=1,
     ),
     merge_two_chart_time=True,
-    heikingashi_chartdata=True,
+    heikingashi_chartdata=False,
 )
 
 

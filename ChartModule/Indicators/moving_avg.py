@@ -1,4 +1,10 @@
-from ChartModule.models import IndicatorBaseModel, MarketSide, IndicatorCandleSource
+from typing import Any
+from ChartModule.models import (
+    Candle,
+    IndicatorBaseModel,
+    MarketSide,
+    IndicatorCandleSource,
+)
 from ChartModule.plot import PlotChart
 import pandas as pd
 
@@ -72,6 +78,11 @@ class EMA(IndicatorBaseModel):
             return MarketSide.BEARISH
         else:
             return MarketSide.NEUTRAL
+
+    def set(self, candles: list[Candle], *args, **kwargs) -> Any:
+        self.candles = candles
+        self.values = self._calculate(*args, **kwargs)
+        self.last_checked_candle = candles[-1]
 
     def plot(self, plot: PlotChart):
         plot.linear_plot(self.values.keys(), self.values.values(), f"EMA{self.n_bar}")
