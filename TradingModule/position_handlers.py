@@ -64,7 +64,7 @@ class PositionHandler(ABC):
             signal.candle.time,
             signal.source,
             position_id,
-            real_trade=real_trade,
+            real_trade,
         )
         self.open_positions.append(position)
         logger.info(f"New Position on {position.chart}")

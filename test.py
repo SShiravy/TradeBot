@@ -2,7 +2,7 @@ from custom_logger import CustomLogger
 import logging
 
 
-CustomLogger(True, consol_log_level=logging.INFO)
+CustomLogger(True, consol_log_level=logging.DEBUG)
 
 
 async def start_diver_backtest():
@@ -23,11 +23,22 @@ async def start_fibochoch_backtest():
     await backtest.start_backtest(show_image=True)
 
 
-if __name__ == "__main__":
+def new_backtest():
     import asyncio
+    from BacktestModule.backtest_new_version import Backtest
+    from FiboChochStrategy.backtest_configs import coinex_five_m
 
+    async def test():
+        await Backtest(coinex_five_m, show_image=True).start_task_backtest()
+
+    asyncio.run(test())
+
+
+if __name__ == "__main__":
     # asyncio.run(start_diver_backtest())
-    asyncio.run(start_fibochoch_backtest())
+    # asyncio.run(start_fibochoch_backtest())
+
+    new_backtest()
 
 
 # TODO: partial close

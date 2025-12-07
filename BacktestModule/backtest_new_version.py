@@ -1,8 +1,7 @@
 from ChartModule import ChartData, Chart, Signal
-from ChartModule.plot import PlotChart, TwoChartPlot
+from ChartModule.plot import PlotChart
 from TradingModule import TradeConfig, ExchangeAgent, Position, PositionsReport
 from TradingModule import commands
-from DivergenceStrategy.divergence import DivergenceTradeConfig, DivergenceSignal
 from datetime import datetime, timedelta
 from copy import deepcopy
 import logging
@@ -30,9 +29,12 @@ class DummyAgent(ExchangeAgent):
     def check_chart(self, chart: Chart) -> bool:
         return True
 
-    def get_chartdata(self, chart: Chart, n_bars=100) -> ChartData | None:
+    def get_chartdata(self, chart: Chart, n_bars=100) -> ChartData:
+        if chart.symbol != self.chartdata.chart.symbol:
+            raise ValueError(f"{chart} != chartdata.chart:{self.chartdata.chart}")
         candles = deepcopy(self.chartdata[: self.index])
         data = ChartData(self.chartdata.chart, candles, self.chartdata.indicators)
+        logger.debug(f"agent get chartdata: {len(data)=}")
         return data
 
     def get_candles_since(self, chart: Chart, time: datetime):
@@ -72,11 +74,9 @@ class Backtest:
             cls.len_sub_data = len_sub_data if len_sub_data else config.n_candle_check
             cls.show_image = show_image
             cls.n_bar = n_bar
-            dummy_agent = DummyAgent(
+            cls.dummy_agent = DummyAgent(
                 config.agent, config.chart, n_bar, config.n_candle_check
             )
-            cls.dummy_agent = dummy_agent
-            config.position_handler.exchange_agent = dummy_agent
             config.position_handler.long_trade = False
             config.position_handler.short_trade = False
             config.send_signal = False
@@ -84,24 +84,42 @@ class Backtest:
             cls.n_bar = n_bar
             cls.current_price = 0.0
             cls.all_positions: list[Position] = []
-            cls.all_signals: list[Signal | DivergenceSignal] = []
+            cls.all_signals: list[Signal] = []
         return cls._instance
 
     async def start_task_backtest(self):
+        self.config.position_handler.exchange_agent = self.dummy_agent
+        self.config.agent = self.dummy_agent
         while self.dummy_agent.index < len(self.dummy_agent.chartdata.candles) - 1:
             res = await self.config.task()
             if isinstance(res, timedelta):
-                sleep_time = res
+                candle_delay = 1
             else:
-                sleep_time = res[0]
                 self.all_signals.append(res[1])
                 self.all_positions.append(res[2])
-
-            candle_delay = round(
-                sleep_time.seconds / self.config.chart.timeframe.minutes * 60
-            )
-            if candle_delay < 1:
-                candle_delay = 1
+                candle_delay = self.config.bar_between_signals + 1
             self.dummy_agent.index += candle_delay
-            await commands.TradeCommand.execute_pending_commands(report=False)
             self.config.position_handler.manage_positions()
+            await commands.TradeCommand.execute_pending_commands(
+                time=self.config.agent.get_chartdata(self.config.chart)[-1].time,
+                report=False,
+            )
+            logger.debug(f"{candle_delay} Candle next")
+
+        plot = PlotChart(self.config.agent.chartdata)
+        for signal in self.all_signals:
+            self.config.strategy.draw(plot, signal)
+        for pos in self.all_positions:
+            pos.draw(plot)
+
+        commands_report = commands.TradeCommand.close_records()
+        all_reports = self.config.position_handler.report()
+        logger.info("Result:\n\n" + commands_report)
+        for poses_report in all_reports:
+            logger.info("\n" + str(poses_report))
+        overal_report = PositionsReport.give_overall_report(all_reports)
+        logger.info("\n" + str(overal_report))
+        logger.info(
+            f"total time: {self.config.agent.chartdata[-1].time - self.config.agent.chartdata[0].time} with {len(self.config.agent.chartdata)} candles"
+        )
+        plot.show()

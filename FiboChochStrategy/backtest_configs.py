@@ -1,9 +1,7 @@
 from FiboChochStrategy.fibochoch import FiboChochConfig, FiboChoch
-from ChartModule.Indicators import EMA
 from Forex import ForexAgent
 from TradingModule.position_handlers import (
     SimpleForexHandler,
-    RiskFreeCrypto,
     SimpleCryptoHandler,
 )
 from Coinex import CoinexAgent
