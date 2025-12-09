@@ -115,7 +115,7 @@ class PlotChart:
         if signal.side is MarketSide.BULLISH:
             fplt.plot(
                 signal.candle.time,
-                signal.candle.low * 0.998,
+                signal.candle.low * 0.9995,
                 style="^",
                 color="#1DBD1D",
                 width=3,
@@ -125,7 +125,7 @@ class PlotChart:
         else:
             fplt.plot(
                 signal.candle.time,
-                signal.candle.high * 1.002,
+                signal.candle.high * 1.0005,
                 style="v",
                 color="#BD1D1D",
                 width=3,

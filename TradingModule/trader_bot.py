@@ -28,6 +28,12 @@ class TradeConfig:
 
     heikingashi_chartdata: bool = field(default=False)
 
+    max_long_lose: int = field(default=3)
+    max_short_lose: int = field(default=3)
+
+    _n_losed_long: int = field(default=0, init=False)
+    _n_losed_short: int = field(default=0, init=False)
+
     def give_delay(self, last_candle: Candle, jump=False) -> timedelta:
         delay = self.chart.timeframe.time_delta
         if jump:

@@ -7,10 +7,10 @@ CustomLogger(True, consol_log_level=logging.DEBUG)
 
 async def start_diver_backtest():
     from BacktestModule import Backtest
-    from DivergenceStrategy.backtest_configs import coinex_one_h_diver
+    from DivergenceStrategy.backtest_configs import forex_diver_five_m
 
     # Check forex
-    backtest = Backtest(coinex_one_h_diver, 1000)
+    backtest = Backtest(forex_diver_five_m, 700)
     await backtest.start_backtest(show_image=True)
 
 
@@ -35,10 +35,12 @@ def new_backtest():
 
 
 if __name__ == "__main__":
-    # asyncio.run(start_diver_backtest())
+    import asyncio
+
+    asyncio.run(start_diver_backtest())
     # asyncio.run(start_fibochoch_backtest())
 
-    new_backtest()
+    # new_backtest()
 
 
 # TODO: partial close

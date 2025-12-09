@@ -133,7 +133,6 @@ class Position:
                 "#7fff86",
             )
         else:
-            print("here")
             start_time = self.open_time - self.chart.timeframe.time_delta * 10
             plot.draw_sl_tp_lines(
                 start_time,

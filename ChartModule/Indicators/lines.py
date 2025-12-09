@@ -106,7 +106,7 @@ class TrendLine(IndicatorBaseModel):
             if self.ignore_shadow_cross:
                 candle_source = IndicatorCandleSource.Top
 
-        for candle in self.candles[-self.min_step : -self.max_step : -1]:
+        for candle in self.candles[-1 : -self.max_step : -1]:
             candle_index = self.candles.index(candle)
             if len_candles - candle_index > self.max_step:
                 break

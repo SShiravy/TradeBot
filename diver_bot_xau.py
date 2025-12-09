@@ -13,10 +13,10 @@ CustomLogger(log_file=True, file_log_name="ForexDiverBot")
 one_m = ForexDiverTradeConfig(
     chart=Chart("XAUUSD!", TimeFrame.one_minute),
     second_chart=Chart("SOLUSD", TimeFrame.one_minute),
-    strategy=Divergence(10, 100, [], name="ForexDiver"),
-    bar_between_signals=15,
+    strategy=Divergence(7, 50, [], name="ForexDiver"),
+    bar_between_signals=5,
     position_handler=RiskFreeForex(
-        ForexAgent(), takeprofit_pip=5, stoploss_pip=5, riskfree_trigger_pip=2
+        ForexAgent(), takeprofit_pip=30, stoploss_pip=30, riskfree_trigger_pip=15
     ),
 )
 
@@ -24,11 +24,11 @@ one_m = ForexDiverTradeConfig(
 five_m = ForexDiverTradeConfig(
     chart=Chart("XAUUSD!", TimeFrame.five_minutes),
     second_chart=Chart("SOLUSD", TimeFrame.five_minutes),
-    strategy=Divergence(7, 100, [], name="ForexDiver"),
-    bar_between_signals=10,
+    strategy=Divergence(5, 50, [], name="ForexDiver"),
+    bar_between_signals=5,
     position_handler=(
         RiskFreeForex(
-            ForexAgent(), stoploss_pip=10, takeprofit_pip=10, riskfree_trigger_pip=5
+            ForexAgent(), stoploss_pip=70, takeprofit_pip=70, riskfree_trigger_pip=35
         )
     ),
 )

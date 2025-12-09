@@ -14,33 +14,37 @@ from config import settings
 
 coinex_agent = CoinexAgent(settings.COINEX_ACCESS_ID, settings.COINEX_SECRET_KEY)
 
-coinex_five_m_diver = CoinexDiverTradeConfig(
+five_m_diver = CoinexDiverTradeConfig(
     chart=Chart("SOLUSDT", TimeFrame.five_minutes),
     second_chart=Chart("BTCUSDT", TimeFrame.five_minutes),
-    strategy=Divergence(3, 100, [EMA(10)], name="CoinexDiver", inverse_diver_long=True),
+    strategy=Divergence(3, 100, [], name="CoinexDiver", inverse_diver_long=True),
     position_handler=RiskFreeCrypto(
         coinex_agent,
         riskfree_trigger_percent=0.5,
         stoploss_percent=1,
         takeprofit_percent=1,
-        leverage=10,
-        initial_volume=10,
+        leverage=5,
+        initial_volume=1,
+        long_trade=False,
+        short_trade=False,
     ),
     agent=coinex_agent,
     heikingashi_chartdata=True,
 )
 
-coinex_one_h_diver = CoinexDiverTradeConfig(
+one_h_diver = CoinexDiverTradeConfig(
     chart=Chart("SOLUSDT", TimeFrame.one_hour),
     second_chart=Chart("BTCUSDT", TimeFrame.one_hour),
-    strategy=Divergence(2, 300, [EMA(10)], name="CoinexDiver", inverse_diver_long=True),
+    strategy=Divergence(2, 300, [], name="CoinexDiver", inverse_diver_long=True),
     position_handler=RiskFreeCrypto(
         coinex_agent,
         takeprofit_percent=2,
         stoploss_percent=2,
-        initial_volume=20,
+        initial_volume=2,
         riskfree_trigger_percent=1,
-        leverage=20,
+        leverage=10,
+        long_trade=False,
+        short_trade=False,
     ),
     agent=coinex_agent,
     heikingashi_chartdata=True,
@@ -65,67 +69,63 @@ coinex_4h_diver = CoinexDiverTradeConfig(
 
 # FOREX ----------------------------------------------------------------
 
-forex_one_m_diver = ForexDiverTradeConfig(
+
+forex_diver_one_m = ForexDiverTradeConfig(
     chart=Chart("XAUUSD!", TimeFrame.one_minute),
     second_chart=Chart("SOLUSD", TimeFrame.one_minute),
-    strategy=Divergence(3, 100, [], name="ForexDiver"),
-    position_handler=LongShortForexHandler(
-        ForexAgent(),
-        long_takeprofit_pip=3,
-        long_stoploss_pip=3,
-        long_riskfree_trigger_pip=1,
-        short_takeprofit_pip=3,
-        short_stoploss_pip=3,
-        short_riskfree_trigger_pip=1,
+    strategy=Divergence(7, 50, [], name="ForexDiver"),
+    bar_between_signals=5,
+    position_handler=RiskFreeForex(
+        ForexAgent(), takeprofit_pip=30, stoploss_pip=30, riskfree_trigger_pip=15
     ),
-    merge_two_chart_time=True,
-    heikingashi_chartdata=False,
 )
 
 
-forex_five_m_diver = ForexDiverTradeConfig(
+forex_diver_five_m = ForexDiverTradeConfig(
     chart=Chart("XAUUSD!", TimeFrame.five_minutes),
     second_chart=Chart("SOLUSD", TimeFrame.five_minutes),
-    strategy=Divergence(3, 100, [EMA(100)], name="ForexDiver"),
+    strategy=Divergence(5, 50, [], name="ForexDiver"),
+    bar_between_signals=5,
     position_handler=(
         RiskFreeForex(
-            ForexAgent(), stoploss_pip=10, takeprofit_pip=10, riskfree_trigger_pip=5
+            ForexAgent(), stoploss_pip=70, takeprofit_pip=70, riskfree_trigger_pip=35
         )
     ),
-    merge_two_chart_time=True,
 )
 
-forex_fifteen_m_diver = ForexDiverTradeConfig(
-    chart=Chart("XAUUSD!", TimeFrame.fifteen_minutes),
-    second_chart=Chart("SOLUSD", TimeFrame.fifteen_minutes),
-    strategy=Divergence(5, 100, [EMA(200)], name="ForexDiver"),
-    position_handler=RiskFreeForex(
-        ForexAgent(), stoploss_pip=10, takeprofit_pip=10, riskfree_trigger_pip=5
-    ),
-    merge_two_chart_time=True,
-)
+# CVD ----
 
-cvd_diver = Divergence(
-    5,
-    100,
-    [EMA(100)],
+diver_one_cvd = Divergence(
+    7,
+    50,
+    [],
     name="ForexCVD",
     long_second_line_validation=False,
     short_second_line_validation=False,
 )
 
-forex_one_m_cvd = CvdDiverTradeConfig(
+cvd_diver_one_m_cvd = CvdDiverTradeConfig(
     chart=Chart("XAUUSD!", TimeFrame.one_minute),
-    strategy=cvd_diver,
+    bar_between_signals=5,
+    strategy=diver_one_cvd,
     position_handler=RiskFreeForex(
-        ForexAgent(), stoploss_pip=5, takeprofit_pip=5, riskfree_trigger_pip=2
+        ForexAgent(), stoploss_pip=30, takeprofit_pip=30, riskfree_trigger_pip=15
     ),
 )
 
-forex_five_m_cvd = CvdDiverTradeConfig(
+diver_five_cvd = Divergence(
+    5,
+    50,
+    [],
+    name="ForexCVD",
+    long_second_line_validation=False,
+    short_second_line_validation=False,
+)
+cvd_diver_five_m_cvd = CvdDiverTradeConfig(
     chart=Chart("XAUUSD!", TimeFrame.five_minutes),
-    strategy=cvd_diver,
+    bar_between_signals=5,
+    strategy=diver_five_cvd,
     position_handler=RiskFreeForex(
-        ForexAgent(), stoploss_pip=10, takeprofit_pip=10, riskfree_trigger_pip=5
+        ForexAgent(), stoploss_pip=70, takeprofit_pip=70, riskfree_trigger_pip=35
     ),
 )

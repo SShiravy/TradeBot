@@ -123,9 +123,6 @@ class Backtest:
             logger.info("\n" + str(poses_report))
         overal_report = PositionsReport.give_overall_report(all_reports)
         logger.info("\n" + str(overal_report))
-        logger.info(
-            f"total time: {base_chartdata[-1].time - base_chartdata[0].time} with {len(base_chartdata)} candles"
-        )
 
         if show_image:
             plot.show()
@@ -182,9 +179,6 @@ class Backtest:
             logger.info("\n" + str(poses_report))
         overal_report = PositionsReport.give_overall_report(all_reports)
         logger.info("\n" + str(overal_report))
-        logger.info(
-            f"total time: {chartdata[-1].time - chartdata[0].time} with {len(chartdata)} candles"
-        )
 
         if show_image:
             plot.show()

@@ -10,8 +10,8 @@ CustomLogger(log_file=True, file_log_name="ForexCVDBot")
 
 
 cvd_diver_one = Divergence(
-    10,
-    100,
+    7,
+    50,
     [],
     name="ForexCVD",
     long_second_line_validation=False,
@@ -20,16 +20,16 @@ cvd_diver_one = Divergence(
 
 one_m_cvd = CvdDiverTradeConfig(
     chart=Chart("XAUUSD!", TimeFrame.one_minute),
-    bar_between_signals=15,
+    bar_between_signals=5,
     strategy=cvd_diver_one,
     position_handler=RiskFreeForex(
-        ForexAgent(), stoploss_pip=5, takeprofit_pip=5, riskfree_trigger_pip=2
+        ForexAgent(), stoploss_pip=30, takeprofit_pip=30, riskfree_trigger_pip=15
     ),
 )
 
 cvd_diver_five = Divergence(
-    7,
-    100,
+    5,
+    50,
     [],
     name="ForexCVD",
     long_second_line_validation=False,
@@ -37,10 +37,10 @@ cvd_diver_five = Divergence(
 )
 five_m_cvd = CvdDiverTradeConfig(
     chart=Chart("XAUUSD!", TimeFrame.five_minutes),
-    bar_between_signals=10,
+    bar_between_signals=5,
     strategy=cvd_diver_five,
     position_handler=RiskFreeForex(
-        ForexAgent(), stoploss_pip=10, takeprofit_pip=10, riskfree_trigger_pip=5
+        ForexAgent(), stoploss_pip=70, takeprofit_pip=70, riskfree_trigger_pip=35
     ),
 )
 
