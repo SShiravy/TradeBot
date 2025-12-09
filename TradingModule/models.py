@@ -11,7 +11,7 @@ from ChartModule.plot import PlotChart
 from dataclasses import dataclass, field
 from datetime import datetime
 from abc import ABC, abstractmethod
-from datetime import timezone
+from datetime import timezone, timedelta
 from typing import Any
 from enum import Enum
 import hashlib
@@ -271,7 +271,7 @@ class PositionsReport:
 
     def __str__(self) -> str:
         report_msg = [
-            f"{self.identifier if not self.overal_report else 'Overall'}",
+            f"{self.identifier if not self.overal_report else f'Overall {self.source} on {self.chart.symbol}'}",
             f"Total Positions = {self.total_positions}",
             f"Wins = {self.wins}",
             f"Loses = {self.loses}",
@@ -289,7 +289,10 @@ class PositionsReport:
             report_msg.append(
                 f"Win Rate = {round(self.wins / (self.wins + self.loses) * 100, 2)} %"
             )
-        duration = self.last_time - self.first_time
+        duration = self.last_time.replace(
+            second=0, microsecond=0
+        ) - self.first_time.replace(second=0, microsecond=0)
+        duration = duration - timedelta(microseconds=duration.microseconds)
         report_msg.append(f"Duration = {duration}")
         return "\n".join(report_msg)
 

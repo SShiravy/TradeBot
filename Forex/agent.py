@@ -53,12 +53,11 @@ class ForexAgent(ExchangeAgent):
             logger.error(f"Forex Failed to get last candle data for {chart.symbol}")
             return False
         last_candle = last_data.candles[0]
-        delta = abs(
-            last_candle.time.replace(second=0, microsecond=0)
-            - now.replace(second=0, microsecond=0)
+        delta = now.replace(second=0, microsecond=0) - last_candle.time.replace(
+            second=0, microsecond=0
         )
         logger.debug(
-            f"delta between last candle time & now: {delta}|{last_candle.time=}|{now=}"
+            f"delta between last candle time & now: {delta=}|{last_candle.time=}|{now=}"
         )
         if delta > timedelta(minutes=2):
             return False
