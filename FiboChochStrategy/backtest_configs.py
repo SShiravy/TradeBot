@@ -14,10 +14,10 @@ from config import settings
 coinex_agent = CoinexAgent(settings.COINEX_ACCESS_ID, settings.COINEX_SECRET_KEY)
 
 coinex_five_m = FiboChochConfig(
-    Chart("SOLUSDT", TimeFrame.five_minutes),
-    coinex_agent,
-    FiboChoch("CoinexFiboChochTest"),
-    SimpleCryptoHandler(
+    chart=Chart("SOLUSDT", TimeFrame.five_minutes),
+    agent=coinex_agent,
+    strategy=FiboChoch("CoinexFiboChochTest"),
+    position_handler=SimpleCryptoHandler(
         coinex_agent,
         stoploss_percent=0.5,
         takeprofit_percent=0.5,
@@ -30,10 +30,10 @@ coinex_five_m = FiboChochConfig(
 
 
 coinex_one_h = FiboChochConfig(
-    Chart("SOLUSDT", TimeFrame.one_hour),
-    coinex_agent,
-    FiboChoch("CoinexFiboChochTest", confirmation_indicators=[]),
-    SimpleCryptoHandler(
+    chart=Chart("SOLUSDT", TimeFrame.one_hour),
+    agent=coinex_agent,
+    strategy=FiboChoch("CoinexFiboChochTest", confirmation_indicators=[]),
+    position_handler=SimpleCryptoHandler(
         coinex_agent,
         stoploss_percent=1,
         takeprofit_percent=2,
@@ -48,10 +48,10 @@ coinex_one_h = FiboChochConfig(
 
 
 forex_five_m = FiboChochConfig(
-    Chart("SOLUSD", TimeFrame.five_minutes),
-    ForexAgent(),
-    FiboChoch("CoinexFiboChochTest"),
-    SimpleForexHandler(
+    chart=Chart("SOLUSD", TimeFrame.five_minutes),
+    agent=ForexAgent(),
+    strategy=FiboChoch("CoinexFiboChochTest"),
+    position_handler=SimpleForexHandler(
         ForexAgent(),
         stoploss_pip=5,
         takeprofit_pip=5,

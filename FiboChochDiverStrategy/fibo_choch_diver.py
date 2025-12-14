@@ -3,7 +3,6 @@ from TradingModule import Position, OrderSide, commands
 from TradingModule.trader_bot import TradeConfig
 from TradingModule.reporter import TelegramReporter
 from ChartModule.models import Chart, Candle, Signal, ChartData
-from TradingModule.models import Strategy
 from ChartModule.plot import PlotChart
 from FiboChochStrategy import FiboChoch
 from DivergenceStrategy import Divergence, DivergenceSignal
@@ -16,18 +15,23 @@ import logging
 logger = logging.getLogger("FiChDiverStrategy")
 
 
-@dataclass
+@dataclass(kw_only=True)
 class FiboChochDiver(TradeConfig):
-    diver_base_chart: Chart  # type: ignore
+    diver_base_chart: Chart  # type: ignore[override]
     diver_second_chart: Chart  # type: ignore
 
-    fibochoch_strategy: FiboChoch  # type: ignore
+    strategy: FiboChoch  # type: ignore
     diver_strategy: Divergence  # type: ignore
 
+    long_signal: bool = field(default=True)
+    short_signal: bool = field(default=False)
+
     diver_heikingashi_chartdata: bool = field(default=False)
+
     fibo_stoploss: bool = field(default=True)
 
-    strategy: Strategy | None = field(default=None, init=False)  # type: ignore[override]
+    max_long_lose: int = field(default=3)
+    max_short_lose: int = field(default=3)
 
     _init_called: bool = field(default=False, init=False)
     _diver_last_signal: DivergenceSignal | None = field(default=None, init=False)
@@ -52,12 +56,12 @@ class FiboChochDiver(TradeConfig):
         delay = self.diver_base_chart.timeframe.time_delta
         self._diver_next_check = delay + last_candle.time + timedelta(seconds=1)
 
-    def get_diver_chartdata(self):
+    def get_diver_chartdata(self, n_bar: int | None = None):
         base_chartdata = self.agent.get_chartdata(
-            self.diver_base_chart, self.n_candle_check
+            self.diver_base_chart, n_bar if n_bar else self.n_candle_check
         )
         second_chartdata = self.agent.get_chartdata(
-            self.diver_second_chart, self.n_candle_check
+            self.diver_second_chart, n_bar if n_bar else self.n_candle_check
         )
         if base_chartdata is None or second_chartdata is None:
             raise ValueError(f"chart data is None from {self.agent.__class__.__name__}")
@@ -74,8 +78,7 @@ class FiboChochDiver(TradeConfig):
         )
         return signal
 
-    def diver_init(self):
-        base_chartdata, second_chartdata = self.get_diver_chartdata()
+    def diver_init(self, base_chartdata: ChartData, second_chartdata: ChartData):
         self.set_diver_next_check(base_chartdata[-2])
 
         base_data = deepcopy(base_chartdata)
@@ -88,8 +91,8 @@ class FiboChochDiver(TradeConfig):
                 self._diver_last_signal = signal
                 return
 
-    def fibochoch_init(self):
-        self.fibochoch_strategy.init_fibochochs(self.get_chartdata())
+    def fibochoch_init(self, chartdata: ChartData):
+        self.strategy.init_fibochochs(chartdata)
 
     def find_signal(
         self,
@@ -98,7 +101,7 @@ class FiboChochDiver(TradeConfig):
         if self._diver_last_signal is None:
             return None
 
-        signal = self.fibochoch_strategy.check_signal(
+        signal = self.strategy.check_signal(
             chartdata, self.long_signal, self.short_signal
         )
         if signal is None or signal.fibochoch_model.fibo is None:
@@ -122,8 +125,9 @@ class FiboChochDiver(TradeConfig):
 
     async def task(self) -> timedelta | tuple[timedelta, Signal, Position]:
         if self._init_called is False:
-            self.fibochoch_init()
-            self.diver_init()
+            self.fibochoch_init(self.get_chartdata())
+            base_chartdata, second_chartdata = self.get_diver_chartdata()
+            self.diver_init(base_chartdata, second_chartdata)
             self._init_called = True
 
         chartdata = self.get_chartdata()
@@ -141,9 +145,24 @@ class FiboChochDiver(TradeConfig):
         signal, position = res
         if self.send_signal:
             plot = PlotChart(chartdata)
-            self.fibochoch_strategy.draw(plot, signal, draw_indicators=True)
+            self.strategy.draw(plot, signal, draw_indicators=True)
             await TelegramReporter().new_position(position, plot)
         return self.give_delay(chartdata[-1], jump=True), signal, position
+
+    async def backtest(self, n_bar=500, len_sub_data=100, show_image=True):
+        chartdata = self.get_chartdata(n_bar)
+        self.fibochoch_init(
+            chartdata.give_sub_chartdata(chartdata.candles[:len_sub_data])
+        )
+        base_chartdata, second_chartdata = self.get_diver_chartdata(n_bar)
+        for i in chartdata[:]:
+            pass
+        self.diver_init(
+            base_chartdata.give_sub_chartdata(base_chartdata.candles[:len_sub_data]),
+            second_chartdata.give_sub_chartdata(
+                second_chartdata.candles[:len_sub_data]
+            ),
+        )
 
     def __str__(self) -> str:
         msg_list = [
@@ -151,7 +170,7 @@ class FiboChochDiver(TradeConfig):
             str(self.diver_base_chart),
             str(self.diver_second_chart),
             self.agent.__class__.__name__,
-            self.fibochoch_strategy.name,
+            self.strategy.name,
             self.diver_strategy.name,
             self.position_handler.__class__.__name__,
         ]

@@ -5,6 +5,7 @@ from typing import Any, Literal
 from enum import Enum
 import pandas as pd
 import numpy as np
+from copy import copy
 
 
 class TimeFrame(Enum):
@@ -369,3 +370,7 @@ class ChartData:
 
         crosspair_candlestick = ChartData(crosspair_chart, all_candles_list)
         return crosspair_candlestick
+
+    def give_sub_chartdata(self, sub_candles):
+        chart = copy(self.chart)
+        return ChartData(chart, sub_candles)

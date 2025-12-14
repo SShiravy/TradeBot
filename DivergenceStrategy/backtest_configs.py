@@ -5,7 +5,6 @@ from ChartModule.Indicators import EMA
 from Forex import ForexAgent, CvdDiverTradeConfig, ForexDiverTradeConfig
 from TradingModule.position_handlers import (
     RiskFreeForex,
-    LongShortForexHandler,
     RiskFreeCrypto,
 )
 from config import settings
@@ -35,12 +34,12 @@ five_m_diver = CoinexDiverTradeConfig(
 one_h_diver = CoinexDiverTradeConfig(
     chart=Chart("SOLUSDT", TimeFrame.one_hour),
     second_chart=Chart("BTCUSDT", TimeFrame.one_hour),
-    strategy=Divergence(2, 300, [], name="CoinexDiver", inverse_diver_long=True),
+    strategy=Divergence(5, 300, [], name="CoinexDiver", inverse_diver_long=True),
     position_handler=RiskFreeCrypto(
         coinex_agent,
         takeprofit_percent=2,
         stoploss_percent=2,
-        initial_volume=2,
+        initial_volume=10,
         riskfree_trigger_percent=1,
         leverage=10,
         long_trade=False,
@@ -78,6 +77,7 @@ forex_diver_one_m = ForexDiverTradeConfig(
     position_handler=RiskFreeForex(
         ForexAgent(), takeprofit_pip=30, stoploss_pip=30, riskfree_trigger_pip=15
     ),
+    merge_two_chart_time=True,
 )
 
 
@@ -91,6 +91,7 @@ forex_diver_five_m = ForexDiverTradeConfig(
             ForexAgent(), stoploss_pip=70, takeprofit_pip=70, riskfree_trigger_pip=35
         )
     ),
+    merge_two_chart_time=True,
 )
 
 # CVD ----

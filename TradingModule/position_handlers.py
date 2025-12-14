@@ -3,6 +3,7 @@ from TradingModule import Position, OrderSide, ExchangeAgent, PositionsReport
 from TradingModule.commands import TradeCommand
 from TradingModule import commands
 from abc import ABC, abstractmethod
+from datetime import timedelta
 from copy import copy
 import numpy as np
 import logging
@@ -61,7 +62,7 @@ class PositionHandler(ABC):
             round(self.init_stoploss(entry_price, side), percision),
             round(self.init_takeprofit(entry_price, side), percision),
             self.leverage,
-            signal.candle.time,
+            signal.candle.time + timedelta(seconds=2),
             signal.source,
             position_id,
             real_trade,

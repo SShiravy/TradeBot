@@ -14,11 +14,14 @@ class ForexDiverTradeConfig(DivergenceTradeConfig):
     strategy: Divergence  # type: ignore[override]
     merge_two_chart_time: bool = field(default=False)
 
-    def get_chartdata(self) -> tuple[ChartData, ChartData]:  # type: ignore[override]
+    def get_chartdata(self, n_bar: int | None = None) -> tuple[ChartData, ChartData]:  # type: ignore[override]
         mulitplier = 2 if self.merge_two_chart_time else 1
-        base_chartdata = self.agent.get_chartdata(self.chart, self.n_candle_check)
+        base_chartdata = self.agent.get_chartdata(
+            self.chart, n_bar if n_bar else self.n_candle_check
+        )
         second_chartdata = self.agent.get_chartdata(
-            self.second_chart, self.n_candle_check * mulitplier
+            self.second_chart,
+            n_bar * mulitplier if n_bar else self.n_candle_check * mulitplier,
         )
 
         if base_chartdata is None or second_chartdata is None:

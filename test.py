@@ -6,39 +6,22 @@ CustomLogger(True, consol_log_level=logging.DEBUG)
 
 
 async def start_diver_backtest():
-    from BacktestModule import Backtest
-    from DivergenceStrategy.backtest_configs import forex_diver_five_m
+    from DivergenceStrategy.backtest_configs import one_h_diver
 
-    # Check forex
-    backtest = Backtest(forex_diver_five_m, 700)
-    await backtest.start_backtest(show_image=True)
+    await one_h_diver.backtest(1000, len_sub_data=100)
 
 
 async def start_fibochoch_backtest():
-    from BacktestModule import Backtest
     from FiboChochStrategy.backtest_configs import coinex_one_h
 
-    # Check forex
-    backtest = Backtest(coinex_one_h, 1000)
-    await backtest.start_backtest(show_image=True)
-
-
-def new_backtest():
-    import asyncio
-    from BacktestModule.backtest_new_version import Backtest
-    from FiboChochStrategy.backtest_configs import coinex_five_m
-
-    async def test():
-        await Backtest(coinex_five_m, show_image=True).start_task_backtest()
-
-    asyncio.run(test())
+    await coinex_one_h.backtest(1000, 50)
 
 
 if __name__ == "__main__":
     import asyncio
 
-    asyncio.run(start_diver_backtest())
-    # asyncio.run(start_fibochoch_backtest())
+    # asyncio.run(start_diver_backtest())
+    asyncio.run(start_fibochoch_backtest())
 
     # new_backtest()
 

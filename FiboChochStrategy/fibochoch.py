@@ -14,7 +14,7 @@ from ChartModule.Indicators import (
     SupportConditions,
 )
 from ChartModule.plot import PlotChart
-from TradingModule import TradeConfig, commands
+from TradingModule.trader_bot import TradeConfig, commands
 from TradingModule.models import OrderSide, Position, Strategy
 from dataclasses import dataclass, field
 from copy import copy
@@ -46,7 +46,7 @@ class FiboChochSignal(Signal):
 class FiboChoch(Strategy):
     def __init__(
         self,
-        name: str,
+        name="FiboChoch",
         long_support_conditions: SupportConditions = SupportConditions.GREEN_RED,
         short_support_conditions: SupportConditions = SupportConditions.RED_GREEN,
         confirmation_indicators: list[IndicatorBaseModel] = [],
@@ -121,7 +121,7 @@ class FiboChoch(Strategy):
             support_condition = True  # (self.all_checked_candles[top_index].side is MarketSide.BULLISH and self.all_checked_candles[top_index+1].side is MarketSide.BEARISH) or (self.all_checked_candles[top_index].side is MarketSide.BEARISH and self.all_checked_candles[top_index+1].side is MarketSide.BULLISH)
             if not support_condition:
                 return None
-            for candle in self.all_checked_candles[: model.start_index : -1]:
+            for candle in self.all_checked_candles[model.start_index - 1 :: -1]:
                 if candle.side is MarketSide.BULLISH:
                     if candle.high > top_pivot.high:
                         return None

@@ -1,3 +1,4 @@
+from BacktestModule.dummy_agent import DummyAgent
 from ChartModule.models import (
     Chart,
     IndicatorBaseModel,
@@ -8,8 +9,8 @@ from ChartModule.models import (
 )
 from ChartModule.Indicators import TrendLine, Line, SupportConditions
 from ChartModule.plot import TwoChartPlot
-from TradingModule import TradeConfig, OrderSide, commands, Position
-from TradingModule.models import Strategy
+from TradingModule.trader_bot import TradeConfig, OrderSide, commands, Position
+from TradingModule.models import PositionsReport, Strategy
 from dataclasses import dataclass
 from copy import copy
 import logging
@@ -204,10 +205,12 @@ class DivergenceTradeConfig(TradeConfig):
     second_chart: Chart
     strategy: Divergence  # type: ignore[override]
 
-    def get_chartdata(self) -> tuple[ChartData, ChartData]:  # type: ignore[override]
-        base_chartdata = self.agent.get_chartdata(self.chart, self.n_candle_check)
+    def get_chartdata(self, n_bar: int | None = None) -> tuple[ChartData, ChartData]:  # type: ignore[override]
+        base_chartdata = self.agent.get_chartdata(
+            self.chart, n_bar if n_bar else self.n_candle_check
+        )
         second_chartdata = self.agent.get_chartdata(
-            self.second_chart, self.n_candle_check
+            self.second_chart, n_bar if n_bar else self.n_candle_check
         )
 
         if base_chartdata is None or second_chartdata is None:
@@ -254,3 +257,79 @@ class DivergenceTradeConfig(TradeConfig):
             self.strategy.draw(plot, signal, draw_indicators=True)
             await TelegramReporter().new_position(position, plot.base_plot)
         return self.give_delay(base_chartdata[-1], jump=True), signal, position
+
+    async def backtest(
+        self,  # type: ignore
+        n_bar=500,
+        len_sub_data=100,
+        show_image=True,
+        consider_positions=True,
+    ):
+        position_handler = copy(self.position_handler)
+        agent = DummyAgent(self.agent, position_handler.open_positions)
+        position_handler.exchange_agent = agent
+        position_handler.long_trade = False
+        position_handler.short_trade = False
+
+        all_positions: list[Position] = []
+        all_signals: list[Signal | DivergenceSignal] = []
+
+        jump = 0
+        base_chartdata, second_chartdata = self.get_chartdata(n_bar)
+        for i in range(len_sub_data, len(base_chartdata) - 2):
+            base_sub_data = ChartData(
+                base_chartdata.chart, base_chartdata[:i], base_chartdata.indicators
+            )
+            seocnd_sub_data = ChartData(
+                second_chartdata.chart,
+                second_chartdata[:i],
+                second_chartdata.indicators,
+            )
+
+            candle = base_chartdata[i]
+            agent.current_price = candle.open
+
+            if consider_positions:
+                all_pos = copy(position_handler.open_positions)
+                for pos in all_pos:
+                    if pos.closed:
+                        position_handler.closed_positions.append(pos)
+                        position_handler.open_positions.remove(pos)
+                        continue
+                    position_handler.handler(
+                        pos, [candle.open, candle.low, candle.high, candle.close]
+                    )
+            await commands.TradeCommand.execute_pending_commands(candle.time, False)
+
+            if jump > 0:
+                jump -= 1
+                continue
+            res = self.find_signal(base_sub_data, seocnd_sub_data)
+            if res is None:
+                continue
+            jump = self.bar_between_signals
+            signal, position = res
+            all_signals.append(signal)
+            if consider_positions:
+                all_positions.append(position)
+                open = commands.OpenPosition(position, agent)
+                await open.execute(candle.time)
+
+        plot = TwoChartPlot(base_chartdata, second_chartdata)
+        for signal in all_signals:
+            self.strategy.draw(plot, signal)  # type: ignore
+        for pos in all_positions:
+            if not pos.closed:
+                continue
+            pos.draw(plot.base_plot)
+        commands_report = commands.TradeCommand.close_records()
+        all_reports = position_handler.report()
+        logger.info("Result:\n\n" + commands_report)
+        for poses_report in all_reports:
+            logger.info("\n" + str(poses_report))
+        overal_report = PositionsReport.give_overall_report(copy(all_reports))
+        logger.info("\n" + str(overal_report))
+        if show_image:
+            plot.show()
+
+        return all_signals, all_positions, plot, all_reports, commands_report
