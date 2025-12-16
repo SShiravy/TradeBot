@@ -60,3 +60,17 @@ forex_five_m = FiboChochConfig(
     bar_between_signals=0,
     send_signal=False,
 )
+
+one_m_forex = FiboChochConfig(
+    chart=Chart("SOLUSD", TimeFrame.one_minute),
+    agent=ForexAgent(),
+    strategy=FiboChoch("CoinexFiboChochTest"),
+    position_handler=SimpleForexHandler(
+        ForexAgent(),
+        stoploss_pip=5,
+        takeprofit_pip=5,
+        initial_volume=0.01,
+    ),
+    bar_between_signals=0,
+    send_signal=False,
+)

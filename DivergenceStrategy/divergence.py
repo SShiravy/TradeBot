@@ -231,8 +231,10 @@ class DivergenceTradeConfig(TradeConfig):
 
         position = self.position_handler.generate_position(signal)
 
-        if (self.position_handler.long_trade and position.side is OrderSide.BUY) or (
-            self.position_handler.short_trade and position.side is OrderSide.SELL
+        if (
+            self.send_position_command
+            and (self.position_handler.long_trade and position.side is OrderSide.BUY)
+            or (self.position_handler.short_trade and position.side is OrderSide.SELL)
         ):
             commands.OpenPosition(position, self.agent)
         return signal, position
@@ -258,8 +260,8 @@ class DivergenceTradeConfig(TradeConfig):
             await TelegramReporter().new_position(position, plot.base_plot)
         return self.give_delay(base_chartdata[-1], jump=True), signal, position
 
-    async def backtest(
-        self,  # type: ignore
+    async def backtest(  # type: ignore
+        self,
         n_bar=500,
         len_sub_data=100,
         show_image=True,
@@ -270,6 +272,7 @@ class DivergenceTradeConfig(TradeConfig):
         position_handler.exchange_agent = agent
         position_handler.long_trade = False
         position_handler.short_trade = False
+        self.agent = agent
 
         all_positions: list[Position] = []
         all_signals: list[Signal | DivergenceSignal] = []

@@ -1,6 +1,6 @@
 from Forex import ForexAgent, ForexDiverTradeConfig
 from ChartModule import Chart, TimeFrame
-from TradingModule import TraderBot
+from TradingModule.trader_bot import TraderBot
 from TradingModule.position_handlers import RiskFreeForex
 from DivergenceStrategy.divergence import Divergence
 from custom_logger import CustomLogger

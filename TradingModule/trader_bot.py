@@ -33,6 +33,8 @@ class TradeConfig:
     max_long_lose: int = field(default=3)
     max_short_lose: int = field(default=3)
 
+    send_position_command: bool = field(default=True)
+
     _n_losed_long: int = field(default=0, init=False)
     _n_losed_short: int = field(default=0, init=False)
 
@@ -70,8 +72,10 @@ class TradeConfig:
 
         position = self.position_handler.generate_position(signal)
 
-        if (self.position_handler.long_trade and position.side is OrderSide.BUY) or (
-            self.position_handler.short_trade and position.side is OrderSide.SELL
+        if (
+            self.send_position_command
+            and (self.position_handler.long_trade and position.side is OrderSide.BUY)
+            or (self.position_handler.short_trade and position.side is OrderSide.SELL)
         ):
             commands.OpenPosition(position, self.agent)
         return signal, position

@@ -1,3 +1,3 @@
-from FiboChochDiverStrategy.fibo_choch_diver import FiboChochDiver
+from FiboChochDiverStrategy.fibochoch_diver import FiboChochDiver
 
 __all__ = ["FiboChochDiver"]

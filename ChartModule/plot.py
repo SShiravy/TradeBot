@@ -134,12 +134,20 @@ class PlotChart:
             )
 
     def mark_candle(
-        self, candle: Candle, source: IndicatorCandleSource, legend: str | None = None
+        self,
+        candle: Candle,
+        source=IndicatorCandleSource.Open,
+        legend: str | None = None,
+        color: str | None = None,
     ):
         color = (
-            "#e20000"
-            if source in [IndicatorCandleSource.Top, IndicatorCandleSource.High]
-            else "#e2c800"
+            color
+            if color
+            else (
+                "#e20000"
+                if source in [IndicatorCandleSource.Top, IndicatorCandleSource.High]
+                else "#e2c800"
+            )
         )
         fplt.plot(
             candle.time,

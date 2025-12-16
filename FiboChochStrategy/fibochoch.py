@@ -244,7 +244,9 @@ class FiboChochConfig(TradeConfig):
     strategy: FiboChoch  # type: ignore[override]
     fibo_stoploss: bool = field(default=True)
 
-    def find_signal(self, chartdata: ChartData) -> None | tuple[Signal, Position]:
+    def find_signal(
+        self, chartdata: ChartData
+    ) -> None | tuple[FiboChochSignal, Position]:
         signal = self.strategy.check_signal(
             chartdata, self.long_signal, self.short_signal
         )

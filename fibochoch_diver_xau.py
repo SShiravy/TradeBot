@@ -3,9 +3,9 @@ from FiboChochDiverStrategy import FiboChochDiver
 from FiboChochStrategy import FiboChoch
 from TradingModule.position_handlers import SimpleForexHandler
 from DivergenceStrategy.divergence import Divergence
-from Forex import ForexAgent
 from ChartModule import Chart, TimeFrame
-from TradingModule import TraderBot
+from TradingModule.trader_bot import TraderBot
+from Forex import ForexAgent, ForexDiverTradeConfig
 from custom_logger import CustomLogger
 import logging
 import asyncio
@@ -18,19 +18,39 @@ CustomLogger(
 )
 
 
-one_five_m = FiboChochDiver(
-    chart=Chart("XAUUSD!", TimeFrame.one_minute),
+forex_diver_five_m = ForexDiverTradeConfig(
+    chart=Chart("XAUUSD!", TimeFrame.five_minutes),
+    second_chart=Chart("SOLUSD", TimeFrame.five_minutes),
+    strategy=Divergence(15, 50, [], name="ForexDiver"),
+    bar_between_signals=5,
+    position_handler=(SimpleForexHandler(ForexAgent())),
+    merge_two_chart_time=False,
+)
+
+
+one_m = FiboChochDiver(
+    divergence_config=forex_diver_five_m,
+    chart=Chart("SOLUSD", TimeFrame.one_minute),
     agent=ForexAgent(),
-    position_handler=SimpleForexHandler(ForexAgent()),
-    diver_base_chart=Chart("XAUUSD!", TimeFrame.five_minutes),
-    diver_second_chart=Chart("SOLUSD", TimeFrame.five_minutes),
-    diver_strategy=Divergence(3, 10, []),
-    strategy=FiboChoch(pivot_left=10, pivot_right=5, fibo_level=FiboLevels.LEVEL_5),
+    strategy=FiboChoch(
+        "CoinexFiboChochTest",
+        pivot_right=5,
+        pivot_left=10,
+        fibo_level=FiboLevels.LEVEL_5,
+    ),
+    position_handler=SimpleForexHandler(
+        ForexAgent(),
+        stoploss_pip=2,
+        takeprofit_pip=1,
+        initial_volume=0.01,
+    ),
+    bar_between_signals=0,
+    send_signal=False,
 )
 
 TraderBot(
     "Gold FiboChochDiver Bot",
-    [one_five_m],
+    [one_m],
 )
 
 
