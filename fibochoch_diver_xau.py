@@ -22,9 +22,10 @@ forex_diver_five_m = ForexDiverTradeConfig(
     chart=Chart("XAUUSD!", TimeFrame.five_minutes),
     second_chart=Chart("SOLUSD", TimeFrame.five_minutes),
     strategy=Divergence(15, 50, [], name="ForexDiver"),
-    bar_between_signals=5,
+    bar_between_signals=3,
     position_handler=(SimpleForexHandler(ForexAgent())),
     merge_two_chart_time=False,
+    n_candle_check=200,
 )
 
 
@@ -40,12 +41,11 @@ one_m = FiboChochDiver(
     ),
     position_handler=SimpleForexHandler(
         ForexAgent(),
-        stoploss_pip=2,
-        takeprofit_pip=1,
+        stoploss_pip=1,
+        takeprofit_pip=10,
         initial_volume=0.01,
     ),
-    bar_between_signals=0,
-    send_signal=False,
+    bar_between_signals=1,
 )
 
 TraderBot(

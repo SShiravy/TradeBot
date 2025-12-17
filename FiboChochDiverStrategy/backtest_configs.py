@@ -64,13 +64,13 @@ forex_one_m = FiboChochDiver(
     divergence_config=forex_diver_five_m,
     chart=Chart("SOLUSD", TimeFrame.one_minute),
     agent=ForexAgent(),
-    strategy=FiboChoch("CoinexFiboChochTest", pivot_right=5, pivot_left=10),
+    strategy=FiboChoch("CoinexFiboChochTest", pivot_right=2, pivot_left=10),
     position_handler=SimpleForexHandler(
         ForexAgent(),
         stoploss_pip=1,
-        takeprofit_pip=10,
+        takeprofit_pip=8,
         initial_volume=0.01,
     ),
-    bar_between_signals=0,
+    bar_between_signals=1,
     send_signal=False,
 )

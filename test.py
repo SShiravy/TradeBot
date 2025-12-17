@@ -20,7 +20,7 @@ async def start_fibochoch_backtest():
 async def start_fich_diver_backtest():
     from FiboChochDiverStrategy.backtest_configs import forex_one_m
 
-    await forex_one_m.backtest(1000)
+    await forex_one_m.backtest(500)
 
 
 if __name__ == "__main__":

@@ -255,7 +255,7 @@ class DivergenceTradeConfig(TradeConfig):
         signal, position = res
 
         if self.send_signal:
-            plot = TwoChartPlot(base_data, second_data)
+            plot = TwoChartPlot(base_chartdata, second_chartdata)
             self.strategy.draw(plot, signal, draw_indicators=True)
             await TelegramReporter().new_position(position, plot.base_plot)
         return self.give_delay(base_chartdata[-1], jump=True), signal, position
