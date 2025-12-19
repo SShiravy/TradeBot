@@ -1,7 +1,7 @@
 from ChartModule.Indicators.fibonacci import FiboLevels
 from FiboChochDiverStrategy import FiboChochDiver
 from FiboChochStrategy import FiboChoch
-from TradingModule.position_handlers import SimpleForexHandler
+from TradingModule.PositionHandlers import SimpleForex
 from DivergenceStrategy.divergence import Divergence
 from ChartModule import Chart, TimeFrame
 from TradingModule.trader_bot import TraderBot
@@ -23,7 +23,7 @@ forex_diver_five_m = ForexDiverTradeConfig(
     second_chart=Chart("SOLUSD", TimeFrame.five_minutes),
     strategy=Divergence(15, 50, [], name="ForexDiver"),
     bar_between_signals=3,
-    position_handler=(SimpleForexHandler(ForexAgent())),
+    position_handler=(SimpleForex(ForexAgent())),
     merge_two_chart_time=False,
     n_candle_check=200,
 )
@@ -39,7 +39,7 @@ one_m = FiboChochDiver(
         pivot_left=10,
         fibo_level=FiboLevels.LEVEL_5,
     ),
-    position_handler=SimpleForexHandler(
+    position_handler=SimpleForex(
         ForexAgent(),
         stoploss_pip=1,
         takeprofit_pip=10,

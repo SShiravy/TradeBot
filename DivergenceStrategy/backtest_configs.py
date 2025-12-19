@@ -3,7 +3,7 @@ from ChartModule import Chart, TimeFrame
 from DivergenceStrategy.divergence import Divergence
 from ChartModule.Indicators import EMA
 from Forex import ForexAgent, CvdDiverTradeConfig, ForexDiverTradeConfig
-from TradingModule.position_handlers import (
+from TradingModule.PositionHandlers import (
     RiskFreeForex,
     RiskFreeCrypto,
 )

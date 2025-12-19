@@ -1,8 +1,8 @@
 from FiboChochStrategy.fibochoch import FiboChochConfig, FiboChoch
 from Forex import ForexAgent
-from TradingModule.position_handlers import (
-    SimpleForexHandler,
-    SimpleCryptoHandler,
+from TradingModule.PositionHandlers import (
+    SimpleForex,
+    SimpleCrypto,
 )
 from Coinex import CoinexAgent
 from ChartModule import Chart, TimeFrame
@@ -17,7 +17,7 @@ coinex_five_m = FiboChochConfig(
     chart=Chart("SOLUSDT", TimeFrame.five_minutes),
     agent=coinex_agent,
     strategy=FiboChoch("CoinexFiboChochTest"),
-    position_handler=SimpleCryptoHandler(
+    position_handler=SimpleCrypto(
         coinex_agent,
         stoploss_percent=0.5,
         takeprofit_percent=0.5,
@@ -33,7 +33,7 @@ coinex_one_h = FiboChochConfig(
     chart=Chart("SOLUSDT", TimeFrame.one_hour),
     agent=coinex_agent,
     strategy=FiboChoch("CoinexFiboChochTest", confirmation_indicators=[]),
-    position_handler=SimpleCryptoHandler(
+    position_handler=SimpleCrypto(
         coinex_agent,
         stoploss_percent=1,
         takeprofit_percent=2,
@@ -51,7 +51,7 @@ forex_five_m = FiboChochConfig(
     chart=Chart("SOLUSD", TimeFrame.five_minutes),
     agent=ForexAgent(),
     strategy=FiboChoch("CoinexFiboChochTest"),
-    position_handler=SimpleForexHandler(
+    position_handler=SimpleForex(
         ForexAgent(),
         stoploss_pip=5,
         takeprofit_pip=5,
@@ -65,7 +65,7 @@ one_m_forex = FiboChochConfig(
     chart=Chart("SOLUSD", TimeFrame.one_minute),
     agent=ForexAgent(),
     strategy=FiboChoch("CoinexFiboChochTest"),
-    position_handler=SimpleForexHandler(
+    position_handler=SimpleForex(
         ForexAgent(),
         stoploss_pip=5,
         takeprofit_pip=5,

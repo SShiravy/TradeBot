@@ -1,7 +1,7 @@
 from Coinex import CoinexAgent, CoinexDiverTradeConfig
 from ChartModule import Chart, TimeFrame
 from TradingModule.trader_bot import TraderBot
-from TradingModule.position_handlers import RiskFreeCrypto, SimpleCryptoHandler
+from TradingModule.PositionHandlers import RiskFreeCrypto, SimpleCrypto
 from DivergenceStrategy.divergence import Divergence
 from custom_logger import CustomLogger
 from config import settings
@@ -15,7 +15,7 @@ five_m_diver = CoinexDiverTradeConfig(
     chart=Chart("SOLUSDT", TimeFrame.five_minutes),
     second_chart=Chart("BTCUSDT", TimeFrame.five_minutes),
     strategy=Divergence(3, 100, [], name="CoinexDiver", inverse_diver_long=True),
-    position_handler=SimpleCryptoHandler(
+    position_handler=SimpleCrypto(
         coinex_agent,
         stoploss_percent=1,
         takeprofit_percent=1,

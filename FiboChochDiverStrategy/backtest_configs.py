@@ -3,10 +3,10 @@ from Coinex import CoinexAgent, CoinexDiverTradeConfig
 from ChartModule import Chart, TimeFrame
 from DivergenceStrategy.divergence import Divergence
 from FiboChochStrategy.fibochoch import FiboChoch
-from TradingModule.position_handlers import (
+from TradingModule.PositionHandlers import (
     RiskFreeCrypto,
-    SimpleCryptoHandler,
-    SimpleForexHandler,
+    SimpleCrypto,
+    SimpleForex,
 )
 from Forex import ForexAgent, ForexDiverTradeConfig
 from config import settings
@@ -35,7 +35,7 @@ coinex_five_m = FiboChochDiver(
     chart=Chart("SOLUSDT", TimeFrame.five_minutes),
     agent=coinex_agent,
     strategy=FiboChoch("CoinexFiboChochTest"),
-    position_handler=SimpleCryptoHandler(
+    position_handler=SimpleCrypto(
         coinex_agent,
         stoploss_percent=0.1,
         takeprofit_percent=0.25,
@@ -55,7 +55,7 @@ forex_diver_five_m = ForexDiverTradeConfig(
     second_chart=Chart("SOLUSD", TimeFrame.five_minutes),
     strategy=Divergence(15, 50, [], name="ForexDiver"),
     bar_between_signals=5,
-    position_handler=(SimpleForexHandler(ForexAgent())),
+    position_handler=(SimpleForex(ForexAgent())),
     merge_two_chart_time=False,
 )
 
@@ -65,7 +65,7 @@ forex_one_m = FiboChochDiver(
     chart=Chart("SOLUSD", TimeFrame.one_minute),
     agent=ForexAgent(),
     strategy=FiboChoch("CoinexFiboChochTest", pivot_right=2, pivot_left=10),
-    position_handler=SimpleForexHandler(
+    position_handler=SimpleForex(
         ForexAgent(),
         stoploss_pip=1,
         takeprofit_pip=8,
