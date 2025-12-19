@@ -48,8 +48,15 @@ class SimpleForex(PositionHandler):
         return entry_price + side.factor() * self.takeprofit_pip
 
     def generate_position(
-        self, signal: Signal, entry_price: float | None = None, position_id: str = ""
+        self,
+        signal: Signal,
+        entry_price: float | None = None,
+        position_id: str = "",
+        *args,
+        **kwargs,
     ) -> Position:
-        pos = super().generate_position(signal, entry_price, position_id)
+        pos = super().generate_position(
+            signal, entry_price, position_id, kwargs=kwargs, args=args
+        )
         pos.in_forex = True
         return pos

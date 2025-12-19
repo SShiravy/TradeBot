@@ -8,7 +8,10 @@ from TradingModule.PositionHandlers.side_distinct_handlers import (
     SideDistinctCrypto,
     SideDistinctForex,
 )
-from TradingModule.PositionHandlers.ratio_handlers import SlTpRatioCrypto, SlTpRatioForex
+from TradingModule.PositionHandlers.ratio_handlers import (
+    SlTpRatioCrypto,
+    SlTpRatioForex,
+)
 
 __all__ = [
     "PositionHandler",
@@ -19,5 +22,5 @@ __all__ = [
     "SideDistinctCrypto",
     "SideDistinctForex",
     "SlTpRatioForex",
-    "SlTpRatioCrypto"
+    "SlTpRatioCrypto",
 ]

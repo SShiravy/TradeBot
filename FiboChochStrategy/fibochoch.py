@@ -242,7 +242,6 @@ class FiboChoch(Strategy):
 
 class FiboChochConfig(TradeConfig):
     strategy: FiboChoch  # type: ignore[override]
-    fibo_stoploss: bool = field(default=True)
 
     def find_signal(
         self, chartdata: ChartData
@@ -252,13 +251,9 @@ class FiboChochConfig(TradeConfig):
         )
         if signal is None or signal.fibochoch_model.fibo is None:
             return None
-
-        position = self.position_handler.generate_position(signal)
-        if self.fibo_stoploss:
-            sl = self.position_handler.init_stoploss(
-                signal.fibochoch_model.fibo.start_tick.price, position.side
-            )
-            position.stoploss = sl
+        position = self.position_handler.generate_position(
+            signal, sl_tp_base_price=signal.fibochoch_model.fibo.start_tick.price
+        )
 
         if (self.position_handler.long_trade and position.side is OrderSide.BUY) or (
             self.position_handler.short_trade and position.side is OrderSide.SELL
