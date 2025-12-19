@@ -73,4 +73,5 @@ forex_one_m = FiboChochDiver(
     ),
     bar_between_signals=1,
     send_signal=False,
+    n_fich_signal_per_diver=1,
 )

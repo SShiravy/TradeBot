@@ -20,7 +20,7 @@ async def start_fibochoch_backtest():
 async def start_fich_diver_backtest():
     from FiboChochDiverStrategy.backtest_configs import forex_one_m
 
-    await forex_one_m.backtest(500)
+    await forex_one_m.backtest(1000)
 
 
 if __name__ == "__main__":
@@ -31,8 +31,7 @@ if __name__ == "__main__":
     asyncio.run(start_fich_diver_backtest())
 
     # new_backtest()
-
-
+    
 # TODO: partial close
 # TODO: position handler with MA and control tp sl with it
 # TODO: multiple loss in a row for long and short handler

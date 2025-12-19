@@ -22,7 +22,23 @@ class FiboChochDiver(FiboChochConfig):
     diver_last_signal: DivergenceSignal | None = field(default=None, init=False)
     diver_next_check: datetime | None = field(default=None, init=False)
 
+    n_fich_signal_per_diver: int = field(default=1)
+
+    _n_fich_diver_signal: int = field(default=1, init=False)
+
+    def give_diver_n_bar(self, fich_n_bar: int | None):
+        if fich_n_bar is None:
+            fich_n_bar = self.n_candle_check
+
+        minutes = self.chart.timeframe.minutes * fich_n_bar
+        n_bar = round(minutes / self.divergence_config.chart.timeframe.minutes) + 1
+        if n_bar > self.divergence_config.strategy.max_step:
+            return n_bar + self.divergence_config.n_candle_check
+        else:
+            return self.divergence_config.strategy.max_step
+
     async def initialize_diver(self):
+        self._n_fich_diver_signal = self.n_fich_signal_per_diver
         self.divergence_config.send_signal = False
         self.divergence_config.max_long_lose = 100
         self.divergence_config.max_short_lose = 100
@@ -57,10 +73,12 @@ class FiboChochDiver(FiboChochConfig):
         )
         if signal is None or signal.fibochoch_model.fibo is None:
             return None
-
         if self.diver_last_signal.side != signal.side:
             return None
-
+        if self._n_fich_diver_signal < 1:
+            return None
+        if signal.candle.time < self.diver_last_signal.candle.time:
+            return None
         position = self.position_handler.generate_position(signal)
         if self.fibo_stoploss:
             sl = self.position_handler.init_stoploss(
@@ -72,6 +90,8 @@ class FiboChochDiver(FiboChochConfig):
             self.position_handler.short_trade and position.side is OrderSide.SELL
         ):
             commands.OpenPosition(position, self.agent)
+
+        self._n_fich_diver_signal -= 1
         return signal, position
 
     async def task(self) -> timedelta | tuple[timedelta, Signal, Position]:
@@ -85,6 +105,7 @@ class FiboChochDiver(FiboChochConfig):
             else:
                 delay = res[0]
                 self.diver_last_signal = res[1]
+                self._n_fich_diver_signal = self.n_candle_check
             self.diver_next_check = datetime.now() + delay
 
         return await super().task()
@@ -92,14 +113,13 @@ class FiboChochDiver(FiboChochConfig):
     async def backtest(  # type: ignore
         self, n_bar=500, len_sub_data=100, show_image=True, consider_positions=True
     ):
-        self.divergence_config.n_candle_check = int(n_bar / 2)
+        self.divergence_config.n_candle_check = self.give_diver_n_bar(n_bar)
         res = await self.initialize_diver()
         if res is None:
             raise ValueError(f"Diver {res=}")
 
         diver_signals = res[0]
-        diver_plot = res[2]
-        diver_signal_index = 0
+
         self.diver_last_signal = diver_signals[0]  # type: ignore
 
         self.diver_next_check = datetime.now() + timedelta(days=1)
@@ -124,12 +144,12 @@ class FiboChochDiver(FiboChochConfig):
 
         while agent.index < len(agent.chartdata.candles) - 1:  # type: ignore
             while (
-                diver_signals[-1] != self.diver_last_signal
-                and self.get_chartdata()[-1].time
-                >= diver_signals[diver_signal_index + 1].candle.time
+                len(diver_signals) > 1
+                and self.get_chartdata()[-1].time >= diver_signals[1].candle.time
             ):
-                diver_signal_index += 1
-                self.diver_last_signal = diver_signals[diver_signal_index]  # type: ignore
+                diver_signals.pop(0)
+                self.diver_last_signal = diver_signals[0]  # type: ignore
+                self._n_fich_diver_signal = self.n_fich_signal_per_diver
                 logger.info(f"New Diver Signal: {self.diver_last_signal}")
 
             res = await self.task()
@@ -140,19 +160,19 @@ class FiboChochDiver(FiboChochConfig):
                 if consider_positions:
                     all_positions.append(res[2])
                 candle_delay = self.bar_between_signals + 1
-            agent.index += candle_delay
             if consider_positions:
                 position_handler.manage_positions()
                 await commands.TradeCommand.execute_pending_commands(
                     time=agent.get_chartdata(self.chart)[-1].time,  # type: ignore
                     report=False,
                 )
+            agent.index += candle_delay
             logger.debug(f"{candle_delay} Candle next")
 
         plot = PlotChart(agent.chartdata)  # type: ignore
         for signal in all_signals:
             self.strategy.draw(plot, signal)
-            # diver_plot.base_plot(signal.candle,color= "#e24800")
+
         for pos in all_positions:
             pos.draw(plot)
 
@@ -167,7 +187,6 @@ class FiboChochDiver(FiboChochConfig):
             f"total time: {agent.chartdata[-1].time - agent.chartdata[0].time} with {len(agent.chartdata)} candles"  # type: ignore
         )
         if show_image:
-            diver_plot.show()
             plot.show()
 
         return all_signals, all_positions, plot, all_reports, commands_report
