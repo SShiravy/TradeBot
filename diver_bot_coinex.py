@@ -46,7 +46,9 @@ one_h_diver = CoinexDiverTradeConfig(
     heikingashi_chartdata=True,
 )
 
-TraderBot("CoinexDiverBot", [five_m_diver, one_h_diver], report_time={"h": 23, "m": 50})
+TraderBot(
+    "Coinex Diver Bot", [five_m_diver, one_h_diver], report_time={"h": 23, "m": 50}
+)
 
 
 if __name__ == "__main__":

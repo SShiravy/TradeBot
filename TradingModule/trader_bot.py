@@ -264,8 +264,9 @@ class TraderBot:
                 overall_report.append(PositionsReport.give_overall_report(all_reports))
 
             overall_report = sum(overall_report)
-            if overall_report:
-                await TelegramReporter().public_report(str(overall_report))
+            await TelegramReporter().public_report(
+                self.name + "\n" + str(overall_report)
+            )
 
             now = datetime.now()
             report_time = (now + timedelta(days=1)).replace(
