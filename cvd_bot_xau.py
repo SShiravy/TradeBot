@@ -45,10 +45,7 @@ five_m_cvd = CvdDiverTradeConfig(
 )
 
 
-TraderBot(
-    "Gold CVD Bot",
-    [one_m_cvd, five_m_cvd],
-)
+TraderBot("Gold CVD Bot", [one_m_cvd, five_m_cvd], report_time={"h": 23, "m": 58})
 
 
 if __name__ == "__main__":

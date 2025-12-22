@@ -36,5 +36,4 @@ if __name__ == "__main__":
 # TODO: position handler with MA and control tp sl with it
 # TODO: multiple loss in a row for long and short handler
 # TODO: pos open candle should not check in position handler
-# TODO: add backtest bot
 # TODO: check market is open not woking! last tick is just now always

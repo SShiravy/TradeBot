@@ -1,6 +1,6 @@
-from BacktestModule.dummy_agent import DummyAgent
 from TradingModule import ExchangeAgent, Position, OrderSide, commands, PositionsReport
 from TradingModule.reporter import TelegramReporter
+from BacktestModule.dummy_agent import DummyAgent
 from TradingModule.PositionHandlers.model import PositionHandler
 from ChartModule.models import Chart, Candle, Signal, ChartData
 from TradingModule.models import Strategy
@@ -177,13 +177,13 @@ class TraderBot:
         cls,
         name: str = "",
         configs: list[TradeConfig] = [],
-        report_period=timedelta(hours=24),
+        report_time: dict = {"h": 23, "m": 50},
     ):
         if not hasattr(cls, "_instance"):
             cls._instance = object.__new__(cls)
             cls.name = name
             cls.configs = configs
-            cls.report_period = report_period
+            cls.report_time = report_time
             cls._start_time = datetime.now(tz=timezone.utc).replace(microsecond=0)
         return cls._instance
 
@@ -247,8 +247,13 @@ class TraderBot:
             await TelegramReporter().log_report("\n".join(msg))
 
     async def report(self):
+        now = datetime.now()
+        report_time = now.replace(
+            hour=self.report_time["h"], minute=self.report_time["m"], microsecond=0
+        )
+        sleep_time = report_time - now
         while True:
-            await asyncio.sleep(self.report_period.total_seconds())
+            await asyncio.sleep(sleep_time.total_seconds())
             commands_report = commands.TradeCommand.close_records()
             await TelegramReporter().log_report(f"{self.name}\n{commands_report}")
             overall_report = []
@@ -261,6 +266,12 @@ class TraderBot:
             overall_report = sum(overall_report)
             if overall_report:
                 await TelegramReporter().public_report(str(overall_report))
+
+            now = datetime.now()
+            report_time = (now + timedelta(days=1)).replace(
+                hour=self.report_time["h"], minute=self.report_time["m"], microsecond=0
+            )
+            sleep_time = report_time - now
 
     async def start(self):
         tracemalloc.start()
