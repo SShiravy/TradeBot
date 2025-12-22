@@ -47,7 +47,7 @@ one_h_diver = CoinexDiverTradeConfig(
 )
 
 TraderBot(
-    "Coinex Diver Bot", [five_m_diver, one_h_diver], report_time={"h": 23, "m": 50}
+    "Coinex Diver Bot", [five_m_diver, one_h_diver], report_time={"h": 12, "m": 38}
 )
 
 

@@ -34,7 +34,7 @@ five_m = ForexDiverTradeConfig(
 )
 
 
-TraderBot("Gold Diver Bot", [one_m, five_m], report_time={"h": 23, "m": 55})
+TraderBot("Gold Diver Bot", [one_m, five_m], report_time={"h": 12, "m": 40})
 
 
 if __name__ == "__main__":

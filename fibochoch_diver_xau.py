@@ -48,10 +48,7 @@ one_m = FiboChochDiver(
     bar_between_signals=1,
 )
 
-TraderBot(
-    "Gold FiboChochDiver Bot",
-    [one_m],
-)
+TraderBot("Gold FiboChochDiver Bot", [one_m], report_time={"h": 12, "m": 58})
 
 
 if __name__ == "__main__":
