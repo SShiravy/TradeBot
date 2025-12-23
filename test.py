@@ -18,9 +18,9 @@ async def start_fibochoch_backtest():
 
 
 async def start_fich_diver_backtest():
-    from FiboChochDiverStrategy.backtest_configs import forex_one_m
+    from FiboChochDiverStrategy.backtest_configs import forex_one_m, coinex_five_m
 
-    await forex_one_m.backtest(1000)
+    await coinex_five_m.backtest(1000)
 
 
 if __name__ == "__main__":

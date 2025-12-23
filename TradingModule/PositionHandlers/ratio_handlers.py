@@ -30,7 +30,7 @@ class SlTpRatioCrypto(PositionHandler):
 
     def init_takeprofit(self, entry_price: float, side: OrderSide) -> float:
         return (
-            abs(self.stoploss_percent / self.ratio / 100 + side.factor()) * entry_price
+            abs(self.stoploss_percent * self.ratio / 100 + side.factor()) * entry_price
         )
 
     def generate_position(
@@ -38,7 +38,7 @@ class SlTpRatioCrypto(PositionHandler):
         signal: Signal,
         entry_price: float | None = None,
         position_id: str = "",
-        sl_tp_base_price: float | None = None,
+        sl_base_price: float | None = None,
     ) -> Position:
         real_trade = False
         if signal.side is MarketSide.BEARISH:
@@ -52,18 +52,23 @@ class SlTpRatioCrypto(PositionHandler):
         if entry_price is None:
             entry_price = signal.candle.close
 
-        if sl_tp_base_price is None:
-            sl_tp_base_price = entry_price
+        if sl_base_price is None:
+            sl_base_price = entry_price
 
         percision = signal.chart.precision
+        sl = round(self.init_stoploss(sl_base_price, side), percision)
+        sl_percent = abs(entry_price - sl) / entry_price
+        tp = round(
+            abs(sl_percent * self.ratio + side.factor()) * entry_price, percision
+        )
 
         position = Position(
             signal.chart,
             side,
             entry_price,
             self.initial_volume,
-            round(self.init_stoploss(sl_tp_base_price, side), percision),
-            round(self.init_takeprofit(sl_tp_base_price, side), percision),
+            sl,
+            tp,
             self.leverage,
             signal.candle.time + timedelta(seconds=2),
             signal.source,
@@ -94,14 +99,14 @@ class SlTpRatioForex(PositionHandler):
         return entry_price - side.factor() * self.stoploss_pip
 
     def init_takeprofit(self, entry_price: float, side: OrderSide) -> float:
-        return entry_price + side.factor() * (self.stoploss_pip / self.ratio)
+        return entry_price + side.factor() * (self.stoploss_pip * self.ratio)
 
     def generate_position(
         self,
         signal: Signal,
         entry_price: float | None = None,
         position_id: str = "",
-        sl_tp_base_price: float | None = None,
+        sl_base_price: float | None = None,
     ) -> Position:
         real_trade = False
         if signal.side is MarketSide.BEARISH:
@@ -115,18 +120,21 @@ class SlTpRatioForex(PositionHandler):
         if entry_price is None:
             entry_price = signal.candle.close
 
-        if sl_tp_base_price is None:
-            sl_tp_base_price = entry_price
+        if sl_base_price is None:
+            sl_base_price = entry_price
 
         percision = signal.chart.precision
+        sl = round(self.init_stoploss(sl_base_price, side), percision)
+        sl_pip = abs(entry_price - sl)
+        tp = round(abs(entry_price + side.factor() * sl_pip * self.ratio), percision)
 
         position = Position(
             signal.chart,
             side,
             entry_price,
             self.initial_volume,
-            round(self.init_stoploss(sl_tp_base_price, side), percision),
-            round(self.init_takeprofit(sl_tp_base_price, side), percision),
+            sl,
+            tp,
             self.leverage,
             signal.candle.time + timedelta(seconds=2),
             signal.source,

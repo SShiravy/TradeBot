@@ -91,7 +91,7 @@ class FiboChoch(Strategy):
 
     def find_new_top_pivot(self, model: FiboChochModel):
         index = self.all_checked_candles.index(model.start_pivot_candle)
-        high = max(self.all_high_price[index:-1])
+        high = max(self.all_high_price[index:])
         high_index = self.all_high_price.index(high)
         if high_index - index < self.right:
             return None
@@ -242,6 +242,7 @@ class FiboChoch(Strategy):
 
 class FiboChochConfig(TradeConfig):
     strategy: FiboChoch  # type: ignore[override]
+    modify_positions_sl: bool = field(default=True)
 
     def find_signal(
         self, chartdata: ChartData
@@ -252,8 +253,13 @@ class FiboChochConfig(TradeConfig):
         if signal is None or signal.fibochoch_model.fibo is None:
             return None
         position = self.position_handler.generate_position(
-            signal, sl_tp_base_price=signal.fibochoch_model.fibo.start_tick.price
+            signal,
+            sl_base_price=signal.fibochoch_model.fibo.start_tick.price,
         )
+        if self.modify_positions_sl:
+            position.stoploss = self.position_handler.init_stoploss(
+                signal.fibochoch_model.fibo.start_tick.price, position.side
+            )
 
         if (self.position_handler.long_trade and position.side is OrderSide.BUY) or (
             self.position_handler.short_trade and position.side is OrderSide.SELL
