@@ -4,7 +4,6 @@ from ChartModule.models import (
     Signal,
     ChartData,
     MarketSide,
-    IndicatorCandleSource,
     Candle,
     TickPrice,
 )
@@ -228,14 +227,6 @@ class FiboChoch(Strategy):
         **kwargs,
     ):
         super().draw(plot, signal, draw_indicators)
-        for model in self.all_models:
-            if model.fibo:
-                model.fibo.plot(plot)
-            else:
-                plot.mark_candle(model.start_pivot_candle, IndicatorCandleSource.Bottom)
-        if draw_indicators:
-            for indicator in self.confirmation_indicators:
-                indicator.plot(plot)
         signal.fibochoch_model.fibo.plot(plot, end_time=signal.candle.time)  # type:ignore
         plot.mark_signal(signal)
 

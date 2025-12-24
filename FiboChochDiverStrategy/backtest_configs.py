@@ -18,36 +18,36 @@ from config import settings
 coinex_agent = CoinexAgent(settings.COINEX_ACCESS_ID, settings.COINEX_SECRET_KEY)
 
 one_h_diver = CoinexDiverTradeConfig(
-    chart=Chart("SOLUSDT", TimeFrame.one_hour),
+    chart=Chart("BNBUSDT", TimeFrame.one_hour),
     second_chart=Chart("BTCUSDT", TimeFrame.one_hour),
-    strategy=Divergence(3, 300, [], name="CoinexDiver", inverse_diver_long=True),
+    strategy=Divergence(2, 300, [], name="CoinexDiver", inverse_diver_long=True),
     position_handler=RiskFreeCrypto(
         coinex_agent,
         long_trade=False,
         short_trade=False,
     ),
     agent=coinex_agent,
-    heikingashi_chartdata=True,
+    heikingashi_chartdata=False,
     bar_between_signals=1,
 )
 
 
 coinex_five_m = FiboChochDiver(
     divergence_config=one_h_diver,
-    chart=Chart("SOLUSDT", TimeFrame.five_minutes),
+    chart=Chart("BNBUSDT", TimeFrame.five_minutes),
     agent=coinex_agent,
     strategy=FiboChoch("CoinexFiboChochTest", pivot_right=1),
     position_handler=SlTpRatioCrypto(
         coinex_agent,
         ratio=1.5,
-        stoploss_percent=0.25,
+        stoploss_percent=0.1,
         leverage=10,
         initial_volume=20,
     ),
-    n_fich_signal_per_diver=10,
+    n_fich_signal_per_diver=1,
     bar_between_signals=0,
     send_signal=False,
-    n_bar_support_range=100,
+    n_bar_support_range=50,
 )
 
 

@@ -20,10 +20,9 @@ class FiboChochDiver(FiboChochConfig):
     divergence_config: DivergenceTradeConfig
 
     n_fich_signal_per_diver: int = field(default=1)
-
     n_bar_support_range: int = field(default=50)
-
     modify_positions_sl: bool = field(default=True)
+    check_start_fibo: bool = field(default=True)
 
     diver_last_signal: DivergenceSignal | None = field(default=None, init=False)
     diver_next_check: datetime | None = field(default=None, init=False)
@@ -47,7 +46,7 @@ class FiboChochDiver(FiboChochConfig):
         t_diff = signal.candle.time - self.diver_last_signal.candle.time
         n_bar = round(t_diff.total_seconds() / (self.chart.timeframe.minutes * 60))
 
-        logger.critical(f"{n_bar}|{t_diff}|{self.n_bar_support_range}")
+        logger.debug(f"{n_bar}|{t_diff}|{self.n_bar_support_range}")
         if n_bar > self.n_bar_support_range:
             self.diver_last_signal = None
             return False
@@ -96,6 +95,12 @@ class FiboChochDiver(FiboChochConfig):
         if not self.check_support_range(signal):
             return None
         if signal.candle.time < self.diver_last_signal.candle.time:
+            return None
+        if (
+            self.check_start_fibo
+            and signal.fibochoch_model.fibo.start_tick.time
+            < self.diver_last_signal.candle.time
+        ):
             return None
 
         position = self.position_handler.generate_position(
