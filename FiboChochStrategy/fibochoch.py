@@ -120,9 +120,10 @@ class FiboChoch(Strategy):
             support_condition = True  # (self.all_checked_candles[top_index].side is MarketSide.BULLISH and self.all_checked_candles[top_index+1].side is MarketSide.BEARISH) or (self.all_checked_candles[top_index].side is MarketSide.BEARISH and self.all_checked_candles[top_index+1].side is MarketSide.BULLISH)
             if not support_condition:
                 return None
-            for candle in self.all_checked_candles[model.start_index - 1 :: -1]:
+            for index, candle in enumerate(self.all_checked_candles[model.start_index - 1 :: -1]):
                 if candle.side is MarketSide.BULLISH:
-                    if candle.high > top_pivot.high:
+                    buyers_high = max(self.all_checked_candles[index+1].high, candle.high)
+                    if buyers_high > top_pivot.high:
                         return None
                     break
             logger.debug(f"new end candle founded:{top_pivot}")
@@ -130,12 +131,13 @@ class FiboChoch(Strategy):
             model.fibo = FibonacciRetracement(
                 TickPrice(model.start_pivot_candle.low, model.start_pivot_candle.time),
                 TickPrice(model.end_pivot_candle.high, model.end_pivot_candle.time),
-                fibonacci_levels=[
+                fibonacci_levels=list({
                     FiboLevels.LEVEL_0,
                     FiboLevels.LEVEL_1,
                     FiboLevels.LEVEL_618,
                     FiboLevels.LEVEL_5,
-                ],
+                    self.fibo_level
+                }),
             )
 
         if model.fibo:

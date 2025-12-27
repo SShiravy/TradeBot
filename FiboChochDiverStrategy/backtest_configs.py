@@ -38,7 +38,7 @@ coinex_five_m = FiboChochDiver(
     divergence_config=one_h_diver,
     chart=Chart("SOLUSDT", TimeFrame.five_minutes),
     agent=coinex_agent,
-    strategy=FiboChoch("CoinexFiboChochTest", pivot_right=1),
+    strategy=FiboChoch("CoinexFiboChochTest", pivot_right=10,fibo_level=FiboLevels.LEVEL_382),
     position_handler=SlTpRatioCrypto(
         coinex_agent,
         ratio=1.5,
@@ -46,7 +46,7 @@ coinex_five_m = FiboChochDiver(
         leverage=10,
         initial_volume=20,
     ),
-    n_fich_signal_per_diver=1,
+    n_fich_signal_per_diver=4,
     bar_between_signals=1,
     send_signal=False,
     n_bar_support_range=500,

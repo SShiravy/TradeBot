@@ -4,6 +4,7 @@ from TradingModule.PositionHandlers import (
     SimpleForex,
     SimpleCrypto,
 )
+from ChartModule.Indicators.fibonacci import FiboLevels
 from Coinex import CoinexAgent
 from ChartModule import Chart, TimeFrame
 from config import settings
@@ -16,7 +17,7 @@ coinex_agent = CoinexAgent(settings.COINEX_ACCESS_ID, settings.COINEX_SECRET_KEY
 coinex_five_m = FiboChochConfig(
     chart=Chart("SOLUSDT", TimeFrame.five_minutes),
     agent=coinex_agent,
-    strategy=FiboChoch("CoinexFiboChochTest"),
+    strategy=FiboChoch("CoinexFiboChochTest", pivot_right=1,fibo_level=FiboLevels.LEVEL_382),
     position_handler=SimpleCrypto(
         coinex_agent,
         stoploss_percent=0.5,
