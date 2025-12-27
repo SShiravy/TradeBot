@@ -1,3 +1,4 @@
+from ChartModule.Indicators.fibonacci import FiboLevels
 from FiboChochDiverStrategy import FiboChochDiver
 from Coinex import CoinexAgent, CoinexDiverTradeConfig
 from ChartModule import Chart, TimeFrame
@@ -18,7 +19,7 @@ from config import settings
 coinex_agent = CoinexAgent(settings.COINEX_ACCESS_ID, settings.COINEX_SECRET_KEY)
 
 one_h_diver = CoinexDiverTradeConfig(
-    chart=Chart("BNBUSDT", TimeFrame.one_hour),
+    chart=Chart("SOLUSDT", TimeFrame.one_hour),
     second_chart=Chart("BTCUSDT", TimeFrame.one_hour),
     strategy=Divergence(2, 300, [], name="CoinexDiver", inverse_diver_long=True),
     position_handler=RiskFreeCrypto(
@@ -29,12 +30,13 @@ one_h_diver = CoinexDiverTradeConfig(
     agent=coinex_agent,
     heikingashi_chartdata=False,
     bar_between_signals=1,
+    n_candle_check=5,
 )
 
 
 coinex_five_m = FiboChochDiver(
     divergence_config=one_h_diver,
-    chart=Chart("BNBUSDT", TimeFrame.five_minutes),
+    chart=Chart("SOLUSDT", TimeFrame.five_minutes),
     agent=coinex_agent,
     strategy=FiboChoch("CoinexFiboChochTest", pivot_right=1),
     position_handler=SlTpRatioCrypto(
@@ -45,9 +47,9 @@ coinex_five_m = FiboChochDiver(
         initial_volume=20,
     ),
     n_fich_signal_per_diver=1,
-    bar_between_signals=0,
+    bar_between_signals=1,
     send_signal=False,
-    n_bar_support_range=50,
+    n_bar_support_range=500,
 )
 
 
@@ -68,15 +70,16 @@ forex_one_m = FiboChochDiver(
     divergence_config=forex_diver_five_m,
     chart=Chart("XAUUSD!", TimeFrame.one_minute),
     agent=ForexAgent(),
-    strategy=FiboChoch("CoinexFiboChochTest", pivot_right=2, pivot_left=10),
+    strategy=FiboChoch("CoinexFiboChochTest", pivot_right=1, pivot_left=15),
     position_handler=SlTpRatioForex(
         ForexAgent(),
-        ratio=2,
-        stoploss_pip=10,
+        ratio=0,
+        stoploss_pip=1,
         initial_volume=0.01,
     ),
     bar_between_signals=1,
     send_signal=False,
     n_fich_signal_per_diver=1,
-    n_bar_support_range=30,
+    n_bar_support_range=300,
+    check_start_fibo=False,
 )

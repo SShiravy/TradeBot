@@ -126,7 +126,7 @@ class SlTpRatioForex(PositionHandler):
         percision = signal.chart.precision
         sl = round(self.init_stoploss(sl_base_price, side), percision)
         sl_pip = abs(entry_price - sl)
-        tp = round(abs(entry_price + side.factor() * sl_pip * self.ratio), percision)
+        tp = round(abs(entry_price + side.factor() * sl_pip + self.ratio), percision)
 
         position = Position(
             signal.chart,

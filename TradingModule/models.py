@@ -1,3 +1,4 @@
+import numpy as np
 from ChartModule.models import (
     Chart,
     ChartData,
@@ -8,7 +9,7 @@ from ChartModule.models import (
 )
 from ChartModule.Indicators import SupportConditions
 from ChartModule.plot import PlotChart
-from dataclasses import dataclass, field
+from dataclasses import asdict, dataclass, field
 from datetime import datetime
 from abc import ABC, abstractmethod
 from datetime import timezone, timedelta
@@ -46,6 +47,29 @@ class OrderSide(Enum):
 
 
 @dataclass(slots=True)
+class Trigger:
+    price: float
+    volume: float = field(default=0.0)
+    defined_time: datetime = field(default_factory=datetime.now)
+    triggered_time: datetime | None = field(default=None)
+
+    def __str__(self) -> str:
+        return f"{asdict(self)}"
+
+    def check_upward_cross(self, tick_prices: list[float]):
+        res = np.array(tick_prices) - self.price
+        if np.any(res > 0):
+            return True
+        return False
+
+    def check_downward_cross(self, tick_prices: list[float]):
+        res = np.array(tick_prices) - self.price
+        if np.any(res < 0):
+            return True
+        return False
+
+
+@dataclass(slots=True)
 class Position:
     id: uuid.UUID | str = field(default_factory=uuid.uuid4, init=False)
     chart: Chart
@@ -59,7 +83,9 @@ class Position:
     source: str = "Unknown"
     exchange_id: str = field(default="")
     real_trade: bool = field(default=True)
+    steps: list[Trigger] = field(default_factory=list)
 
+    current_step_index: int = field(default=0, init=False)
     closed: datetime | None = field(default=None, init=False)
     previous_check: datetime | None = field(default=None, init=False)
     last_update: datetime | None = field(default=None, init=False)
@@ -67,6 +93,19 @@ class Position:
     pnl_percent: float = field(default=0.0, init=False)
     in_forex: bool = field(default=False, init=False)
     pnl_in_pip: float = field(default=0.0, init=False)
+
+    @property
+    def current_step(self):
+        return self.steps[self.current_step_index]
+
+    def go_next_step(self, triggered_time: datetime | None = None):
+        self.current_step.triggered_time = (
+            triggered_time if triggered_time else datetime.now()
+        )
+        if self.current_step_index >= len(self.steps) - 1:
+            return
+        self.current_step_index += 1
+        self.takeprofit = self.current_step.price
 
     def update_pnl(self, executed_price: float, volume: float | None = None):
         """

@@ -18,7 +18,7 @@ async def start_fibochoch_backtest():
 
 
 async def start_fich_diver_backtest():
-    from FiboChochDiverStrategy.backtest_configs import coinex_five_m
+    from FiboChochDiverStrategy.backtest_configs import coinex_five_m, forex_one_m
 
     await coinex_five_m.backtest(1000)
 
@@ -32,7 +32,6 @@ if __name__ == "__main__":
 
     # new_backtest()
 
-# TODO: partial close
 # TODO: position handler with MA and control tp sl with it
 # TODO: multiple loss in a row for long and short handler
 # TODO: pos open candle should not check in position handler
