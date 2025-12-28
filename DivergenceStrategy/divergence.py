@@ -229,7 +229,14 @@ class DivergenceTradeConfig(TradeConfig):
         if signal is None:
             return None
 
-        position = self.position_handler.generate_position(signal)
+        entry_source = (
+            signal.base_line.end_candle.high
+            if signal.side is MarketSide.BEARISH
+            else signal.base_line.end_candle.low
+        )
+        position = self.position_handler.generate_position(
+            signal, sl_base_price=entry_source
+        )
 
         if (
             self.send_position_command

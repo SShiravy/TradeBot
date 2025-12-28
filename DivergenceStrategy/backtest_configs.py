@@ -6,6 +6,8 @@ from Forex import ForexAgent, CvdDiverTradeConfig, ForexDiverTradeConfig
 from TradingModule.PositionHandlers import (
     RiskFreeForex,
     RiskFreeCrypto,
+    SlTpRatioCrypto,
+    SlTpRatioForex,
 )
 from config import settings
 # Coinex ----------------------------------------------------------------
@@ -16,14 +18,13 @@ coinex_agent = CoinexAgent(settings.COINEX_ACCESS_ID, settings.COINEX_SECRET_KEY
 five_m_diver = CoinexDiverTradeConfig(
     chart=Chart("SOLUSDT", TimeFrame.five_minutes),
     second_chart=Chart("BTCUSDT", TimeFrame.five_minutes),
-    strategy=Divergence(3, 100, [], name="CoinexDiver", inverse_diver_long=True),
-    position_handler=RiskFreeCrypto(
+    strategy=Divergence(5, 500, [], name="CoinexDiver", inverse_diver_long=True),
+    position_handler=SlTpRatioCrypto(
         coinex_agent,
-        riskfree_trigger_percent=0.5,
-        stoploss_percent=1,
-        takeprofit_percent=1,
-        leverage=5,
-        initial_volume=1,
+        ratio=2,
+        stoploss_percent=0.25,
+        initial_volume=10,
+        leverage=10,
         long_trade=False,
         short_trade=False,
     ),
@@ -34,13 +35,12 @@ five_m_diver = CoinexDiverTradeConfig(
 one_h_diver = CoinexDiverTradeConfig(
     chart=Chart("SOLUSDT", TimeFrame.one_hour),
     second_chart=Chart("BTCUSDT", TimeFrame.one_hour),
-    strategy=Divergence(5, 300, [], name="CoinexDiver", inverse_diver_long=True),
-    position_handler=RiskFreeCrypto(
+    strategy=Divergence(5, 500, [], name="CoinexDiver", inverse_diver_long=True),
+    position_handler=SlTpRatioCrypto(
         coinex_agent,
-        takeprofit_percent=2,
-        stoploss_percent=2,
+        ratio=1.5,
+        stoploss_percent=0.5,
         initial_volume=10,
-        riskfree_trigger_percent=1,
         leverage=10,
         long_trade=False,
         short_trade=False,
@@ -72,12 +72,11 @@ coinex_4h_diver = CoinexDiverTradeConfig(
 forex_diver_one_m = ForexDiverTradeConfig(
     chart=Chart("XAUUSD!", TimeFrame.one_minute),
     second_chart=Chart("SOLUSD", TimeFrame.one_minute),
-    strategy=Divergence(7, 50, [], name="ForexDiver"),
+    strategy=Divergence(5, 200, [], name="ForexDiver"),
     bar_between_signals=5,
-    position_handler=RiskFreeForex(
-        ForexAgent(), takeprofit_pip=30, stoploss_pip=30, riskfree_trigger_pip=15
-    ),
+    position_handler=SlTpRatioForex(ForexAgent(), 2, stoploss_pip=5),
     merge_two_chart_time=True,
+    heikingashi_chartdata=True,
 )
 
 

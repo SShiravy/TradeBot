@@ -6,9 +6,14 @@ CustomLogger(True, consol_log_level=logging.INFO)
 
 
 async def start_diver_backtest():
-    from DivergenceStrategy.backtest_configs import forex_diver_five_m
+    from DivergenceStrategy.backtest_configs import (
+        forex_diver_five_m,
+        forex_diver_one_m,
+        one_h_diver,
+        five_m_diver,
+    )
 
-    await forex_diver_five_m.backtest(1000, len_sub_data=100)
+    await one_h_diver.backtest(1000)
 
 
 async def start_fibochoch_backtest():
