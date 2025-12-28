@@ -38,7 +38,9 @@ coinex_five_m = FiboChochDiver(
     divergence_config=one_h_diver,
     chart=Chart("SOLUSDT", TimeFrame.five_minutes),
     agent=coinex_agent,
-    strategy=FiboChoch("CoinexFiboChochTest", pivot_right=10,fibo_level=FiboLevels.LEVEL_382),
+    strategy=FiboChoch(
+        "CoinexFiboChochTest", long_pivot_right=10, long_fibo_level=FiboLevels.LEVEL_382
+    ),
     position_handler=SlTpRatioCrypto(
         coinex_agent,
         ratio=1.5,
@@ -70,7 +72,7 @@ forex_one_m = FiboChochDiver(
     divergence_config=forex_diver_five_m,
     chart=Chart("XAUUSD!", TimeFrame.one_minute),
     agent=ForexAgent(),
-    strategy=FiboChoch("CoinexFiboChochTest", pivot_right=1, pivot_left=15),
+    strategy=FiboChoch("CoinexFiboChochTest", long_pivot_right=1, long_pivot_left=15),
     position_handler=SlTpRatioForex(
         ForexAgent(),
         ratio=0,

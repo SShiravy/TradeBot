@@ -12,7 +12,7 @@ async def start_diver_backtest():
 
 
 async def start_fibochoch_backtest():
-    from FiboChochStrategy.backtest_configs import one_m_forex,coinex_five_m
+    from FiboChochStrategy.backtest_configs import one_m_forex, coinex_five_m
 
     await coinex_five_m.backtest(1000)
 
@@ -27,8 +27,8 @@ if __name__ == "__main__":
     import asyncio
 
     # asyncio.run(start_diver_backtest())
-    # asyncio.run(start_fibochoch_backtest())
-    asyncio.run(start_fich_diver_backtest())
+    asyncio.run(start_fibochoch_backtest())
+    # asyncio.run(start_fich_diver_backtest())
 
     # new_backtest()
 

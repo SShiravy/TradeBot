@@ -49,9 +49,12 @@ class FiboChoch(Strategy):
         long_support_conditions: SupportConditions = SupportConditions.GREEN_RED,
         short_support_conditions: SupportConditions = SupportConditions.RED_GREEN,
         confirmation_indicators: list[IndicatorBaseModel] = [],
-        fibo_level: FiboLevels = FiboLevels.LEVEL_5,
-        pivot_left=10,
-        pivot_right=5,
+        long_fibo_level: FiboLevels = FiboLevels.LEVEL_5,
+        short_fibo_level: FiboLevels = FiboLevels.LEVEL_5,
+        long_pivot_left=10,
+        long_pivot_right=5,
+        short_pivot_left=10,
+        short_pivot_right=5,
     ) -> None:
         super().__init__(
             name,
@@ -62,53 +65,79 @@ class FiboChoch(Strategy):
 
         self.chart: Chart
 
-        self.fibo_level = fibo_level
+        self.long_fibo_level = long_fibo_level
+        self.short_fibo_level = short_fibo_level
 
-        self.right = pivot_right
-        self.left = pivot_left
+        self.long_right = long_pivot_right
+        self.long_left = long_pivot_left
+
+        self.short_right = short_pivot_right
+        self.short_left = short_pivot_left
 
         self.initilied: bool = False
-        self.all_models: list[FiboChochModel] = []
+        self.long_all_models: list[FiboChochModel] = []
+        self.short_all_models: list[FiboChochModel] = []
 
         self.all_checked_candles: list[Candle] = []
         self.all_high_price: list[float] = []
         self.all_low_price: list[float] = []
-        self.test_all_down = []
-        self.test_all_top = []
 
-    def find_new_down_pivot(self):
-        low = self.all_low_price[-self.right]
-        all_low = np.array(self.all_low_price[-(self.right + self.left) :])
+    def long_find_start_pivot(self):
+        low = self.all_low_price[-self.long_right]
+        all_low = np.array(self.all_low_price[-(self.long_right + self.long_left) :])
         res = all_low - low
         if np.any(res < 0):
             return None
-        pivot = self.all_checked_candles[-self.right]
-        self.all_models.append(
+        pivot = self.all_checked_candles[-self.long_right]
+        self.long_all_models.append(
             FiboChochModel(pivot, self.all_checked_candles.index(pivot))
         )
-        self.test_all_down.append(pivot)
 
-    def find_new_top_pivot(self, model: FiboChochModel):
+    def short_find_start_pivot(self):
+        high = self.all_high_price[-self.short_right]
+        all_high = np.array(
+            self.all_high_price[-(self.short_right + self.short_left) :]
+        )
+        res = all_high - high
+        if np.any(res > 0):
+            return None
+        pivot = self.all_checked_candles[-self.short_right]
+        self.short_all_models.append(
+            FiboChochModel(pivot, self.all_checked_candles.index(pivot))
+        )
+
+    def long_find_end_pivot(self, model: FiboChochModel):
         index = self.all_checked_candles.index(model.start_pivot_candle)
         high = max(self.all_high_price[index:])
         high_index = self.all_high_price.index(high)
-        if high_index - index < self.right:
+        if high_index - index < self.long_right:
             return None
         top_pivot = self.all_checked_candles[high_index]
-        self.test_all_top.append(top_pivot)
         return top_pivot
 
-    def check_model(self, model: FiboChochModel):
+    def short_find_end_pivot(self, model: FiboChochModel):
+        index = self.all_checked_candles.index(model.start_pivot_candle)
+        low = min(self.all_low_price[index:])
+        low_index = self.all_low_price.index(low)
+        if low_index - index < self.short_right:
+            return None
+        down_pivot = self.all_checked_candles[low_index]
+        return down_pivot
+
+    def long_check_model(self, model: FiboChochModel):
         if not model.available:
-            logger.error(f"try to not available {model=}")
+            logger.error(f"long: not available {model=}")
             return None
 
-        if self.all_models[-1].start_pivot_candle.low < model.start_pivot_candle.low:
+        if (
+            self.long_all_models[-1].start_pivot_candle.low
+            < model.start_pivot_candle.low
+        ):
             model.available = False
-            logger.debug(f"new lower pivot, {model} is not available any more")
+            logger.debug(f"long: new lower pivot, {model} is not available any more")
             return None
 
-        top_pivot = self.find_new_top_pivot(model)
+        top_pivot = self.long_find_end_pivot(model)
         if not top_pivot:
             return None
         top_index = self.all_checked_candles.index(top_pivot)
@@ -117,58 +146,148 @@ class FiboChoch(Strategy):
             model.end_pivot_candle = None
 
         if model.end_pivot_candle is None:
-            support_condition = True  # (self.all_checked_candles[top_index].side is MarketSide.BULLISH and self.all_checked_candles[top_index+1].side is MarketSide.BEARISH) or (self.all_checked_candles[top_index].side is MarketSide.BEARISH and self.all_checked_candles[top_index+1].side is MarketSide.BULLISH)
+            support_condition = True  # TODO: (self.all_checked_candles[top_index].side is MarketSide.BULLISH and self.all_checked_candles[top_index+1].side is MarketSide.BEARISH) or (self.all_checked_candles[top_index].side is MarketSide.BEARISH and self.all_checked_candles[top_index+1].side is MarketSide.BULLISH)
             if not support_condition:
                 return None
-            for index, candle in enumerate(self.all_checked_candles[model.start_index - 1 :: -1]):
+            for index, candle in enumerate(
+                self.all_checked_candles[model.start_index - 1 :: -1]
+            ):
                 if candle.side is MarketSide.BULLISH:
-                    buyers_high = max(self.all_checked_candles[index+1].high, candle.high)
+                    buyers_high = max(
+                        self.all_checked_candles[index + 1].high, candle.high
+                    )
                     if buyers_high > top_pivot.high:
                         return None
                     break
-            logger.debug(f"new end candle founded:{top_pivot}")
+            logger.debug(f"long: new end candle founded:{top_pivot}")
             model.end_pivot_candle = top_pivot
             model.fibo = FibonacciRetracement(
                 TickPrice(model.start_pivot_candle.low, model.start_pivot_candle.time),
                 TickPrice(model.end_pivot_candle.high, model.end_pivot_candle.time),
-                fibonacci_levels=list({
-                    FiboLevels.LEVEL_0,
-                    FiboLevels.LEVEL_1,
-                    FiboLevels.LEVEL_618,
-                    FiboLevels.LEVEL_5,
-                    self.fibo_level
-                }),
+                fibonacci_levels=list(
+                    {
+                        FiboLevels.LEVEL_0,
+                        FiboLevels.LEVEL_1,
+                        FiboLevels.LEVEL_618,
+                        FiboLevels.LEVEL_5,
+                        self.long_fibo_level,
+                    }
+                ),
             )
 
         if model.fibo:
             fibo_res = model.fibo.forcast(
-                self.all_low_price[top_index + 1 :], self.fibo_level
+                self.all_low_price[top_index + 1 :], self.long_fibo_level
             )
-            logger.debug(f"{fibo_res=}")
-            if fibo_res != MarketSide.NEUTRAL:
+            logger.debug(f"long: {fibo_res=}")
+            if fibo_res == MarketSide.BULLISH:
                 model.available = False
                 for indicator in self.confirmation_indicators:
                     indicator.set(self.all_checked_candles)
                     res = indicator.forcast()
                     if res != MarketSide.BULLISH:
-                        logger.debug(f"indicator {indicator} not confirmed the signal")
+                        logger.debug(
+                            f"long: indicator {indicator} not confirmed the signal"
+                        )
                         return None
                 return FiboChochSignal(
                     self.chart, self.all_checked_candles[-1], fibo_res, model
                 )
         return None
 
-    def check_all_models(self):
-        if not self.all_models:
+    def short_check_model(self, model: FiboChochModel):
+        if not model.available:
+            logger.error(f"short: model not available {model=}")
             return None
-        all_models = copy(self.all_models)
+
+        if (
+            self.short_all_models[-1].start_pivot_candle.high
+            > model.start_pivot_candle.high
+        ):
+            model.available = False
+            logger.debug(f"short: new higher pivot, {model} is not available any more")
+            return None
+
+        down_pivot = self.short_find_end_pivot(model)
+        if not down_pivot:
+            return None
+        down_index = self.all_checked_candles.index(down_pivot)
+
+        if model.end_pivot_candle != down_pivot:
+            model.end_pivot_candle = None
+
+        if model.end_pivot_candle is None:
+            support_condition = True  # TODO: Implement Here
+            if not support_condition:
+                return None
+            # for index, candle in enumerate(self.all_checked_candles[model.start_index - 1 :: -1]):
+            #     if candle.side is MarketSide.BEARISH:
+            #         sellers_low = min(self.all_checked_candles[index+1].low, candle.low)
+            #         if sellers_low < down_pivot.low:
+            #             return None
+            # break
+            logger.debug(f"short: new end candle founded:{down_pivot}")
+            model.end_pivot_candle = down_pivot
+            model.fibo = FibonacciRetracement(
+                TickPrice(model.start_pivot_candle.high, model.start_pivot_candle.time),
+                TickPrice(model.end_pivot_candle.low, model.end_pivot_candle.time),
+                fibonacci_levels=list(
+                    {
+                        FiboLevels.LEVEL_0,
+                        FiboLevels.LEVEL_1,
+                        FiboLevels.LEVEL_618,
+                        FiboLevels.LEVEL_5,
+                        self.short_fibo_level,
+                    }
+                ),
+            )
+
+        if model.fibo:
+            fibo_res = model.fibo.forcast(
+                self.all_high_price[down_index + 1 :], self.short_fibo_level
+            )
+            if fibo_res == MarketSide.BEARISH:
+                model.available = False
+                for indicator in self.confirmation_indicators:
+                    indicator.set(self.all_checked_candles)
+                    res = indicator.forcast()
+                    if res != MarketSide.BEARISH:
+                        logger.debug(
+                            f"short: indicator {indicator} not confirmed the signal"
+                        )
+                        return None
+                return FiboChochSignal(
+                    self.chart, self.all_checked_candles[-1], fibo_res, model
+                )
+        return None
+
+    def check_all_long_models(self):
+        if not self.long_all_models:
+            return None
+        all_models = copy(self.long_all_models)
         res = None
-        logger.debug(f"start checking {len(all_models)} FiboChoch Models")
+        logger.debug(f"start checking {len(all_models)} Long FiboChoch Models")
         for model in all_models:
             if not model.available:
-                self.all_models.remove(model)
+                self.long_all_models.remove(model)
                 continue
-            model_res = self.check_model(model)
+            model_res = self.long_check_model(model)
+            if model_res is None:
+                continue
+            res = copy(model_res)
+        return res
+
+    def check_all_short_models(self):
+        if not self.short_all_models:
+            return None
+        all_models = copy(self.short_all_models)
+        res = None
+        logger.info(f"start checking {len(all_models)} Short FiboChoch Models")
+        for model in all_models:
+            if not model.available:
+                self.short_all_models.remove(model)
+                continue
+            model_res = self.short_check_model(model)
             if model_res is None:
                 continue
             res = copy(model_res)
@@ -181,10 +300,13 @@ class FiboChoch(Strategy):
             self.all_low_price.append(candle.low)
             self.all_checked_candles.append(candle)
 
-            if index < self.left + self.right:
-                continue
-            self.find_new_down_pivot()
-            self.check_all_models()
+            if index >= self.long_left + self.long_right:
+                self.long_find_start_pivot()
+                self.check_all_long_models()
+
+            if index >= self.short_left + self.short_right:
+                self.short_find_start_pivot()
+                self.check_all_short_models()
 
         self.initilied = True
 
@@ -213,9 +335,22 @@ class FiboChoch(Strategy):
                 self.all_checked_candles.append(candle)
                 self.all_low_price.append(candle.low)
                 self.all_high_price.append(candle.high)
+        long_signal = None
+        short_signal = None
+        if check_long:
+            self.long_find_start_pivot()
+            long_signal = self.check_all_long_models()
+        if check_short:
+            self.short_find_start_pivot()
+            short_signal = self.check_all_short_models()
 
-        self.find_new_down_pivot()
-        return self.check_all_models()
+        if long_signal and short_signal:
+            return None
+        if long_signal:
+            return long_signal
+        if short_signal:
+            return short_signal
+        return None
 
     def report(self, *args, **kwargs) -> str:
         return ""

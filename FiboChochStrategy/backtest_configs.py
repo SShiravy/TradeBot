@@ -17,7 +17,12 @@ coinex_agent = CoinexAgent(settings.COINEX_ACCESS_ID, settings.COINEX_SECRET_KEY
 coinex_five_m = FiboChochConfig(
     chart=Chart("SOLUSDT", TimeFrame.five_minutes),
     agent=coinex_agent,
-    strategy=FiboChoch("CoinexFiboChochTest", pivot_right=1,fibo_level=FiboLevels.LEVEL_382),
+    strategy=FiboChoch(
+        "CoinexFiboChochTest",
+        short_pivot_right=5,
+        short_pivot_left=10,
+        short_fibo_level=FiboLevels.LEVEL_382,
+    ),
     position_handler=SimpleCrypto(
         coinex_agent,
         stoploss_percent=0.5,
@@ -25,8 +30,9 @@ coinex_five_m = FiboChochConfig(
         leverage=10,
         initial_volume=10,
     ),
-    bar_between_signals=0,
+    bar_between_signals=1,
     send_signal=False,
+    long_signal=False,
 )
 
 
@@ -43,6 +49,7 @@ coinex_one_h = FiboChochConfig(
     ),
     bar_between_signals=0,
     send_signal=False,
+    long_signal=False,
 )
 
 # FOREX ------------------------------------------------------

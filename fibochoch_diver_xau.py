@@ -35,9 +35,9 @@ one_m = FiboChochDiver(
     agent=ForexAgent(),
     strategy=FiboChoch(
         "CoinexFiboChochTest",
-        pivot_right=5,
-        pivot_left=10,
-        fibo_level=FiboLevels.LEVEL_5,
+        long_pivot_right=5,
+        long_pivot_left=10,
+        long_fibo_level=FiboLevels.LEVEL_5,
     ),
     position_handler=SimpleForex(
         ForexAgent(),
