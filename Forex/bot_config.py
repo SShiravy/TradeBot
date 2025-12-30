@@ -41,7 +41,7 @@ class ForexDiverTradeConfig(DivergenceTradeConfig):
                 second_time = second_chartdata[second_index].time.replace(
                     second=0, microsecond=0
                 )
-                if base_time == second_time:
+                if (base_time - second_time).seconds <= 60:
                     base_candles.append(base_chartdata[base_index])
                     second_candles.append(second_chartdata[second_index])
                     base_index += 1

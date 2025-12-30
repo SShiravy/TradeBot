@@ -76,7 +76,7 @@ class RiskFreeForex(SimpleForex):
             long_trade,
             short_trade,
         )
-        self.riskfree_trigger_pip = riskfree_trigger_pip
+        self.riskfree_trigger_pip = riskfree_trigger_pip / 10
 
     def give_trigger_price(self, position: Position) -> float:
         if position.stoploss == position.entry_price:
@@ -92,6 +92,7 @@ class RiskFreeForex(SimpleForex):
         self, position: Position, tick_prices: list[float]
     ) -> TradeCommand | None:
         direction = position.side.factor()
+
         res = super().handler(position, tick_prices)
         if res:
             return res

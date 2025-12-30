@@ -220,12 +220,16 @@ class FiboChoch(Strategy):
             support_condition = True  # TODO: Implement Here
             if not support_condition:
                 return None
-            # for index, candle in enumerate(self.all_checked_candles[model.start_index - 1 :: -1]):
-            #     if candle.side is MarketSide.BEARISH:
-            #         sellers_low = min(self.all_checked_candles[index+1].low, candle.low)
-            #         if sellers_low < down_pivot.low:
-            #             return None
-            # break
+            for index, candle in enumerate(
+                self.all_checked_candles[model.start_index - 1 :: -1]
+            ):
+                if candle.side is MarketSide.BEARISH:
+                    sellers_low = min(
+                        self.all_checked_candles[index + 1].low, candle.low
+                    )
+                    if sellers_low < down_pivot.low:
+                        return None
+                    break
             logger.debug(f"short: new end candle founded:{down_pivot}")
             model.end_pivot_candle = down_pivot
             model.fibo = FibonacciRetracement(

@@ -6,7 +6,7 @@ from TradingModule import commands
 import numpy as np
 
 
-class RiskFreeCrypto(SimpleCrypto):
+class SteppingCrypto(SimpleCrypto):
     def __init__(
         self,
         exchange_agent: ExchangeAgent,
@@ -100,7 +100,7 @@ class RiskFreeCrypto(SimpleCrypto):
         #     commands.TrailStoploss(position,self.exchange_agent,position.steps[position.curr])
 
 
-class RiskFreeForex(SimpleForex):
+class SteppingForex(SimpleForex):
     def __init__(
         self,
         exchange_agent: ExchangeAgent,
@@ -119,7 +119,7 @@ class RiskFreeForex(SimpleForex):
             long_trade,
             short_trade,
         )
-        self.riskfree_trigger_pip = riskfree_trigger_pip
+        self.riskfree_trigger_pip = riskfree_trigger_pip / 10
 
     def give_trigger_price(self, position: Position) -> float:
         if position.stoploss == position.entry_price:

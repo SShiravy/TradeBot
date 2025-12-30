@@ -11,9 +11,10 @@ async def start_diver_backtest():
         forex_diver_one_m,
         one_h_diver,
         five_m_diver,
+        coinex_4h_diver,
     )
 
-    await one_h_diver.backtest(1000)
+    await forex_diver_one_m.backtest(1000)
 
 
 async def start_fibochoch_backtest():
@@ -31,8 +32,8 @@ async def start_fich_diver_backtest():
 if __name__ == "__main__":
     import asyncio
 
-    # asyncio.run(start_diver_backtest())
-    asyncio.run(start_fibochoch_backtest())
+    asyncio.run(start_diver_backtest())
+    # asyncio.run(start_fibochoch_backtest())
     # asyncio.run(start_fich_diver_backtest())
 
     # new_backtest()

@@ -147,27 +147,24 @@ class Position:
 
     def draw(self, plot: PlotChart):
         if self.closed:
+            base_time = self.last_update if self.last_update else self.open_time
             plot.draw_sl_tp_lines(
-                self.last_update if self.last_update else self.open_time,
+                base_time,
                 self.closed,
                 self.takeprofit,
                 self.stoploss,
             )
-            if self.last_update:
-                end_of_line = self.last_update
-            else:
-                end_of_line = self.open_time
             plot.draw_line(
                 self.open_time,
                 self.entry_price,
-                end_of_line,
+                base_time,
                 self.stoploss,
                 "#FFD562",
             )
             plot.draw_line(
                 self.open_time,
                 self.entry_price,
-                end_of_line,
+                base_time,
                 self.takeprofit,
                 "#7fff86",
             )

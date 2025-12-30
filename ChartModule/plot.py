@@ -1,5 +1,5 @@
 from ChartModule import ChartData, Candle, Signal, MarketSide, IndicatorCandleSource
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import TypeAlias
 import finplot as fplt
 
@@ -7,6 +7,7 @@ fplt.candle_bull_body_color = "#26a69a"
 fplt.candle_bull_color = "#26a69a"
 fplt.legend_fill_color = "#FFFFFF"
 fplt.legend_text_color = "#000000"
+fplt.display_timezone = timezone.utc
 
 
 class PlotChart:

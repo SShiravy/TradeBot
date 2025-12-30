@@ -53,7 +53,7 @@ one_h_diver = CoinexDiverTradeConfig(
 coinex_4h_diver = CoinexDiverTradeConfig(
     chart=Chart("SOLUSDT", TimeFrame.four_hours),
     second_chart=Chart("BTCUSDT", TimeFrame.four_hours),
-    strategy=Divergence(3, 100, [EMA(10)], name="CoinexDiver", inverse_diver_long=True),
+    strategy=Divergence(3, 100, [], name="CoinexDiver", inverse_diver_long=False),
     position_handler=RiskFreeCrypto(
         coinex_agent,
         riskfree_trigger_percent=3,
@@ -74,7 +74,9 @@ forex_diver_one_m = ForexDiverTradeConfig(
     second_chart=Chart("SOLUSD", TimeFrame.one_minute),
     strategy=Divergence(5, 200, [], name="ForexDiver"),
     bar_between_signals=5,
-    position_handler=SlTpRatioForex(ForexAgent(), 2, stoploss_pip=5),
+    position_handler=RiskFreeForex(
+        ForexAgent(), stoploss_pip=50, takeprofit_pip=50, riskfree_trigger_pip=25
+    ),
     merge_two_chart_time=True,
     heikingashi_chartdata=True,
 )
@@ -91,6 +93,7 @@ forex_diver_five_m = ForexDiverTradeConfig(
         )
     ),
     merge_two_chart_time=True,
+    heikingashi_chartdata=True,
 )
 
 # CVD ----

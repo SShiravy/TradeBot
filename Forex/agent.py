@@ -43,7 +43,7 @@ class ForexAgent(ExchangeAgent):
         delta = datetime.fromtimestamp(info.time, timezone.utc) - datetime.now(
             timezone.utc
         )
-        return raw_time - delta
+        return (raw_time - delta).replace(second=0, microsecond=0)
 
     def check_market_open(self, chart: Chart) -> bool:
         one_m_chart = Chart(chart.symbol, timeframe=TimeFrame.one_minute)
@@ -81,7 +81,7 @@ class ForexAgent(ExchangeAgent):
 
             candle_time = datetime.fromtimestamp(
                 candle_timestamp, tz=timezone.utc
-            ).replace(microsecond=0)
+            ).replace(microsecond=0, second=0)
             corrected_time = self.correct_time(candle_time, chart)
             all_candles_list.append(
                 Candle(

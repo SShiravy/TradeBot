@@ -19,7 +19,7 @@ coinex_five_m = FiboChochConfig(
     agent=coinex_agent,
     strategy=FiboChoch(
         "CoinexFiboChochTest",
-        short_pivot_right=5,
+        short_pivot_right=2,
         short_pivot_left=10,
         short_fibo_level=FiboLevels.LEVEL_382,
     ),
@@ -32,7 +32,7 @@ coinex_five_m = FiboChochConfig(
     ),
     bar_between_signals=1,
     send_signal=False,
-    long_signal=False,
+    short_signal=False,
 )
 
 

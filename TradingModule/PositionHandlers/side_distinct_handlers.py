@@ -83,13 +83,13 @@ class SideDistinctForex(RiskFreeForex):
             long_trade,
             short_trade,
         )
-        self.long_stoploss_pip = long_stoploss_pip
-        self.long_takeprofit_pip = long_takeprofit_pip
-        self.long_riskfree_trigger_pip = long_riskfree_trigger_pip
+        self.long_stoploss_pip = long_stoploss_pip / 10
+        self.long_takeprofit_pip = long_takeprofit_pip / 10
+        self.long_riskfree_trigger_pip = long_riskfree_trigger_pip / 10
 
-        self.short_stoploss_pip = short_stoploss_pip
-        self.short_takeprofit_pip = short_takeprofit_pip
-        self.short_riskfree_trigger_pip = short_riskfree_trigger_pip
+        self.short_stoploss_pip = short_stoploss_pip / 10
+        self.short_takeprofit_pip = short_takeprofit_pip / 10
+        self.short_riskfree_trigger_pip = short_riskfree_trigger_pip / 10
 
     def init_stoploss(self, entry_price: float, side: OrderSide) -> float:
         if side is OrderSide.BUY:
