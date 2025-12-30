@@ -11,13 +11,11 @@ from ChartModule.Indicators import TrendLine, Line, SupportConditions
 from ChartModule.plot import TwoChartPlot
 from TradingModule.trader_bot import TradeConfig, OrderSide, commands, Position
 from TradingModule.models import PositionsReport, Strategy
+from TradingModule.reporter import TelegramReporter
 from dataclasses import dataclass
 from copy import copy
 import logging
 
-from TradingModule.reporter import TelegramReporter
-
-from datetime import timedelta
 
 logger = logging.getLogger("Divergence")
 
@@ -288,7 +286,6 @@ class DivergenceTradeConfig(TradeConfig):
 
         jump = 0
         base_chartdata, second_chartdata = self.get_chartdata(n_bar)
-        logger.critical(f"{base_chartdata[-1].time}|{second_chartdata[-1].time}")
         for i in range(len_sub_data, len(base_chartdata) - 2):
             base_sub_data = ChartData(
                 base_chartdata.chart, base_chartdata[:i], base_chartdata.indicators
@@ -322,13 +319,11 @@ class DivergenceTradeConfig(TradeConfig):
                 continue
             jump = self.bar_between_signals
             signal, position = res
-            logger.critical(signal.candle.time)
             all_signals.append(signal)
             if consider_positions:
                 all_positions.append(position)
                 open = commands.OpenPosition(position, agent)
                 await open.execute(candle.time)
-            logger.critical(position.open_time)
 
         plot = TwoChartPlot(base_chartdata, second_chartdata)
         for signal in all_signals:
@@ -337,7 +332,6 @@ class DivergenceTradeConfig(TradeConfig):
             if not pos.closed:
                 continue
             pos.draw(plot.base_plot)
-        logger.error(base_chartdata[-1])
         commands_report = commands.TradeCommand.close_records()
         all_reports = position_handler.report()
         logger.info("Result:\n\n" + commands_report)

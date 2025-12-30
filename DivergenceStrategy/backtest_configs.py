@@ -61,6 +61,8 @@ coinex_4h_diver = CoinexDiverTradeConfig(
         takeprofit_percent=7,
         leverage=30,
         initial_volume=50,
+        long_trade=False,
+        short_trade=False,
     ),
     agent=coinex_agent,
     heikingashi_chartdata=True,
@@ -74,8 +76,12 @@ forex_diver_one_m = ForexDiverTradeConfig(
     second_chart=Chart("SOLUSD", TimeFrame.one_minute),
     strategy=Divergence(5, 200, [], name="ForexDiver"),
     bar_between_signals=5,
-    position_handler=RiskFreeForex(
-        ForexAgent(), stoploss_pip=50, takeprofit_pip=50, riskfree_trigger_pip=25
+    position_handler=SlTpRatioForex(
+        ForexAgent(),
+        2,
+        stoploss_pip=10,
+        long_trade=False,
+        short_trade=False,
     ),
     merge_two_chart_time=True,
     heikingashi_chartdata=True,
@@ -89,7 +95,12 @@ forex_diver_five_m = ForexDiverTradeConfig(
     bar_between_signals=5,
     position_handler=(
         RiskFreeForex(
-            ForexAgent(), stoploss_pip=70, takeprofit_pip=70, riskfree_trigger_pip=35
+            ForexAgent(),
+            stoploss_pip=70,
+            takeprofit_pip=70,
+            riskfree_trigger_pip=35,
+            long_trade=False,
+            short_trade=False,
         )
     ),
     merge_two_chart_time=True,
@@ -100,8 +111,8 @@ forex_diver_five_m = ForexDiverTradeConfig(
 
 diver_one_cvd = Divergence(
     7,
-    50,
-    [],
+    100,
+    [EMA(30)],
     name="ForexCVD",
     long_second_line_validation=False,
     short_second_line_validation=False,
@@ -111,9 +122,14 @@ cvd_diver_one_m_cvd = CvdDiverTradeConfig(
     chart=Chart("XAUUSD!", TimeFrame.one_minute),
     bar_between_signals=5,
     strategy=diver_one_cvd,
-    position_handler=RiskFreeForex(
-        ForexAgent(), stoploss_pip=30, takeprofit_pip=30, riskfree_trigger_pip=15
+    position_handler=SlTpRatioForex(
+        ForexAgent(),
+        2,
+        stoploss_pip=20,
+        long_trade=False,
+        short_trade=False,
     ),
+    heikingashi_chartdata=False,
 )
 
 diver_five_cvd = Divergence(
