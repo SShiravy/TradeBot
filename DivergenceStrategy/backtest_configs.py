@@ -100,7 +100,7 @@ forex_diver_five_m = ForexDiverTradeConfig(
             stoploss_pip=10,
             long_trade=False,
             short_trade=False,
-    )
+        )
     ),
     merge_two_chart_time=True,
     heikingashi_chartdata=True,

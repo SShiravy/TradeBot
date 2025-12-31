@@ -1,7 +1,7 @@
 from Forex import ForexAgent, ForexDiverTradeConfig
 from ChartModule import Chart, TimeFrame
+from TradingModule.PositionHandlers.ratio_handlers import SlTpRatioForex
 from TradingModule.trader_bot import TraderBot
-from TradingModule.PositionHandlers import RiskFreeForex
 from DivergenceStrategy.divergence import Divergence
 from custom_logger import CustomLogger
 import asyncio
@@ -9,15 +9,18 @@ import asyncio
 
 CustomLogger(log_file=True, file_log_name="ForexDiverBot")
 
-
 one_m = ForexDiverTradeConfig(
     chart=Chart("XAUUSD!", TimeFrame.one_minute),
     second_chart=Chart("SOLUSD", TimeFrame.one_minute),
-    strategy=Divergence(7, 50, [], name="ForexDiver"),
-    bar_between_signals=5,
-    position_handler=RiskFreeForex(
-        ForexAgent(), takeprofit_pip=30, stoploss_pip=30, riskfree_trigger_pip=15
+    strategy=Divergence(5, 200, [], name="ForexDiver"),
+    bar_between_signals=2,
+    position_handler=SlTpRatioForex(
+        ForexAgent(),
+        2,
+        stoploss_pip=10,
     ),
+    merge_two_chart_time=True,
+    heikingashi_chartdata=True,
 )
 
 
@@ -27,10 +30,14 @@ five_m = ForexDiverTradeConfig(
     strategy=Divergence(5, 50, [], name="ForexDiver"),
     bar_between_signals=5,
     position_handler=(
-        RiskFreeForex(
-            ForexAgent(), stoploss_pip=70, takeprofit_pip=70, riskfree_trigger_pip=35
+        SlTpRatioForex(
+            ForexAgent(),
+            1.5,
+            stoploss_pip=10,
         )
     ),
+    merge_two_chart_time=True,
+    heikingashi_chartdata=True,
 )
 
 

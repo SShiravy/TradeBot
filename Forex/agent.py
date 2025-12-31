@@ -60,6 +60,7 @@ class ForexAgent(ExchangeAgent):
             f"delta between last candle time & now: {delta=}|{last_candle.time=}|{now=}"
         )
         if delta > timedelta(minutes=2):
+            logger.info(f"Market is Closed {delta=}")
             return False
         return True
 
