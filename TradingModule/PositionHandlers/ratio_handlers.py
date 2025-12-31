@@ -85,7 +85,7 @@ class SlTpRatioForex(PositionHandler):
     def __init__(
         self,
         exchange_agent: ExchangeAgent,
-        ratio: int,
+        ratio: float,
         initial_volume: float = 0.01,
         stoploss_pip: int = 20,
         long_trade: bool = True,
