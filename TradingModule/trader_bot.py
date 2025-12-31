@@ -43,8 +43,10 @@ class TradeConfig:
         if jump:
             delay *= self.bar_between_signals
 
-        logging.debug(f"delay + lastcandl.time: {delay + last_candle.time}")
-
+        logging.debug(
+            f"delay + lastcandl.time: {delay + last_candle.time} | {datetime.now(timezone.utc)} | {last_candle.time=}"
+        )
+        # if (delay + last_candle.time)
         return (
             (delay + last_candle.time)
             - datetime.now(timezone.utc)
@@ -251,6 +253,8 @@ class TraderBot:
         report_time = now.replace(
             hour=self.report_time["h"], minute=self.report_time["m"], microsecond=0
         )
+        if report_time < now:
+            report_time += timedelta(days=1)
         sleep_time = report_time - now
         while True:
             await asyncio.sleep(sleep_time.total_seconds())

@@ -36,10 +36,10 @@ class ForexAgent(ExchangeAgent):
         return True
 
     @classmethod
-    def correct_time(cls, raw_time: datetime, chart: Chart) -> datetime | None:
+    def correct_time(cls, raw_time: datetime, chart: Chart) -> datetime:
         info = mt5.symbol_info(chart.symbol)
         if not info:
-            return None
+            raise ValueError(f"{chart=} | {info=}")
         delta = datetime.fromtimestamp(info.time, timezone.utc) - datetime.now(
             timezone.utc
         )
@@ -47,24 +47,23 @@ class ForexAgent(ExchangeAgent):
 
     def check_market_open(self, chart: Chart) -> bool:
         one_m_chart = Chart(chart.symbol, timeframe=TimeFrame.one_minute)
-        last_data = self.get_chartdata(one_m_chart, 1)
-        now = datetime.now(tz=timezone.utc)
+        last_data = self.get_chartdata(one_m_chart, 1, correct_timing=False)
         if last_data is None:
             logger.error(f"Forex Failed to get last candle data for {chart.symbol}")
             return False
-        last_candle = last_data.candles[0]
-        delta = now.replace(second=0, microsecond=0) - last_candle.time.replace(
-            second=0, microsecond=0
-        )
-        logger.debug(
-            f"delta between last candle time & now: {delta=}|{last_candle.time=}|{now=}"
-        )
-        if delta > timedelta(minutes=2):
-            logger.info(f"Market is Closed {delta=}")
+        last_candle_time = last_data.candles[-1].time
+
+        logger.debug(f"{last_candle_time.hour=} | {last_candle_time.minute=}")
+        if last_candle_time.hour == 23 and last_candle_time.minute == 59:
+            logger.info(
+                f"Market is Closed last candle time (without correcting time): {last_candle_time}"
+            )
             return False
         return True
 
-    def get_chartdata(self, chart: Chart, n_bars: int = 100) -> ChartData | None:
+    def get_chartdata(
+        self, chart: Chart, n_bars: int = 100, correct_timing=True
+    ) -> ChartData | None:
         if not self.prepare_chart(chart):
             return None
         ohlcv_res = mt5.copy_rates_from_pos(
@@ -83,7 +82,9 @@ class ForexAgent(ExchangeAgent):
             candle_time = datetime.fromtimestamp(
                 candle_timestamp, tz=timezone.utc
             ).replace(microsecond=0, second=0)
-            corrected_time = self.correct_time(candle_time, chart)
+            if correct_timing:
+                candle_time = self.correct_time(candle_time, chart)
+
             all_candles_list.append(
                 Candle(
                     float(open),
@@ -91,7 +92,7 @@ class ForexAgent(ExchangeAgent):
                     float(high),
                     float(low),
                     float(volume),
-                    corrected_time if corrected_time else candle_time,
+                    candle_time,
                     chart.timeframe,
                 )
             )
