@@ -1,7 +1,7 @@
 from ChartModule import Chart, Candle, ChartData, TimeFrame
 from TradingModule.models import ExchangeAgent, Position, OrderSide
 import mt5_wrapper as mt5
-from datetime import datetime, timezone, timedelta
+from datetime import datetime, timezone
 import logging
 
 
@@ -12,7 +12,9 @@ class ForexAgent(ExchangeAgent):
     def __new__(cls):
         if not hasattr(cls, "_instance"):
             cls._instance = object.__new__(cls)
-            if not mt5.initialize():
+            if not mt5.initialize(
+                r"C:\Program Files\Opo group MetaTrader 5\terminal64.exe"
+            ):
                 raise RuntimeError("MT5 initialize failed")
             logger.info("Initialized")
         return cls._instance

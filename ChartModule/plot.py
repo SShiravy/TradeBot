@@ -160,8 +160,10 @@ class PlotChart:
             # legend=legend,
         )
 
-    def linear_plot(self, x, y, legend: str | None = None):
-        fplt.plot(x, y, style="-", ax=self.ax)
+    def linear_plot(
+        self, x, y, legend: str | None = None, color: str = "#410087", thickness=2
+    ):
+        fplt.plot(x, y, style="-", ax=self.ax, color=color, width=thickness)
 
 
 class TwoChartPlot:

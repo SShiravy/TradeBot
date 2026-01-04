@@ -1,7 +1,7 @@
 from Coinex import CoinexAgent, CoinexDiverTradeConfig
 from ChartModule import Chart, TimeFrame
 from DivergenceStrategy.divergence import Divergence
-from ChartModule.Indicators import EMA
+from ChartModule.Indicators import EMA, HMA
 from Forex import ForexAgent, CvdDiverTradeConfig, ForexDiverTradeConfig
 from TradingModule.PositionHandlers import (
     RiskFreeForex,
@@ -35,7 +35,7 @@ five_m_diver = CoinexDiverTradeConfig(
 one_h_diver = CoinexDiverTradeConfig(
     chart=Chart("SOLUSDT", TimeFrame.one_hour),
     second_chart=Chart("BTCUSDT", TimeFrame.one_hour),
-    strategy=Divergence(5, 500, [], name="CoinexDiver", inverse_diver_long=True),
+    strategy=Divergence(5, 500, [HMA(14)], name="CoinexDiver", inverse_diver_long=True),
     position_handler=SlTpRatioCrypto(
         coinex_agent,
         ratio=1.5,
