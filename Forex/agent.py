@@ -64,7 +64,7 @@ class ForexAgent(ExchangeAgent):
         return True
 
     def get_chartdata(
-        self, chart: Chart, n_bars: int = 100, correct_timing=True
+        self, chart: Chart, n_bars: int = 100, correct_timing=False
     ) -> ChartData | None:
         if not self.prepare_chart(chart):
             return None

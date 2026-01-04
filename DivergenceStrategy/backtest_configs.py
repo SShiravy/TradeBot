@@ -80,6 +80,7 @@ forex_diver_one_m = ForexDiverTradeConfig(
         ForexAgent(),
         2,
         stoploss_pip=10,
+        riskfree_trigger_ratio=1,
         long_trade=False,
         short_trade=False,
     ),

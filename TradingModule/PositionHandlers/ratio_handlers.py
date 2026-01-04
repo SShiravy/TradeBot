@@ -1,6 +1,9 @@
+import numpy as np
 from ChartModule.models import MarketSide, Signal
+from TradingModule import commands
 from TradingModule.PositionHandlers.model import PositionHandler
-from TradingModule.models import ExchangeAgent, OrderSide, Position
+from TradingModule.commands import TradeCommand
+from TradingModule.models import ExchangeAgent, OrderSide, Position, Trigger
 from datetime import timedelta
 import logging
 
@@ -16,6 +19,7 @@ class SlTpRatioCrypto(PositionHandler):
         initial_volume: float = 0.5,
         leverage: int = 1,
         stoploss_percent: float = 3,
+        riskfree_trigger_ratio: float = 0.0,
         long_trade: bool = True,
         short_trade: bool = True,
     ) -> None:
@@ -24,6 +28,7 @@ class SlTpRatioCrypto(PositionHandler):
         )
         self.ratio = ratio
         self.stoploss_percent = stoploss_percent
+        self.riskfree_trigger_ratio = riskfree_trigger_ratio
 
     def init_stoploss(self, entry_price: float, side: OrderSide) -> float:
         return abs(self.stoploss_percent / 100 - side.factor()) * entry_price
@@ -33,6 +38,18 @@ class SlTpRatioCrypto(PositionHandler):
             abs(self.stoploss_percent * self.ratio / 100 + side.factor()) * entry_price
         )
 
+    def set_riskfree_trigger(self, position: Position) -> float:
+        sl_percent = (
+            abs(position.entry_price - position.stoploss) / position.entry_price
+        )
+        trigger_price = round(
+            abs(sl_percent * self.riskfree_trigger_ratio + position.side.factor())
+            * position.entry_price,
+            position.chart.precision,
+        )
+        position.steps = [Trigger(trigger_price)]
+        return trigger_price
+
     def generate_position(
         self,
         signal: Signal,
@@ -55,11 +72,11 @@ class SlTpRatioCrypto(PositionHandler):
         if sl_base_price is None:
             sl_base_price = entry_price
 
-        percision = signal.chart.precision
-        sl = round(self.init_stoploss(sl_base_price, side), percision)
+        precision = signal.chart.precision
+        sl = round(self.init_stoploss(sl_base_price, side), precision)
         sl_percent = abs(entry_price - sl) / entry_price
         tp = round(
-            abs(sl_percent * self.ratio + side.factor()) * entry_price, percision
+            abs(sl_percent * self.ratio + side.factor()) * entry_price, precision
         )
 
         position = Position(
@@ -75,10 +92,37 @@ class SlTpRatioCrypto(PositionHandler):
             position_id,
             real_trade,
         )
+        if self.riskfree_trigger_ratio > 0:
+            self.set_riskfree_trigger(position)
         self.open_positions.append(position)
         logger.info(f"New Position on {position.chart}")
         logger.debug(f"The New Position {position}")
         return position
+
+    def handler(
+        self, position: Position, tick_prices: list[float]
+    ) -> TradeCommand | None:
+        direction = position.side.factor()
+
+        res = super().handler(position, tick_prices)
+        if res:
+            return res
+
+        if position.steps is []:
+            return None
+
+        direction = position.side.factor()
+
+        ticks = np.array(tick_prices) * direction
+        trigger = position.steps[0].price * direction
+
+        cross = ticks >= trigger
+
+        if cross.any():
+            position.steps = []
+            return commands.TrailStoploss(
+                position, self.exchange_agent, position.entry_price
+            )
 
 
 class SlTpRatioForex(PositionHandler):
@@ -88,18 +132,32 @@ class SlTpRatioForex(PositionHandler):
         ratio: float,
         initial_volume: float = 0.01,
         stoploss_pip: int = 20,
+        riskfree_trigger_ratio: float = 0.0,
         long_trade: bool = True,
         short_trade: bool = True,
     ) -> None:
         super().__init__(exchange_agent, initial_volume, 1, long_trade, short_trade)
         self.ratio = ratio
         self.stoploss_pip = stoploss_pip / 10
+        self.riskfree_trigger_ratio = riskfree_trigger_ratio
 
     def init_stoploss(self, entry_price: float, side: OrderSide) -> float:
         return entry_price - side.factor() * self.stoploss_pip
 
     def init_takeprofit(self, entry_price: float, side: OrderSide) -> float:
         return entry_price + side.factor() * (self.stoploss_pip * self.ratio)
+
+    def set_riskfree_trigger(self, position: Position) -> float:
+        sl_pip = abs(position.entry_price - position.stoploss)
+        trigger_price = round(
+            abs(
+                position.entry_price
+                + position.side.factor() * sl_pip * self.riskfree_trigger_ratio
+            ),
+            position.chart.precision,
+        )
+        position.steps = [Trigger(trigger_price)]
+        return trigger_price
 
     def generate_position(
         self,
@@ -123,10 +181,10 @@ class SlTpRatioForex(PositionHandler):
         if sl_base_price is None:
             sl_base_price = entry_price
 
-        percision = signal.chart.precision
-        sl = round(self.init_stoploss(sl_base_price, side), percision)
+        precision = signal.chart.precision
+        sl = round(self.init_stoploss(sl_base_price, side), precision)
         sl_pip = abs(entry_price - sl)
-        tp = round(abs(entry_price + side.factor() * sl_pip * self.ratio), percision)
+        tp = round(abs(entry_price + side.factor() * sl_pip * self.ratio), precision)
 
         position = Position(
             signal.chart,
@@ -141,8 +199,35 @@ class SlTpRatioForex(PositionHandler):
             position_id,
             real_trade,
         )
+        if self.riskfree_trigger_ratio > 0:
+            self.set_riskfree_trigger(position)
         self.open_positions.append(position)
         logger.info(f"New Position on {position.chart}")
         logger.debug(f"The New Position {position}")
         position.in_forex = True
         return position
+
+    def handler(
+        self, position: Position, tick_prices: list[float]
+    ) -> TradeCommand | None:
+        direction = position.side.factor()
+
+        res = super().handler(position, tick_prices)
+        if res:
+            return res
+
+        if not position.steps:
+            return None
+
+        direction = position.side.factor()
+
+        ticks = np.array(tick_prices) * direction
+        trigger = position.steps[0].price * direction
+
+        cross = ticks >= trigger
+
+        if cross.any():
+            position.steps = []
+            return commands.TrailStoploss(
+                position, self.exchange_agent, position.entry_price
+            )

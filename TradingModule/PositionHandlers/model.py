@@ -57,15 +57,15 @@ class PositionHandler(ABC):
         if entry_price is None:
             entry_price = signal.candle.close
 
-        percision = signal.chart.precision
+        precision = signal.chart.precision
 
         position = Position(
             signal.chart,
             side,
             entry_price,
             self.initial_volume,
-            round(self.init_stoploss(entry_price, side), percision),
-            round(self.init_takeprofit(entry_price, side), percision),
+            round(self.init_stoploss(entry_price, side), precision),
+            round(self.init_takeprofit(entry_price, side), precision),
             self.leverage,
             signal.candle.time + timedelta(seconds=2),
             signal.source,
