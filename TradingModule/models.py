@@ -79,12 +79,13 @@ class Position:
     stoploss: float
     takeprofit: float
     leverage: int = 1
-    open_time: datetime = field(default=datetime.now(timezone.utc))
+    generated_time: datetime = field(default=datetime.now(timezone.utc))
     source: str = "Unknown"
     real_trade: bool = field(default=True)
     steps: list[Trigger] = field(default_factory=list)
     plot: Plot | None = field(default=None)
 
+    open_time: datetime | None = field(default=None, init=False)
     confiremed: bool = field(default=False, init=False)
     sended: bool = field(default=False, init=False)
 
@@ -98,6 +99,10 @@ class Position:
     pnl_percent: float = field(default=0.0, init=False)
     in_forex: bool = field(default=False, init=False)
     pnl_in_pip: float = field(default=0.0, init=False)
+
+    @property
+    def start_time(self):
+        return self.open_time if self.open_time else self.generated_time
 
     @property
     def current_step(self):
@@ -143,7 +148,7 @@ class Position:
             {
                 "chart": str(self.chart),
                 "side": self.side.value,
-                "time": str(self.open_time.timestamp()),
+                "time": str(self.start_time.timestamp()),
                 "source": self.source,
             },
             sort_keys=True,
@@ -155,7 +160,7 @@ class Position:
             return
         plot = self.plot if isinstance(self.plot, PlotChart) else self.plot.base_plot
         if self.closed:
-            base_time = self.last_update if self.last_update else self.open_time
+            base_time = self.last_update if self.last_update else self.start_time
             plot.draw_sl_tp_lines(
                 base_time,
                 self.closed,
@@ -177,10 +182,10 @@ class Position:
                 "#7fff86",
             )
         else:
-            start_time = self.open_time - self.chart.timeframe.time_delta * 10
+            start_of_line = self.start_time - self.chart.timeframe.time_delta * 10
             plot.draw_sl_tp_lines(
-                start_time,
-                self.open_time,
+                start_of_line,
+                self.start_time,
                 self.takeprofit,
                 self.stoploss,
             )
@@ -263,7 +268,7 @@ class PositionsReport:
 
     @classmethod
     def generate_position_report(cls, position: Position):
-        close_time = position.open_time
+        close_time = position.start_time
         if position.closed:
             close_time = position.closed
         elif position.last_update:
@@ -272,7 +277,7 @@ class PositionsReport:
             chart=position.chart,
             side=position.side,
             source=position.source,
-            first_time=position.open_time,
+            first_time=position.start_time,
             last_time=close_time,
         )
 

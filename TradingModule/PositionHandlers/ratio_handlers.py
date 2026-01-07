@@ -103,6 +103,7 @@ class SlTpRatioCrypto(PositionHandler):
         return position
 
     def update_position(self, position: Position):
+        # TODO: complete here
         sl = self.init_stoploss(position.entry_price, position.side)
         if sl != position.stoploss:
             position.stoploss = sl
@@ -112,6 +113,7 @@ class SlTpRatioCrypto(PositionHandler):
             position.takeprofit = tp
             commands.ChangeTakeProfit(position, self.exchange_agent, tp, report=False)
         position.confiremed = True
+        logger.info(f"Position Updated on {position.chart}")
 
     def handler(
         self, position: Position, tick_prices: list[float]

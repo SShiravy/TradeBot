@@ -89,6 +89,7 @@ class PositionHandler(ABC):
             position.takeprofit = tp
             commands.ChangeTakeProfit(position, self.exchange_agent, tp, report=False)
         position.confiremed = True
+        logger.info(f"Position Updated on {position.chart}")
 
     def handler(
         self, position: Position, tick_prices: list[float]
@@ -113,7 +114,7 @@ class PositionHandler(ABC):
     def candles_check(self, position: Position) -> TradeCommand | None:
         ticks = []
         if position.previous_check is None:
-            position.previous_check = position.open_time
+            position.previous_check = position.start_time
 
         m_chart = Chart(position.chart.symbol, TimeFrame.one_minute)
         candles = self.exchange_agent.get_chartdata(m_chart, 3)

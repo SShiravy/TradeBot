@@ -44,7 +44,6 @@ class TradeConfig:
         logging.debug(
             f"delay + lastcandl.time: {delay + last_candle.time} | {datetime.now(timezone.utc)} | {last_candle.time=}"
         )
-        # if (delay + last_candle.time)
         return (
             (delay + last_candle.time)
             - datetime.now(timezone.utc)

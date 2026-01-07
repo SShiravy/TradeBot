@@ -62,7 +62,7 @@ class TelegramReporter:
         close_time = position.closed if position.closed else datetime.now(timezone.utc)
         duration = close_time.replace(
             microsecond=0, second=0
-        ) - position.open_time.replace(microsecond=0, second=0)
+        ) - position.start_time.replace(microsecond=0, second=0)
 
         close_type_msg = "⭕ Flat Close"
         close_price = filled_price if filled_price else position.entry_price

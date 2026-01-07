@@ -151,6 +151,7 @@ class SendPositionSignal(TradeCommand):
         if self.position.sended:
             return False
         self.position.sended = True
+        self.position.last_update = time
         return True
 
 

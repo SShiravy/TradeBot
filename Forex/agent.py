@@ -162,7 +162,7 @@ class ForexAgent(ExchangeAgent):
             "action": mt5.TRADE_ACTION_SLTP,
             "position": int(position.exchange_id),
             "symbol": position.chart.symbol,
-            "sl": position.takeprofit,
+            "sl": position.stoploss,
             "tp": price,
         }
 
