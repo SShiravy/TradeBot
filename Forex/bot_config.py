@@ -1,10 +1,12 @@
+from ChartModule.models import Candle
 from Forex.agent import ForexAgent
 from ChartModule.Indicators import CVD
 from ChartModule import Chart, ChartData
 from TradingModule import ExchangeAgent
 from DivergenceStrategy.divergence import Divergence, DivergenceTradeConfig
 from dataclasses import dataclass, field
-from datetime import timedelta
+from datetime import datetime, timedelta, timezone
+import logging
 
 
 @dataclass(kw_only=True)
@@ -64,9 +66,22 @@ class ForexDiverTradeConfig(DivergenceTradeConfig):
             second_chartdata = second_chartdata.give_heikingashi_chartdata()
         return base_chartdata, second_chartdata
 
+    def give_delay(self, last_candle: Candle, jump=False) -> timedelta:
+        corrected_time = ForexAgent().correct_time(last_candle.time, self.chart)
+        delay = self.chart.timeframe.time_delta
+        if jump:
+            delay *= self.bar_between_signals
+
+        logging.debug(
+            f"delay + lastcandl.time: {delay + corrected_time} | {datetime.now(timezone.utc)} | {corrected_time=}"
+        )
+        return (
+            (delay + corrected_time) - datetime.now(timezone.utc) + timedelta(seconds=1)
+        )
+
     async def task(self):
         if not ForexAgent().check_market_open(self.chart):
-            return timedelta(hours=2)
+            return timedelta(hours=1)
         return await super().task()
 
 
@@ -92,5 +107,5 @@ class CvdDiverTradeConfig(DivergenceTradeConfig):
 
     async def task(self):
         if not ForexAgent().check_market_open(self.chart):
-            return timedelta(hours=2)
+            return timedelta(hours=1)
         return await super().task()

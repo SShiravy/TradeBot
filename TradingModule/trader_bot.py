@@ -188,9 +188,9 @@ class TraderBot:
                 for config in self.configs:
                     config.position_handler.manage_positions()
                 await commands.TradeCommand.execute_pending_commands()
-                await asyncio.sleep(5)
+                await asyncio.sleep(2)
             except Exception as e:
-                logging.error(f"Manage Failed: {e}")
+                logging.exception(f"Manage Failed: {e}")
                 await asyncio.sleep(10)
 
     async def trade_task(self, config: TradeConfig):
@@ -198,19 +198,20 @@ class TraderBot:
         error_number = 0
         while True:
             try:
-                logging.info(f"Checking {config.strategy.name} on {config.chart}")
                 res = await config.task()
                 if isinstance(res, timedelta):
                     sleep_time = res
                 else:
                     sleep_time = res[0]
-                logging.debug(f"{config.chart.timeframe} sleep: {sleep_time}")
+                logging.info(
+                    f"{config.chart.timeframe} Checked on {config.chart}. sleep for {sleep_time}"
+                )
                 await asyncio.sleep(sleep_time.total_seconds())
                 error_number = 0
 
             except Exception as e:
                 error_number += 1
-                logging.error(f"{error_number} Times Task failed :{e}\n{config}")
+                logging.exception(f"{error_number} Times Task failed :{e}\n{config}")
                 if error_number == 3:
                     await TelegramReporter().log_report(
                         f"3 Times Error:{e}\non {config}"

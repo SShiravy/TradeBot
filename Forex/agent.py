@@ -17,6 +17,8 @@ class ForexAgent(ExchangeAgent):
             ):
                 raise RuntimeError("MT5 initialize failed")
             logger.info("Initialized")
+            cls.last_checked_time: None | datetime = None
+            cls.last_checked_candle: None | Candle = None
         return cls._instance
 
     def check_chart(self, chart: Chart) -> bool:
@@ -45,23 +47,32 @@ class ForexAgent(ExchangeAgent):
         delta = datetime.fromtimestamp(info.time, timezone.utc) - datetime.now(
             timezone.utc
         )
-        return (raw_time - delta).replace(second=0, microsecond=0)
+        return raw_time - delta
 
     def check_market_open(self, chart: Chart) -> bool:
-        chart_info = mt5.symbol_info("EURUSD")
-        if chart_info is None:
-            logger.error(f"Forex Failed to get info for {chart}")
+        now = datetime.now(timezone.utc)
+        data = self.get_chartdata(
+            Chart(chart.symbol, timeframe=TimeFrame.one_minute), n_bars=2
+        )
+        if data is None:
+            logger.error(f"Failed to get chart data for market open check: {chart}")
             return False
-        logger.debug(f"{chart_info=}")
-
-        if chart_info.trade_mode == mt5.SYMBOL_TRADE_MODE_DISABLED:
-            logger.info(f"Market is Closed {chart_info.trade_mode=}")
+        if self.last_checked_time is None or self.last_checked_candle is None:
+            self.last_checked_time = now
+            self.last_checked_candle = data.candles[-1]
+            logger.info(f"Set last Checked time {chart}")
+            return True
+        if (self.last_checked_time - now).total_seconds() >= 60 and (
+            self.last_checked_candle.time - data.candles[-1].time
+        ).total_seconds() < 60:
+            logger.info(
+                f"Market seems closed for {chart} | last candle time: {self.last_checked_time}"
+            )
             return False
+        self.last_checked_time = now
         return True
 
-    def get_chartdata(
-        self, chart: Chart, n_bars: int = 100, correct_timing=False
-    ) -> ChartData | None:
+    def get_chartdata(self, chart: Chart, n_bars: int = 100) -> ChartData | None:
         if not self.prepare_chart(chart):
             return None
         ohlcv_res = mt5.copy_rates_from_pos(
@@ -71,8 +82,6 @@ class ForexAgent(ExchangeAgent):
             logger.error(f"fetching chart data failed: {chart=}")
             return None
 
-        logger.debug(f"{len(ohlcv_res)} ohlcv fetched for {chart}")
-
         all_candles_list = []
         for candle in ohlcv_res:
             candle_timestamp, open, high, low, close, volume, _, _ = candle
@@ -80,8 +89,6 @@ class ForexAgent(ExchangeAgent):
             candle_time = datetime.fromtimestamp(
                 candle_timestamp, tz=timezone.utc
             ).replace(microsecond=0, second=0)
-            if correct_timing:
-                candle_time = self.correct_time(candle_time, chart)
 
             all_candles_list.append(
                 Candle(
