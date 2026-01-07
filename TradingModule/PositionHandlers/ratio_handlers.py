@@ -1,5 +1,6 @@
 import numpy as np
 from ChartModule.models import MarketSide, Signal
+from ChartModule.plot import Plot
 from TradingModule import commands
 from TradingModule.PositionHandlers.model import PositionHandler
 from TradingModule.commands import TradeCommand
@@ -50,11 +51,11 @@ class SlTpRatioCrypto(PositionHandler):
         position.steps = [Trigger(trigger_price)]
         return trigger_price
 
-    def generate_position(
+    async def generate_position(
         self,
         signal: Signal,
         entry_price: float | None = None,
-        position_id: str = "",
+        plot: Plot | None = None,
         sl_base_price: float | None = None,
     ) -> Position:
         real_trade = False
@@ -89,15 +90,28 @@ class SlTpRatioCrypto(PositionHandler):
             self.leverage,
             signal.candle.time + timedelta(seconds=2),
             signal.source,
-            position_id,
             real_trade,
+            plot=plot,
         )
+
         if self.riskfree_trigger_ratio > 0:
             self.set_riskfree_trigger(position)
+        await commands.OpenPosition(position, self.exchange_agent).execute()
         self.open_positions.append(position)
         logger.info(f"New Position on {position.chart}")
         logger.debug(f"The New Position {position}")
         return position
+
+    def update_position(self, position: Position):
+        sl = self.init_stoploss(position.entry_price, position.side)
+        if sl != position.stoploss:
+            position.stoploss = sl
+            commands.TrailStoploss(position, self.exchange_agent, sl, report=False)
+        tp = self.init_takeprofit(position.entry_price, position.side)
+        if tp != position.takeprofit:
+            position.takeprofit = tp
+            commands.ChangeTakeProfit(position, self.exchange_agent, tp, report=False)
+        position.confiremed = True
 
     def handler(
         self, position: Position, tick_prices: list[float]
@@ -107,10 +121,8 @@ class SlTpRatioCrypto(PositionHandler):
         res = super().handler(position, tick_prices)
         if res:
             return res
-
-        if position.steps is []:
+        if position.steps == []:
             return None
-
         direction = position.side.factor()
 
         ticks = np.array(tick_prices) * direction
@@ -159,11 +171,11 @@ class SlTpRatioForex(PositionHandler):
         position.steps = [Trigger(trigger_price)]
         return trigger_price
 
-    def generate_position(
+    async def generate_position(
         self,
         signal: Signal,
         entry_price: float | None = None,
-        position_id: str = "",
+        plot: Plot | None = None,
         sl_base_price: float | None = None,
     ) -> Position:
         real_trade = False
@@ -196,11 +208,12 @@ class SlTpRatioForex(PositionHandler):
             self.leverage,
             signal.candle.time + timedelta(seconds=2),
             signal.source,
-            position_id,
             real_trade,
+            plot=plot,
         )
         if self.riskfree_trigger_ratio > 0:
             self.set_riskfree_trigger(position)
+        await commands.OpenPosition(position, self.exchange_agent).execute()
         self.open_positions.append(position)
         logger.info(f"New Position on {position.chart}")
         logger.debug(f"The New Position {position}")

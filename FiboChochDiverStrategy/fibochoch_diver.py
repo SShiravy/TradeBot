@@ -1,6 +1,6 @@
 from BacktestModule.dummy_agent import DummyAgent
 from FiboChochStrategy.fibochoch import FiboChochSignal
-from TradingModule import Position, OrderSide, commands
+from TradingModule import Position, commands
 from TradingModule.models import PositionsReport
 from ChartModule.models import Signal, ChartData
 from ChartModule.plot import PlotChart
@@ -58,7 +58,6 @@ class FiboChochDiver(FiboChochConfig):
         self.divergence_config.max_long_lose = 100
         self.divergence_config.max_short_lose = 100
         self.divergence_config.bar_between_signals = 1
-        self.send_position_command = False
 
         res = await self.divergence_config.backtest(
             self.divergence_config.n_candle_check,
@@ -77,7 +76,7 @@ class FiboChochDiver(FiboChochConfig):
         logger.info(f"current diver signal: {self.diver_last_signal}")
         return res
 
-    def find_signal(
+    async def find_signal(
         self, chartdata: ChartData
     ) -> None | tuple[FiboChochSignal, Position]:
         if self.diver_last_signal is None:
@@ -103,18 +102,16 @@ class FiboChochDiver(FiboChochConfig):
         ):
             return None
 
-        position = self.position_handler.generate_position(
-            signal, sl_base_price=signal.fibochoch_model.fibo.start_tick.price
-        )
-        if self.modify_positions_sl:
-            position.stoploss = self.position_handler.init_stoploss(
-                signal.fibochoch_model.fibo.start_tick.price, position.side
-            )
+        plot = None
+        if self.send_signal:
+            plot = PlotChart(chartdata)
+            self.strategy.draw(plot, signal, draw_indicators=True)
 
-        if (self.position_handler.long_trade and position.side is OrderSide.BUY) or (
-            self.position_handler.short_trade and position.side is OrderSide.SELL
-        ):
-            commands.OpenPosition(position, self.agent)
+        position = await self.position_handler.generate_position(
+            signal,
+            sl_base_price=signal.fibochoch_model.fibo.start_tick.price,
+            plot=plot,
+        )
 
         self._n_fich_diver_signal -= 1
         return signal, position
@@ -199,7 +196,8 @@ class FiboChochDiver(FiboChochConfig):
             self.strategy.draw(plot, signal)
 
         for pos in all_positions:
-            pos.draw(plot)
+            pos.plot = plot
+            pos.draw()
 
         commands_report = commands.TradeCommand.close_records()
         all_reports = position_handler.report()

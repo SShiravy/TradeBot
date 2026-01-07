@@ -9,9 +9,8 @@ from ChartModule.models import (
 )
 from ChartModule.Indicators import TrendLine, Line, SupportConditions
 from ChartModule.plot import TwoChartPlot
-from TradingModule.trader_bot import TradeConfig, OrderSide, commands, Position
+from TradingModule.trader_bot import TradeConfig, commands, Position
 from TradingModule.models import PositionsReport, Strategy
-from TradingModule.reporter import TelegramReporter
 from dataclasses import dataclass
 from copy import copy
 import logging
@@ -220,7 +219,7 @@ class DivergenceTradeConfig(TradeConfig):
             second_chartdata = second_chartdata.give_heikingashi_chartdata()
         return base_chartdata, second_chartdata
 
-    def find_signal(
+    async def find_signal(
         self, chartdata: ChartData, second_chartdata: ChartData, *args, **kwargs
     ) -> None | tuple[DivergenceSignal, Position]:
         signal = self.strategy.check_signal(
@@ -234,16 +233,13 @@ class DivergenceTradeConfig(TradeConfig):
             if signal.side is MarketSide.BEARISH
             else signal.base_line.end_candle.low
         )
-        position = self.position_handler.generate_position(
-            signal, sl_base_price=entry_source
+        plot = None
+        if self.send_signal:
+            plot = TwoChartPlot(chartdata, second_chartdata)
+            self.strategy.draw(plot, signal, draw_indicators=True)
+        position = await self.position_handler.generate_position(
+            signal, sl_base_price=entry_source, plot=plot
         )
-
-        if (
-            self.send_position_command
-            and (self.position_handler.long_trade and position.side is OrderSide.BUY)
-            or (self.position_handler.short_trade and position.side is OrderSide.SELL)
-        ):
-            commands.OpenPosition(position, self.agent)
         return signal, position
 
     async def task(self):
@@ -255,16 +251,12 @@ class DivergenceTradeConfig(TradeConfig):
         second_data = copy(second_chartdata)
         second_data.candles = second_data[:-1]
 
-        res = self.find_signal(base_data, second_data)
+        res = await self.find_signal(base_data, second_data)
         if res is None:
             return self.give_delay(base_chartdata[-1])
 
         signal, position = res
 
-        if self.send_signal:
-            plot = TwoChartPlot(base_chartdata, second_chartdata)
-            self.strategy.draw(plot, signal, draw_indicators=True)
-            await TelegramReporter().new_position(position, plot.base_plot)
         return self.give_delay(base_chartdata[-1], jump=True), signal, position
 
     async def backtest(  # type: ignore
@@ -280,6 +272,7 @@ class DivergenceTradeConfig(TradeConfig):
         position_handler.long_trade = False
         position_handler.short_trade = False
         self.agent = agent
+        self.send_signal = False
 
         all_positions: list[Position] = []
         all_signals: list[Signal | DivergenceSignal] = []
@@ -314,7 +307,7 @@ class DivergenceTradeConfig(TradeConfig):
             if jump > 0:
                 jump -= 1
                 continue
-            res = self.find_signal(base_sub_data, seocnd_sub_data)
+            res = await self.find_signal(base_sub_data, seocnd_sub_data)
             if res is None:
                 continue
             jump = self.bar_between_signals
@@ -322,8 +315,6 @@ class DivergenceTradeConfig(TradeConfig):
             all_signals.append(signal)
             if consider_positions:
                 all_positions.append(position)
-                open = commands.OpenPosition(position, agent)
-                await open.execute(candle.time)
 
         plot = TwoChartPlot(base_chartdata, second_chartdata)
         for signal in all_signals:
@@ -331,7 +322,8 @@ class DivergenceTradeConfig(TradeConfig):
         for pos in all_positions:
             if not pos.closed:
                 continue
-            pos.draw(plot.base_plot)
+            pos.plot = plot
+            pos.draw()
         commands_report = commands.TradeCommand.close_records()
         all_reports = position_handler.report()
         logger.info("Result:\n\n" + commands_report)

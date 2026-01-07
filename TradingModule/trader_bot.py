@@ -1,4 +1,4 @@
-from TradingModule import ExchangeAgent, Position, OrderSide, commands, PositionsReport
+from TradingModule import ExchangeAgent, Position, commands, PositionsReport
 from TradingModule.reporter import TelegramReporter
 from BacktestModule.dummy_agent import DummyAgent
 from TradingModule.PositionHandlers.model import PositionHandler
@@ -33,8 +33,6 @@ class TradeConfig:
     max_long_lose: int = field(default=3)
     max_short_lose: int = field(default=3)
 
-    send_position_command: bool = field(default=True)
-
     _n_losed_long: int = field(default=0, init=False)
     _n_losed_short: int = field(default=0, init=False)
 
@@ -63,7 +61,7 @@ class TradeConfig:
             chartdata = chartdata.give_heikingashi_chartdata()
         return chartdata
 
-    def find_signal(
+    async def find_signal(
         self, chartdata: ChartData, *args, **kwargs
     ) -> None | tuple[Signal, Position]:
         signal = self.strategy.check_signal(
@@ -72,26 +70,21 @@ class TradeConfig:
         if signal is None:
             return None
 
-        position = self.position_handler.generate_position(signal)
+        plot = None
+        if self.send_signal:
+            plot = PlotChart(chartdata)
+            self.strategy.draw(plot, signal, draw_indicators=True)
 
-        if (
-            self.send_position_command
-            and (self.position_handler.long_trade and position.side is OrderSide.BUY)
-            or (self.position_handler.short_trade and position.side is OrderSide.SELL)
-        ):
-            commands.OpenPosition(position, self.agent)
+        position = await self.position_handler.generate_position(signal)
+
         return signal, position
 
     async def task(self) -> timedelta | tuple[timedelta, Signal, Position]:
         chartdata = self.get_chartdata()
-        res = self.find_signal(chartdata)
+        res = await self.find_signal(chartdata)
         if res is None:
             return self.give_delay(chartdata[-1])
         signal, position = res
-        if self.send_signal:
-            plot = PlotChart(chartdata)
-            self.strategy.draw(plot, signal, draw_indicators=True)
-            await TelegramReporter().new_position(position, plot)
         return self.give_delay(chartdata[-1], jump=True), signal, position
 
     async def backtest(
@@ -140,7 +133,8 @@ class TradeConfig:
         for signal in all_signals:
             self.strategy.draw(plot, signal)
         for pos in all_positions:
-            pos.draw(plot)
+            pos.plot = plot
+            pos.draw()
 
         commands_report = commands.TradeCommand.close_records()
         all_reports = position_handler.report()

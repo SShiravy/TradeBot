@@ -1,4 +1,3 @@
-from ChartModule.plot import PlotChart
 from TradingModule import Position, OrderSide
 from config import settings
 from datetime import datetime, timezone
@@ -16,7 +15,6 @@ class TelegramReporter:
             cls.bot = Bot(settings.TELEGRAM_BOT_TOKEN)
             cls._public_channel = settings.TELEGRAM_CHANNEL_ID
             cls._log_channel = settings.TELEGRAM_REPORT_CHANNEL
-            cls.msg_id_dict = {}
         return cls._instance
 
     async def send_msg(
@@ -37,7 +35,7 @@ class TelegramReporter:
     async def log_report(self, msg):
         await self.send_msg(self._log_channel, msg)
 
-    async def new_position(self, position: Position, plot: PlotChart):
+    async def new_position(self, position: Position):
         msg_list = [
             position.source,
             f"📊 {position.chart}",
@@ -52,11 +50,13 @@ class TelegramReporter:
         if position.leverage not in [1, 0]:
             msg += f"\n\n⚡Leverage: {position.leverage}"
 
-        position.draw(plot)
-        img_path = plot.save_image(position.source + str(position.chart))
+        img_path = None
+        if position.plot:
+            position.draw()
+            img_path = position.plot.save_image(position.source + str(position.chart))
 
         res = await self.send_msg(self._public_channel, msg, img_path)
-        self.msg_id_dict[position.id] = res.message_id
+        position.msg_id = res.message_id
 
     async def position_closed(self, position: Position, filled_price=None):
         close_time = position.closed if position.closed else datetime.now(timezone.utc)
@@ -82,11 +82,7 @@ class TelegramReporter:
             f"⌛ Duration = {duration}",
         ]
         msg = "\n\n".join(msg_list)
-        await self.send_msg(
-            self._public_channel, msg, reply_id=self.msg_id_dict.get(position.id)
-        )
-        if self.msg_id_dict.get(position.id):
-            self.msg_id_dict.pop(position.id)
+        await self.send_msg(self._public_channel, msg, reply_id=position.msg_id)
 
     async def trailing_sl(self, position: Position):
         trail_type_msg = (
@@ -102,9 +98,7 @@ class TelegramReporter:
         ]
         msg = "\n\n".join(msg_list)
 
-        await self.send_msg(
-            self._public_channel, msg, reply_id=self.msg_id_dict.get(position.id)
-        )
+        await self.send_msg(self._public_channel, msg, reply_id=position.msg_id)
 
     async def public_report(self, msg: str):
         await self.send_msg(self._public_channel, msg)

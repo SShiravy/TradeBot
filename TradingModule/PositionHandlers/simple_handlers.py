@@ -1,4 +1,5 @@
 from ChartModule.models import Signal
+from ChartModule.plot import Plot
 from TradingModule.PositionHandlers.model import PositionHandler
 from TradingModule.models import ExchangeAgent, OrderSide, Position
 
@@ -47,16 +48,16 @@ class SimpleForex(PositionHandler):
     def init_takeprofit(self, entry_price: float, side: OrderSide) -> float:
         return entry_price + side.factor() * self.takeprofit_pip
 
-    def generate_position(
+    async def generate_position(
         self,
         signal: Signal,
         entry_price: float | None = None,
-        position_id: str = "",
+        plot: Plot | None = None,
         *args,
         **kwargs,
     ) -> Position:
-        pos = super().generate_position(
-            signal, entry_price, position_id, kwargs=kwargs, args=args
+        pos = await super().generate_position(
+            signal, entry_price, plot=plot, kwargs=kwargs, args=args
         )
         pos.in_forex = True
         return pos

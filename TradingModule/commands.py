@@ -25,12 +25,14 @@ class TradeCommand(ABC):
         position: Position,
         exchange: ExchangeAgent,
         n_attempts: int = 2,
+        report=True,
     ):
         self.position = position
         self.exchange = exchange
         self.n_attempts = n_attempts
         self.failed_attempt: int = 0
         self.__status = TradeCommandStatus.PENDING
+        self.report = report
         TradeCommand.all_pending_commands.append(self)
 
         logger.debug(self)
@@ -70,7 +72,7 @@ class TradeCommand(ABC):
         """
         pass
 
-    async def execute(self, time: datetime | None = None, report=True) -> bool:
+    async def execute(self, time: datetime | None = None) -> bool:
         """
         Execute Command and handle status
         """
@@ -88,7 +90,7 @@ class TradeCommand(ABC):
         if self.command(time):
             self.status = TradeCommandStatus.EXECUTED
             logger.info(str(self) + f" for {self.position.exchange_id}")
-            if report:
+            if self.report:
                 await self.execution_report()
             return True
 
@@ -96,7 +98,7 @@ class TradeCommand(ABC):
             self.failed_attempt += 1
             if self.failed_attempt > self.n_attempts:
                 self.status = TradeCommandStatus.FAILED
-                if report:
+                if self.report:
                     await TelegramReporter().log_report(
                         f"{self} with {self.failed_attempt} failed attempts"
                     )
@@ -141,6 +143,17 @@ class OpenPosition(TradeCommand):
         return True
 
 
+class SendPositionSignal(TradeCommand):
+    async def execution_report(self):
+        await TelegramReporter().new_position(self.position)
+
+    def command(self, time):
+        if self.position.sended:
+            return False
+        self.position.sended = True
+        return True
+
+
 class TrailStoploss(TradeCommand):
     def __init__(
         self,
@@ -148,8 +161,9 @@ class TrailStoploss(TradeCommand):
         exchange: ExchangeAgent,
         stoploss_price: float,
         n_attempts: int = 2,
+        report=True,
     ):
-        super().__init__(position, exchange, n_attempts)
+        super().__init__(position, exchange, n_attempts, report)
         self.stoploss_price = stoploss_price
 
     async def execution_report(self):
@@ -172,8 +186,9 @@ class ChangeTakeProfit(TradeCommand):
         exchange: ExchangeAgent,
         takeprofit_price: float,
         n_attempts: int = 2,
+        report=True,
     ):
-        super().__init__(position, exchange, n_attempts)
+        super().__init__(position, exchange, n_attempts, report)
         self.takeprofit_price = takeprofit_price
 
     def command(self, time) -> bool:
@@ -194,8 +209,9 @@ class ParitalClose(TradeCommand):
         volume: float,
         n_attempts: int = 2,
         exec_price=None,
+        report=True,
     ):
-        super().__init__(position, exchange, n_attempts)
+        super().__init__(position, exchange, n_attempts, report)
         self.volume = volume
         self.exec_price = exec_price
 
@@ -219,8 +235,9 @@ class ClosePosition(TradeCommand):
         exchange: ExchangeAgent,
         n_attempts: int = 2,
         exec_price=None,
+        report=True,
     ):
-        super().__init__(position, exchange, n_attempts)
+        super().__init__(position, exchange, n_attempts, report)
         self.exec_price = exec_price
 
     async def execution_report(self):

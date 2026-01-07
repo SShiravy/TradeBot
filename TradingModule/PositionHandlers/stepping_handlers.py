@@ -1,4 +1,5 @@
 from ChartModule.models import Signal
+from ChartModule.plot import Plot
 from TradingModule.PositionHandlers.simple_handlers import SimpleCrypto, SimpleForex
 from TradingModule.models import ExchangeAgent, Position, Trigger
 from TradingModule.commands import TradeCommand
@@ -63,23 +64,33 @@ class SteppingCrypto(SimpleCrypto):
             )
         pos.steps = steps
 
-    def generate_position(
+    async def generate_position(
         self,
         signal: Signal,
         entry_price: float | None = None,
-        position_id: str = "",
+        plot: Plot | None = None,
         *args,
         **kwargs,
     ) -> Position:
-        pos = super().generate_position(
-            signal, entry_price, position_id, *args, **kwargs
+        pos = await super().generate_position(
+            signal, entry_price, plot, *args, **kwargs
         )
         self.set_steps(pos)
         return pos
 
+    def update_position(self, position: Position):
+        # TODO: implement here
+        pass
+
     def handler(
         self, position: Position, tick_prices: list[float]
     ) -> TradeCommand | None:
+        # TODO: remember to uncomment this part after checking
+        # if not position.confiremed:
+        #     self.update_position(position)
+        # if position.confiremed and not position.sended:
+        #     commands.SendPositionSignal(position,self.exchange_agent)
+
         direction = position.side.factor()
         ticks = np.array(tick_prices) * direction
         sl = position.stoploss * direction

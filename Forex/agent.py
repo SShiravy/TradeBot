@@ -48,18 +48,14 @@ class ForexAgent(ExchangeAgent):
         return (raw_time - delta).replace(second=0, microsecond=0)
 
     def check_market_open(self, chart: Chart) -> bool:
-        one_m_chart = Chart(chart.symbol, timeframe=TimeFrame.one_minute)
-        last_data = self.get_chartdata(one_m_chart, 1, correct_timing=False)
-        if last_data is None:
-            logger.error(f"Forex Failed to get last candle data for {chart.symbol}")
+        chart_info = mt5.symbol_info("EURUSD")
+        if chart_info is None:
+            logger.error(f"Forex Failed to get info for {chart}")
             return False
-        last_candle_time = last_data.candles[-1].time
+        logger.debug(f"{chart_info=}")
 
-        logger.debug(f"{last_candle_time.hour=} | {last_candle_time.minute=}")
-        if last_candle_time.hour == 23 and last_candle_time.minute == 59:
-            logger.info(
-                f"Market is Closed last candle time (without correcting time): {last_candle_time}"
-            )
+        if chart_info.trade_mode == mt5.SYMBOL_TRADE_MODE_DISABLED:
+            logger.info(f"Market is Closed {chart_info.trade_mode=}")
             return False
         return True
 

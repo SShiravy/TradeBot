@@ -1,4 +1,5 @@
 from ChartModule import Signal, MarketSide, Chart, TimeFrame
+from ChartModule.plot import Plot
 from TradingModule import Position, OrderSide, ExchangeAgent, PositionsReport
 from TradingModule.commands import TradeCommand
 from TradingModule import commands
@@ -37,11 +38,11 @@ class PositionHandler(ABC):
     def init_takeprofit(self, entry_price: float, side: OrderSide) -> float:
         pass
 
-    def generate_position(
+    async def generate_position(
         self,
         signal: Signal,
         entry_price: float | None = None,
-        position_id: str = "",
+        plot: Plot | None = None,
         *args,
         **kwargs,
     ) -> Position:
@@ -69,17 +70,33 @@ class PositionHandler(ABC):
             self.leverage,
             signal.candle.time + timedelta(seconds=2),
             signal.source,
-            position_id,
             real_trade,
+            plot=plot,
         )
+        await commands.OpenPosition(position, self.exchange_agent).execute()
         self.open_positions.append(position)
         logger.info(f"New Position on {position.chart}")
         logger.debug(f"The New Position {position}")
         return position
 
+    def update_position(self, position: Position):
+        sl = self.init_stoploss(position.entry_price, position.side)
+        if sl != position.stoploss:
+            position.stoploss = sl
+            commands.TrailStoploss(position, self.exchange_agent, sl, report=False)
+        tp = self.init_takeprofit(position.entry_price, position.side)
+        if tp != position.takeprofit:
+            position.takeprofit = tp
+            commands.ChangeTakeProfit(position, self.exchange_agent, tp, report=False)
+        position.confiremed = True
+
     def handler(
         self, position: Position, tick_prices: list[float]
     ) -> TradeCommand | None:
+        if not position.confiremed:
+            self.update_position(position)
+        if position.confiremed and not position.sended:
+            commands.SendPositionSignal(position, self.exchange_agent)
         direction = position.side.factor()
         ticks = np.array(tick_prices) * direction
         sl = position.stoploss * direction
@@ -110,18 +127,14 @@ class PositionHandler(ABC):
             position.previous_check = candle.time
         return self.handler(position, ticks)
 
-    def manage_positions(self) -> list[TradeCommand] | None:
-        all_commands = []
+    def manage_positions(self):
         all_pos = copy(self.open_positions)
         for pos in all_pos:
             if pos.closed:
                 self.closed_positions.append(pos)
                 self.open_positions.remove(pos)
                 continue
-            command = self.candles_check(pos)
-            if command:
-                all_commands.append(command)
-        return all_commands
+            self.candles_check(pos)
 
     def report(self) -> list[PositionsReport]:
         reports = PositionsReport.generate_reports(self.closed_positions)

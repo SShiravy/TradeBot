@@ -14,7 +14,7 @@ async def start_diver_backtest():
         cvd_diver_one_m_cvd,
     )
 
-    await forex_diver_one_m.backtest(1000)
+    await forex_diver_one_m.backtest(3000)
 
 
 async def start_fibochoch_backtest():

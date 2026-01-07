@@ -13,8 +13,8 @@ from ChartModule.Indicators import (
     SupportConditions,
 )
 from ChartModule.plot import PlotChart
-from TradingModule.trader_bot import TradeConfig, commands
-from TradingModule.models import OrderSide, Position, Strategy
+from TradingModule.trader_bot import TradeConfig
+from TradingModule.models import Position, Strategy
 from dataclasses import dataclass, field
 from copy import copy
 import numpy as np
@@ -376,7 +376,7 @@ class FiboChochConfig(TradeConfig):
     strategy: FiboChoch  # type: ignore[override]
     modify_positions_sl: bool = field(default=True)
 
-    def find_signal(
+    async def find_signal(
         self, chartdata: ChartData
     ) -> None | tuple[FiboChochSignal, Position]:
         signal = self.strategy.check_signal(
@@ -384,17 +384,14 @@ class FiboChochConfig(TradeConfig):
         )
         if signal is None or signal.fibochoch_model.fibo is None:
             return None
-        position = self.position_handler.generate_position(
+
+        plot = None
+        if self.send_signal:
+            plot = PlotChart(chartdata)
+            self.strategy.draw(plot, signal, draw_indicators=True)
+        position = await self.position_handler.generate_position(
             signal,
             sl_base_price=signal.fibochoch_model.fibo.start_tick.price,
+            plot=plot,
         )
-        if self.modify_positions_sl:
-            position.stoploss = self.position_handler.init_stoploss(
-                signal.fibochoch_model.fibo.start_tick.price, position.side
-            )
-
-        if (self.position_handler.long_trade and position.side is OrderSide.BUY) or (
-            self.position_handler.short_trade and position.side is OrderSide.SELL
-        ):
-            commands.OpenPosition(position, self.agent)
         return signal, position

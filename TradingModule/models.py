@@ -8,7 +8,7 @@ from ChartModule.models import (
     Signal,
 )
 from ChartModule.Indicators import SupportConditions
-from ChartModule.plot import PlotChart
+from ChartModule.plot import PlotChart, Plot
 from dataclasses import asdict, dataclass, field
 from datetime import datetime
 from abc import ABC, abstractmethod
@@ -81,10 +81,15 @@ class Position:
     leverage: int = 1
     open_time: datetime = field(default=datetime.now(timezone.utc))
     source: str = "Unknown"
-    exchange_id: str = field(default="")
     real_trade: bool = field(default=True)
     steps: list[Trigger] = field(default_factory=list)
+    plot: Plot | None = field(default=None)
 
+    confiremed: bool = field(default=False, init=False)
+    sended: bool = field(default=False, init=False)
+
+    exchange_id: str = field(default="", init=False)
+    msg_id: Any = field(default=None, init=False)
     current_step_index: int = field(default=0, init=False)
     closed: datetime | None = field(default=None, init=False)
     previous_check: datetime | None = field(default=None, init=False)
@@ -145,7 +150,10 @@ class Position:
         ).encode()
         return int(hashlib.sha256(raw).hexdigest(), 16)
 
-    def draw(self, plot: PlotChart):
+    def draw(self):
+        if not self.plot:
+            return
+        plot = self.plot if isinstance(self.plot, PlotChart) else self.plot.base_plot
         if self.closed:
             base_time = self.last_update if self.last_update else self.open_time
             plot.draw_sl_tp_lines(

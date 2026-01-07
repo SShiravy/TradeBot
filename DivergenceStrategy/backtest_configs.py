@@ -78,9 +78,9 @@ forex_diver_one_m = ForexDiverTradeConfig(
     bar_between_signals=2,
     position_handler=SlTpRatioForex(
         ForexAgent(),
-        2,
+        3,
         stoploss_pip=10,
-        riskfree_trigger_ratio=1,
+        riskfree_trigger_ratio=1.5,
         long_trade=False,
         short_trade=False,
     ),
