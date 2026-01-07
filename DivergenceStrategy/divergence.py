@@ -315,6 +315,7 @@ class DivergenceTradeConfig(TradeConfig):
             all_signals.append(signal)
             if consider_positions:
                 all_positions.append(position)
+            await commands.TradeCommand.execute_pending_commands(candle.time, False)
 
         plot = TwoChartPlot(base_chartdata, second_chartdata)
         for signal in all_signals:

@@ -2,7 +2,7 @@ from custom_logger import CustomLogger
 import logging
 
 
-CustomLogger(True, consol_log_level=logging.INFO)
+CustomLogger(True, consol_log_level=logging.DEBUG)
 
 
 async def start_diver_backtest():
@@ -14,7 +14,7 @@ async def start_diver_backtest():
         cvd_diver_one_m_cvd,
     )
 
-    await forex_diver_one_m.backtest(3000)
+    await forex_diver_one_m.backtest(1000)
 
 
 async def start_fibochoch_backtest():

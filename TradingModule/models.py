@@ -141,7 +141,7 @@ class Position:
         self.volume -= volume
 
     def __str__(self):
-        return f"{self.side}|{self.source}|{self.chart}|{self.open_time}|{self.entry_price}"
+        return f"{self.side}|{self.source}|{self.chart}|{self.start_time}|{self.entry_price}"
 
     def __hash__(self):
         raw = json.dumps(
@@ -168,14 +168,14 @@ class Position:
                 self.stoploss,
             )
             plot.draw_line(
-                self.open_time,
+                self.start_time,
                 self.entry_price,
                 base_time,
                 self.stoploss,
                 "#FFD562",
             )
             plot.draw_line(
-                self.open_time,
+                self.start_time,
                 self.entry_price,
                 base_time,
                 self.takeprofit,
@@ -374,8 +374,7 @@ class ExchangeAgent(ABC):
     def open_position(self, position: Position) -> float | None:
         """
         return executed price if successful otherwise None
-        its better to update position id to executed order price
-        and position open_time
+        it should to return position id to executed order price
         """
         pass
 

@@ -111,7 +111,8 @@ class TradeCommand(ABC):
             time = datetime.now(timezone.utc)
         all_commands = copy(TradeCommand.all_pending_commands)
         for command in all_commands:
-            await command.execute(time, report)
+            command.report = report
+            await command.execute(time)
 
     @classmethod
     def close_records(cls):
@@ -137,19 +138,19 @@ class OpenPosition(TradeCommand):
             entry_price = self.exchange.open_position(self.position)
             if entry_price:
                 self.position.entry_price = entry_price
+                self.position.open_time = time
             else:
                 return False
-        self.position.open_time = time
         return True
 
 
 class SendPositionSignal(TradeCommand):
     async def execution_report(self):
+        if self.position.sended:
+            return
         await TelegramReporter().new_position(self.position)
 
     def command(self, time):
-        if self.position.sended:
-            return False
         self.position.sended = True
         self.position.last_update = time
         return True

@@ -103,12 +103,14 @@ class SlTpRatioCrypto(PositionHandler):
         return position
 
     def update_position(self, position: Position):
-        # TODO: complete here
-        sl = self.init_stoploss(position.entry_price, position.side)
-        if sl != position.stoploss:
-            position.stoploss = sl
-            commands.TrailStoploss(position, self.exchange_agent, sl, report=False)
-        tp = self.init_takeprofit(position.entry_price, position.side)
+        sl_percent = (
+            abs(position.entry_price - position.stoploss) / position.entry_price
+        )
+        tp = round(
+            abs(sl_percent * self.ratio + position.side.factor())
+            * position.entry_price,
+            position.chart.precision,
+        )
         if tp != position.takeprofit:
             position.takeprofit = tp
             commands.ChangeTakeProfit(position, self.exchange_agent, tp, report=False)
@@ -118,13 +120,12 @@ class SlTpRatioCrypto(PositionHandler):
     def handler(
         self, position: Position, tick_prices: list[float]
     ) -> TradeCommand | None:
-        direction = position.side.factor()
-
         res = super().handler(position, tick_prices)
         if res:
             return res
         if position.steps == []:
             return None
+
         direction = position.side.factor()
 
         ticks = np.array(tick_prices) * direction
@@ -159,6 +160,7 @@ class SlTpRatioForex(PositionHandler):
         return entry_price - side.factor() * self.stoploss_pip
 
     def init_takeprofit(self, entry_price: float, side: OrderSide) -> float:
+        # WARNING: Don't use this method!
         return entry_price + side.factor() * (self.stoploss_pip * self.ratio)
 
     def set_riskfree_trigger(self, position: Position) -> float:
@@ -222,15 +224,24 @@ class SlTpRatioForex(PositionHandler):
         position.in_forex = True
         return position
 
+    def update_position(self, position: Position):
+        sl_pip = abs(position.entry_price - position.stoploss)
+        tp = round(
+            abs(position.entry_price + position.side.factor() * sl_pip * self.ratio),
+            position.chart.precision,
+        )
+        if tp != position.takeprofit:
+            position.takeprofit = tp
+            commands.ChangeTakeProfit(position, self.exchange_agent, tp, report=False)
+        position.confiremed = True
+        logger.info(f"Position Updated on {position.chart}")
+
     def handler(
         self, position: Position, tick_prices: list[float]
     ) -> TradeCommand | None:
-        direction = position.side.factor()
-
         res = super().handler(position, tick_prices)
         if res:
             return res
-
         if not position.steps:
             return None
 
