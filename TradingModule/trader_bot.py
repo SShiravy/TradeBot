@@ -206,6 +206,7 @@ class TraderBot:
                 logging.info(
                     f"{config.chart.timeframe} Checked on {config.chart}. sleep for {sleep_time}"
                 )
+                logging.warning(f"sleep_time: {sleep_time} | {sleep_time.total_seconds()} | {sleep_time.seconds}")
                 await asyncio.sleep(sleep_time.total_seconds())
                 error_number = 0
 

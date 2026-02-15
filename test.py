@@ -14,7 +14,7 @@ async def start_diver_backtest():
         cvd_diver_one_m_cvd,
     )
 
-    await forex_diver_one_m.backtest(1000)
+    await forex_diver_one_m.backtest(20000)
 
 
 async def start_fibochoch_backtest():
@@ -31,6 +31,13 @@ async def start_fich_diver_backtest():
 
 if __name__ == "__main__":
     import asyncio
+
+    import datetime
+
+    sleep_time = datetime.timedelta(hours=1)
+
+    logging.warning(f"sleep_time: {sleep_time} | {sleep_time.total_seconds()} | {sleep_time.seconds}")
+
 
     asyncio.run(start_diver_backtest())
     # asyncio.run(start_fibochoch_backtest())

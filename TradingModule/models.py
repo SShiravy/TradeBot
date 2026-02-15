@@ -160,7 +160,7 @@ class Position:
             return
         plot = self.plot if isinstance(self.plot, PlotChart) else self.plot.base_plot
         if self.closed:
-            base_time = self.last_update if self.last_update else self.start_time
+            base_time = self.start_time # self.last_update if self.last_update else self.start_time
             plot.draw_sl_tp_lines(
                 base_time,
                 self.closed,

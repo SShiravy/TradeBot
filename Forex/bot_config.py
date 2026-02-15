@@ -14,7 +14,7 @@ class ForexDiverTradeConfig(DivergenceTradeConfig):
     second_chart: Chart
     agent: ExchangeAgent = field(default=ForexAgent(), init=False)
     strategy: Divergence  # type: ignore[override]
-    merge_two_chart_time: bool = field(default=False)
+    merge_two_chart_time: bool = field(default=True)
 
     def get_chartdata(self, n_bar: int | None = None) -> tuple[ChartData, ChartData]:  # type: ignore[override]
         mulitplier = 2 if self.merge_two_chart_time else 1
@@ -28,7 +28,7 @@ class ForexDiverTradeConfig(DivergenceTradeConfig):
 
         if base_chartdata is None or second_chartdata is None:
             raise ValueError(f"chart data is None from {self.agent.__class__.__name__}")
-
+        
         if self.merge_two_chart_time:
             base_index = 0
             second_index = 0
@@ -80,8 +80,9 @@ class ForexDiverTradeConfig(DivergenceTradeConfig):
         )
 
     async def task(self):
-        if not ForexAgent().check_market_open(self.chart):
-            return timedelta(hours=1)
+        wait_time = ForexAgent().check_market_open(self.chart)
+        if wait_time is not None:
+            return timedelta(seconds=wait_time)
         return await super().task()
 
 
@@ -106,6 +107,7 @@ class CvdDiverTradeConfig(DivergenceTradeConfig):
         return base_chartdata, second_chartdata
 
     async def task(self):
-        if not ForexAgent().check_market_open(self.chart):
-            return timedelta(hours=1)
+        wait_time = ForexAgent().check_market_open(self.chart)
+        if wait_time is not None:
+            return timedelta(seconds=wait_time)
         return await super().task()
