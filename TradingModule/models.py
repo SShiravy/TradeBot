@@ -90,6 +90,7 @@ class Position:
     sended: bool = field(default=False, init=False)
 
     exchange_id: str = field(default="", init=False)
+    spread: float = field(default=0.0,init=False)
     msg_id: Any = field(default=None, init=False)
     current_step_index: int = field(default=0, init=False)
     closed: datetime | None = field(default=None, init=False)
@@ -141,7 +142,7 @@ class Position:
         self.volume -= volume
 
     def __str__(self):
-        return f"{self.side}|{self.source}|{self.chart}|{self.start_time}|{self.entry_price}"
+        return f"{self.side}|{self.source}|{self.chart}|{self.start_time}|{self.entry_price}|{self.spread}"
 
     def __hash__(self):
         raw = json.dumps(
@@ -160,7 +161,7 @@ class Position:
             return
         plot = self.plot if isinstance(self.plot, PlotChart) else self.plot.base_plot
         if self.closed:
-            base_time = self.start_time # self.last_update if self.last_update else self.start_time
+            base_time = self.last_update if self.last_update else self.start_time
             plot.draw_sl_tp_lines(
                 base_time,
                 self.closed,

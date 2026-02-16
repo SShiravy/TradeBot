@@ -46,15 +46,19 @@ class TelegramReporter:
             f"💰 Volume: {position.volume}",
         ]
 
-        msg = "\n\n".join(msg_list)
         if position.leverage not in [1, 0]:
-            msg += f"\n\n⚡Leverage: {position.leverage}"
+            msg_list.append(f"⚡Leverage: {position.leverage}")
+
+        if position.spread:
+            msg_list.append(f"🧾 Spread = {position.spread}")
 
         img_path = None
+        logger.critical(position.plot)
         if position.plot:
             position.draw()
             img_path = position.plot.save_image(position.source + str(position.chart))
 
+        msg = "\n\n".join(msg_list)
         res = await self.send_msg(self._public_channel, msg, img_path)
         position.msg_id = res.message_id
 

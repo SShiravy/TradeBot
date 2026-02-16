@@ -147,6 +147,7 @@ class OpenPosition(TradeCommand):
 class SendPositionSignal(TradeCommand):
     async def execution_report(self):
         await TelegramReporter().new_position(self.position)
+        self.position.plot = None
 
     def command(self, time):
         self.position.sended = True

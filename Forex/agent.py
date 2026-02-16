@@ -6,7 +6,6 @@ import mt5_wrapper as mt5
 import logging
 
 
-
 logger = logging.getLogger("ForexAgent")
 
 
@@ -28,6 +27,7 @@ class MarketState(Enum):
                 return 900  # wait for 15 mins and check again
             case _:
                 return 1800  # default wait time
+
 
 class ForexAgent(ExchangeAgent):
     def __new__(cls):
@@ -93,12 +93,15 @@ class ForexAgent(ExchangeAgent):
         if (now - self.last_checked_time).total_seconds() > 60:
             self.last_checked_time = now
             self.market_state = MarketState.OPEN
-            if (data.candles[-1].time - self.last_checked_candle.time).total_seconds() < 60:
-                logger.info(f"Market seems closed for {chart} | last candle time: {self.last_checked_candle.time}")
+            if (
+                data.candles[-1].time - self.last_checked_candle.time
+            ).total_seconds() < 60:
+                logger.info(
+                    f"Market seems closed for {chart} | last candle time: {self.last_checked_candle.time}"
+                )
                 self.market_state = MarketState.CLOSED
-        logger.info(f"Market State for {chart}: {self.market_state}")
+        logger.debug(f"Market State for {chart}: {self.market_state}")
         return self.market_state.wait_seconds()
-
 
     def get_chartdata(self, chart: Chart, n_bars: int = 100) -> ChartData | None:
         if not self.prepare_chart(chart):
@@ -169,10 +172,11 @@ class ForexAgent(ExchangeAgent):
         }
 
         result = mt5.order_send(request)
-        if not result:
+        if not result or not result.request_id:
             logging.error(f"Opening position failed: {position}\n{mt5.last_error()=}")
             return None
         position.exchange_id = str(result.order)
+        position.spread = round(result.ask - result.bid,position.chart.precision)
         logging.info(f"Position Opened: {position}\n{result=}")
         return result.price
 

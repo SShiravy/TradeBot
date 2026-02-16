@@ -11,11 +11,11 @@ class SteppingCrypto(SimpleCrypto):
     def __init__(
         self,
         exchange_agent: ExchangeAgent,
-        initial_volume: float = 0.05,
+        initial_volume: float = 10,
         leverage: int = 1,
-        stoploss_percent: float = 5,
+        stoploss_percent: float = 3,
         targets_percents: list[float] = [1, 2, 3, 4],
-        targets_volumes_percents: float | list[float] = [0.25, 0.5, 0.25, 0.25],
+        targets_volumes_percents: float | list[float] = [0.25, 0.25, 0.25, 0.25],
         trail_stop: bool = True,
         long_trade=True,
         short_trade=True,
@@ -45,8 +45,7 @@ class SteppingCrypto(SimpleCrypto):
 
         if sum(targets_volumes_percents) > 1:
             raise ValueError(
-                f"sum of {targets_volumes_percents} param must be 1\
-                            {sum(targets_volumes_percents)}"
+                f"sum of {targets_volumes_percents} param must be 1 {sum(targets_volumes_percents)}"
             )
 
         self.targets_percents = targets_percents
@@ -72,6 +71,7 @@ class SteppingCrypto(SimpleCrypto):
         *args,
         **kwargs,
     ) -> Position:
+        # TODO: I can add sl_base_price: float | None = None param
         pos = await super().generate_position(
             signal, entry_price, plot, *args, **kwargs
         )
@@ -86,15 +86,16 @@ class SteppingCrypto(SimpleCrypto):
         self, position: Position, tick_prices: list[float]
     ) -> TradeCommand | None:
         # TODO: remember to uncomment this part after checking
-        # if not position.confiremed:
-        #     self.update_position(position)
-        # if position.confiremed and not position.sended:
-        #     commands.SendPositionSignal(position,self.exchange_agent)
+
+        if not position.confiremed:
+            self.update_position(position)
+        if position.confiremed and not position.sended:
+            commands.SendPositionSignal(position,self.exchange_agent)
 
         direction = position.side.factor()
         ticks = np.array(tick_prices) * direction
         sl = position.stoploss * direction
-        tp = position.takeprofit * direction
+        tp = position.current_step.price * direction
         cross = np.logical_or(ticks <= sl, ticks >= tp)
         if not cross.any():
             return None
@@ -106,6 +107,7 @@ class SteppingCrypto(SimpleCrypto):
             position, self.exchange_agent, position.current_step.volume
         )
         position.go_next_step()
+        
 
         # if self.trail_stop: # TODO: complete here
         #     commands.TrailStoploss(position,self.exchange_agent,position.steps[position.curr])

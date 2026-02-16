@@ -8,6 +8,7 @@ from TradingModule.PositionHandlers import (
     RiskFreeCrypto,
     SlTpRatioCrypto,
     SlTpRatioForex,
+    SteppingCrypto,
 )
 from config import settings
 # Coinex ----------------------------------------------------------------
@@ -22,7 +23,7 @@ five_m_diver = CoinexDiverTradeConfig(
     position_handler=SlTpRatioCrypto(
         coinex_agent,
         ratio=2,
-        stoploss_percent=0.25,
+        stoploss_percent=0.5,
         initial_volume=10,
         leverage=10,
         long_trade=False,
@@ -35,11 +36,10 @@ five_m_diver = CoinexDiverTradeConfig(
 one_h_diver = CoinexDiverTradeConfig(
     chart=Chart("SOLUSDT", TimeFrame.one_hour),
     second_chart=Chart("BTCUSDT", TimeFrame.one_hour),
-    strategy=Divergence(5, 500, [HMA(14)], name="CoinexDiver", inverse_diver_long=True),
-    position_handler=SlTpRatioCrypto(
+    strategy=Divergence(5, 500, name="CoinexDiver", inverse_diver_long=True),
+    position_handler=SteppingCrypto(
         coinex_agent,
-        ratio=1.5,
-        stoploss_percent=0.5,
+        stoploss_percent=5,
         initial_volume=10,
         leverage=10,
         long_trade=False,
@@ -54,13 +54,12 @@ coinex_4h_diver = CoinexDiverTradeConfig(
     chart=Chart("SOLUSDT", TimeFrame.four_hours),
     second_chart=Chart("BTCUSDT", TimeFrame.four_hours),
     strategy=Divergence(3, 100, [], name="CoinexDiver", inverse_diver_long=False),
-    position_handler=RiskFreeCrypto(
+    position_handler=SlTpRatioCrypto(
         coinex_agent,
-        riskfree_trigger_percent=3,
-        stoploss_percent=7,
-        takeprofit_percent=7,
-        leverage=30,
-        initial_volume=50,
+        ratio=1,
+        stoploss_percent=2,
+        initial_volume=10,
+        leverage=10,
         long_trade=False,
         short_trade=False,
     ),
