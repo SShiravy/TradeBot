@@ -63,7 +63,7 @@ class ChartPlot(BaseChartPlot):
         self._y_max = max(self._y_max, boundaries[0] * 1.0001, boundaries[1] * 1.0001)
 
     def plot(self):
-        if len(self.chartdata.candles) < self.plot_n_candles:
+        if len(self.chartdata.candles) > self.plot_n_candles:
             self.chartdata.candles = self.chartdata.candles[-self.plot_n_candles :]
         df = self.chartdata.generate_dataframe()
         fplt.add_legend(ax=self.ax, text=f"{self.chartdata.chart.symbol}")
