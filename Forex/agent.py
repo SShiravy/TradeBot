@@ -20,13 +20,13 @@ class MarketState(Enum):
             case MarketState.OPEN:
                 return 0
             case MarketState.CLOSED:
-                return 3600  # wait for 1 hour and check again
+                return 900  # wait for 15m and check again
             case MarketState.CHECK_LATER:
-                return 120  # wait for 2 mins and check again
+                return 120  # wait for 2m and check again
             case MarketState.NOT_RESPONDING:
-                return 900  # wait for 15 mins and check again
+                return 240  # wait for 4m and check again
             case _:
-                return 1800  # default wait time
+                return 1800  # default 30m wait time
 
 
 class ForexAgent(ExchangeAgent):
@@ -40,7 +40,7 @@ class ForexAgent(ExchangeAgent):
             logger.info("Initialized")
             cls.last_checked_time: None | datetime = None
             cls.last_checked_candle: None | Candle = None
-            cls.market_state: MarketState = MarketState.NOT_RESPONDING
+            cls.market_state: MarketState = MarketState.CHECK_LATER
         return cls._instance
 
     def check_chart(self, chart: Chart) -> bool:
@@ -100,9 +100,13 @@ class ForexAgent(ExchangeAgent):
                     f"Market seems closed for {chart} | last candle time: {self.last_checked_candle.time}"
                 )
                 self.market_state = MarketState.CLOSED
+            
+            self.last_checked_candle = data.candles[-1]
+        
         logger.debug(f"Market State for {chart}: {self.market_state}")
+        logger.info(f"\n|last_checked:   {self.last_checked_time}\n|now:            {now}\n|last_candle:    {self.last_checked_candle.time}\n|current_candle: {data.candles[-1].time}")
         return self.market_state.wait_seconds()
-
+    
     def get_chartdata(self, chart: Chart, n_bars: int = 100) -> ChartData | None:
         if not self.prepare_chart(chart):
             return None
