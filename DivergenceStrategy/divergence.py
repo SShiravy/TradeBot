@@ -320,7 +320,7 @@ class DivergenceTradeConfig(TradeConfig):
                 all_positions.append(position)
             await commands.TradeCommand.execute_pending_commands(candle.time, False)
 
-        plot = DoubleChartPlot(base_chartdata, second_chartdata)
+        plot = DoubleChartPlot(base_chartdata, second_chartdata, plot_n_candles=n_bar)
         for signal in all_signals:
             self.strategy.draw(plot, signal)  # type: ignore
         for pos in all_positions:

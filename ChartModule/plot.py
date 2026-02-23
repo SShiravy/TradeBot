@@ -31,11 +31,12 @@ class BaseChartPlot(ABC):
 
 
 class ChartPlot(BaseChartPlot):
-    def __init__(self, chartdata: ChartData) -> None:
+    def __init__(self, chartdata: ChartData, plot_n_candles: int = 100) -> None:
         self.chartdata = chartdata
         self._ax = None
         self._y_max = 0
         self._y_min = 100000000
+        self.plot_n_candles = plot_n_candles
 
     @property
     def ax(self):
@@ -62,6 +63,8 @@ class ChartPlot(BaseChartPlot):
         self._y_max = max(self._y_max, boundaries[0] * 1.0001, boundaries[1] * 1.0001)
 
     def plot(self):
+        if len(self.chartdata.candles) < self.plot_n_candles:
+            self.chartdata.candles = self.chartdata.candles[-self.plot_n_candles :]
         df = self.chartdata.generate_dataframe()
         fplt.add_legend(ax=self.ax, text=f"{self.chartdata.chart.symbol}")
 
@@ -194,9 +197,10 @@ class ChartPlot(BaseChartPlot):
 
 
 class DoubleChartPlot(BaseChartPlot):
-    def __init__(self, base_chartdata: ChartData, second_chartdata: ChartData) -> None:
-        self.base_plot = ChartPlot(base_chartdata)
-        self.second_plot = ChartPlot(second_chartdata)
+    def __init__(self, base_chartdata: ChartData, second_chartdata: ChartData, plot_n_candles: int = 100) -> None:
+        self.base_plot = ChartPlot(base_chartdata, plot_n_candles=plot_n_candles)
+        self.second_plot = ChartPlot(second_chartdata, plot_n_candles=plot_n_candles)
+        self.plot_n_candles = plot_n_candles
 
         ax1, ax2 = fplt.create_plot(
             f"TimeFrame: {base_chartdata.chart.timeframe.value}", rows=2
