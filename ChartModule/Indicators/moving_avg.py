@@ -6,7 +6,7 @@ from ChartModule.models import (
     MarketSide,
     IndicatorCandleSource,
 )
-from ChartModule.plot import PlotChart
+from ChartModule.plot import ChartPlot
 import pandas as pd
 
 
@@ -46,7 +46,7 @@ class SMA(IndicatorBaseModel):
             return MarketSide.BEARISH
         return MarketSide.NEUTRAL
 
-    def plot(self, plot: PlotChart):
+    def plot(self, plot: ChartPlot):
         plot.linear_plot(self.values.keys(), self.values.values(), f"SMA{self.n_bar}")
 
 
@@ -86,7 +86,7 @@ class EMA(IndicatorBaseModel):
         self.last_checked_candle = candles[-1]
         return self.values
 
-    def plot(self, plot: PlotChart):
+    def plot(self, plot: ChartPlot):
         plot.linear_plot(self.values.keys(), self.values.values(), f"EMA{self.n_bar}")
 
 
@@ -133,7 +133,7 @@ class WMA(IndicatorBaseModel):
             return MarketSide.BEARISH
         return MarketSide.NEUTRAL
 
-    def plot(self, plot: PlotChart):
+    def plot(self, plot: ChartPlot):
         plot.linear_plot(
             self.values.keys(),
             self.values.values(),
@@ -208,7 +208,7 @@ class HMA(IndicatorBaseModel):
         else:
             return MarketSide.BEARISH
 
-    def plot(self, plot: PlotChart):
+    def plot(self, plot: ChartPlot):
         green_line_time = []
         green_line_value = []
 

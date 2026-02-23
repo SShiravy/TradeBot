@@ -8,7 +8,7 @@ from ChartModule.models import (
     IndicatorCandleSource,
 )
 from ChartModule.Indicators import TrendLine, Line, SupportConditions
-from ChartModule.plot import TwoChartPlot
+from ChartModule.plot import DoubleChartPlot
 from TradingModule.trader_bot import TradeConfig, commands, Position
 from TradingModule.models import PositionsReport, Strategy
 from dataclasses import dataclass
@@ -181,7 +181,10 @@ class Divergence(Strategy):
         return ""
 
     def draw(
-        self, plot: TwoChartPlot, signal: DivergenceSignal, draw_indicators: bool = True
+        self,
+        plot: DoubleChartPlot,
+        signal: DivergenceSignal,
+        draw_indicators: bool = True,
     ):
         plot.base_plot.mark_signal(signal)
         plot.base_plot.draw_straight_line(
@@ -235,7 +238,7 @@ class DivergenceTradeConfig(TradeConfig):
         )
         plot = None
         if self.send_signal:
-            plot = TwoChartPlot(chartdata, second_chartdata)
+            plot = DoubleChartPlot(chartdata, second_chartdata)
             self.strategy.draw(plot, signal, draw_indicators=True)
         position = await self.position_handler.generate_position(
             signal, sl_base_price=entry_source, plot=plot
@@ -317,7 +320,7 @@ class DivergenceTradeConfig(TradeConfig):
                 all_positions.append(position)
             await commands.TradeCommand.execute_pending_commands(candle.time, False)
 
-        plot = TwoChartPlot(base_chartdata, second_chartdata)
+        plot = DoubleChartPlot(base_chartdata, second_chartdata)
         for signal in all_signals:
             self.strategy.draw(plot, signal)  # type: ignore
         for pos in all_positions:

@@ -1,6 +1,7 @@
 from ChartModule import ChartData, Candle, Signal, MarketSide, IndicatorCandleSource
 from datetime import datetime, timezone
-from typing import TypeAlias
+from typing import TypeAlias, Any
+from abc import ABC, abstractmethod
 import finplot as fplt
 
 fplt.candle_bull_body_color = "#26a69a"
@@ -10,7 +11,26 @@ fplt.legend_text_color = "#000000"
 fplt.display_timezone = timezone.utc
 
 
-class PlotChart:
+class BaseChartPlot(ABC):
+    @abstractmethod
+    def show(self):
+        pass
+
+    @abstractmethod
+    def save_image(self, name=None, path="Images/") -> str:
+        pass
+
+    @property
+    @abstractmethod
+    def chart_plot(self) -> Any:
+        pass
+
+    @abstractmethod
+    def give_chartdata(self) -> ChartData:
+        pass
+
+
+class ChartPlot(BaseChartPlot):
     def __init__(self, chartdata: ChartData) -> None:
         self.chartdata = chartdata
         self._ax = None
@@ -29,6 +49,13 @@ class PlotChart:
     @ax.setter
     def ax(self, value):
         self._ax = value
+
+    @property
+    def chart_plot(self):
+        return self
+
+    def give_chartdata(self) -> ChartData:
+        return self.chartdata
 
     def set_y_range(self, boundaries: tuple[float, float]):
         self._y_min = min(self._y_min, boundaries[0] * 0.9995, boundaries[1] * 0.9995)
@@ -166,10 +193,10 @@ class PlotChart:
         fplt.plot(x, y, style="-", ax=self.ax, color=color, width=thickness)
 
 
-class TwoChartPlot:
+class DoubleChartPlot(BaseChartPlot):
     def __init__(self, base_chartdata: ChartData, second_chartdata: ChartData) -> None:
-        self.base_plot = PlotChart(base_chartdata)
-        self.second_plot = PlotChart(second_chartdata)
+        self.base_plot = ChartPlot(base_chartdata)
+        self.second_plot = ChartPlot(second_chartdata)
 
         ax1, ax2 = fplt.create_plot(
             f"TimeFrame: {base_chartdata.chart.timeframe.value}", rows=2
@@ -181,6 +208,13 @@ class TwoChartPlot:
         self.second_plot.ax = ax2
         self.second_plot.plot()
 
+    @property
+    def chart_plot(self):
+        return self.base_plot
+
+    def give_chartdata(self) -> ChartData:
+        return self.base_plot.chartdata
+
     def show(self):
         self.base_plot.show()
 
@@ -188,4 +222,4 @@ class TwoChartPlot:
         return self.base_plot.save_image(name, path)
 
 
-Plot: TypeAlias = PlotChart | TwoChartPlot
+Plot: TypeAlias = ChartPlot | DoubleChartPlot

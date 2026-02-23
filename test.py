@@ -12,12 +12,10 @@ async def start_diver_backtest():
         one_h_diver,
         five_m_diver,
         cvd_diver_one_m_cvd,
-        coinex_4h_diver
+        coinex_4h_diver,
     )
-    import mt5_wrapper as mt5
 
-    # await five_m_diver.backtest(1000)
-    print(mt5.symbol_info("XAUUSD!"))
+    await forex_diver_one_m.backtest(1500, show_image=True)
 
 
 async def start_fibochoch_backtest():

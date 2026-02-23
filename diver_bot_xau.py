@@ -28,12 +28,10 @@ five_m = ForexDiverTradeConfig(
     chart=Chart("XAUUSD!", TimeFrame.five_minutes),
     second_chart=Chart("SOLUSD", TimeFrame.five_minutes),
     strategy=Divergence(5, 50, [], name="ForexDiver"),
-    bar_between_signals=5,
+    bar_between_signals=2,
     position_handler=(
         SlTpRatioForex(
-            ForexAgent(),
-            1.5,
-            stoploss_pip=10,
+            ForexAgent(), 1.5, stoploss_pip=10, long_trade=False, short_trade=False
         )
     ),
     merge_two_chart_time=True,

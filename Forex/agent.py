@@ -176,7 +176,7 @@ class ForexAgent(ExchangeAgent):
             logging.error(f"Opening position failed: {position}\n{mt5.last_error()=}")
             return None
         position.exchange_id = str(result.order)
-        position.spread = round(result.ask - result.bid,position.chart.precision)
+        position.spread = round(result.ask - result.bid, position.chart.precision)
         logging.info(f"Position Opened: {position}\n{result=}")
         return result.price
 

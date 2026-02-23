@@ -8,7 +8,7 @@ from ChartModule.models import (
     Signal,
 )
 from ChartModule.Indicators import SupportConditions
-from ChartModule.plot import PlotChart, Plot
+from ChartModule.plot import Plot
 from dataclasses import asdict, dataclass, field
 from datetime import datetime
 from abc import ABC, abstractmethod
@@ -52,6 +52,7 @@ class Trigger:
     volume: float = field(default=0.0)
     defined_time: datetime = field(default_factory=datetime.now)
     triggered_time: datetime | None = field(default=None)
+    exchange_id: str = field(default="", init=False)
 
     def __str__(self) -> str:
         return f"{asdict(self)}"
@@ -90,7 +91,7 @@ class Position:
     sended: bool = field(default=False, init=False)
 
     exchange_id: str = field(default="", init=False)
-    spread: float = field(default=0.0,init=False)
+    spread: float = field(default=0.0, init=False)
     msg_id: Any = field(default=None, init=False)
     current_step_index: int = field(default=0, init=False)
     closed: datetime | None = field(default=None, init=False)
@@ -159,7 +160,7 @@ class Position:
     def draw(self):
         if not self.plot:
             return
-        plot = self.plot if isinstance(self.plot, PlotChart) else self.plot.base_plot
+        plot = self.plot.chart_plot
         if self.closed:
             base_time = self.last_update if self.last_update else self.start_time
             plot.draw_sl_tp_lines(
@@ -183,10 +184,11 @@ class Position:
                 "#7fff86",
             )
         else:
-            start_of_line = self.start_time - self.chart.timeframe.time_delta * 10
+            end_of_line = self.plot.give_chartdata().candles[-1].time
+            start_of_line = end_of_line - self.chart.timeframe.time_delta * 10
             plot.draw_sl_tp_lines(
                 start_of_line,
-                self.start_time,
+                end_of_line,
                 self.takeprofit,
                 self.stoploss,
             )

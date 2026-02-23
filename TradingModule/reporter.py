@@ -53,7 +53,6 @@ class TelegramReporter:
             msg_list.append(f"🧾 Spread = {position.spread}")
 
         img_path = None
-        logger.critical(position.plot)
         if position.plot:
             position.draw()
             img_path = position.plot.save_image(position.source + str(position.chart))

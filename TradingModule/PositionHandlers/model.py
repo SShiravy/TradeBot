@@ -79,7 +79,7 @@ class PositionHandler(ABC):
         logger.debug(f"The New Position {position}")
         return position
 
-    def update_position(self, position: Position):
+    def modify_init_sl_tp(self, position: Position):
         sl = self.init_stoploss(position.entry_price, position.side)
         if sl != position.stoploss:
             position.stoploss = sl
@@ -95,7 +95,7 @@ class PositionHandler(ABC):
         self, position: Position, tick_prices: list[float]
     ) -> TradeCommand | None:
         if not position.confiremed:
-            self.update_position(position)
+            self.modify_init_sl_tp(position)
         if position.confiremed and not position.sended:
             commands.SendPositionSignal(position, self.exchange_agent)
         direction = position.side.factor()

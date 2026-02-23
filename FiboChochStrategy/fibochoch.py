@@ -12,7 +12,7 @@ from ChartModule.Indicators import (
     FiboLevels,
     SupportConditions,
 )
-from ChartModule.plot import PlotChart
+from ChartModule.plot import ChartPlot
 from TradingModule.trader_bot import TradeConfig
 from TradingModule.models import Position, Strategy
 from dataclasses import dataclass, field
@@ -361,7 +361,7 @@ class FiboChoch(Strategy):
 
     def draw(
         self,
-        plot: PlotChart,
+        plot: ChartPlot,
         signal: FiboChochSignal,
         draw_indicators: bool = True,
         *args,
@@ -387,7 +387,7 @@ class FiboChochConfig(TradeConfig):
 
         plot = None
         if self.send_signal:
-            plot = PlotChart(chartdata)
+            plot = ChartPlot(chartdata)
             self.strategy.draw(plot, signal, draw_indicators=True)
         position = await self.position_handler.generate_position(
             signal,

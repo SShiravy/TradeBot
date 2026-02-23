@@ -1,5 +1,5 @@
 from ChartModule.models import Candle, ChartData, Chart, MarketSide, IndicatorBaseModel
-from ChartModule.plot import PlotChart, TwoChartPlot
+from ChartModule.plot import ChartPlot, DoubleChartPlot
 from copy import copy as shallow_copy
 
 
@@ -43,5 +43,5 @@ class CVD(IndicatorBaseModel):
     def _forcast(self) -> MarketSide:
         return MarketSide.NEUTRAL
 
-    def plot(self, plot: PlotChart):
-        return TwoChartPlot(plot.chartdata, self.set(plot.chartdata.candles))
+    def plot(self, plot: ChartPlot):
+        return DoubleChartPlot(plot.chartdata, self.set(plot.chartdata.candles))

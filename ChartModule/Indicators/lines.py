@@ -5,7 +5,7 @@ from ChartModule.models import (
     IndicatorCandleSource,
 )
 from ChartModule.Indicators.models import SupportConditions
-from ChartModule.plot import PlotChart
+from ChartModule.plot import ChartPlot
 from copy import copy
 import numpy as np
 
@@ -35,7 +35,7 @@ class Line:
         else:
             return MarketSide.NEUTRAL
 
-    def plot(self, plot: PlotChart):
+    def plot(self, plot: ChartPlot):
         plot.draw_straight_line(self.start_candle, self.end_candle, self.source)
 
 
@@ -134,7 +134,7 @@ class TrendLine(IndicatorBaseModel):
     def _forcast(self) -> MarketSide:
         return self.values[-1].direction
 
-    def plot(self, plot: PlotChart):
+    def plot(self, plot: ChartPlot):
         plot.draw_straight_line(
             self.values[-1].start_candle, self.values[-1].end_candle, self.source
         )

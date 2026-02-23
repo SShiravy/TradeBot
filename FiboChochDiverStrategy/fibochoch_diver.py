@@ -3,7 +3,7 @@ from FiboChochStrategy.fibochoch import FiboChochSignal
 from TradingModule import Position, commands
 from TradingModule.models import PositionsReport
 from ChartModule.models import Signal, ChartData
-from ChartModule.plot import PlotChart
+from ChartModule.plot import ChartPlot
 from FiboChochStrategy import FiboChochConfig
 from DivergenceStrategy import DivergenceTradeConfig, DivergenceSignal
 from datetime import datetime, timedelta
@@ -104,7 +104,7 @@ class FiboChochDiver(FiboChochConfig):
 
         plot = None
         if self.send_signal:
-            plot = PlotChart(chartdata)
+            plot = ChartPlot(chartdata)
             self.strategy.draw(plot, signal, draw_indicators=True)
 
         position = await self.position_handler.generate_position(
@@ -191,7 +191,7 @@ class FiboChochDiver(FiboChochConfig):
             agent.index += candle_delay
             logger.debug(f"{candle_delay} Candle next")
 
-        plot = PlotChart(agent.chartdata)  # type: ignore
+        plot = ChartPlot(agent.chartdata)  # type: ignore
         for signal in all_signals:
             self.strategy.draw(plot, signal)
 

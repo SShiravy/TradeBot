@@ -1,5 +1,5 @@
 from ChartModule.models import IndicatorBaseModel, TickPrice, MarketSide
-from ChartModule.plot import PlotChart
+from ChartModule.plot import ChartPlot
 from datetime import timedelta, datetime
 from enum import Enum
 import numpy as np
@@ -80,7 +80,7 @@ class FibonacciRetracement(IndicatorBaseModel):
         else:
             return MarketSide.BEARISH
 
-    def plot(self, plot: PlotChart, end_time: datetime | None = None):
+    def plot(self, plot: ChartPlot, end_time: datetime | None = None):
         end_time = end_time if end_time else self.end_tick.time + timedelta(minutes=5)
         for level in self.fibonacci_levels:
             end_price = self.values[self.fibonacci_levels.index(level)]

@@ -4,7 +4,7 @@ from BacktestModule.dummy_agent import DummyAgent
 from TradingModule.PositionHandlers.model import PositionHandler
 from ChartModule.models import Chart, Candle, Signal, ChartData
 from TradingModule.models import Strategy
-from ChartModule.plot import PlotChart
+from ChartModule.plot import ChartPlot
 from datetime import datetime, timezone, timedelta
 from dataclasses import dataclass, field
 from copy import copy
@@ -26,7 +26,7 @@ class TradeConfig:
     bar_between_signals: int = field(default=2)
     send_signal: bool = field(default=True)
 
-    n_candle_check: int = field(default=100)
+    n_candle_check: int = field(default=1000)
 
     heikingashi_chartdata: bool = field(default=False)
 
@@ -71,7 +71,7 @@ class TradeConfig:
 
         plot = None
         if self.send_signal:
-            plot = PlotChart(chartdata)
+            plot = ChartPlot(chartdata)
             self.strategy.draw(plot, signal, draw_indicators=True)
 
         position = await self.position_handler.generate_position(signal)
@@ -128,7 +128,7 @@ class TradeConfig:
                 )
             logger.debug(f"{candle_delay} Candle next")
 
-        plot = PlotChart(agent.chartdata)  # type: ignore
+        plot = ChartPlot(agent.chartdata)  # type: ignore
         for signal in all_signals:
             self.strategy.draw(plot, signal)
         for pos in all_positions:

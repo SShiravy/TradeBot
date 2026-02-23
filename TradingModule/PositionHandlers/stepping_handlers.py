@@ -1,10 +1,15 @@
-from ChartModule.models import Signal
+from datetime import timedelta
+from ChartModule.models import MarketSide, Signal
 from ChartModule.plot import Plot
 from TradingModule.PositionHandlers.simple_handlers import SimpleCrypto, SimpleForex
-from TradingModule.models import ExchangeAgent, Position, Trigger
+from TradingModule.models import ExchangeAgent, OrderSide, Position, Trigger
 from TradingModule.commands import TradeCommand
 from TradingModule import commands
 import numpy as np
+import logging
+
+
+logger = logging.getLogger("PositionHandler")
 
 
 class SteppingCrypto(SimpleCrypto):
@@ -20,24 +25,6 @@ class SteppingCrypto(SimpleCrypto):
         long_trade=True,
         short_trade=True,
     ) -> None:
-        super().__init__(
-            exchange_agent,
-            initial_volume,
-            leverage,
-            stoploss_percent,
-            targets_percents[0],
-            long_trade=long_trade,
-            short_trade=short_trade,
-        )
-        if isinstance(targets_volumes_percents, list) and len(
-            targets_volumes_percents
-        ) != len(targets_percents):
-            raise ValueError(
-                f"targets_volumes_percents param must be \
-                             float or list[float] with same size as targets_percents\
-                             {len(targets_volumes_percents)} != {len(targets_percents)}"
-            )
-
         if isinstance(targets_volumes_percents, float | int):
             targets_volumes_percents = [float(targets_volumes_percents)] * len(
                 targets_percents
@@ -47,6 +34,23 @@ class SteppingCrypto(SimpleCrypto):
             raise ValueError(
                 f"sum of {targets_volumes_percents} param must be 1 {sum(targets_volumes_percents)}"
             )
+
+        if len(targets_volumes_percents) != len(targets_percents):
+            raise ValueError(
+                f"targets_volumes_percents param must be \
+                             float or list[float] with same size as targets_percents\
+                             {len(targets_volumes_percents)} != {len(targets_percents)}"
+            )
+
+        super().__init__(
+            exchange_agent,
+            initial_volume,
+            leverage,
+            stoploss_percent,
+            targets_percents[0],
+            long_trade=long_trade,
+            short_trade=short_trade,
+        )
 
         self.targets_percents = targets_percents
         self.targets_volumes_percents = targets_volumes_percents
@@ -58,7 +62,7 @@ class SteppingCrypto(SimpleCrypto):
             steps.append(
                 Trigger(
                     price=abs(target / 100 + pos.side.factor()) * pos.entry_price,
-                    volume=volume,
+                    volume=round(volume * self.initial_volume),
                 )
             )
         pos.steps = steps
@@ -71,26 +75,48 @@ class SteppingCrypto(SimpleCrypto):
         *args,
         **kwargs,
     ) -> Position:
-        # TODO: I can add sl_base_price: float | None = None param
-        pos = await super().generate_position(
-            signal, entry_price, plot, *args, **kwargs
-        )
-        self.set_steps(pos)
-        return pos
+        real_trade = False
+        if signal.side is MarketSide.BEARISH:
+            side = OrderSide.SELL
+            if self.short_trade:
+                real_trade = True
+        else:  # signal.side is MarketSide.BULLISH:
+            side = OrderSide.BUY
+            if self.long_trade:
+                real_trade = True
+        if entry_price is None:
+            entry_price = signal.candle.close
 
-    def update_position(self, position: Position):
-        # TODO: implement here
-        pass
+        precision = signal.chart.precision
+
+        position = Position(
+            signal.chart,
+            side,
+            entry_price,
+            self.initial_volume,
+            round(self.init_stoploss(entry_price, side), precision),
+            round(abs(self.targets_percents[-1] / 100 + side.factor()) * entry_price),
+            self.leverage,
+            signal.candle.time + timedelta(seconds=2),
+            signal.source,
+            real_trade=False,
+            plot=plot,
+        )
+        await commands.OpenPosition(position, self.exchange_agent).execute()
+        self.open_positions.append(position)
+        logger.info(f"New Position on {position.chart}")
+        logger.debug(f"The New Position {position}")
+        self.set_steps(position)
+
+        return position
 
     def handler(
         self, position: Position, tick_prices: list[float]
     ) -> TradeCommand | None:
-        # TODO: remember to uncomment this part after checking
-
         if not position.confiremed:
-            self.update_position(position)
+            self.modify_init_sl_tp(position)
         if position.confiremed and not position.sended:
-            commands.SendPositionSignal(position,self.exchange_agent)
+            commands.SendPositionSignal(position, self.exchange_agent)
 
         direction = position.side.factor()
         ticks = np.array(tick_prices) * direction
@@ -107,58 +133,57 @@ class SteppingCrypto(SimpleCrypto):
             position, self.exchange_agent, position.current_step.volume
         )
         position.go_next_step()
-        
 
         # if self.trail_stop: # TODO: complete here
         #     commands.TrailStoploss(position,self.exchange_agent,position.steps[position.curr])
 
 
-class SteppingForex(SimpleForex):
-    def __init__(
-        self,
-        exchange_agent: ExchangeAgent,
-        initial_volume: float = 0.01,
-        stoploss_pip: int = 20,
-        takeprofit_pip: int = 20,
-        riskfree_trigger_pip: int = 10,
-        long_trade: bool = True,
-        short_trade: bool = True,
-    ) -> None:
-        super().__init__(
-            exchange_agent,
-            initial_volume,
-            stoploss_pip,
-            takeprofit_pip,
-            long_trade,
-            short_trade,
-        )
-        self.riskfree_trigger_pip = riskfree_trigger_pip / 10
+# class SteppingForex(SimpleForex):
+#     def __init__(
+#         self,
+#         exchange_agent: ExchangeAgent,
+#         initial_volume: float = 0.01,
+#         stoploss_pip: int = 20,
+#         takeprofit_pip: int = 20,
+#         riskfree_trigger_pip: int = 10,
+#         long_trade: bool = True,
+#         short_trade: bool = True,
+#     ) -> None:
+#         super().__init__(
+#             exchange_agent,
+#             initial_volume,
+#             stoploss_pip,
+#             takeprofit_pip,
+#             long_trade,
+#             short_trade,
+#         )
+#         self.riskfree_trigger_pip = riskfree_trigger_pip / 10
 
-    def give_trigger_price(self, position: Position) -> float:
-        if position.stoploss == position.entry_price:
-            # when already riskfree triggered
-            return position.takeprofit
-        else:
-            return (
-                self.riskfree_trigger_pip * position.side.factor()
-                + position.entry_price
-            )
+#     def give_trigger_price(self, position: Position) -> float:
+#         if position.stoploss == position.entry_price:
+#             # when already riskfree triggered
+#             return position.takeprofit
+#         else:
+#             return (
+#                 self.riskfree_trigger_pip * position.side.factor()
+#                 + position.entry_price
+#             )
 
-    def handler(
-        self, position: Position, tick_prices: list[float]
-    ) -> TradeCommand | None:
-        direction = position.side.factor()
-        res = super().handler(position, tick_prices)
-        if res:
-            return res
-        direction = position.side.factor()
+#     def handler(
+#         self, position: Position, tick_prices: list[float]
+#     ) -> TradeCommand | None:
+#         direction = position.side.factor()
+#         res = super().handler(position, tick_prices)
+#         if res:
+#             return res
+#         direction = position.side.factor()
 
-        ticks = np.array(tick_prices) * direction
-        trigger = self.give_trigger_price(position) * direction
+#         ticks = np.array(tick_prices) * direction
+#         trigger = self.give_trigger_price(position) * direction
 
-        cross = ticks >= trigger
+#         cross = ticks >= trigger
 
-        if cross.any():
-            return commands.TrailStoploss(
-                position, self.exchange_agent, position.entry_price
-            )
+#         if cross.any():
+#             return commands.TrailStoploss(
+#                 position, self.exchange_agent, position.entry_price
+#             )

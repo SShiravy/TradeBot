@@ -17,12 +17,12 @@ from config import settings
 coinex_agent = CoinexAgent(settings.COINEX_ACCESS_ID, settings.COINEX_SECRET_KEY)
 
 five_m_diver = CoinexDiverTradeConfig(
-    chart=Chart("SOLUSDT", TimeFrame.five_minutes),
+    chart=Chart("ETHUSDT", TimeFrame.five_minutes),
     second_chart=Chart("BTCUSDT", TimeFrame.five_minutes),
     strategy=Divergence(5, 500, [], name="CoinexDiver", inverse_diver_long=True),
     position_handler=SlTpRatioCrypto(
         coinex_agent,
-        ratio=2,
+        ratio=1.5,
         stoploss_percent=0.5,
         initial_volume=10,
         leverage=10,
@@ -79,7 +79,6 @@ forex_diver_one_m = ForexDiverTradeConfig(
         ForexAgent(),
         2,
         stoploss_pip=10,
-        riskfree_trigger_ratio=0.0,
         long_trade=False,
         short_trade=False,
     ),
