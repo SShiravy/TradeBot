@@ -38,7 +38,7 @@ class TradeCommand(ABC):
         logger.debug(self)
 
     def __str__(self) -> str:
-        return f"{self.__class__.__name__} {self.status.value} on {self.position.chart}"
+        return f"{self.__class__.__name__} {self.status.value} on {self.position.chart}| report:{self.report}"
 
     def __record(self, command, record: dict):
         n = record.get(command.__class__.__name__, 0)

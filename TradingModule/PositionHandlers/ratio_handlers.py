@@ -102,7 +102,7 @@ class SlTpRatioCrypto(PositionHandler):
         logger.debug(f"The New Position {position}")
         return position
 
-    def update_position(self, position: Position):
+    def modify_init_sl_tp(self, position: Position):
         sl_percent = (
             abs(position.entry_price - position.stoploss) / position.entry_price
         )
@@ -224,7 +224,7 @@ class SlTpRatioForex(PositionHandler):
         position.in_forex = True
         return position
 
-    def update_position(self, position: Position):
+    def modify_init_sl_tp(self, position: Position):
         sl_pip = abs(position.entry_price - position.stoploss)
         tp = round(
             abs(position.entry_price + position.side.factor() * sl_pip * self.ratio),
