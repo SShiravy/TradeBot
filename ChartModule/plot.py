@@ -197,7 +197,12 @@ class ChartPlot(BaseChartPlot):
 
 
 class DoubleChartPlot(BaseChartPlot):
-    def __init__(self, base_chartdata: ChartData, second_chartdata: ChartData, plot_n_candles: int = 100) -> None:
+    def __init__(
+        self,
+        base_chartdata: ChartData,
+        second_chartdata: ChartData,
+        plot_n_candles: int = 100,
+    ) -> None:
         self.base_plot = ChartPlot(base_chartdata, plot_n_candles=plot_n_candles)
         self.second_plot = ChartPlot(second_chartdata, plot_n_candles=plot_n_candles)
         self.plot_n_candles = plot_n_candles

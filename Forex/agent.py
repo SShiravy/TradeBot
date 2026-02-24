@@ -100,13 +100,15 @@ class ForexAgent(ExchangeAgent):
                     f"Market seems closed for {chart} | last candle time: {self.last_checked_candle.time}"
                 )
                 self.market_state = MarketState.CLOSED
-            
+
             self.last_checked_candle = data.candles[-1]
-        
+
         logger.debug(f"Market State for {chart}: {self.market_state}")
-        logger.info(f"\n|last_checked:   {self.last_checked_time}\n|now:            {now}\n|last_candle:    {self.last_checked_candle.time}\n|current_candle: {data.candles[-1].time}")
+        logger.info(
+            f"\n|last_checked:   {self.last_checked_time}\n|now:            {now}\n|last_candle:    {self.last_checked_candle.time}\n|current_candle: {data.candles[-1].time}"
+        )
         return self.market_state.wait_seconds()
-    
+
     def get_chartdata(self, chart: Chart, n_bars: int = 100) -> ChartData | None:
         if not self.prepare_chart(chart):
             return None

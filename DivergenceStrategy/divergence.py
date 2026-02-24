@@ -38,6 +38,7 @@ class Divergence(Strategy):
         inverse_diver_short: bool = False,
         long_second_line_validation: bool = True,
         short_second_line_validation: bool = True,
+        body_candle: bool = False,
     ) -> None:
         super().__init__(
             name,
@@ -51,6 +52,7 @@ class Divergence(Strategy):
         self.inverse_diver_short = inverse_diver_short
         self.long_second_line_validation = long_second_line_validation
         self.short_second_line_validation = short_second_line_validation
+        self.body_candle = body_candle
 
     @classmethod
     def find_divergence(
@@ -92,7 +94,9 @@ class Divergence(Strategy):
             return None
         res = self.find_divergence(
             TrendLine(
-                IndicatorCandleSource.Low,
+                IndicatorCandleSource.Bottom
+                if self.body_candle
+                else IndicatorCandleSource.Low,
                 self.min_step,
                 self.max_step,
                 support_conditions=self.long_support_conditions,
@@ -122,7 +126,9 @@ class Divergence(Strategy):
             return None
         res = self.find_divergence(
             TrendLine(
-                IndicatorCandleSource.High,
+                IndicatorCandleSource.Top
+                if self.body_candle
+                else IndicatorCandleSource.High,
                 self.min_step,
                 self.max_step,
                 support_conditions=self.short_support_conditions,

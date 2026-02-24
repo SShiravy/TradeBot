@@ -73,7 +73,7 @@ coinex_4h_diver = CoinexDiverTradeConfig(
 forex_diver_one_m = ForexDiverTradeConfig(
     chart=Chart("XAUUSD!", TimeFrame.one_minute),
     second_chart=Chart("SOLUSD", TimeFrame.one_minute),
-    strategy=Divergence(5, 200, [], name="ForexDiver"),
+    strategy=Divergence(5, 200, [], name="ForexDiver", body_candle=True),
     bar_between_signals=2,
     position_handler=SlTpRatioForex(
         ForexAgent(),

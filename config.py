@@ -11,6 +11,7 @@ class Settings(BaseSettings):
     TELEGRAM_BOT_TOKEN: str
     TELEGRAM_CHANNEL_ID: str
     TELEGRAM_REPORT_CHANNEL: int
+    TELEGRAM_BACKTEST_REPORT_CHANNEL: str
 
     # Coinex Exchange
     COINEX_ACCESS_ID: str

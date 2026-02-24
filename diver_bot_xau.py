@@ -32,10 +32,7 @@ five_m = ForexDiverTradeConfig(
     bar_between_signals=2,
     position_handler=(
         SlTpRatioForex(
-            ForexAgent(), 1.5,
-            stoploss_pip=10, 
-            long_trade=False, 
-            short_trade=False
+            ForexAgent(), 1.5, stoploss_pip=10, long_trade=False, short_trade=False
         )
     ),
     merge_two_chart_time=True,

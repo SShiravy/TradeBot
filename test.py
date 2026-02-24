@@ -18,6 +18,12 @@ async def start_diver_backtest():
     await forex_diver_one_m.backtest(1500, show_image=True)
 
 
+async def start_diver_crypto_backtest_pack():
+    from BacktestModule.crypto_diver_pack import start_diver_crypto_backtest_pack
+
+    await start_diver_crypto_backtest_pack()
+
+
 async def start_fibochoch_backtest():
     from FiboChochStrategy.backtest_configs import one_m_forex, coinex_five_m
 
@@ -33,6 +39,7 @@ async def start_fich_diver_backtest():
 if __name__ == "__main__":
     import asyncio
 
+    # asyncio.run(start_diver_crypto_backtest_pack())
     asyncio.run(start_diver_backtest())
     # asyncio.run(start_fibochoch_backtest())
     # asyncio.run(start_fich_diver_backtest())
