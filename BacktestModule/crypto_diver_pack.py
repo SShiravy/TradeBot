@@ -19,7 +19,7 @@ coinex_agent = CoinexAgent(settings.COINEX_ACCESS_ID, settings.COINEX_SECRET_KEY
 # symbol 3x , ratio 3x , body candle 2x , sl percent 2x
 
 param_grid = {
-    "symbol": ["SOLUSDT", "LINKUSDT", "SONICUSDT"],
+    "symbol": ["SOLUSDT", "LINKUSDT", "SONICUSDT", "ETHUSDT", "INJUSDT", "RENDERUSDT"],
     "ratio": [1, 1.5, 2],
     "body_candle": [True, False],
     "sl_percent": [0.25, 0.5],
@@ -67,6 +67,13 @@ async def start_diver_crypto_backtest_pack(send_report=False):
         res = await five_m_diver.backtest(1000, show_image=False)
         overal_report = PositionsReport.give_overall_report(copy(res[-2]))
         final_report = str(overal_report) + "\n" + f"Params:\n{params_set}"
+        pnl = overal_report.pnl
+        if pnl > 0:
+            final_report = "🟢 PROFITABLE 🟢\n" + final_report
+        elif pnl < 0:
+            final_report = "🔴 NOT PROFITABLE 🔴\n" + final_report
+        else:
+            final_report = "⚪ BREAKEVEN ⚪\n" + final_report
 
         if send_report:
             await TelegramReporter().send_msg(

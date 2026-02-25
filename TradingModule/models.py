@@ -316,9 +316,9 @@ class PositionsReport:
         return list(reports_dict.values())
 
     @classmethod
-    def give_overall_report(cls, all_reports: list):
+    def give_overall_report(cls, all_reports: list) -> "PositionsReport":
         report = sum(all_reports)
-        return report
+        return report  # type: ignore
 
     def __str__(self) -> str:
         report_msg = [

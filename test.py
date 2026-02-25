@@ -21,7 +21,7 @@ async def start_diver_backtest():
 async def start_diver_crypto_backtest_pack():
     from BacktestModule.crypto_diver_pack import start_diver_crypto_backtest_pack
 
-    await start_diver_crypto_backtest_pack()
+    await start_diver_crypto_backtest_pack(send_report=True)
 
 
 async def start_fibochoch_backtest():
@@ -39,8 +39,8 @@ async def start_fich_diver_backtest():
 if __name__ == "__main__":
     import asyncio
 
-    # asyncio.run(start_diver_crypto_backtest_pack())
-    asyncio.run(start_diver_backtest())
+    asyncio.run(start_diver_crypto_backtest_pack())
+    # asyncio.run(start_diver_backtest())
     # asyncio.run(start_fibochoch_backtest())
     # asyncio.run(start_fich_diver_backtest())
 
