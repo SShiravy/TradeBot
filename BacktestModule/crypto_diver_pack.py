@@ -16,13 +16,11 @@ import logging
 coinex_agent = CoinexAgent(settings.COINEX_ACCESS_ID, settings.COINEX_SECRET_KEY)
 
 
-# symbol 3x , ratio 3x , body candle 2x , sl percent 2x
-
 param_grid = {
     "symbol": ["SOLUSDT", "LINKUSDT", "SONICUSDT", "ETHUSDT", "INJUSDT", "RENDERUSDT"],
-    "ratio": [1, 1.5, 2],
+    "ratio": [1],
     "body_candle": [True, False],
-    "sl_percent": [0.25, 0.5],
+    "sl_percent": [0.25],
 }
 
 all_params_set = [

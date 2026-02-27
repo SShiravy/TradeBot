@@ -115,9 +115,10 @@ class Position:
             triggered_time if triggered_time else datetime.now()
         )
         if self.current_step_index >= len(self.steps) - 1:
-            return
+            self.closed = self.current_step.triggered_time
+            return False
         self.current_step_index += 1
-        self.takeprofit = self.current_step.price
+        return True
 
     def update_pnl(self, executed_price: float, volume: float | None = None):
         """
@@ -162,35 +163,39 @@ class Position:
             return
         plot = self.plot.chart_plot
         if self.closed:
-            base_time = self.last_update if self.last_update else self.start_time
-            plot.draw_sl_tp_lines(
-                base_time,
-                self.closed,
-                self.takeprofit,
-                self.stoploss,
-            )
+            end_of_line = self.closed
+            start_of_line = self.last_update if self.last_update else self.start_time
             plot.draw_line(
                 self.start_time,
                 self.entry_price,
-                base_time,
+                start_of_line,
                 self.stoploss,
                 "#FFD562",
             )
             plot.draw_line(
                 self.start_time,
                 self.entry_price,
-                base_time,
+                start_of_line,
                 self.takeprofit,
                 "#7fff86",
             )
         else:
             end_of_line = self.plot.give_chartdata().candles[-1].time
             start_of_line = end_of_line - self.chart.timeframe.time_delta * 10
-            plot.draw_sl_tp_lines(
+
+        plot.draw_sl_tp_lines(
+            start_of_line,
+            end_of_line,
+            self.takeprofit,
+            self.stoploss,
+        )
+        for step in self.steps:
+            plot.draw_line(
                 start_of_line,
-                end_of_line,
-                self.takeprofit,
-                self.stoploss,
+                step.price,
+                step.triggered_time if step.triggered_time else end_of_line,
+                step.price,
+                "#00622E",
             )
         plot.set_y_range((self.stoploss, self.takeprofit))
 
