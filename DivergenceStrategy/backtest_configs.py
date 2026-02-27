@@ -8,7 +8,7 @@ from TradingModule.PositionHandlers import (
     RiskFreeCrypto,
     SlTpRatioCrypto,
     SlTpRatioForex,
-    SteppingCrypto,
+    SteppingForex,
 )
 from config import settings
 # Coinex ----------------------------------------------------------------
@@ -33,21 +33,21 @@ five_m_diver = CoinexDiverTradeConfig(
     heikingashi_chartdata=True,
 )
 
-one_h_diver = CoinexDiverTradeConfig(
-    chart=Chart("SOLUSDT", TimeFrame.one_hour),
-    second_chart=Chart("BTCUSDT", TimeFrame.one_hour),
-    strategy=Divergence(5, 500, name="CoinexDiver", inverse_diver_long=True),
-    position_handler=SteppingCrypto(
-        coinex_agent,
-        stoploss_percent=5,
-        initial_volume=10,
-        leverage=10,
-        long_trade=False,
-        short_trade=False,
-    ),
-    agent=coinex_agent,
-    heikingashi_chartdata=True,
-)
+# one_h_diver = CoinexDiverTradeConfig(
+#     chart=Chart("SOLUSDT", TimeFrame.one_hour),
+#     second_chart=Chart("BTCUSDT", TimeFrame.one_hour),
+#     strategy=Divergence(5, 500, name="CoinexDiver", inverse_diver_long=True),
+#     position_handler=SteppingCrypto(
+#         coinex_agent,
+#         stoploss_percent=5,
+#         initial_volume=10,
+#         leverage=10,
+#         long_trade=False,
+#         short_trade=False,
+#     ),
+#     agent=coinex_agent,
+#     heikingashi_chartdata=True,
+# )
 
 
 coinex_4h_diver = CoinexDiverTradeConfig(
@@ -75,10 +75,9 @@ forex_diver_one_m = ForexDiverTradeConfig(
     second_chart=Chart("SOLUSD", TimeFrame.one_minute),
     strategy=Divergence(5, 200, [], name="ForexDiver", body_candle=True),
     bar_between_signals=2,
-    position_handler=SlTpRatioForex(
+    position_handler=SteppingForex(
         ForexAgent(),
-        2,
-        stoploss_pip=10,
+        initial_volume=0.03,
         long_trade=False,
         short_trade=False,
     ),
