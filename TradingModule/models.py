@@ -112,7 +112,7 @@ class Position:
 
     def go_next_step(self, triggered_time: datetime | None = None):
         self.current_step.triggered_time = (
-            triggered_time if triggered_time else datetime.now()
+            triggered_time if triggered_time else datetime.now(timezone.utc)
         )
         if self.current_step_index >= len(self.steps) - 1:
             self.closed = self.current_step.triggered_time
@@ -193,7 +193,7 @@ class Position:
             plot.draw_line(
                 start_of_line,
                 step.price,
-                step.triggered_time if step.triggered_time else end_of_line,
+                end_of_line, # step.triggered_time if step.triggered_time else end_of_line,
                 step.price,
                 "#00622E",
             )

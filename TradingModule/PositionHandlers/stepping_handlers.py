@@ -7,7 +7,6 @@ from TradingModule.commands import TradeCommand
 from TradingModule import commands
 import numpy as np
 import logging
-from copy import deepcopy
 
 
 logger = logging.getLogger("PositionHandler")
@@ -45,7 +44,7 @@ class SteppingForex(SimpleForex):
             exchange_agent,
             initial_volume,
             stoploss_pip,
-            targets_pip[0],
+            targets_pip[-1],
             long_trade=long_trade,
             short_trade=short_trade,
         )
@@ -147,8 +146,9 @@ class SteppingForex(SimpleForex):
         if ticks[idx] <= sl:
             return commands.StopLoss(position, self.exchange_agent)
 
-        position.update_pnl(step.price, step.volume)
-        position.go_next_step()
+        # position.update_pnl(step.price, step.volume)
+        logger.info(f"Step hit for position on {position.chart} with price {step.price} and volume {step.volume}")
+        return commands.TriggerStep(position=position, exchange=self.exchange_agent,trigger=step)
 
         # if self.trail_stop: # TODO: complete here
         #     commands.TrailStoploss(position,self.exchange_agent,position.steps[position.curr])

@@ -38,12 +38,27 @@ async def start_fich_diver_backtest():
 if __name__ == "__main__":
     import asyncio
 
-    asyncio.run(start_diver_crypto_backtest_pack())
-    # asyncio.run(start_diver_backtest())
+    # asyncio.run(start_diver_crypto_backtest_pack())
+    asyncio.run(start_diver_backtest())
     # asyncio.run(start_fibochoch_backtest())
     # asyncio.run(start_fich_diver_backtest())
 
     # new_backtest()
+
+
+    # import requests
+    # from datetime import datetime
+    
+    # import requests
+    # from datetime import datetime
+    # url = 'https://publicapi.ramzinex.com/exchange/api/v1.0/exchange/chart/tv/history'
+    # params = {'symbol':'USDTIRR','resolution':1, 'from':int(datetime.now().timestamp())-10000, 'to':int(datetime.now().timestamp())}
+    # print(int(datetime.now().timestamp()))
+    # payload = {}
+    # headers = {}
+    # response = requests.request('GET', url, headers=headers, data=payload, params=params)
+    # print(response.text) 
+
 
 # TODO: position handler with MA and control tp sl with it
 # TODO: multiple loss in a row for long and short handler

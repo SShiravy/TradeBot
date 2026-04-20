@@ -1,4 +1,5 @@
 from TradingModule import Position, ExchangeAgent
+from TradingModule.models import Trigger
 from TradingModule.reporter import TelegramReporter
 from datetime import datetime, timezone
 from abc import ABC, abstractmethod
@@ -274,4 +275,25 @@ class TakeProfit(TradeCommand):
     def command(self, time) -> bool:
         self.position.closed = time
         self.position.update_pnl(self.position.takeprofit)
+        return True
+
+
+
+class TriggerStep(TradeCommand):
+    def __init__(
+        self,
+        position: Position,
+        exchange: ExchangeAgent,
+        trigger:Trigger,
+        n_attempts: int = 2,
+        exec_price=None,
+        report=True,
+    ):
+        super().__init__(position, exchange, n_attempts, report)
+        self.exec_price = exec_price
+        self.trigger = trigger
+
+    def command(self, time) -> bool:
+        self.position.update_pnl(self.trigger.price)
+        self.position.go_next_step(time)
         return True

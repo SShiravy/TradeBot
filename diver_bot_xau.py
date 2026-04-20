@@ -5,7 +5,6 @@ from TradingModule.trader_bot import TraderBot
 from DivergenceStrategy.divergence import Divergence
 from custom_logger import CustomLogger
 import asyncio
-import logging
 
 
 CustomLogger(log_file=True, file_log_name="ForexDiverBot")
