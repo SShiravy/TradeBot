@@ -18,7 +18,7 @@ class SteppingForex(SimpleForex):
         exchange_agent: ExchangeAgent,
         initial_volume: float = 0.03,
         stoploss_pip: int = 20,
-        targets_pip: list[int] = [5, 10, 20],
+        targets_pip: list[int] = [50, 100, 200],
         targets_volumes_lot: float | list[float] = [0.01, 0.01, 0.01],
         trail_stop: bool = True,
         long_trade=True,
@@ -49,7 +49,7 @@ class SteppingForex(SimpleForex):
             short_trade=short_trade,
         )
 
-        self.targets_pip = targets_pip
+        self.targets_pip = [tp/10 for tp in targets_pip]
         self.targets_volumes_lot = targets_volumes_lot
         self.trail_stop = trail_stop
 
@@ -58,7 +58,8 @@ class SteppingForex(SimpleForex):
         for target, volume in zip(self.targets_pip, self.targets_volumes_lot):
             steps.append(
                 Trigger(
-                    price=pos.entry_price + pos.side.factor() * target,
+                    price=round(pos.entry_price + target * pos.side.factor(),
+                                pos.chart.precision),
                     volume=volume,
                 )
             )
@@ -72,10 +73,10 @@ class SteppingForex(SimpleForex):
                 pos.side,
                 pos.entry_price,
                 step.volume,
-                pos.stoploss,
-                step.price,
-                pos.leverage,
-                source="TakeProfit",
+                stoploss=pos.stoploss,
+                takeprofit=step.price,
+                leverage=pos.leverage,
+                source=f"{pos.source}|TakeProfit",
                 real_trade=True,
             )
             await commands.OpenPosition(step_position, self.exchange_agent).execute()
@@ -123,14 +124,15 @@ class SteppingForex(SimpleForex):
         self.set_steps(position)
         if real_trade:
             await self.open_steps_position(position)
-
         return position
+
 
     def handler(
         self, position: Position, tick_prices: list[float]
     ) -> TradeCommand | None:
         if not position.confiremed:
             self.modify_init_sl_tp(position)
+        # TODO: what about modifing steps?
         if position.confiremed and not position.sended:
             commands.SendPositionSignal(position, self.exchange_agent)
 
@@ -146,7 +148,6 @@ class SteppingForex(SimpleForex):
         if ticks[idx] <= sl:
             return commands.StopLoss(position, self.exchange_agent)
 
-        # position.update_pnl(step.price, step.volume)
         logger.info(f"Step hit for position on {position.chart} with price {step.price} and volume {step.volume}")
         return commands.TriggerStep(position=position, exchange=self.exchange_agent,trigger=step)
 

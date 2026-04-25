@@ -294,6 +294,6 @@ class TriggerStep(TradeCommand):
         self.trigger = trigger
 
     def command(self, time) -> bool:
-        self.position.update_pnl(self.trigger.price)
+        self.position.update_pnl(self.trigger.price,self.trigger.volume)
         self.position.go_next_step(time)
         return True

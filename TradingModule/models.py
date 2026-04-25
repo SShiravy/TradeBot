@@ -122,7 +122,7 @@ class Position:
 
     def update_pnl(self, executed_price: float, volume: float | None = None):
         """
-        calculate pnl based on volume and percent
+        calculate pnl based on volume and closed price
         if argument volume is None, then whole volume will considered
         """
         if self.volume <= 0:
@@ -189,13 +189,14 @@ class Position:
             self.takeprofit,
             self.stoploss,
         )
-        for step in self.steps:
+        for step in self.steps[:-1]:
             plot.draw_line(
                 start_of_line,
                 step.price,
-                end_of_line, # step.triggered_time if step.triggered_time else end_of_line,
+                step.triggered_time if step.triggered_time else end_of_line, # end_of_line,
                 step.price,
-                "#00622E",
+                "#00B957",
+                width=2
             )
         plot.set_y_range((self.stoploss, self.takeprofit))
 

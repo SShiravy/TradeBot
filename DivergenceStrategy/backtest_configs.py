@@ -71,23 +71,25 @@ coinex_4h_diver = CoinexDiverTradeConfig(
 
 
 forex_diver_one_m = ForexDiverTradeConfig(
-    chart=Chart("XAUUSD!", TimeFrame.one_minute),
+    chart=Chart("XAUUSD", TimeFrame.one_minute),
     second_chart=Chart("SOLUSD", TimeFrame.one_minute),
     strategy=Divergence(5, 200, [], name="ForexDiver", body_candle=True),
     bar_between_signals=2,
     position_handler=SteppingForex(
         ForexAgent(),
+        targets_pip=[20,40,60],
+        stoploss_pip=30,
         initial_volume=0.03,
         long_trade=False,
         short_trade=False,
     ),
-    merge_two_chart_time=True,
-    heikingashi_chartdata=True,
+    merge_two_chart_time=False,
+    heikingashi_chartdata=False,
 )
 
 
 forex_diver_five_m = ForexDiverTradeConfig(
-    chart=Chart("XAUUSD!", TimeFrame.five_minutes),
+    chart=Chart("XAUUSD", TimeFrame.five_minutes),
     second_chart=Chart("SOLUSD", TimeFrame.five_minutes),
     strategy=Divergence(5, 50, [], name="ForexDiver"),
     bar_between_signals=5,

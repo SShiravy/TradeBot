@@ -34,7 +34,7 @@ class ForexAgent(ExchangeAgent):
         if not hasattr(cls, "_instance"):
             cls._instance = object.__new__(cls)
             if not mt5.initialize(
-                r"C:\Program Files\Opo group MetaTrader 5\terminal64.exe"
+                r"C:\Program Files\Otet Group MT5 Terminal\terminal64.exe"
             ):
                 raise RuntimeError("MT5 initialize failed")
             logger.info("Initialized")
