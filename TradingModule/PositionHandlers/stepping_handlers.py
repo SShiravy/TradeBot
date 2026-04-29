@@ -1,7 +1,7 @@
 from datetime import timedelta
 from ChartModule.models import MarketSide, Signal
 from ChartModule.plot import Plot
-from TradingModule.PositionHandlers.simple_handlers import SimpleCrypto, SimpleForex
+from TradingModule.PositionHandlers.simple_handlers import SimpleForex
 from TradingModule.models import ExchangeAgent, OrderSide, Position, Trigger
 from TradingModule.commands import TradeCommand
 from TradingModule import commands
@@ -120,7 +120,7 @@ class SteppingForex(SimpleForex):
         logger.info(f"New Position on {position.chart}")
         logger.debug(f"The New Position {position}")
         position.in_forex = True
-
+        
         self.set_steps(position)
         if real_trade:
             await self.open_steps_position(position)
@@ -136,7 +136,11 @@ class SteppingForex(SimpleForex):
         if position.confiremed and not position.sended:
             commands.SendPositionSignal(position, self.exchange_agent)
 
-        step = position.current_step
+        step = position.next_step
+        if step is None:
+            logger.warning(f"checking position that its next step is None! {position=}")
+            step = position.current_step
+        
         direction = position.side.factor()
         ticks = np.array(tick_prices) * direction
         sl = position.stoploss * direction
@@ -148,8 +152,9 @@ class SteppingForex(SimpleForex):
         if ticks[idx] <= sl:
             return commands.StopLoss(position, self.exchange_agent)
 
-        logger.info(f"Step hit for position on {position.chart} with price {step.price} and volume {step.volume}")
-        return commands.TriggerStep(position=position, exchange=self.exchange_agent,trigger=step)
-
-        # if self.trail_stop: # TODO: complete here
-        #     commands.TrailStoploss(position,self.exchange_agent,position.steps[position.curr])
+        logger.info(f"Step hit for position {position.id} on {position.chart} with price {step.price} and volume {step.volume}")
+        trigger_command = commands.TriggerStep(position=position, exchange=self.exchange_agent, trigger=step)
+        if self.trail_stop:
+            trailstop = commands.TrailStoplossbyStep(position=position,exchange=self.exchange_agent)
+            trailstop.bounded_command = trigger_command
+        return trigger_command

@@ -15,6 +15,7 @@ from TradingModule.PositionHandlers.ratio_handlers import (
 from TradingModule.PositionHandlers.stepping_handlers import (
     SteppingForex,
 )
+from TradingModule.PositionHandlers.ratio_stepping import RatioSteppingForex
 
 __all__ = [
     "PositionHandler",
@@ -27,4 +28,5 @@ __all__ = [
     "SlTpRatioForex",
     "SlTpRatioCrypto",
     "SteppingForex",
+    "RatioSteppingForex",
 ]

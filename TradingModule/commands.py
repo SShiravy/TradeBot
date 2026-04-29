@@ -34,6 +34,7 @@ class TradeCommand(ABC):
         self.failed_attempt: int = 0
         self.__status = TradeCommandStatus.PENDING
         self.report = report
+        self.bounded_command:TradeCommand|None = None
         TradeCommand.all_pending_commands.append(self)
 
         logger.debug(self)
@@ -87,10 +88,14 @@ class TradeCommand(ABC):
             logger.warning(
                 f"attempt to execute already Failed {self.__class__.__name__} Command!"
             )
+        
+        if self.bounded_command and self.bounded_command.status != TradeCommandStatus.EXECUTED:
+            return False
+
 
         if self.command(time):
             self.status = TradeCommandStatus.EXECUTED
-            logger.info(str(self) + f" for {self.position.exchange_id}")
+            logger.info(str(self) + f" for {self.position.exchange_id if self.position.exchange_id else self.position.id}")
             if self.report:
                 await self.execution_report()
             return True
@@ -278,7 +283,6 @@ class TakeProfit(TradeCommand):
         return True
 
 
-
 class TriggerStep(TradeCommand):
     def __init__(
         self,
@@ -296,4 +300,36 @@ class TriggerStep(TradeCommand):
     def command(self, time) -> bool:
         self.position.update_pnl(self.trigger.price,self.trigger.volume)
         self.position.go_next_step(time)
+        return True
+    
+    async def execution_report(self):
+        # TODO: complete here
+        pass
+
+
+
+class TrailStoplossbyStep(TradeCommand):
+    def __init__(
+        self,
+        position: Position,
+        exchange: ExchangeAgent,
+        n_attempts: int = 2,
+        report=True,
+    ):
+        super().__init__(position, exchange, n_attempts, report)
+
+    async def execution_report(self):
+        await TelegramReporter().trailing_sl(self.position)
+
+    def command(self, time):
+        new_sl = self.position.previous_step
+        if new_sl.price == self.position.stoploss:
+            logger.warning("trying to set new stoploss same as previous one, in TrailStopLosssbyStep")
+            return True
+        if self.position.real_trade and not self.exchange.change_stoploss(
+            self.position, new_sl.price
+        ):
+            return False
+        self.position.stoploss = new_sl.price
+        self.position.last_update = time
         return True

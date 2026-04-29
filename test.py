@@ -14,7 +14,7 @@ async def start_diver_backtest():
         coinex_4h_diver,
     )
 
-    await forex_diver_one_m.backtest(1000, show_image=True)
+    await forex_diver_five_m.backtest(200, show_image=True)
 
 
 async def start_diver_crypto_backtest_pack():

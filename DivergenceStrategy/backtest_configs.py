@@ -9,6 +9,7 @@ from TradingModule.PositionHandlers import (
     SlTpRatioCrypto,
     SlTpRatioForex,
     SteppingForex,
+    RatioSteppingForex,
 )
 from config import settings
 # Coinex ----------------------------------------------------------------
@@ -75,13 +76,14 @@ forex_diver_one_m = ForexDiverTradeConfig(
     second_chart=Chart("SOLUSD", TimeFrame.one_minute),
     strategy=Divergence(5, 200, [], name="ForexDiver", body_candle=True),
     bar_between_signals=2,
-    position_handler=SteppingForex(
+    position_handler=RatioSteppingForex(
         ForexAgent(),
-        targets_pip=[20,40,60],
-        stoploss_pip=30,
+        targets_ratio=[1,1.5,3],
+        stoploss_pip=10,
         initial_volume=0.03,
         long_trade=False,
         short_trade=False,
+        trail_stop=False
     ),
     merge_two_chart_time=False,
     heikingashi_chartdata=False,
@@ -94,12 +96,14 @@ forex_diver_five_m = ForexDiverTradeConfig(
     strategy=Divergence(5, 50, [], name="ForexDiver"),
     bar_between_signals=5,
     position_handler=(
-        SlTpRatioForex(
+        SteppingForex(
             ForexAgent(),
-            1.5,
-            stoploss_pip=10,
+            initial_volume=0.03,
+            stoploss_pip=30,
+            targets_pip=[30,50,70],
             long_trade=False,
             short_trade=False,
+            trail_stop=False
         )
     ),
     merge_two_chart_time=True,

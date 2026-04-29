@@ -83,41 +83,68 @@ class Position:
     generated_time: datetime = field(default=datetime.now(timezone.utc))
     source: str = "Unknown"
     real_trade: bool = field(default=True)
-    steps: list[Trigger] = field(default_factory=list)
     plot: Plot | None = field(default=None)
 
     open_time: datetime | None = field(default=None, init=False)
     confiremed: bool = field(default=False, init=False)
     sended: bool = field(default=False, init=False)
+    _steps: list[Trigger] = field(default_factory=list[Trigger],init=False)
+    _current_step_index: int = field(default=0, init=False)
+
 
     exchange_id: str = field(default="", init=False)
     spread: float = field(default=0.0, init=False)
     msg_id: Any = field(default=None, init=False)
-    current_step_index: int = field(default=0, init=False)
     closed: datetime | None = field(default=None, init=False)
     previous_check: datetime | None = field(default=None, init=False)
     last_update: datetime | None = field(default=None, init=False)
     pnl: float = field(default=0.0, init=False)
     pnl_percent: float = field(default=0.0, init=False)
     in_forex: bool = field(default=False, init=False)
-    pnl_in_pip: float = field(default=0.0, init=False)
+    pnl_in_pip: float = field(default=0.0, init=False)        
 
     @property
     def start_time(self):
         return self.open_time if self.open_time else self.generated_time
+    
+        
+    @property
+    def steps(self):
+        if not self._steps:
+            self._steps = [Trigger(price=self.entry_price,volume=self.volume,defined_time=self.start_time)]
+        if self._steps[0].price != self.entry_price:
+            self._steps[0] = Trigger(price=self.entry_price,volume=self.volume,defined_time=self.start_time)
+        return self._steps
+    
+    @steps.setter
+    def steps(self,value:list[Trigger]):
+        self._steps = [Trigger(price=self.entry_price,volume=self.volume,defined_time=self.start_time)]
+        self._steps+=value
+    
+    @property
+    def previous_step(self):
+        if self._current_step_index==0:
+            return Trigger(price=self.stoploss,volume=self.volume,defined_time=self.start_time)
+        return self.steps[self._current_step_index-1]
 
     @property
     def current_step(self):
-        return self.steps[self.current_step_index]
-
+        return self.steps[self._current_step_index]
+    
+    @property
+    def next_step(self):
+        if self._current_step_index >= len(self.steps)-1:
+            return None
+        return self.steps[self._current_step_index+1]
+    
     def go_next_step(self, triggered_time: datetime | None = None):
         self.current_step.triggered_time = (
             triggered_time if triggered_time else datetime.now(timezone.utc)
         )
-        if self.current_step_index >= len(self.steps) - 1:
+        if self.next_step is None:
             self.closed = self.current_step.triggered_time
             return False
-        self.current_step_index += 1
+        self._current_step_index += 1
         return True
 
     def update_pnl(self, executed_price: float, volume: float | None = None):
@@ -189,7 +216,7 @@ class Position:
             self.takeprofit,
             self.stoploss,
         )
-        for step in self.steps[:-1]:
+        for step in self.steps[1:-1]:
             plot.draw_line(
                 start_of_line,
                 step.price,
