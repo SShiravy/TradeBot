@@ -119,6 +119,16 @@ class Position:
     @steps.setter
     def steps(self,value:list[Trigger]):
         self._steps = [Trigger(price=self.entry_price,volume=self.volume,defined_time=self.start_time)]
+        # Bubble sort
+        for i in range(len(value)-1,0,-1):
+            for j in range(i):
+                if value[j].price>value[j+1].price:
+                    temp = value[j]
+                    value[j] = value[j+1]
+                    value[j+1] = temp
+
+        if self.side.factor == -1:
+            value.reverse()
         self._steps+=value
     
     @property
