@@ -100,3 +100,6 @@ Images
 
 # rar
 *.rar
+
+# csv
+*.csv
