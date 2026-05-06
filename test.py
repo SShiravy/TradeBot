@@ -45,10 +45,9 @@ if __name__ == "__main__":
 
     # new_backtest()
 
-
     # import requests
     # from datetime import datetime
-    
+
     # import requests
     # from datetime import datetime
     # url = 'https://publicapi.ramzinex.com/exchange/api/v1.0/exchange/chart/tv/history'
@@ -57,7 +56,7 @@ if __name__ == "__main__":
     # payload = {}
     # headers = {}
     # response = requests.request('GET', url, headers=headers, data=payload, params=params)
-    # print(response.text) 
+    # print(response.text)
 
 
 # TODO: position handler with MA and control tp sl with it

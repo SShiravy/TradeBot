@@ -49,7 +49,7 @@ class SteppingForex(SimpleForex):
             short_trade=short_trade,
         )
 
-        self.targets_pip = [tp/10 for tp in targets_pip]
+        self.targets_pip = [tp / 10 for tp in targets_pip]
         self.targets_volumes_lot = targets_volumes_lot
         self.trail_stop = trail_stop
 
@@ -58,8 +58,10 @@ class SteppingForex(SimpleForex):
         for target, volume in zip(self.targets_pip, self.targets_volumes_lot):
             steps.append(
                 Trigger(
-                    price=round(pos.entry_price + target * pos.side.factor(),
-                                pos.chart.precision),
+                    price=round(
+                        pos.entry_price + target * pos.side.factor(),
+                        pos.chart.precision,
+                    ),
                     volume=volume,
                 )
             )
@@ -120,12 +122,11 @@ class SteppingForex(SimpleForex):
         logger.info(f"New Position on {position.chart}")
         logger.debug(f"The New Position {position}")
         position.in_forex = True
-        
+
         self.set_steps(position)
         if real_trade:
             await self.open_steps_position(position)
         return position
-
 
     def handler(
         self, position: Position, tick_prices: list[float]
@@ -140,7 +141,7 @@ class SteppingForex(SimpleForex):
         if step is None:
             logger.warning(f"checking position that its next step is None! {position=}")
             step = position.current_step
-        
+
         direction = position.side.factor()
         ticks = np.array(tick_prices) * direction
         sl = position.stoploss * direction
@@ -152,9 +153,15 @@ class SteppingForex(SimpleForex):
         if ticks[idx] <= sl:
             return commands.StopLoss(position, self.exchange_agent)
 
-        logger.info(f"Step hit for position {position.id} on {position.chart} with price {step.price} and volume {step.volume}")
-        trigger_command = commands.TriggerStep(position=position, exchange=self.exchange_agent, trigger=step)
+        logger.info(
+            f"Step hit for position {position.id} on {position.chart} with price {step.price} and volume {step.volume}"
+        )
+        trigger_command = commands.TriggerStep(
+            position=position, exchange=self.exchange_agent, trigger=step
+        )
         if self.trail_stop:
-            trailstop = commands.TrailStoplossbyStep(position=position,exchange=self.exchange_agent)
+            trailstop = commands.TrailStoplossbyStep(
+                position=position, exchange=self.exchange_agent
+            )
             trailstop.bounded_command = trigger_command
         return trigger_command

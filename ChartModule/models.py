@@ -109,7 +109,6 @@ class Candle:
     timeframe: TimeFrame | str | None = None
     timestamp: int | None = None
 
-
     @property
     def side(self):
         return MarketSide.BULLISH if self.close > self.open else MarketSide.BEARISH
