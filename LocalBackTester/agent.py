@@ -1,7 +1,7 @@
 from ChartModule.models import Candle, Chart, ChartData
 from LocalBackTester.models import CsvChart
 from TradingModule.models import ExchangeAgent, Position
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 import pandas as pd
@@ -22,19 +22,19 @@ class LocalAgent(ExchangeAgent):
             raise FileNotFoundError(f"CSV Chart: {chart} file not found in path: {chart.csv_path}")
         
         df = pd.read_csv(chart.csv_path)
-        print(df.head())
         float_cols = ["open", "high", "low", "close", "volume", "open_time"]
         df[float_cols] = df[float_cols].astype(float)
 
         candles = []
         for _, row in df.iterrows():
             candle = Candle(
-                time=row["open_time"],
+                time=datetime.fromtimestamp(row["open_time"]/1000,tz=timezone.utc),
                 open=row["open"],
                 high=row["high"],
                 low=row["low"],
                 close=row["close"],
-                volume=row["volume"]
+                volume=row["volume"],
+                timestamp=row["open_time"],
             )
             candles.append(candle)
         candles.sort(key=lambda x: x.time)
