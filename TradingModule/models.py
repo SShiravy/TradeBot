@@ -89,7 +89,9 @@ class Position:
     confiremed: bool = field(default=False, init=False)
     sended: bool = field(default=False, init=False)
     _steps: list[Trigger] = field(default_factory=list[Trigger], init=False)
-    _current_step_index: int = field(default=0, init=False)
+    _current_step_index: int = field(default=1, init=False)
+    initial_stoploss: float = field(init=False)
+
 
     exchange_id: str = field(default="", init=False)
     spread: float = field(default=0.0, init=False)
@@ -101,6 +103,10 @@ class Position:
     pnl_percent: float = field(default=0.0, init=False)
     in_forex: bool = field(default=False, init=False)
     pnl_in_pip: float = field(default=0.0, init=False)
+
+
+    def __post_init__(self):
+        self.initial_stoploss = self.stoploss
 
     @property
     def start_time(self):
@@ -140,6 +146,7 @@ class Position:
         if self.side.factor == -1:
             value.reverse()
         self._steps += value
+        print(self.steps)
 
     @property
     def previous_step(self):
@@ -148,6 +155,16 @@ class Position:
                 price=self.stoploss, volume=self.volume, defined_time=self.start_time
             )
         return self.steps[self._current_step_index - 1]
+
+    @property
+    def two_previous_step(self):
+        if self._current_step_index == 0:
+            return None
+        if self._current_step_index == 1:
+            return Trigger(
+                price=self.stoploss, volume=self.volume, defined_time=self.start_time
+            )
+        return self.steps[self._current_step_index - 2]
 
     @property
     def current_step(self):
@@ -238,15 +255,23 @@ class Position:
             self.takeprofit,
             self.stoploss,
         )
-        for step in self.steps[1:-1]:
+        for step in self.steps[1:]:
             plot.draw_line(
-                start_of_line,
+                self.start_time,
                 step.price,
                 step.triggered_time
                 if step.triggered_time
-                else end_of_line,  # end_of_line,
+                else end_of_line,
                 step.price,
                 "#00B957",
+                width=2,
+            )
+        plot.draw_line(
+                self.start_time,
+                self.initial_stoploss,
+                end_of_line,
+                self.initial_stoploss,
+                "#B91900",
                 width=2,
             )
         plot.set_y_range((self.stoploss, self.takeprofit))

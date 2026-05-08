@@ -137,7 +137,7 @@ class SteppingForex(SimpleForex):
         if position.confiremed and not position.sended:
             commands.SendPositionSignal(position, self.exchange_agent)
 
-        step = position.next_step
+        step = position.current_step
         if step is None:
             logger.warning(f"checking position that its next step is None! {position=}")
             step = position.current_step

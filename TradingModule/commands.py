@@ -326,7 +326,11 @@ class TrailStoplossbyStep(TradeCommand):
         await TelegramReporter().trailing_sl(self.position)
 
     def command(self, time):
-        new_sl = self.position.previous_step
+        new_sl = self.position.two_previous_step
+        if new_sl is None:
+            logger.warning(
+                "trying to set new stoploss to two previous one which is None!")
+            return True
         if new_sl.price == self.position.stoploss:
             logger.warning(
                 "trying to set new stoploss same as previous one, in TrailStopLosssbyStep"
