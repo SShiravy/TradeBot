@@ -40,12 +40,31 @@ async def crypto_backtest():
     await config.backtest(BTCUSDT_1h_2024_9.number_of_bars, 200)
 
 
+def store_meta_klines():
+    from LocalBackTester.methods import store_forex_data
+    from ChartModule.models import TimeFrame
+    from LocalBackTester.models import CsvChart
+
+    symbol = "BTCUSD"
+    len_bar = 99000
+    timeframe = TimeFrame.one_minute
+
+    chart = CsvChart(symbol,timeframe,
+                csv_path=rf"D:\TraderBot\LocalBackTester\KlinesCSV\Opofincance\opo_{symbol.replace('!','')}_{timeframe.value}_{len_bar}.csv")
+    
+    store_forex_data(chart,n_bars=len_bar)
+    # TODO: make it better method by adding above params to store_forex_data function
+    
+
+
 if __name__ == "__main__":
     # plot_csv_kline()
 
-    import asyncio
+    # import asyncio
+    # asyncio.run(crypto_backtest())
 
-    asyncio.run(crypto_backtest())
+    store_meta_klines()
+
 
 
 # TODO: search and replace candle.time.timestamp() with candle.timestamp
