@@ -140,7 +140,7 @@ class ForexAgent(ExchangeAgent):
             )
 
         chartdata = ChartData(chart, all_candles_list)
-        return chartdata
+        return chartdata        
 
     def get_candles_since(self, chart: Chart, time: datetime):
         return super().get_candles_since(chart, time)
@@ -261,9 +261,42 @@ class ForexAgent(ExchangeAgent):
             return None
         logging.debug(f"Position Close for {position=}\n{result=}")
         return result.price
+    
+    def mt5_pos_to_position(self, mt5_pos: mt5.TradePosition) -> Position:
+        pos = Position(
+            chart=Chart(mt5_pos.symbol,TimeFrame.one_minute),
+            side=OrderSide.BUY if mt5_pos.type == mt5.ORDER_TYPE_BUY else OrderSide.SELL,
+            entry_price=mt5_pos.price_open,
+            volume=mt5_pos.volume,
+            stoploss=mt5_pos.sl,
+            takeprofit=mt5_pos.tp,
+            leverage=mt5_pos.volume / mt5_pos.volume_real,  # type: ignore
+            source=f"MetaTrader|{mt5_pos.comment}",
+            real_trade=True,
+        )
+        pos.exchange_id = str(mt5_pos.ticket)
+        return pos
 
-    def get_open_positions(self, chart: Chart):
-        pass
+
+    def get_open_positions(self, chart: Chart|None = None, 
+                           position_ticket:int|None=None, 
+                           comment_filter:str="")-> list[Position]:
+        
+        open_poses = mt5.positions_get(ticket=position_ticket)
+        if not open_poses:
+            return []
+        filtered_poses = []
+        for pos in open_poses:
+            if comment_filter:
+                if comment_filter not in pos.comment:
+                    continue
+            filtered_poses.append(self.mt5_pos_to_position(pos))
+            logger.critical(open_poses)
+        return filtered_poses
+
+        
+        
+
 
 
 def forex_timeframe_mapper(timeframe: TimeFrame):

@@ -64,7 +64,7 @@ class RatioSteppingForex(SlTpRatioForex):
         pos.steps = steps
 
     async def open_steps_position(self, pos: Position):
-        for step in pos.steps:
+        for step in pos.steps[1:]: # first step is entry
             step_position = Position(
                 pos.chart,
                 pos.side,
@@ -73,7 +73,7 @@ class RatioSteppingForex(SlTpRatioForex):
                 stoploss=pos.stoploss,
                 takeprofit=step.price,
                 leverage=pos.leverage,
-                source=f"{pos.source}|TakeProfit",
+                source=f"{pos.source}|TP of: {pos.id}",
                 real_trade=True,
             )
             await commands.OpenPosition(step_position, self.exchange_agent).execute()

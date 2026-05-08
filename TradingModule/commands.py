@@ -336,10 +336,19 @@ class TrailStoplossbyStep(TradeCommand):
                 "trying to set new stoploss same as previous one, in TrailStopLosssbyStep"
             )
             return True
-        if self.position.real_trade and not self.exchange.change_stoploss(
-            self.position, new_sl.price
-        ):
-            return False
+        if self.position.real_trade:
+            if self.position.in_forex:
+                tp_positions = self.exchange.get_open_positions(comment_filter=self.position.id)
+                if not tp_positions:
+                    logger.warning(
+                        f"no open position found for position {self.position.id} in TrailStoplossbyStep command!"
+                    )
+                    return False
+                for tp_pos in tp_positions:
+                    self.exchange.change_stoploss(tp_pos, new_sl.price)
+        
+            else:
+                return self.exchange.change_stoploss(self.position, new_sl.price)
         self.position.stoploss = new_sl.price
         self.position.last_update = time
         return True

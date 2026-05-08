@@ -35,15 +35,31 @@ async def start_fich_diver_backtest():
     await coinex_five_m.backtest(1000)
 
 
+def test_meta_open_positions():
+    from Forex.agent import ForexAgent
+
+    ForexAgent().get_open_positions(comment_filter="ops")
+
+# def test_trailstop_command():
+#     from TradingModule.commands import TrailStoplossbyStep
+#     from TradingModule.models import Position
+
+
+
+#     command = TrailStoplossbyStep(position=Position(), exchange=None)
+
+
 if __name__ == "__main__":
     import asyncio
 
     # asyncio.run(start_diver_crypto_backtest_pack())
-    asyncio.run(start_diver_backtest())
+    # asyncio.run(start_diver_backtest())
     # asyncio.run(start_fibochoch_backtest())
     # asyncio.run(start_fich_diver_backtest())
 
     # new_backtest()
+
+    test_meta_open_positions()
 
     # import requests
     # from datetime import datetime

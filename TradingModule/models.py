@@ -462,7 +462,7 @@ class ExchangeAgent(ABC):
         pass
 
     @abstractmethod
-    def get_open_positions(self, chart: Chart) -> Any:
+    def get_open_positions(self, *args, **kwargs) -> Any:
         pass
 
     @abstractmethod
