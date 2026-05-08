@@ -142,11 +142,9 @@ class Position:
                     temp = value[j]
                     value[j] = value[j + 1]
                     value[j + 1] = temp
-
-        if self.side.factor == -1:
+        if self.side.factor() == -1:
             value.reverse()
         self._steps += value
-        print(self.steps)
 
     @property
     def previous_step(self):

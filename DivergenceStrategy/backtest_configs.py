@@ -80,7 +80,7 @@ forex_diver_one_m = ForexDiverTradeConfig(
         ForexAgent(),
         targets_ratio=[1, 2, 4],
         stoploss_pip=10,
-        initial_volume=0.03,
+        initial_volume=[0.01,0.01,0.01],
         long_trade=False,
         short_trade=False,
         trail_stop=True,
@@ -98,12 +98,12 @@ forex_diver_five_m = ForexDiverTradeConfig(
     position_handler=(
         SteppingForex(
             ForexAgent(),
-            initial_volume=0.03,
-            stoploss_pip=30,
-            targets_pip=[30, 50, 70],
+            initial_volume=[0.01,0.01,0.01],
+            stoploss_pip=50,
+            targets_pip=[50, 100, 150],
             long_trade=False,
             short_trade=False,
-            trail_stop=False,
+            trail_stop=True,
         )
     ),
     merge_two_chart_time=True,
