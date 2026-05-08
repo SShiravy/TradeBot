@@ -107,6 +107,7 @@ class Candle:
     volume: float
     time: datetime
     timeframe: TimeFrame | str | None = None
+    timestamp: int | None = None
 
     @property
     def side(self):

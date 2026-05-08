@@ -55,12 +55,14 @@ class RatioSteppingForex(SlTpRatioForex):
 
     def set_steps(self, pos: Position):
         steps = []
-        sl_pip = abs(pos.stoploss-pos.entry_price)
+        sl_pip = abs(pos.stoploss - pos.entry_price)
         for ratio, volume in zip(self.targets_ratio, self.targets_volumes_lot):
             steps.append(
                 Trigger(
-                    price=round(abs(pos.entry_price + pos.side.factor() * sl_pip * ratio),
-                                 pos.chart.precision),
+                    price=round(
+                        abs(pos.entry_price + pos.side.factor() * sl_pip * ratio),
+                        pos.chart.precision,
+                    ),
                     volume=volume,
                 )
             )
@@ -111,7 +113,6 @@ class RatioSteppingForex(SlTpRatioForex):
         sl_pip = abs(entry_price - sl)
         tp = round(abs(entry_price + side.factor() * sl_pip * self.ratio), precision)
 
-
         position = Position(
             signal.chart,
             side,
@@ -129,12 +130,11 @@ class RatioSteppingForex(SlTpRatioForex):
         logger.info(f"New Position on {position.chart}")
         logger.debug(f"The New Position {position}")
         position.in_forex = True
-        
+
         self.set_steps(position)
         if real_trade:
             await self.open_steps_position(position)
         return position
-
 
     def handler(
         self, position: Position, tick_prices: list[float]
@@ -160,9 +160,15 @@ class RatioSteppingForex(SlTpRatioForex):
         if ticks[idx] <= sl:
             return commands.StopLoss(position, self.exchange_agent)
 
-        logger.info(f"Step hit for position {position.id} on {position.chart} with price {step.price} and volume {step.volume}")
-        trigger_command = commands.TriggerStep(position=position, exchange=self.exchange_agent, trigger=step)
+        logger.info(
+            f"Step hit for position {position.id} on {position.chart} with price {step.price} and volume {step.volume}"
+        )
+        trigger_command = commands.TriggerStep(
+            position=position, exchange=self.exchange_agent, trigger=step
+        )
         if self.trail_stop:
-            trailstop = commands.TrailStoplossbyStep(position=position,exchange=self.exchange_agent)
+            trailstop = commands.TrailStoplossbyStep(
+                position=position, exchange=self.exchange_agent
+            )
             trailstop.bounded_command = trigger_command
         return trigger_command

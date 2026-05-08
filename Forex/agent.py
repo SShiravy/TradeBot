@@ -1,6 +1,7 @@
 from ChartModule import Chart, Candle, ChartData, TimeFrame
 from TradingModule.models import ExchangeAgent, Position, OrderSide
 from datetime import datetime, timezone
+from config import settings
 from enum import Enum
 import mt5_wrapper as mt5
 import logging
@@ -33,9 +34,7 @@ class ForexAgent(ExchangeAgent):
     def __new__(cls):
         if not hasattr(cls, "_instance"):
             cls._instance = object.__new__(cls)
-            if not mt5.initialize(
-                r"C:\Program Files\Otet Group MT5 Terminal\terminal64.exe"
-            ):
+            if not mt5.initialize(settings.METATRADER_TERMINAL_PATH):
                 raise RuntimeError("MT5 initialize failed")
             logger.info("Initialized")
             cls.last_checked_time: None | datetime = None
@@ -136,6 +135,7 @@ class ForexAgent(ExchangeAgent):
                     float(volume),
                     candle_time,
                     chart.timeframe,
+                    candle_timestamp,
                 )
             )
 

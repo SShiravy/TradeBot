@@ -78,12 +78,12 @@ forex_diver_one_m = ForexDiverTradeConfig(
     bar_between_signals=2,
     position_handler=RatioSteppingForex(
         ForexAgent(),
-        targets_ratio=[1,1.5,3],
+        targets_ratio=[1, 1.5, 3],
         stoploss_pip=10,
         initial_volume=0.03,
         long_trade=False,
         short_trade=False,
-        trail_stop=False
+        trail_stop=False,
     ),
     merge_two_chart_time=False,
     heikingashi_chartdata=False,
@@ -100,10 +100,10 @@ forex_diver_five_m = ForexDiverTradeConfig(
             ForexAgent(),
             initial_volume=0.03,
             stoploss_pip=30,
-            targets_pip=[30,50,70],
+            targets_pip=[30, 50, 70],
             long_trade=False,
             short_trade=False,
-            trail_stop=False
+            trail_stop=False,
         )
     ),
     merge_two_chart_time=True,

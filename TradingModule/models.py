@@ -88,9 +88,8 @@ class Position:
     open_time: datetime | None = field(default=None, init=False)
     confiremed: bool = field(default=False, init=False)
     sended: bool = field(default=False, init=False)
-    _steps: list[Trigger] = field(default_factory=list[Trigger],init=False)
+    _steps: list[Trigger] = field(default_factory=list[Trigger], init=False)
     _current_step_index: int = field(default=0, init=False)
-
 
     exchange_id: str = field(default="", init=False)
     spread: float = field(default=0.0, init=False)
@@ -101,52 +100,65 @@ class Position:
     pnl: float = field(default=0.0, init=False)
     pnl_percent: float = field(default=0.0, init=False)
     in_forex: bool = field(default=False, init=False)
-    pnl_in_pip: float = field(default=0.0, init=False)        
+    pnl_in_pip: float = field(default=0.0, init=False)
 
     @property
     def start_time(self):
         return self.open_time if self.open_time else self.generated_time
-    
-        
+
     @property
     def steps(self):
         if not self._steps:
-            self._steps = [Trigger(price=self.entry_price,volume=self.volume,defined_time=self.start_time)]
+            self._steps = [
+                Trigger(
+                    price=self.entry_price,
+                    volume=self.volume,
+                    defined_time=self.start_time,
+                )
+            ]
         if self._steps[0].price != self.entry_price:
-            self._steps[0] = Trigger(price=self.entry_price,volume=self.volume,defined_time=self.start_time)
+            self._steps[0] = Trigger(
+                price=self.entry_price, volume=self.volume, defined_time=self.start_time
+            )
         return self._steps
-    
+
     @steps.setter
-    def steps(self,value:list[Trigger]):
-        self._steps = [Trigger(price=self.entry_price,volume=self.volume,defined_time=self.start_time)]
+    def steps(self, value: list[Trigger]):
+        self._steps = [
+            Trigger(
+                price=self.entry_price, volume=self.volume, defined_time=self.start_time
+            )
+        ]
         # Bubble sort
-        for i in range(len(value)-1,0,-1):
+        for i in range(len(value) - 1, 0, -1):
             for j in range(i):
-                if value[j].price>value[j+1].price:
+                if value[j].price > value[j + 1].price:
                     temp = value[j]
-                    value[j] = value[j+1]
-                    value[j+1] = temp
+                    value[j] = value[j + 1]
+                    value[j + 1] = temp
 
         if self.side.factor == -1:
             value.reverse()
-        self._steps+=value
-    
+        self._steps += value
+
     @property
     def previous_step(self):
-        if self._current_step_index==0:
-            return Trigger(price=self.stoploss,volume=self.volume,defined_time=self.start_time)
-        return self.steps[self._current_step_index-1]
+        if self._current_step_index == 0:
+            return Trigger(
+                price=self.stoploss, volume=self.volume, defined_time=self.start_time
+            )
+        return self.steps[self._current_step_index - 1]
 
     @property
     def current_step(self):
         return self.steps[self._current_step_index]
-    
+
     @property
     def next_step(self):
-        if self._current_step_index >= len(self.steps)-1:
+        if self._current_step_index >= len(self.steps) - 1:
             return None
-        return self.steps[self._current_step_index+1]
-    
+        return self.steps[self._current_step_index + 1]
+
     def go_next_step(self, triggered_time: datetime | None = None):
         self.current_step.triggered_time = (
             triggered_time if triggered_time else datetime.now(timezone.utc)
@@ -230,10 +242,12 @@ class Position:
             plot.draw_line(
                 start_of_line,
                 step.price,
-                step.triggered_time if step.triggered_time else end_of_line, # end_of_line,
+                step.triggered_time
+                if step.triggered_time
+                else end_of_line,  # end_of_line,
                 step.price,
                 "#00B957",
-                width=2
+                width=2,
             )
         plot.set_y_range((self.stoploss, self.takeprofit))
 
