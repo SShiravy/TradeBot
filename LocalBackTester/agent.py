@@ -31,7 +31,9 @@ class LocalAgent(ExchangeAgent):
         timestamp_factor = 1000 if len(str(df.iloc[1]["open_time"])) == 13 else 1
         for _, row in df.iloc[-n_bars:].iterrows():
             candle = Candle(
-                time=datetime.fromtimestamp(row["open_time"] / timestamp_factor, tz=timezone.utc),
+                time=datetime.fromtimestamp(
+                    row["open_time"] / timestamp_factor, tz=timezone.utc
+                ),
                 open=row["open"],
                 high=row["high"],
                 low=row["low"],

@@ -160,4 +160,3 @@ class SteppingForex(SimpleForex):
             )
             trailstop.bounded_command = trigger_command
         return trigger_command
-

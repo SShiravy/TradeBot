@@ -24,21 +24,21 @@ XAUUSD_1m_99000 = CsvChart(
     "XAUUSD",
     TimeFrame.one_minute,
     csv_path=r"D:\TraderBot\LocalBackTester\KlinesCSV\Opofincance\opo_XAUUSD_1m_99000.csv",
-    csv_source=KlineSource.OPOFINANCE_META
+    csv_source=KlineSource.OPOFINANCE_META,
 )
 
 SOLUSD_1m_99000 = CsvChart(
     "SOLUSD",
     TimeFrame.one_minute,
     csv_path=r"D:\TraderBot\LocalBackTester\KlinesCSV\Opofincance\opo_SOLUSD_1m_99000.csv",
-    csv_source=KlineSource.OPOFINANCE_META
+    csv_source=KlineSource.OPOFINANCE_META,
 )
 
 BTCUSD_1m_99000 = CsvChart(
     "BTCUSD",
     TimeFrame.one_minute,
     csv_path=r"D:\TraderBot\LocalBackTester\KlinesCSV\Opofincance\opo_BTCUSD_1m_99000.csv",
-    csv_source=KlineSource.OPOFINANCE_META
+    csv_source=KlineSource.OPOFINANCE_META,
 )
 
 
@@ -46,19 +46,19 @@ XAUUSD_5m_50000 = CsvChart(
     "XAUUSD",
     TimeFrame.five_minutes,
     csv_path=r"D:\TraderBot\LocalBackTester\KlinesCSV\Opofincance\opo_XAUUSD_5m_50000.csv",
-    csv_source=KlineSource.OPOFINANCE_META
+    csv_source=KlineSource.OPOFINANCE_META,
 )
 
 SOLUSD_5m_50000 = CsvChart(
     "SOLUSD",
     TimeFrame.five_minutes,
     csv_path=r"D:\TraderBot\LocalBackTester\KlinesCSV\Opofincance\opo_SOLUSD_5m_50000.csv",
-    csv_source=KlineSource.OPOFINANCE_META
+    csv_source=KlineSource.OPOFINANCE_META,
 )
 
 BTCUSD_5m_50000 = CsvChart(
     "BTCUSD",
     TimeFrame.five_minutes,
     csv_path=r"D:\TraderBot\LocalBackTester\KlinesCSV\Opofincance\opo_BTCUSD_5m_50000.csv",
-    csv_source=KlineSource.OPOFINANCE_META
+    csv_source=KlineSource.OPOFINANCE_META,
 )

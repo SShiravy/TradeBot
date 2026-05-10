@@ -9,6 +9,7 @@ CustomLogger(True, consol_log_level=logging.DEBUG)
 
 def plot_csv_kline():
     from LocalBackTester.all_charts import SOLUSDT_1h_2024_9
+
     agent = LocalAgent()
     chartdata = agent.get_chartdata(SOLUSDT_1h_2024_9)
     ChartPlot(chartdata, len(chartdata.candles)).show()  # type: ignore
@@ -50,15 +51,20 @@ def store_meta_klines():
     len_bar = 99000
     timeframe = TimeFrame.one_minute
 
-    chart = CsvChart(symbol,timeframe,
-                csv_path=rf"D:\TraderBot\LocalBackTester\KlinesCSV\Opofincance\opo_{symbol.replace('!','')}_{timeframe.value}_{len_bar}.csv")
-    
-    store_forex_data(chart,n_bars=len_bar)
+    chart = CsvChart(
+        symbol,
+        timeframe,
+        csv_path=rf"D:\TraderBot\LocalBackTester\KlinesCSV\Opofincance\opo_{symbol.replace('!', '')}_{timeframe.value}_{len_bar}.csv",
+    )
+
+    store_forex_data(chart, n_bars=len_bar)
     # TODO: make it better method by adding above params to store_forex_data function
-    
+
 
 async def forex_backtest():
-    from Forex.agent import ForexAgent
+    from config import settings
+    settings.METATRADER_TERMINAL_PATH = ""
+
     from Forex.bot_config import ForexDiverTradeConfig
     from DivergenceStrategy.divergence import Divergence
     from TradingModule.PositionHandlers.ratio_handlers import SlTpRatioForex
@@ -78,24 +84,27 @@ async def forex_backtest():
             short_trade=False,
         ),
         heikingashi_chartdata=True,
-        merge_two_chart_time=False
+        merge_two_chart_time=False,
     )
 
     config.agent = local_agent  # type: ignore
 
-    await config.backtest(1000, # XAUUSD_1m_99000.number_of_bars,
-                           200)
+    res = await config.backtest(
+        1000,  # XAUUSD_1m_99000.number_of_bars,
+        200,
+        consider_positions=False,
+    )
 
 
 if __name__ == "__main__":
     # plot_csv_kline()
 
     import asyncio
+
     # asyncio.run(crypto_backtest())
     asyncio.run(forex_backtest())
 
     # store_meta_klines()
-
 
 
 # TODO: search and replace candle.time.timestamp() with candle.timestamp

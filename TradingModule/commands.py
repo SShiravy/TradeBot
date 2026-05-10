@@ -329,7 +329,8 @@ class TrailStoplossbyStep(TradeCommand):
         new_sl = self.position.two_previous_step
         if new_sl is None:
             logger.warning(
-                "trying to set new stoploss to two previous one which is None!")
+                "trying to set new stoploss to two previous one which is None!"
+            )
             return True
         if new_sl.price == self.position.stoploss:
             logger.warning(
@@ -338,7 +339,9 @@ class TrailStoplossbyStep(TradeCommand):
             return True
         if self.position.real_trade:
             if self.position.in_forex:
-                tp_positions = self.exchange.get_open_positions(comment_filter=self.position.id)
+                tp_positions = self.exchange.get_open_positions(
+                    comment_filter=self.position.id
+                )
                 if not tp_positions:
                     logger.warning(
                         f"no open position found for position {self.position.id} in TrailStoplossbyStep command!"
@@ -346,7 +349,7 @@ class TrailStoplossbyStep(TradeCommand):
                     return False
                 for tp_pos in tp_positions:
                     self.exchange.change_stoploss(tp_pos, new_sl.price)
-        
+
             else:
                 return self.exchange.change_stoploss(self.position, new_sl.price)
         self.position.stoploss = new_sl.price
