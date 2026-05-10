@@ -13,7 +13,9 @@ def make_hash(payload: dict):
     return hashlib.sha256(raw.encode()).hexdigest()
 
 
-class DiverSignals(SQLModel, table=True):
+class DiverSignalRow(SQLModel, table=True):
+    __tablename__   = "Divergence_Signals" # type: ignore
+
     id: Optional[int] = Field(default=None, primary_key=True)
 
     signal_timestamp: int
@@ -24,11 +26,11 @@ class DiverSignals(SQLModel, table=True):
     secondline_end_timestamp: int
 
     side: str
-    source: int = Field(foreign_key="backtestrun.id", index=True)
+    source: int = Field(foreign_key="Divergence_Backtests.id", index=True)
 
     @classmethod
     def give_datapoint(cls, diver_signal: DivergenceSignal, source_id: int):
-        datapoint = DiverSignals(
+        datapoint = DiverSignalRow(
             signal_timestamp=diver_signal.candle.timestamp,
             baseline_start_timestamp=diver_signal.base_line.start_candle.timestamp,
             baseline_end_timestamp=diver_signal.base_line.end_candle.timestamp,
@@ -41,7 +43,9 @@ class DiverSignals(SQLModel, table=True):
         return datapoint
 
 
-class DiverBacktests(SQLModel, table=True):
+class DiverBacktestRow(SQLModel, table=True):
+    __tablename__   = "Divergence_Backtests" # type: ignore
+
     id: Optional[int] = Field(default=None, primary_key=True)
 
     symbol: str
@@ -65,7 +69,7 @@ class DiverBacktests(SQLModel, table=True):
         first_candle_timestamp = trade_config.get_chartdata()[0][0].timestamp
         last_candle_timestamp = trade_config.get_chartdata()[0][-1].timestamp
 
-        datapoint = DiverBacktests(
+        datapoint = DiverBacktestRow(
             config_json=json.dumps(conf_dict),
             config_hash=make_hash(conf_dict),
             symbol=trade_config.chart.symbol,

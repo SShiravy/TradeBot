@@ -96,6 +96,23 @@ async def forex_backtest():
         consider_positions=False,
     )
 
+    return config, res[0]
+
+
+def create_db():
+    from LocalBackTester.Database.create_db import create_db
+    create_db()
+
+async def backtest_and_store_to_db():
+    from LocalBackTester.Database.methods import store_diver_backtest,store_diver_signal
+    config,signals = await forex_backtest()
+    # TODO: add hash check ...
+    backtest_datapoint = store_diver_backtest(config)
+    logging.debug(backtest_datapoint)
+
+    store_diver_signal(signals,backtest_datapoint.id) # type: ignore
+
+
 
 if __name__ == "__main__":
     # plot_csv_kline()
@@ -103,9 +120,14 @@ if __name__ == "__main__":
     import asyncio
 
     # asyncio.run(crypto_backtest())
-    asyncio.run(forex_backtest())
+    # asyncio.run(forex_backtest())
 
     # store_meta_klines()
+
+    create_db()
+    asyncio.run(backtest_and_store_to_db())
+
+
 
 
 # TODO: search and replace candle.time.timestamp() with candle.timestamp
