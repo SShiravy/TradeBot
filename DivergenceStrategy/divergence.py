@@ -11,7 +11,7 @@ from ChartModule.Indicators import TrendLine, Line, SupportConditions
 from ChartModule.plot import DoubleChartPlot
 from TradingModule.trader_bot import TradeConfig, commands, Position
 from TradingModule.models import PositionsReport, Strategy
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from copy import copy
 import logging
 
@@ -227,6 +227,7 @@ class Divergence(Strategy):
 class DivergenceTradeConfig(TradeConfig):
     second_chart: Chart
     strategy: Divergence  # type: ignore[override]
+    merge_two_chart_time: bool = field(default=True)
 
     def export_config(self) -> dict:
         conf_dict = super().export_config()

@@ -14,7 +14,6 @@ class ForexDiverTradeConfig(DivergenceTradeConfig):
     second_chart: Chart
     agent: ExchangeAgent = field(default=ForexAgent(), init=False)
     strategy: Divergence  # type: ignore[override]
-    merge_two_chart_time: bool = field(default=True)
 
     def get_chartdata(self, n_bar: int | None = None) -> tuple[ChartData, ChartData]:  # type: ignore[override]
         mulitplier = 2 if self.merge_two_chart_time else 1

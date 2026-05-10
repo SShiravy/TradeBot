@@ -136,8 +136,8 @@ class ForexAgent(ExchangeAgent):
                     float(low),
                     float(volume),
                     candle_time,
-                    chart.timeframe,
                     candle_timestamp,
+                    chart.timeframe,
                 )
             )
 

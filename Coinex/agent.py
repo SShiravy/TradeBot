@@ -52,6 +52,7 @@ class CoinexAgent(ExchangeAgent):
                     float(low),
                     float(volume),
                     candle_time,
+                    candle_timestamp,
                     chart.timeframe,
                 )
             )
