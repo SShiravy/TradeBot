@@ -16,41 +16,35 @@ class RatioSteppingForex(SlTpRatioForex):
     def __init__(
         self,
         exchange_agent: ExchangeAgent,
-        initial_volume: float = 0.03,
         stoploss_pip: int = 10,
         targets_ratio: list[float] = [1, 1.5, 2],
-        targets_volumes_lot: float | list[float] = [0.01, 0.01, 0.01],
+        initial_volume: float | list[float] = 0.01,
         trail_stop: bool = True,
         long_trade=True,
         short_trade=True,
     ) -> None:
-        if isinstance(targets_volumes_lot, float | int):
+        if isinstance(initial_volume, float | int):
             # make it list with same size as targets_pip if it's not
-            targets_volumes_lot = [float(targets_volumes_lot)] * len(targets_ratio)
+            initial_volume = [float(initial_volume)] * len(targets_ratio)
 
-        if sum(targets_volumes_lot) > initial_volume:
-            raise ValueError(
-                f"sum of {targets_volumes_lot} param must be 1 {sum(targets_volumes_lot)}"
-            )
-
-        if len(targets_ratio) != len(targets_volumes_lot):
+        if len(targets_ratio) != len(initial_volume):
             raise ValueError(
                 f"targets_volumes_lot param must be \
                              float or list[float] with same size as targets_pip\
-                             {len(targets_volumes_lot)} != {len(targets_ratio)}"
+                             {len(initial_volume)} != {len(targets_ratio)}"
             )
 
         super().__init__(
             exchange_agent,
             targets_ratio[-1],
-            initial_volume,
+            sum(initial_volume),
             stoploss_pip,
             long_trade=long_trade,
             short_trade=short_trade,
         )
 
         self.targets_ratio = targets_ratio
-        self.targets_volumes_lot = targets_volumes_lot
+        self.targets_volumes_lot = initial_volume
         self.trail_stop = trail_stop
 
     def set_steps(self, pos: Position):
@@ -70,7 +64,7 @@ class RatioSteppingForex(SlTpRatioForex):
         pos.steps = steps
 
     async def open_steps_position(self, pos: Position):
-        for step in pos.steps:
+        for step in pos.steps[1:]: # first step is entry
             step_position = Position(
                 pos.chart,
                 pos.side,
@@ -79,7 +73,7 @@ class RatioSteppingForex(SlTpRatioForex):
                 stoploss=pos.stoploss,
                 takeprofit=step.price,
                 leverage=pos.leverage,
-                source=f"{pos.source}|TakeProfit",
+                source=f"{pos.source}|TP of: {pos.id}",
                 real_trade=True,
             )
             await commands.OpenPosition(step_position, self.exchange_agent).execute()
@@ -145,10 +139,11 @@ class RatioSteppingForex(SlTpRatioForex):
         if position.confiremed and not position.sended:
             commands.SendPositionSignal(position, self.exchange_agent)
 
-        step = position.next_step
+        step = position.current_step
         if step is None:
             logger.warning(f"checking position that its next step is None! {position=}")
-            step = position.current_step
+            step = position.previous_step
+            # TODO: check above line!!!
         direction = position.side.factor()
         ticks = np.array(tick_prices) * direction
         sl = position.stoploss * direction
