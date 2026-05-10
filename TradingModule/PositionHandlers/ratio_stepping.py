@@ -64,7 +64,7 @@ class RatioSteppingForex(SlTpRatioForex):
         pos.steps = steps
 
     async def open_steps_position(self, pos: Position):
-        for step in pos.steps[1:]: # first step is entry
+        for step in pos.steps[1:]:  # first step is entry
             step_position = Position(
                 pos.chart,
                 pos.side,
