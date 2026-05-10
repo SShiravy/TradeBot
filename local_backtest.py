@@ -63,6 +63,7 @@ def store_meta_klines():
 
 async def forex_backtest():
     from config import settings
+
     settings.METATRADER_TERMINAL_PATH = ""
 
     from Forex.bot_config import ForexDiverTradeConfig
