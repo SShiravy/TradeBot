@@ -1,5 +1,4 @@
 from LocalBackTester.agent import LocalAgent
-from LocalBackTester.all_charts import BTCUSDT_1h_2024_9, SOLUSDT_1h_2024_9
 from ChartModule.plot import ChartPlot
 from custom_logger import CustomLogger
 import logging
@@ -9,12 +8,14 @@ CustomLogger(True, consol_log_level=logging.DEBUG)
 
 
 def plot_csv_kline():
+    from LocalBackTester.all_charts import SOLUSDT_1h_2024_9
     agent = LocalAgent()
     chartdata = agent.get_chartdata(SOLUSDT_1h_2024_9)
     ChartPlot(chartdata, len(chartdata.candles)).show()  # type: ignore
 
 
 async def crypto_backtest():
+    from LocalBackTester.all_charts import BTCUSDT_1h_2024_9, SOLUSDT_1h_2024_9
     from Coinex.bot_config import CoinexDiverTradeConfig
     from DivergenceStrategy.divergence import Divergence
     from TradingModule.PositionHandlers.ratio_handlers import SlTpRatioCrypto
@@ -56,14 +57,44 @@ def store_meta_klines():
     # TODO: make it better method by adding above params to store_forex_data function
     
 
+async def forex_backtest():
+    from Forex.agent import ForexAgent
+    from Forex.bot_config import ForexDiverTradeConfig
+    from DivergenceStrategy.divergence import Divergence
+    from TradingModule.PositionHandlers.ratio_handlers import SlTpRatioForex
+    from LocalBackTester.all_charts import XAUUSD_1m_99000, SOLUSD_1m_99000
+
+    local_agent = LocalAgent()
+    config = ForexDiverTradeConfig(
+        chart=XAUUSD_1m_99000,
+        second_chart=SOLUSD_1m_99000,
+        strategy=Divergence(3, 500, [], name="CoinexDiver", inverse_diver_long=True),
+        position_handler=SlTpRatioForex(
+            local_agent,
+            ratio=1.5,
+            stoploss_pip=20,
+            initial_volume=0.01,
+            long_trade=False,
+            short_trade=False,
+        ),
+        heikingashi_chartdata=True,
+        merge_two_chart_time=False
+    )
+
+    config.agent = local_agent  # type: ignore
+
+    await config.backtest(1000, # XAUUSD_1m_99000.number_of_bars,
+                           200)
+
 
 if __name__ == "__main__":
     # plot_csv_kline()
 
-    # import asyncio
+    import asyncio
     # asyncio.run(crypto_backtest())
+    asyncio.run(forex_backtest())
 
-    store_meta_klines()
+    # store_meta_klines()
 
 
 

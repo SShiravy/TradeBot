@@ -16,7 +16,7 @@ class LocalAgent(ExchangeAgent):
         return Path(chart.csv_path).is_file()
 
     def get_chartdata(  # type: ignore[Override]
-        self, chart: CsvChart, n_bars: int | None = None
+        self, chart: CsvChart, n_bars: int = 0
     ) -> ChartData | None:
         if not self.check_chart(chart):
             raise FileNotFoundError(
@@ -28,9 +28,10 @@ class LocalAgent(ExchangeAgent):
         df[float_cols] = df[float_cols].astype(float)
 
         candles = []
-        for _, row in df.iterrows():
+        timestamp_factor = 1000 if len(str(df.iloc[1]["open_time"])) == 13 else 1
+        for _, row in df.iloc[-n_bars:].iterrows():
             candle = Candle(
-                time=datetime.fromtimestamp(row["open_time"] / 1000, tz=timezone.utc),
+                time=datetime.fromtimestamp(row["open_time"] / timestamp_factor, tz=timezone.utc),
                 open=row["open"],
                 high=row["high"],
                 low=row["low"],

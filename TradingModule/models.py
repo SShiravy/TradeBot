@@ -257,10 +257,20 @@ class Position:
             plot.draw_line(
                 self.start_time,
                 step.price,
-                step.triggered_time if step.triggered_time else end_of_line, # end_of_line,
+                step.triggered_time
+                if step.triggered_time
+                else end_of_line,
                 step.price,
                 "#00B957",
-                width=2
+                width=2,
+            )
+        plot.draw_line(
+                self.start_time,
+                self.initial_stoploss,
+                end_of_line,
+                self.initial_stoploss,
+                "#B91900",
+                width=2,
             )
         plot.set_y_range((self.stoploss, self.takeprofit))
 
