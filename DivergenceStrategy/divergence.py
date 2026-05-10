@@ -54,6 +54,21 @@ class Divergence(Strategy):
         self.short_second_line_validation = short_second_line_validation
         self.body_candle = body_candle
 
+    def export_config(self):
+        conf_dict = super().export_config()
+        conf_dict.update(
+            {
+                "min_step": self.min_step,
+                "max_step": self.max_step,
+                "inverse_diver_long": self.inverse_diver_long,
+                "inverse_diver_short": self.inverse_diver_short,
+                "long_second_line_validation": self.long_second_line_validation,
+                "short_second_line_validation": self.short_second_line_validation,
+                "body_candle": self.body_candle,
+            }
+        )
+        return conf_dict
+
     @classmethod
     def find_divergence(
         cls,
@@ -212,6 +227,11 @@ class Divergence(Strategy):
 class DivergenceTradeConfig(TradeConfig):
     second_chart: Chart
     strategy: Divergence  # type: ignore[override]
+
+    def export_config(self) -> dict:
+        conf_dict = super().export_config()
+        conf_dict.update({"second_symbol": self.second_chart.symbol})
+        return conf_dict
 
     def get_chartdata(self, n_bar: int | None = None) -> tuple[ChartData, ChartData]:  # type: ignore[override]
         base_chartdata = self.agent.get_chartdata(

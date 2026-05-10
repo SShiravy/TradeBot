@@ -526,3 +526,9 @@ class Strategy(ABC):
         if draw_indicators and self.confirmation_indicators:
             for indicator in self.confirmation_indicators:
                 indicator.plot(plot)
+
+    def export_config(self):
+        return {
+            "long_support_conditions": self.long_support_conditions.value,
+            "short_support_conditions": self.short_support_conditions.value,
+        }
