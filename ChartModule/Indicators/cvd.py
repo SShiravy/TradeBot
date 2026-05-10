@@ -32,7 +32,13 @@ class CVD(IndicatorBaseModel):
             body_bottom = min(open_cvd, current_cvd)
             body_top = max(open_cvd, current_cvd)
             cvd_candle = Candle(
-                open_cvd, current_cvd, body_top, body_bottom, 0.0, candle.time
+                open_cvd,
+                current_cvd,
+                body_top,
+                body_bottom,
+                0.0,
+                candle.time,
+                candle.timestamp,
             )
             cvd_candles.append(cvd_candle)
 

@@ -106,8 +106,8 @@ class Candle:
     low: float
     volume: float
     time: datetime
+    timestamp: int
     timeframe: TimeFrame | str | None = None
-    timestamp: int | None = None
 
     @property
     def side(self):
@@ -267,6 +267,7 @@ class ChartData:
                 ha_low,
                 first_candle.volume,
                 first_candle.time,
+                first_candle.timestamp,
                 first_candle.timeframe,
             )
         )
@@ -291,6 +292,7 @@ class ChartData:
                     ha_low,
                     candle.volume,
                     candle.time,
+                    candle.timestamp,
                     candle.timeframe,
                 )
             )
@@ -363,6 +365,7 @@ class ChartData:
                     first_candle.low / second_candle.low,
                     min(first_candle.volume, second_candle.volume),
                     first_candle.time,
+                    first_candle.timestamp,
                     timeframe=crosspair_chart.timeframe,
                 )
             )
