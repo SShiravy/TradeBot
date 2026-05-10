@@ -34,7 +34,9 @@ class ForexAgent(ExchangeAgent):
     def __new__(cls):
         if not hasattr(cls, "_instance"):
             cls._instance = object.__new__(cls)
-            if not mt5.initialize(settings.METATRADER_TERMINAL_PATH):
+            if settings.METATRADER_TERMINAL_PATH and not mt5.initialize(
+                settings.METATRADER_TERMINAL_PATH
+            ):
                 raise RuntimeError("MT5 initialize failed")
             logger.info("Initialized")
             cls.last_checked_time: None | datetime = None
