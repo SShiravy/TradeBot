@@ -36,6 +36,14 @@ class TradeConfig:
     _n_losed_long: int = field(default=0, init=False)
     _n_losed_short: int = field(default=0, init=False)
 
+    def export_config(self) -> dict:
+        return {
+            "symbol": self.chart.symbol,
+            "timeframe": self.chart.timeframe.value,
+            "bar_between_signals": self.bar_between_signals,
+            "heikingashi_chartdata": self.heikingashi_chartdata,
+        }
+
     def give_delay(self, last_candle: Candle, jump=False) -> timedelta:
         delay = self.chart.timeframe.time_delta
         if jump:
