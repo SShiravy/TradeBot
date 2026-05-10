@@ -29,7 +29,7 @@ class DiverSignals(SQLModel, table=True):
     @classmethod
     def give_datapoint(cls, diver_signal: DivergenceSignal, source_id: int):
         datapoint = DiverSignals(
-            signal_timestamp=diver_signal.candle.signal_timestamp,
+            signal_timestamp=diver_signal.candle.timestamp,
             baseline_start_timestamp=diver_signal.base_line.start_candle.timestamp,
             baseline_end_timestamp=diver_signal.base_line.end_candle.timestamp,
             secondline_start_timestamp=diver_signal.second_line.start_candle.timestamp,
