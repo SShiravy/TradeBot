@@ -3,7 +3,11 @@ from config import settings
 
 engine = create_engine(settings.LOCAL_BACKTEST_DB_NAME)
 
-def create_db():
-    from LocalBackTester.Database.divergence_models import DiverBacktestRow, DiverSignalRow
-    SQLModel.metadata.create_all(engine)
 
+def create_db():
+    from LocalBackTester.Database.divergence_models import (
+        DiverBacktestRow,
+        DiverSignalRow,
+    )
+
+    SQLModel.metadata.create_all(engine)

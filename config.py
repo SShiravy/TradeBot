@@ -20,7 +20,7 @@ class Settings(BaseSettings):
     # Mt5
     METATRADER_TERMINAL_PATH: str
 
-    # LocalBacktest DB 
+    # LocalBacktest DB
     LOCAL_BACKTEST_DB_NAME: str
 
     model_config = SettingsConfigDict(env_file=".env")

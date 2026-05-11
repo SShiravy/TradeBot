@@ -28,7 +28,7 @@ class LocalAgent(ExchangeAgent):
         df[float_cols] = df[float_cols].astype(float)
 
         candles = []
-        timestamp_factor = 1000 if len(str(df.iloc[1]["open_time"])) == 13 else 1
+        timestamp_factor = 1000 if len(str(int(df.iloc[1]["open_time"]))) == 13 else 1
         for _, row in df.iloc[-n_bars:].iterrows():
             candle = Candle(
                 time=datetime.fromtimestamp(

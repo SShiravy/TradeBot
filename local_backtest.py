@@ -1,7 +1,11 @@
+from LocalBackTester.Database.create_db import create_db
 from LocalBackTester.agent import LocalAgent
 from ChartModule.plot import ChartPlot
 from custom_logger import CustomLogger
 import logging
+from config import settings
+
+settings.METATRADER_TERMINAL_PATH = ""
 
 
 CustomLogger(True, consol_log_level=logging.DEBUG)
@@ -13,33 +17,6 @@ def plot_csv_kline():
     agent = LocalAgent()
     chartdata = agent.get_chartdata(SOLUSDT_1h_2024_9)
     ChartPlot(chartdata, len(chartdata.candles)).show()  # type: ignore
-
-
-async def crypto_backtest():
-    from LocalBackTester.all_charts import BTCUSDT_1h_2024_9, SOLUSDT_1h_2024_9
-    from Coinex.bot_config import CoinexDiverTradeConfig
-    from DivergenceStrategy.divergence import Divergence
-    from TradingModule.PositionHandlers.ratio_handlers import SlTpRatioCrypto
-
-    local_agent = LocalAgent()
-    config = CoinexDiverTradeConfig(
-        chart=SOLUSDT_1h_2024_9,
-        second_chart=BTCUSDT_1h_2024_9,
-        strategy=Divergence(3, 500, [], name="CoinexDiver", inverse_diver_long=True),
-        position_handler=SlTpRatioCrypto(
-            local_agent,
-            ratio=1.5,
-            stoploss_percent=0.5,
-            initial_volume=10,
-            leverage=10,
-            long_trade=False,
-            short_trade=False,
-        ),
-        agent=local_agent,  # type: ignore
-        heikingashi_chartdata=True,
-    )
-
-    await config.backtest(BTCUSDT_1h_2024_9.number_of_bars, 200)
 
 
 def store_meta_klines():
@@ -61,63 +38,43 @@ def store_meta_klines():
     # TODO: make it better method by adding above params to store_forex_data function
 
 
-async def forex_backtest():
-    from config import settings
-
-    settings.METATRADER_TERMINAL_PATH = ""
-
-    from Forex.bot_config import ForexDiverTradeConfig
-    from DivergenceStrategy.divergence import Divergence
-    from TradingModule.PositionHandlers.ratio_handlers import SlTpRatioForex
-    from LocalBackTester.all_charts import XAUUSD_1m_99000, SOLUSD_1m_99000
-
-    local_agent = LocalAgent()
-    config = ForexDiverTradeConfig(
-        chart=XAUUSD_1m_99000,
-        second_chart=SOLUSD_1m_99000,
-        strategy=Divergence(3, 500, [], name="CoinexDiver", inverse_diver_long=True),
-        position_handler=SlTpRatioForex(
-            local_agent,
-            ratio=1.5,
-            stoploss_pip=20,
-            initial_volume=0.01,
-            long_trade=False,
-            short_trade=False,
-        ),
-        heikingashi_chartdata=True,
-        merge_two_chart_time=False,
+async def signal_backtester(store_db=True):
+    from LocalBackTester.Database.methods import (
+        store_diver_backtest,
+        store_diver_signal,
+        valid_diver_backtest_hash,
+    )
+    from LocalBackTester.backtest_configs import (
+        diver_forex_xau_1m,
+        diver_crypto_solbtc_1m,
     )
 
-    config.agent = local_agent  # type: ignore
+    the_config = diver_crypto_solbtc_1m
 
-    res = await config.backtest(
-        1000,  # XAUUSD_1m_99000.number_of_bars,
-        200,
+    if store_db:
+        valid_hash = valid_diver_backtest_hash(the_config)
+        if not valid_hash:
+            raise Exception("Same config already exists in db...")
+
+    res = await the_config.backtest(
+        n_bar=the_config.chart.number_of_bars,  # type: ignore
+        len_sub_data=200,
         consider_positions=False,
+        show_image=True,
     )
 
-    return config, res[0]
+    if store_db:
+        backtest_datapoint = store_diver_backtest(the_config)
+        logging.debug(backtest_datapoint)
 
-
-def create_db():
-    from LocalBackTester.Database.create_db import create_db
-    create_db()
-
-async def backtest_and_store_to_db():
-    from LocalBackTester.Database.methods import store_diver_backtest,store_diver_signal
-    config,signals = await forex_backtest()
-    # TODO: add hash check ...
-    backtest_datapoint = store_diver_backtest(config)
-    logging.debug(backtest_datapoint)
-
-    store_diver_signal(signals,backtest_datapoint.id) # type: ignore
-
+        dive_signals = res[0]
+        store_diver_signal(dive_signals, backtest_datapoint.id)  # type: ignore
 
 
 if __name__ == "__main__":
-    # plot_csv_kline()
-
     import asyncio
+    
+    # plot_csv_kline()
 
     # asyncio.run(crypto_backtest())
     # asyncio.run(forex_backtest())
@@ -125,9 +82,8 @@ if __name__ == "__main__":
     # store_meta_klines()
 
     create_db()
-    asyncio.run(backtest_and_store_to_db())
 
-
+    asyncio.run(signal_backtester())
 
 
 # TODO: search and replace candle.time.timestamp() with candle.timestamp

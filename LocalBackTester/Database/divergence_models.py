@@ -9,12 +9,11 @@ from DivergenceStrategy.divergence import DivergenceSignal
 
 def make_hash(payload: dict):
     raw = json.dumps(payload, sort_keys=True, separators=(",", ":"))
-
     return hashlib.sha256(raw.encode()).hexdigest()
 
 
 class DiverSignalRow(SQLModel, table=True):
-    __tablename__   = "Divergence_Signals" # type: ignore
+    __tablename__ = "Divergence_Signals"  # type: ignore
 
     id: Optional[int] = Field(default=None, primary_key=True)
 
@@ -44,7 +43,7 @@ class DiverSignalRow(SQLModel, table=True):
 
 
 class DiverBacktestRow(SQLModel, table=True):
-    __tablename__   = "Divergence_Backtests" # type: ignore
+    __tablename__ = "Divergence_Backtests"  # type: ignore
 
     id: Optional[int] = Field(default=None, primary_key=True)
 
@@ -63,11 +62,22 @@ class DiverBacktestRow(SQLModel, table=True):
     config_json: str
 
     @classmethod
-    def give_datapoint(cls, trade_config: DivergenceTradeConfig):
+    def give_config_dict(cls, trade_config: DivergenceTradeConfig):
         conf_dict = trade_config.export_config()
         conf_dict.update(trade_config.strategy.export_config())
+
+        return conf_dict
+
+    @classmethod
+    def give_config_hash(cls, trade_config: DivergenceTradeConfig):
+        conf_dict = cls.give_config_dict(trade_config)
+        return make_hash(conf_dict)
+
+    @classmethod
+    def give_datapoint(cls, trade_config: DivergenceTradeConfig):
         first_candle_timestamp = trade_config.get_chartdata()[0][0].timestamp
         last_candle_timestamp = trade_config.get_chartdata()[0][-1].timestamp
+        conf_dict = cls.give_config_dict(trade_config)
 
         datapoint = DiverBacktestRow(
             config_json=json.dumps(conf_dict),
