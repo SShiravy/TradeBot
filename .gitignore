@@ -103,3 +103,6 @@ Images
 
 # csv
 *.csv
+
+# .db
+*.db

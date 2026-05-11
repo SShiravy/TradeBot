@@ -15,11 +15,23 @@ class TelegramReporter:
             cls.bot = Bot(settings.TELEGRAM_BOT_TOKEN)
             cls._public_channel = settings.TELEGRAM_CHANNEL_ID
             cls._log_channel = settings.TELEGRAM_REPORT_CHANNEL
+            cls._reporting = True
         return cls._instance
+
+    def disable_reporting(self):
+        self._reporting = False
+        logger.info("⚠️ Telegram Reporting Disabled")
+
+    def enable_reporting(self):
+        self._reporting = True
+        logger.info("👍 Telegram Reporting Enabled")
 
     async def send_msg(
         self, channel_id, msg, img_path: str | None = None, reply_id: None | int = None
     ):
+        if not self._reporting:
+            return False
+
         if img_path:
             img = open(img_path, "rb")
             res = await self.bot.send_photo(
@@ -33,6 +45,9 @@ class TelegramReporter:
         return res
 
     async def log_report(self, msg):
+        if not self._reporting:
+            return True
+
         await self.send_msg(self._log_channel, msg)
 
     async def new_position(self, position: Position):
@@ -59,7 +74,7 @@ class TelegramReporter:
 
         msg = "\n\n".join(msg_list)
         res = await self.send_msg(self._public_channel, msg, img_path)
-        position.msg_id = res.message_id
+        position.msg_id = res.message_id if res else 0
 
     async def position_closed(self, position: Position, filled_price=None):
         close_time = position.closed if position.closed else datetime.now(timezone.utc)
