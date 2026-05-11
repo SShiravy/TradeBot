@@ -104,5 +104,5 @@ Images
 # csv
 *.csv
 
-# db
+# .db
 *.db
