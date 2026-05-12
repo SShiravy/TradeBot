@@ -1,6 +1,5 @@
 from LocalBackTester.Database.create_db import create_db
 from LocalBackTester.agent import LocalAgent
-from ChartModule.plot import ChartPlot
 from custom_logger import CustomLogger
 import logging
 from config import settings
@@ -12,6 +11,7 @@ CustomLogger(True, consol_log_level=logging.DEBUG)
 
 
 def plot_csv_kline():
+    from ChartModule.plot import ChartPlot
     from LocalBackTester.all_charts import SOLUSDT_1h_2024_9
 
     agent = LocalAgent()
@@ -42,7 +42,7 @@ async def signal_backtester(store_db=True):
     from LocalBackTester.Database.methods import (
         store_diver_backtest,
         store_diver_signal,
-        valid_diver_backtest_hash,
+        fetch_diver_backtest,
     )
     from LocalBackTester.backtest_configs import (
         diver_forex_xau_1m,
@@ -52,8 +52,8 @@ async def signal_backtester(store_db=True):
     the_config = diver_crypto_solbtc_1m
 
     if store_db:
-        valid_hash = valid_diver_backtest_hash(the_config)
-        if not valid_hash:
+        valid_hash = fetch_diver_backtest(the_config)
+        if valid_hash:
             raise Exception("Same config already exists in db...")
 
     res = await the_config.backtest(
@@ -71,6 +71,29 @@ async def signal_backtester(store_db=True):
         store_diver_signal(dive_signals, backtest_datapoint.id)  # type: ignore
 
 
+def load_diver_backtest():
+    from LocalBackTester.backtest_configs import (
+        diver_forex_xau_1m,
+        diver_crypto_solbtc_1m,
+    )
+    from LocalBackTester.Database.methods import (
+        store_diver_backtest,
+        store_diver_signal,
+        fetch_diver_backtest,
+        fetch_diver_signal_models
+    )
+    from ChartModule.plot import ChartPlot
+
+    the_config = diver_forex_xau_1m
+
+    signals = fetch_diver_signal_models(the_config)
+    if signals is None:
+        raise Exception(f"There is no related signals for the config: {the_config}")
+
+    print(signals)
+
+
+
 if __name__ == "__main__":
     import asyncio
     
@@ -81,9 +104,10 @@ if __name__ == "__main__":
 
     # store_meta_klines()
 
-    create_db()
+    # create_db()
+    # asyncio.run(signal_backtester())
 
-    asyncio.run(signal_backtester())
+    load_diver_backtest()
 
 
 # TODO: search and replace candle.time.timestamp() with candle.timestamp

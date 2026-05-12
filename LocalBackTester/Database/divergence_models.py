@@ -40,7 +40,7 @@ class DiverSignalRow(SQLModel, table=True):
         )
 
         return datapoint
-
+    
 
 class DiverBacktestRow(SQLModel, table=True):
     __tablename__ = "Divergence_Backtests"  # type: ignore
