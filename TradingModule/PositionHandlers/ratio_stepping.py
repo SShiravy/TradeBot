@@ -73,7 +73,7 @@ class RatioSteppingForex(SlTpRatioForex):
                 stoploss=pos.stoploss,
                 takeprofit=step.price,
                 leverage=pos.leverage,
-                source=f"{pos.source}|TP of: {pos.id}",
+                source=f"{pos.id}",
                 real_trade=True,
             )
             await commands.OpenPosition(step_position, self.exchange_agent).execute()
@@ -117,7 +117,7 @@ class RatioSteppingForex(SlTpRatioForex):
             self.leverage,
             signal.candle.time + timedelta(seconds=2),
             signal.source,
-            real_trade=False,
+            real_trade=real_trade,
             plot=plot,
         )
         self.open_positions.append(position)

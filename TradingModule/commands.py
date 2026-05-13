@@ -348,10 +348,13 @@ class TrailStoplossbyStep(TradeCommand):
                     )
                     return False
                 for tp_pos in tp_positions:
-                    self.exchange.change_stoploss(tp_pos, new_sl.price)
+                    res = self.exchange.change_stoploss(tp_pos, new_sl.price)
+                    logger.debug(f"tp_pos (tp:{tp_pos.takeprofit}, sl:{tp_pos.stoploss}) | change sl res:{res}")
+
 
             else:
                 return self.exchange.change_stoploss(self.position, new_sl.price)
         self.position.stoploss = new_sl.price
         self.position.last_update = time
+        logging.debug(f"TrailStopStep: id={self.position.id}, real={self.position.real_trade}, {self.position.stoploss}")
         return True

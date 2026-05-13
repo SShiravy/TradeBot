@@ -72,7 +72,8 @@ class Trigger:
 
 @dataclass(slots=True)
 class Position:
-    id: uuid.UUID | str = field(default_factory=uuid.uuid4, init=False)
+    id: uuid.UUID | str = field(default_factory=lambda:uuid.uuid4().hex[:8], init=False)
+    
     chart: Chart
     side: OrderSide
     entry_price: float

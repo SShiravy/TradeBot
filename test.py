@@ -1,5 +1,7 @@
 from custom_logger import CustomLogger
 import logging
+import asyncio
+
 
 
 CustomLogger(True, consol_log_level=logging.DEBUG)
@@ -35,44 +37,40 @@ async def start_fich_diver_backtest():
     await coinex_five_m.backtest(1000)
 
 
-def test_meta_open_positions():
+async def test_meta_open_positions():
     from Forex.agent import ForexAgent
+    from TradingModule.trader_bot import TraderBot
+    from TradingModule.reporter import TelegramReporter
+    from ChartModule.models import MarketSide
+    from DivergenceStrategy.backtest_configs import (
+        forex_diver_one_m,
+    )
+    TelegramReporter().disable_reporting()
+    the_config = forex_diver_one_m
+    the_config.position_handler.short_trade = True
+    the_config.position_handler.long_trade = True
+    
 
-    ForexAgent().get_open_positions(comment_filter="ops")
-
-
-# def test_trailstop_command():
-#     from TradingModule.commands import TrailStoplossbyStep
-#     from TradingModule.models import Position
-
-
-#     command = TrailStoplossbyStep(position=Position(), exchange=None)
-
+    base_chartdata, second_chartdata = the_config.get_chartdata(100)
+    diver_signal = the_config.strategy.generate_dummy_signal(base_chartdata,second_chartdata,MarketSide.BEARISH)
+    logging.info(f"dummy diver signal: {diver_signal}")
+    pos = await the_config.position_handler.generate_position(diver_signal)
+    logging.info(f"position created from the dummy signal: {pos}")
+    logging.info(f"opoen positions in mt5: {ForexAgent().get_open_positions(comment_filter="")}")
+    await asyncio.gather(TraderBot(name="test opening pos", configs=[the_config]).manage())
 
 if __name__ == "__main__":
-    import asyncio
 
     # asyncio.run(start_diver_crypto_backtest_pack())
-    asyncio.run(start_diver_backtest())
+    # asyncio.run(start_diver_backtest())
     # asyncio.run(start_fibochoch_backtest())
     # asyncio.run(start_fich_diver_backtest())
 
     # new_backtest()
 
-    test_meta_open_positions()
+    asyncio.run(test_meta_open_positions())
 
-    # import requests
-    # from datetime import datetime
 
-    # import requests
-    # from datetime import datetime
-    # url = 'https://publicapi.ramzinex.com/exchange/api/v1.0/exchange/chart/tv/history'
-    # params = {'symbol':'USDTIRR','resolution':1, 'from':int(datetime.now().timestamp())-10000, 'to':int(datetime.now().timestamp())}
-    # print(int(datetime.now().timestamp()))
-    # payload = {}
-    # headers = {}
-    # response = requests.request('GET', url, headers=headers, data=payload, params=params)
-    # print(response.text)
 
 
 # TODO: position handler with MA and control tp sl with it

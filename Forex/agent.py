@@ -174,7 +174,7 @@ class ForexAgent(ExchangeAgent):
             "tp": position.takeprofit,
             "deviation": 20,
             "magic": 80713,
-            "comment": "PythonTraderBot",
+            "comment": position.source,
             "type_time": mt5.ORDER_TIME_GTC,
             "type_filling": mt5.ORDER_FILLING_IOC,
         }
@@ -274,7 +274,7 @@ class ForexAgent(ExchangeAgent):
             volume=mt5_pos.volume,
             stoploss=mt5_pos.sl,
             takeprofit=mt5_pos.tp,
-            leverage=mt5_pos.volume / mt5_pos.volume_real,  # type: ignore
+            leverage=mt5_pos.volume, # / mt5_pos.volume_real,  # type: ignore
             source=f"MetaTrader|{mt5_pos.comment}",
             real_trade=True,
         )
@@ -296,7 +296,7 @@ class ForexAgent(ExchangeAgent):
                 if comment_filter not in pos.comment:
                     continue
             filtered_poses.append(self.mt5_pos_to_position(pos))
-            logger.critical(open_poses)
+            logger.debug(f"mt5 filtered open pos: {open_poses}")
         return filtered_poses
 
 
