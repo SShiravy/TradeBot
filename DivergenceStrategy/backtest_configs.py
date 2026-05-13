@@ -78,9 +78,9 @@ forex_diver_one_m = ForexDiverTradeConfig(
     bar_between_signals=2,
     position_handler=RatioSteppingForex(
         ForexAgent(),
-        targets_ratio=[1, 2, 4],
-        stoploss_pip=10,
-        initial_volume=[0.01, 0.01, 0.01],
+        targets_ratio=[1, 1.5, 3],
+        stoploss_pip=15,
+        initial_volume=[0.02, 0.01, 0.01],
         long_trade=False,
         short_trade=False,
         trail_stop=True,
