@@ -378,3 +378,29 @@ class ChartData:
     def give_sub_chartdata(self, sub_candles):
         chart = copy(self.chart)
         return ChartData(chart, sub_candles)
+
+    def find_candle_by_time(self, time: datetime | int) -> None | Candle:
+        if isinstance(time, int):  # time is a timestamp
+            timestamp = time
+        else:
+            timestamp = datetime.timestamp(time)
+
+        # binary search
+        if (
+            self.candles[-1].timestamp < timestamp
+            or self.candles[0].timestamp > timestamp
+        ):
+            return None
+
+        sub_candles = copy(self.candles)
+        while True:
+            i = round(len(sub_candles) / 2)
+            candle = sub_candles[i - 1]
+            if candle.timestamp < timestamp:
+                sub_candles = sub_candles[i:]
+            elif candle.timestamp > timestamp:
+                sub_candles = sub_candles[: i - 1]
+            else:  # candle.timestamp == timestamp:
+                return candle
+            if len(sub_candles) <= 1:
+                return sub_candles[0]
