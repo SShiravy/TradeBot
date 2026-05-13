@@ -57,7 +57,7 @@ async def signal_backtester(store_db=True):
             raise Exception("Same config already exists in db...")
 
     res = await the_config.backtest(
-        n_bar=the_config.chart.number_of_bars,  # type: ignore
+        n_bar= the_config.chart.number_of_bars,  # type: ignore
         len_sub_data=200,
         consider_positions=False,
         show_image=True,
@@ -80,23 +80,28 @@ def load_diver_backtest():
         store_diver_backtest,
         store_diver_signal,
         fetch_diver_backtest,
-        fetch_diver_signal_models
+        fetch_diver_signal_models,
+        fetch_diver_siganls
     )
-    from ChartModule.plot import ChartPlot
+    from ChartModule.plot import DoubleChartPlot
 
-    the_config = diver_forex_xau_1m
+    the_config = diver_crypto_solbtc_1m
+    n_bar = 700
 
-    signals = fetch_diver_signal_models(the_config)
+    signals = fetch_diver_siganls(the_config)
     if signals is None:
         raise Exception(f"There is no related signals for the config: {the_config}")
+    chartdata,second_chartdata = the_config.get_chartdata(n_bar)
 
-    print(signals)
-
-
+    plot = DoubleChartPlot(chartdata, second_chartdata, n_bar)
+    for signal in signals:
+        the_config.strategy.draw(plot,signal)
+    plot.show()
+    
 
 if __name__ == "__main__":
     import asyncio
-    
+
     # plot_csv_kline()
 
     # asyncio.run(crypto_backtest())
