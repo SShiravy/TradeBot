@@ -31,22 +31,31 @@ def fetch_diver_signal_models(diver_tradeconfig: DivergenceTradeConfig):
     return result
 
 
-def fetch_diver_siganls(diver_tradeconfig: DivergenceTradeConfig):
+def fetch_diver_siganls(
+    diver_tradeconfig: DivergenceTradeConfig,
+) -> list[DivergenceSignal] | None:
     signal_models = fetch_diver_signal_models(diver_tradeconfig)
     if signal_models is None:
         logger.info("No diver signal_model related to this tradeconfig in db")
         return None
 
     all_diver_signals = []
-    base_chartdata,second_chartdata = diver_tradeconfig.get_chartdata()  # type: ignore
+    base_chartdata, second_chartdata = diver_tradeconfig.get_chartdata()  # type: ignore
     for signal in signal_models:
         signal_candle = base_chartdata.find_candle_by_time(signal.signal_timestamp)
-        # TODO: add Line source from body candle true or false
         if signal.side == "Bullish":
-            line_candlesource = IndicatorCandleSource.Bottom if diver_tradeconfig.strategy.body_candle else IndicatorCandleSource.Low
-        
-        else: # signal.side == "Bearish"
-            line_candlesource = IndicatorCandleSource.Top if diver_tradeconfig.strategy.body_candle else IndicatorCandleSource.High
+            line_candlesource = (
+                IndicatorCandleSource.Bottom
+                if diver_tradeconfig.strategy.body_candle
+                else IndicatorCandleSource.Low
+            )
+
+        else:  # signal.side == "Bearish"
+            line_candlesource = (
+                IndicatorCandleSource.Top
+                if diver_tradeconfig.strategy.body_candle
+                else IndicatorCandleSource.High
+            )
 
         if signal_candle is None:
             logger.error(f"No candle for signal: {signal}")
@@ -61,14 +70,18 @@ def fetch_diver_siganls(diver_tradeconfig: DivergenceTradeConfig):
                 start_candle=base_chartdata.find_candle_by_time(
                     signal.baseline_start_timestamp  # type: ignore
                 ),
-                end_candle=base_chartdata.find_candle_by_time(signal.baseline_end_timestamp),  # type: ignore
+                end_candle=base_chartdata.find_candle_by_time(
+                    signal.baseline_end_timestamp
+                ),  # type: ignore
             ),
             second_line=Line(
                 source=line_candlesource,
                 start_candle=second_chartdata.find_candle_by_time(
                     signal.secondline_start_timestamp  # type: ignore
                 ),
-                end_candle=second_chartdata.find_candle_by_time(signal.secondline_end_timestamp),  # type: ignore
+                end_candle=second_chartdata.find_candle_by_time(
+                    signal.secondline_end_timestamp
+                ),  # type: ignore
             ),
         )
         all_diver_signals.append(diver_signal)

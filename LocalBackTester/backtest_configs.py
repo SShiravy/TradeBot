@@ -46,8 +46,8 @@ diver_crypto_solbtc_1m = CoinexDiverTradeConfig(
     strategy=Divergence(3, 500, [], name="CoinexDiver", inverse_diver_long=True),
     position_handler=SlTpRatioCrypto(
         local_agent,
-        ratio=1.5,
-        stoploss_percent=0.5,
+        ratio=2,
+        stoploss_percent=5,
         initial_volume=10,
         leverage=10,
         long_trade=False,

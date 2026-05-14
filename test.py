@@ -3,7 +3,6 @@ import logging
 import asyncio
 
 
-
 CustomLogger(True, consol_log_level=logging.DEBUG)
 
 
@@ -45,22 +44,28 @@ async def test_meta_open_positions():
     from DivergenceStrategy.backtest_configs import (
         forex_diver_one_m,
     )
+
     TelegramReporter().disable_reporting()
     the_config = forex_diver_one_m
     the_config.position_handler.short_trade = True
     the_config.position_handler.long_trade = True
-    
 
     base_chartdata, second_chartdata = the_config.get_chartdata(100)
-    diver_signal = the_config.strategy.generate_dummy_signal(base_chartdata,second_chartdata,MarketSide.BEARISH)
+    diver_signal = the_config.strategy.generate_dummy_signal(
+        base_chartdata, second_chartdata, MarketSide.BEARISH
+    )
     logging.info(f"dummy diver signal: {diver_signal}")
     pos = await the_config.position_handler.generate_position(diver_signal)
     logging.info(f"position created from the dummy signal: {pos}")
-    logging.info(f"opoen positions in mt5: {ForexAgent().get_open_positions(comment_filter="")}")
-    await asyncio.gather(TraderBot(name="test opening pos", configs=[the_config]).manage())
+    logging.info(
+        f"opoen positions in mt5: {ForexAgent().get_open_positions(comment_filter='')}"
+    )
+    await asyncio.gather(
+        TraderBot(name="test opening pos", configs=[the_config]).manage()
+    )
+
 
 if __name__ == "__main__":
-
     # asyncio.run(start_diver_crypto_backtest_pack())
     # asyncio.run(start_diver_backtest())
     # asyncio.run(start_fibochoch_backtest())
@@ -69,8 +74,6 @@ if __name__ == "__main__":
     # new_backtest()
 
     asyncio.run(test_meta_open_positions())
-
-
 
 
 # TODO: position handler with MA and control tp sl with it

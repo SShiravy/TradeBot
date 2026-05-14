@@ -1,8 +1,9 @@
 from LocalBackTester.Database.create_db import create_db
 from LocalBackTester.agent import LocalAgent
 from custom_logger import CustomLogger
-import logging
 from config import settings
+import asyncio
+import logging
 
 settings.METATRADER_TERMINAL_PATH = ""
 
@@ -57,7 +58,7 @@ async def signal_backtester(store_db=True):
             raise Exception("Same config already exists in db...")
 
     res = await the_config.backtest(
-        n_bar= the_config.chart.number_of_bars,  # type: ignore
+        n_bar=the_config.chart.number_of_bars,  # type: ignore
         len_sub_data=200,
         consider_positions=False,
         show_image=True,
@@ -76,13 +77,7 @@ def load_diver_backtest():
         diver_forex_xau_1m,
         diver_crypto_solbtc_1m,
     )
-    from LocalBackTester.Database.methods import (
-        store_diver_backtest,
-        store_diver_signal,
-        fetch_diver_backtest,
-        fetch_diver_signal_models,
-        fetch_diver_siganls
-    )
+    from LocalBackTester.Database.methods import fetch_diver_siganls
     from ChartModule.plot import DoubleChartPlot
 
     the_config = diver_crypto_solbtc_1m
@@ -91,17 +86,77 @@ def load_diver_backtest():
     signals = fetch_diver_siganls(the_config)
     if signals is None:
         raise Exception(f"There is no related signals for the config: {the_config}")
-    chartdata,second_chartdata = the_config.get_chartdata(n_bar)
+    chartdata, second_chartdata = the_config.get_chartdata(n_bar)
 
     plot = DoubleChartPlot(chartdata, second_chartdata, n_bar)
     for signal in signals:
-        the_config.strategy.draw(plot,signal)
+        the_config.strategy.draw(plot, signal)
     plot.show()
-    
+
+
+async def position_backtester():
+    from TradingModule import commands
+    from copy import copy
+    from TradingModule.models import PositionsReport
+    from LocalBackTester.backtest_configs import (
+        diver_forex_xau_1m,
+        diver_crypto_solbtc_1m,
+    )
+    from LocalBackTester.Database.methods import fetch_diver_siganls
+    from ChartModule.plot import DoubleChartPlot
+
+    the_config = diver_crypto_solbtc_1m
+    position_handler = the_config.position_handler
+    n_bar = 700
+
+    signals = fetch_diver_siganls(the_config)
+    if signals is None:
+        raise Exception(f"There is no related signals for the config: {the_config}")
+    chartdata, second_chartdata = the_config.get_chartdata(n_bar)
+
+    # positions
+    for signal in signals:
+        signal_candle_index = chartdata.candles.index(signal.candle)
+        pos_candle = chartdata.candles[signal_candle_index + 1]
+        position = await position_handler.generate_position(
+            signal,
+            entry_price=pos_candle.open,  # TODO: add tick data param here
+        )
+        # handler
+        for candle in chartdata.candles[signal_candle_index + 1 :]:
+            ticks = [
+                candle.open,
+                candle.low,
+                candle.high,
+                candle.close,
+            ]  # TODO: change here for real ticks
+            position_handler.handler(position, ticks)
+            await commands.TradeCommand.execute_pending_commands(
+                candle.time, report=False
+            )
+            if position.closed:
+                position_handler.closed_positions.append(position)
+                position_handler.open_positions.remove(position)
+                break
+
+    # plot
+    plot = DoubleChartPlot(chartdata, second_chartdata, n_bar)
+    for signal in signals:
+        the_config.strategy.draw(plot, signal)
+    for pos in position_handler.closed_positions:
+        pos.plot = plot
+        pos.draw()
+    commands_report = commands.TradeCommand.close_records()
+    all_reports = position_handler.report()
+    logging.info("Result:\n\n" + commands_report)
+    for poses_report in all_reports:
+        logging.info("\n" + str(poses_report))
+    overal_report = PositionsReport.give_overall_report(copy(all_reports))
+    logging.info("\n" + str(overal_report))
+    plot.show()
+
 
 if __name__ == "__main__":
-    import asyncio
-
     # plot_csv_kline()
 
     # asyncio.run(crypto_backtest())
@@ -109,10 +164,14 @@ if __name__ == "__main__":
 
     # store_meta_klines()
 
-    # create_db()
+    create_db()
     # asyncio.run(signal_backtester())
 
-    load_diver_backtest()
+    # load_diver_backtest()
+
+    asyncio.run(position_backtester())
 
 
 # TODO: search and replace candle.time.timestamp() with candle.timestamp
+# TODO: change find candle by timestamp mothod, for returning index of candle
+# TODO: change position model to store timestamp for open_time ...
