@@ -201,14 +201,25 @@ class Divergence(Strategy):
 
     def report(self):
         return ""
-    
-    def generate_dummy_signal(self,base_chartdata:ChartData,
-                              second_chartdata:ChartData,
-                              side:Literal[MarketSide.BEARISH, MarketSide.BULLISH]=MarketSide.BEARISH):
+
+    def generate_dummy_signal(
+        self,
+        base_chartdata: ChartData,
+        second_chartdata: ChartData,
+        side: Literal[MarketSide.BEARISH, MarketSide.BULLISH] = MarketSide.BEARISH,
+    ):
         if side == MarketSide.BULLISH:
-            line_candlesource = IndicatorCandleSource.Bottom if self.body_candle else IndicatorCandleSource.Low
-        else: # side == MarketSide.BEARISH
-            line_candlesource = IndicatorCandleSource.Top if self.body_candle else IndicatorCandleSource.High
+            line_candlesource = (
+                IndicatorCandleSource.Bottom
+                if self.body_candle
+                else IndicatorCandleSource.Low
+            )
+        else:  # side == MarketSide.BEARISH
+            line_candlesource = (
+                IndicatorCandleSource.Top
+                if self.body_candle
+                else IndicatorCandleSource.High
+            )
 
         signal = DivergenceSignal(
             base_chartdata.chart,
@@ -218,16 +229,15 @@ class Divergence(Strategy):
             base_line=Line(
                 line_candlesource,
                 base_chartdata.candles[-5],
-                base_chartdata.candles[-2]
+                base_chartdata.candles[-2],
             ),
             second_line=Line(
                 line_candlesource,
                 second_chartdata.candles[-5],
-                second_chartdata.candles[-2]
-                )
+                second_chartdata.candles[-2],
+            ),
         )
         return signal
-
 
     def draw(
         self,

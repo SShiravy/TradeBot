@@ -47,6 +47,19 @@ class RatioSteppingForex(SlTpRatioForex):
         self.targets_volumes_lot = initial_volume
         self.trail_stop = trail_stop
 
+    def export_config(self) -> dict:
+        conf_dict = super().export_config()
+        conf_dict.pop("riskfree_trigger_ratio")
+        conf_dict.pop("ratio")
+        conf_dict.update(
+            {
+                "targets_ratio": self.targets_ratio,
+                "targets_volumes_lot": self.targets_volumes_lot,
+                "trail_stop": self.trail_stop,
+            }
+        )
+        return conf_dict
+
     def set_steps(self, pos: Position):
         steps = []
         sl_pip = abs(pos.stoploss - pos.entry_price)

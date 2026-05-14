@@ -72,8 +72,10 @@ class Trigger:
 
 @dataclass(slots=True)
 class Position:
-    id: uuid.UUID | str = field(default_factory=lambda:uuid.uuid4().hex[:8], init=False)
-    
+    id: uuid.UUID | str = field(
+        default_factory=lambda: uuid.uuid4().hex[:8], init=False
+    )
+
     chart: Chart
     side: OrderSide
     entry_price: float
@@ -266,7 +268,7 @@ class Position:
             self.initial_stoploss,
             end_of_line,
             self.initial_stoploss,
-            "#B91900",
+            "#FF2200",
             width=2,
         )
         plot.set_y_range((self.stoploss, self.takeprofit))

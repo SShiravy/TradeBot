@@ -36,6 +36,21 @@ class SideDistinctCrypto(RiskFreeCrypto):
         self.short_takeprofit_percent = short_takeprofit_percent
         self.short_riskfree_trigger_percent = short_riskfree_trigger_percent
 
+    def export_config(self) -> dict:
+        return {
+            "Handler": self.__class__.__name__,
+            "initial_volume": self.initial_volume,
+            "leverage": self.leverage,
+            "long_trade": self.long_trade,
+            "short_trade": self.short_trade,
+            "long_stoploss_percent": self.long_stoploss_percent,
+            "long_takeprofit_percent": self.long_takeprofit_percent,
+            "long_riskfree_trigger_percent": self.long_riskfree_trigger_percent,
+            "short_stoploss_percent": self.short_stoploss_percent,
+            "short_takeprofit_percent": self.short_takeprofit_percent,
+            "short_riskfree_trigger_percent": self.short_riskfree_trigger_percent,
+        }
+
     def init_stoploss(self, entry_price: float, side: OrderSide) -> float:
         if side is OrderSide.BUY:
             return abs(self.long_stoploss_percent / 100 - 1) * entry_price
@@ -90,6 +105,20 @@ class SideDistinctForex(RiskFreeForex):
         self.short_stoploss_pip = short_stoploss_pip / 10
         self.short_takeprofit_pip = short_takeprofit_pip / 10
         self.short_riskfree_trigger_pip = short_riskfree_trigger_pip / 10
+
+    def export_config(self) -> dict:
+        return {
+            "Handler": self.__class__.__name__,
+            "initial_volume": self.initial_volume,
+            "long_trade": self.long_trade,
+            "short_trade": self.short_trade,
+            "long_stoploss_pip": self.long_stoploss_pip,
+            "long_takeprofit_pip": self.long_takeprofit_pip,
+            "long_riskfree_trigger_pip": self.long_riskfree_trigger_pip,
+            "short_stoploss_pip": self.short_stoploss_pip,
+            "short_takeprofit_pip": self.short_takeprofit_pip,
+            "short_riskfree_trigger_pip": self.short_riskfree_trigger_pip,
+        }
 
     def init_stoploss(self, entry_price: float, side: OrderSide) -> float:
         if side is OrderSide.BUY:

@@ -274,7 +274,7 @@ class ForexAgent(ExchangeAgent):
             volume=mt5_pos.volume,
             stoploss=mt5_pos.sl,
             takeprofit=mt5_pos.tp,
-            leverage=mt5_pos.volume, # / mt5_pos.volume_real,  # type: ignore
+            leverage=mt5_pos.volume,  # / mt5_pos.volume_real,  # type: ignore
             source=f"MetaTrader|{mt5_pos.comment}",
             real_trade=True,
         )
