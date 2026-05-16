@@ -2,14 +2,9 @@ from typing import Optional
 from sqlmodel import SQLModel, Field
 from datetime import datetime, timezone
 import json
-import hashlib
+from LocalBackTester.Database.hashing import generate_hash
 from DivergenceStrategy.divergence import DivergenceTradeConfig
 from DivergenceStrategy.divergence import DivergenceSignal
-
-
-def make_hash(payload: dict):
-    raw = json.dumps(payload, sort_keys=True, separators=(",", ":"))
-    return hashlib.sha256(raw.encode()).hexdigest()
 
 
 class DiverSignalRow(SQLModel, table=True):
@@ -28,7 +23,7 @@ class DiverSignalRow(SQLModel, table=True):
     source: int = Field(foreign_key="Divergence_Backtests.id", index=True)
 
     @classmethod
-    def give_datapoint(cls, diver_signal: DivergenceSignal, source_id: int):
+    def generate_datapoint(cls, diver_signal: DivergenceSignal, source_id: int):
         datapoint = DiverSignalRow(
             signal_timestamp=diver_signal.candle.timestamp,
             baseline_start_timestamp=diver_signal.base_line.start_candle.timestamp,
@@ -71,17 +66,17 @@ class DiverBacktestRow(SQLModel, table=True):
     @classmethod
     def give_config_hash(cls, trade_config: DivergenceTradeConfig):
         conf_dict = cls.give_config_dict(trade_config)
-        return make_hash(conf_dict)
+        return generate_hash(conf_dict)
 
     @classmethod
-    def give_datapoint(cls, trade_config: DivergenceTradeConfig):
+    def generate_datapoint(cls, trade_config: DivergenceTradeConfig):
         first_candle_timestamp = trade_config.get_chartdata()[0][0].timestamp
         last_candle_timestamp = trade_config.get_chartdata()[0][-1].timestamp
         conf_dict = cls.give_config_dict(trade_config)
 
         datapoint = DiverBacktestRow(
             config_json=json.dumps(conf_dict),
-            config_hash=make_hash(conf_dict),
+            config_hash=generate_hash(conf_dict),
             symbol=trade_config.chart.symbol,
             second_symbol=trade_config.second_chart.symbol,
             timeframe=trade_config.chart.timeframe.value,

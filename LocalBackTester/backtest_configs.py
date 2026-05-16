@@ -6,6 +6,7 @@ from TradingModule.PositionHandlers.ratio_handlers import (
     SlTpRatioForex,
     SlTpRatioCrypto,
 )
+from TradingModule.PositionHandlers.simple_handlers import SimpleCrypto
 from LocalBackTester.all_charts import (
     XAUUSD_1m_99000,
     SOLUSD_1m_99000,
@@ -44,10 +45,10 @@ diver_crypto_solbtc_1m = CoinexDiverTradeConfig(
     chart=SOLUSDT_1h_2024_9,
     second_chart=BTCUSDT_1h_2024_9,
     strategy=Divergence(3, 500, [], name="CoinexDiver", inverse_diver_long=True),
-    position_handler=SlTpRatioCrypto(
+    position_handler=SimpleCrypto(
         local_agent,
-        ratio=2,
-        stoploss_percent=5,
+        stoploss_percent=2,
+        takeprofit_percent=3,
         initial_volume=10,
         leverage=10,
         long_trade=False,

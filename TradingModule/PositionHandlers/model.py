@@ -147,7 +147,8 @@ class PositionHandler(ABC):
                 continue
             self.candles_check(pos)
 
-    def report(self) -> list[PositionsReport]:
+    def report(self, flush: bool = True) -> list[PositionsReport]:
         reports = PositionsReport.generate_reports(self.closed_positions)
-        self.closed_positions = []
+        if flush:
+            self.closed_positions = []
         return reports

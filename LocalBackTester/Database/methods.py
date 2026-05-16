@@ -92,7 +92,7 @@ def store_diver_backtest(diver_tradeconfig: DivergenceTradeConfig):
     if fetch_diver_backtest(diver_tradeconfig):
         logger.error("Same config already exists in db...")
         raise Exception("Same config already exists in db...")
-    datapoint = DiverBacktestRow.give_datapoint(diver_tradeconfig)
+    datapoint = DiverBacktestRow.generate_datapoint(diver_tradeconfig)
     with Session(engine) as session:
         session.add(datapoint)
         session.commit()
@@ -104,6 +104,6 @@ def store_diver_backtest(diver_tradeconfig: DivergenceTradeConfig):
 def store_diver_signal(diver_signals: list[DivergenceSignal], source_id):
     with Session(engine) as session:
         for diver_signal in diver_signals:
-            datapoint = DiverSignalRow.give_datapoint(diver_signal, source_id)
+            datapoint = DiverSignalRow.generate_datapoint(diver_signal, source_id)
             session.add(datapoint)
         session.commit()

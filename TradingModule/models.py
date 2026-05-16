@@ -1,3 +1,5 @@
+from copy import copy
+
 import numpy as np
 from ChartModule.models import (
     Chart,
@@ -293,6 +295,9 @@ class PositionsReport:
     flats: int = field(default=0, init=False)
     loses: int = field(default=0, init=False)
 
+    max_win_in_a_row: int = field(default=0, init=False)
+    max_lose_in_a_row: int = field(default=0, init=False)
+
     total_positions: int = field(default=1, init=False)
 
     overal_report: bool = field(default=False, init=False)
@@ -379,6 +384,26 @@ class PositionsReport:
 
         return report
 
+    def calculate_max_win_lose_in_row(self, all_positions: list[Position]):
+        all_pos = copy(all_positions)
+        all_pos.sort(
+            key=lambda pos: pos.closed if pos.closed else datetime.now(tz=timezone.utc)
+        )
+        win_in_a_row = 0
+        lose_in_a_row = 0
+        for pos in all_pos:
+            if pos.pnl > 0:
+                win_in_a_row += 1
+                self.max_lose_in_a_row = max(self.max_lose_in_a_row, lose_in_a_row)
+                self.max_win_in_a_row = max(self.max_win_in_a_row, win_in_a_row)
+                lose_in_a_row = 0
+
+            elif pos.pnl < 0:
+                lose_in_a_row += 1
+                self.max_lose_in_a_row = max(self.max_lose_in_a_row, lose_in_a_row)
+                self.max_win_in_a_row = max(self.max_win_in_a_row, win_in_a_row)
+                win_in_a_row = 0
+
     @classmethod
     def generate_reports(cls, all_positions: list[Position]):
         """
@@ -419,6 +444,11 @@ class PositionsReport:
             report_msg.append(
                 f"Win Rate = {round(self.wins / (self.wins + self.loses) * 100, 2)} %"
             )
+
+        if self.max_lose_in_a_row or self.max_win_in_a_row:
+            report_msg.append(f"Max Win in a Row = {self.max_win_in_a_row}")
+            report_msg.append(f"Max Lose in a Row = {self.max_lose_in_a_row}")
+
         duration = self.last_time.replace(
             second=0, microsecond=0
         ) - self.first_time.replace(second=0, microsecond=0)

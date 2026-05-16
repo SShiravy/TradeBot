@@ -96,14 +96,13 @@ def load_diver_backtest():
 
 async def position_backtester():
     from TradingModule import commands
-    from copy import copy
-    from TradingModule.models import PositionsReport
     from LocalBackTester.backtest_configs import (
         diver_forex_xau_1m,
         diver_crypto_solbtc_1m,
     )
     from LocalBackTester.Database.methods import fetch_diver_siganls
     from ChartModule.plot import DoubleChartPlot
+    from LocalBackTester.Database.backtest_models import PositionsResult
 
     the_config = diver_crypto_solbtc_1m
     position_handler = the_config.position_handler
@@ -147,12 +146,12 @@ async def position_backtester():
         pos.plot = plot
         pos.draw()
     commands_report = commands.TradeCommand.close_records()
-    all_reports = position_handler.report()
-    logging.info("Result:\n\n" + commands_report)
-    for poses_report in all_reports:
-        logging.info("\n" + str(poses_report))
-    overal_report = PositionsReport.give_overall_report(copy(all_reports))
-    logging.info("\n" + str(overal_report))
+
+    result = PositionsResult.generate_datapoint(
+        position_handler, commands_report, int(signals[0].source)
+    )
+
+    logging.info("\n" + str(result.__dict__))
     plot.show()
 
 
@@ -175,3 +174,4 @@ if __name__ == "__main__":
 # TODO: search and replace candle.time.timestamp() with candle.timestamp
 # TODO: change find candle by timestamp mothod, for returning index of candle
 # TODO: change position model to store timestamp for open_time ...
+# TODO: add max_win/lose_in_row to PositionReport ...
