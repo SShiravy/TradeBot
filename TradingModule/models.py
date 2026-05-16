@@ -424,6 +424,13 @@ class PositionsReport:
         report = sum(all_reports)
         return report  # type: ignore
 
+    def calculate_duration(self):
+        duration = self.last_time.replace(
+            second=0, microsecond=0
+        ) - self.first_time.replace(second=0, microsecond=0)
+        duration = duration - timedelta(microseconds=duration.microseconds)
+        return duration
+
     def __str__(self) -> str:
         report_msg = [
             f"{self.identifier if not self.overal_report else f'Overall {self.source} on {self.chart.symbol}'}",
@@ -449,10 +456,7 @@ class PositionsReport:
             report_msg.append(f"Max Win in a Row = {self.max_win_in_a_row}")
             report_msg.append(f"Max Lose in a Row = {self.max_lose_in_a_row}")
 
-        duration = self.last_time.replace(
-            second=0, microsecond=0
-        ) - self.first_time.replace(second=0, microsecond=0)
-        duration = duration - timedelta(microseconds=duration.microseconds)
+        duration = self.calculate_duration()
         report_msg.append(f"Duration = {duration}")
         return "\n".join(report_msg)
 

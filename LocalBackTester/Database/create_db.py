@@ -9,5 +9,6 @@ def create_db():
         DiverBacktestRow,
         DiverSignalRow,
     )
+    from LocalBackTester.Database.backtest_models import PositionsResult
 
     SQLModel.metadata.create_all(engine)

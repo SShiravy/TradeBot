@@ -3,20 +3,42 @@ from DivergenceStrategy.divergence import DivergenceTradeConfig, DivergenceSigna
 from ChartModule.Indicators import Line
 from sqlmodel import Session, select
 from LocalBackTester.Database.divergence_models import DiverBacktestRow, DiverSignalRow
+from LocalBackTester.Database.backtest_models import PositionsResult
 from LocalBackTester.Database.create_db import engine
 import logging
+
+from TradingModule.PositionHandlers.model import PositionHandler
 
 
 logger = logging.getLogger("DB Methods")
 
+# Diver Config ----------
 
-def fetch_diver_backtest(diver_tradeconfig: DivergenceTradeConfig):
+
+def fetch_diver_backtest(
+    diver_tradeconfig: DivergenceTradeConfig,
+) -> DiverBacktestRow | None:
     """Fetch diver_tradeconfig from db with same hash. return backtest row or None"""
     hash = DiverBacktestRow.give_config_hash(diver_tradeconfig)
     with Session(engine) as session:
         statement = select(DiverBacktestRow).where(DiverBacktestRow.config_hash == hash)
         result = session.exec(statement).first()
     return result
+
+
+def store_diver_backtest(diver_tradeconfig: DivergenceTradeConfig):
+    if fetch_diver_backtest(diver_tradeconfig):
+        raise Exception("Same config already exists in db...")
+    datapoint = DiverBacktestRow.generate_datapoint(diver_tradeconfig)
+    with Session(engine) as session:
+        session.add(datapoint)
+        session.commit()
+        session.refresh(datapoint)
+
+    return datapoint
+
+
+# Diver Signal ----------
 
 
 def fetch_diver_signal_models(diver_tradeconfig: DivergenceTradeConfig):
@@ -88,22 +110,33 @@ def fetch_diver_siganls(
     return all_diver_signals
 
 
-def store_diver_backtest(diver_tradeconfig: DivergenceTradeConfig):
-    if fetch_diver_backtest(diver_tradeconfig):
-        logger.error("Same config already exists in db...")
-        raise Exception("Same config already exists in db...")
-    datapoint = DiverBacktestRow.generate_datapoint(diver_tradeconfig)
-    with Session(engine) as session:
-        session.add(datapoint)
-        session.commit()
-        session.refresh(datapoint)
-
-    return datapoint
-
-
 def store_diver_signal(diver_signals: list[DivergenceSignal], source_id):
     with Session(engine) as session:
         for diver_signal in diver_signals:
             datapoint = DiverSignalRow.generate_datapoint(diver_signal, source_id)
             session.add(datapoint)
         session.commit()
+
+
+# Position Result --------------
+
+
+def fetch_positions_result(handler: PositionHandler, backtest_source: int):
+    hash = PositionsResult.give_handler_hash(handler, backtest_source)
+    with Session(engine) as session:
+        statement = select(PositionsResult).where(PositionsResult.handler_hash == hash)
+        result = session.exec(statement).first()
+    return result
+
+
+def store_positions_result(
+    handler: PositionHandler, commands_report: str, source_id: int
+):
+    if fetch_positions_result(handler, source_id):
+        raise Exception("Same config already exists in db...")
+    datapoint = PositionsResult.generate_datapoint(handler, commands_report, source_id)
+    with Session(engine) as session:
+        session.add(datapoint)
+        session.commit()
+        session.refresh(datapoint)
+    return datapoint

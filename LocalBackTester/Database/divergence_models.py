@@ -1,4 +1,3 @@
-from typing import Optional
 from sqlmodel import SQLModel, Field
 from datetime import datetime, timezone
 import json
@@ -10,7 +9,7 @@ from DivergenceStrategy.divergence import DivergenceSignal
 class DiverSignalRow(SQLModel, table=True):
     __tablename__ = "Divergence_Signals"  # type: ignore
 
-    id: Optional[int] = Field(default=None, primary_key=True)
+    id: int | None = Field(default=None, primary_key=True)
 
     signal_timestamp: int
 
@@ -40,10 +39,10 @@ class DiverSignalRow(SQLModel, table=True):
 class DiverBacktestRow(SQLModel, table=True):
     __tablename__ = "Divergence_Backtests"  # type: ignore
 
-    id: Optional[int] = Field(default=None, primary_key=True)
+    id: int | None = Field(default=None, primary_key=True)
 
     symbol: str
-    second_symbol: Optional[str] = None
+    second_symbol: str | None
     timeframe: str
 
     first_candle_timestamp: int
