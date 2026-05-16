@@ -21,6 +21,16 @@ class SimpleCrypto(PositionHandler):
         self.stoploss_percent = stoploss_percent
         self.takeprofit_percent = takeprofit_percent
 
+    def export_config(self) -> dict:
+        conf_dict = super().export_config()
+        conf_dict.update(
+            {
+                "stoploss_percent": self.stoploss_percent,
+                "takeprofit_percent": self.takeprofit_percent,
+            }
+        )
+        return conf_dict
+
     def init_stoploss(self, entry_price: float, side: OrderSide) -> float:
         return abs(self.stoploss_percent / 100 - side.factor()) * entry_price
 
@@ -41,6 +51,14 @@ class SimpleForex(PositionHandler):
         super().__init__(exchange_agent, initial_volume, 1, long_trade, short_trade)
         self.stoploss_pip = stoploss_pip / 10
         self.takeprofit_pip = takeprofit_pip / 10
+
+    def export_config(self) -> dict:
+        conf_dict = super().export_config()
+        conf_dict.pop("leverage")
+        conf_dict.update(
+            {"stoploss_pip": self.stoploss_pip, "takeprofit_pip": self.takeprofit_pip}
+        )
+        return conf_dict
 
     def init_stoploss(self, entry_price: float, side: OrderSide) -> float:
         return entry_price - side.factor() * self.stoploss_pip

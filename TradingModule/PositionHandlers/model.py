@@ -38,6 +38,16 @@ class PositionHandler(ABC):
     def init_takeprofit(self, entry_price: float, side: OrderSide) -> float:
         pass
 
+    @abstractmethod
+    def export_config(self) -> dict:
+        return {
+            "Handler": self.__class__.__name__,
+            "initial_volume": self.initial_volume,
+            "leverage": self.leverage,
+            "long_trade": self.long_trade,
+            "short_trade": self.short_trade,
+        }
+
     async def generate_position(
         self,
         signal: Signal,

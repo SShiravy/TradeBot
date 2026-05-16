@@ -31,6 +31,17 @@ class SlTpRatioCrypto(PositionHandler):
         self.stoploss_percent = stoploss_percent
         self.riskfree_trigger_ratio = riskfree_trigger_ratio
 
+    def export_config(self) -> dict:
+        conf_dict = super().export_config()
+        conf_dict.update(
+            {
+                "ratio": self.ratio,
+                "riskfree_trigger_ratio": self.riskfree_trigger_ratio,
+                "stoploss_percent": self.stoploss_percent,
+            }
+        )
+        return conf_dict
+
     def init_stoploss(self, entry_price: float, side: OrderSide) -> float:
         return abs(self.stoploss_percent / 100 - side.factor()) * entry_price
 
@@ -155,6 +166,18 @@ class SlTpRatioForex(PositionHandler):
         self.ratio = ratio
         self.stoploss_pip = stoploss_pip / 10
         self.riskfree_trigger_ratio = riskfree_trigger_ratio
+
+    def export_config(self) -> dict:
+        conf_dict = super().export_config()
+        conf_dict.pop("leverage")
+        conf_dict.update(
+            {
+                "ratio": self.ratio,
+                "riskfree_trigger_ratio": self.riskfree_trigger_ratio,
+                "stoploss_pip": self.stoploss_pip,
+            }
+        )
+        return conf_dict
 
     def init_stoploss(self, entry_price: float, side: OrderSide) -> float:
         return entry_price - side.factor() * self.stoploss_pip

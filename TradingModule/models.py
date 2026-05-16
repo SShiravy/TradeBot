@@ -268,7 +268,7 @@ class Position:
             self.initial_stoploss,
             end_of_line,
             self.initial_stoploss,
-            "#B91900",
+            "#FF2200",
             width=2,
         )
         plot.set_y_range((self.stoploss, self.takeprofit))

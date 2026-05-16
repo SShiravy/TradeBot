@@ -28,6 +28,15 @@ class RiskFreeCrypto(SimpleCrypto):
         )
         self.riskfree_trigger_percent = riskfree_trigger_percent
 
+    def export_config(self) -> dict:
+        conf_dict = super().export_config()
+        conf_dict.update(
+            {
+                "riskfree_trigger_percent": self.riskfree_trigger_percent,
+            }
+        )
+        return conf_dict
+
     def give_trigger_price(self, position: Position) -> float:
         if position.stoploss == position.entry_price:
             # when already riskfree triggered
@@ -77,6 +86,11 @@ class RiskFreeForex(SimpleForex):
             short_trade,
         )
         self.riskfree_trigger_pip = riskfree_trigger_pip / 10
+
+    def export_config(self) -> dict:
+        conf_dict = super().export_config()
+        conf_dict.update({"riskfree_trigger_pip": self.riskfree_trigger_pip})
+        return conf_dict
 
     def give_trigger_price(self, position: Position) -> float:
         if position.stoploss == position.entry_price:

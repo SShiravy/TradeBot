@@ -65,6 +65,18 @@ async def test_meta_open_positions():
     )
 
 
+def test_handler_export_config():
+    from DivergenceStrategy.backtest_configs import (
+        forex_diver_five_m,
+        forex_diver_one_m,
+        five_m_diver,
+        cvd_diver_one_m_cvd,
+        coinex_4h_diver,
+    )
+
+    print(cvd_diver_one_m_cvd.position_handler.export_config())
+
+
 if __name__ == "__main__":
     # asyncio.run(start_diver_crypto_backtest_pack())
     # asyncio.run(start_diver_backtest())
@@ -73,7 +85,8 @@ if __name__ == "__main__":
 
     # new_backtest()
 
-    asyncio.run(test_meta_open_positions())
+    # asyncio.run(test_meta_open_positions())
+    test_handler_export_config()
 
 
 # TODO: position handler with MA and control tp sl with it
