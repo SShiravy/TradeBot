@@ -1,4 +1,3 @@
-from copy import copy
 from datetime import timedelta
 from ChartModule.models import MarketSide, Signal
 from ChartModule.plot import Plot
