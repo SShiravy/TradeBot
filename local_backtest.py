@@ -129,7 +129,7 @@ if __name__ == "__main__":
         diver_forex_xau_1m_5000_test,
     )
 
-    the_config = diver_crypto_solbtc_1m
+    the_config = diver_forex_xau_1m_5000_test
 
     create_db()
 

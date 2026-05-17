@@ -30,8 +30,9 @@ diver_forex_xau_1m_5000_test = ForexDiverTradeConfig(
     position_handler=SlTpRatioForex(
         local_agent,
         ratio=4,
-        stoploss_pip=10,
+        stoploss_pip=50,
         initial_volume=0.01,
+        riskfree_trigger_ratio=2,
         long_trade=False,
         short_trade=False,
     ),
@@ -72,10 +73,10 @@ diver_crypto_solbtc_1m = CoinexDiverTradeConfig(
     strategy=Divergence(3, 500, [], name="CoinexDiver", inverse_diver_long=True),
     position_handler=SlTpRatioCrypto(
         local_agent,
-        ratio=2,
+        ratio=1.5,
         stoploss_percent=2,
         initial_volume=10,
-        riskfree_trigger_ratio=0,
+        riskfree_trigger_ratio=0.5,
         leverage=10,
         long_trade=False,
         short_trade=False,
