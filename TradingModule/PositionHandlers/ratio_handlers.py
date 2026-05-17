@@ -134,18 +134,22 @@ class SlTpRatioCrypto(PositionHandler):
         res = super().handler(position, tick_prices)
         if res:
             return res
-        if position.steps == []:
+        if len(position.steps) <= 1 or position.current_step.triggered_time != None:
             return None
+        
+        step = position.current_step
+        if step is None:
+            logger.warning(f"checking position that its next step is None! {position=}")
+            step = position.previous_step
 
         direction = position.side.factor()
 
         ticks = np.array(tick_prices) * direction
-        trigger = position.steps[0].price * direction
+        trigger = step.price * direction
 
         cross = ticks >= trigger
 
         if cross.any():
-            position.steps = []
             return commands.TrailStoploss(
                 position, self.exchange_agent, position.entry_price
             )
@@ -267,16 +271,24 @@ class SlTpRatioForex(PositionHandler):
             return res
         if not position.steps:
             return None
+        
+        if len(position.steps) <= 1 or position.current_step.triggered_time != None:
+            return None
+        
+        step = position.current_step
+        if step is None:
+            logger.warning(f"checking position that its next step is None! {position=}")
+            step = position.previous_step
 
         direction = position.side.factor()
 
         ticks = np.array(tick_prices) * direction
-        trigger = position.steps[0].price * direction
+        trigger = step.price * direction
+
 
         cross = ticks >= trigger
 
         if cross.any():
-            position.steps = []
             return commands.TrailStoploss(
                 position, self.exchange_agent, position.entry_price
             )
