@@ -8,6 +8,8 @@ from TradingModule.PositionHandlers.ratio_handlers import (
 )
 from TradingModule.PositionHandlers.simple_handlers import SimpleCrypto
 from LocalBackTester.all_charts import (
+    XAUUSD_1m_5000_test,
+    SOLUSD_1m_5000_test,
     XAUUSD_1m_99000,
     SOLUSD_1m_99000,
     BTCUSDT_1h_2024_9,
@@ -19,6 +21,27 @@ local_agent = LocalAgent()
 
 
 # Forex -----
+
+diver_forex_xau_1m_5000_test = ForexDiverTradeConfig(
+    chart=XAUUSD_1m_5000_test,
+    second_chart=SOLUSD_1m_5000_test,
+    n_candle_check=500,
+    strategy=Divergence(3, 500, [], name="ForexDiver", inverse_diver_long=True),
+    position_handler=SlTpRatioForex(
+        local_agent,
+        ratio=4,
+        stoploss_pip=10,
+        initial_volume=0.01,
+        long_trade=False,
+        short_trade=False,
+    ),
+    heikingashi_chartdata=True,
+    merge_two_chart_time=True,
+    send_signal=False,
+)
+diver_forex_xau_1m_5000_test.agent = local_agent
+
+
 diver_forex_xau_1m = ForexDiverTradeConfig(
     chart=XAUUSD_1m_99000,
     second_chart=SOLUSD_1m_99000,
@@ -33,7 +56,7 @@ diver_forex_xau_1m = ForexDiverTradeConfig(
         short_trade=False,
     ),
     heikingashi_chartdata=True,
-    merge_two_chart_time=False,
+    merge_two_chart_time=True,
     send_signal=False,
 )
 diver_forex_xau_1m.agent = local_agent

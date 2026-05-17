@@ -1,3 +1,4 @@
+from DivergenceStrategy import DivergenceTradeConfig
 from LocalBackTester.Database.create_db import create_db
 from custom_logger import CustomLogger
 from config import settings
@@ -28,33 +29,32 @@ def store_klines_from_mt5():
     store_forex_data(chart, n_bars=len_bar)
 
 
-async def position_backtester():
+async def diver_position_local_backtest(
+    the_config: DivergenceTradeConfig, consider_db=True
+):
     from TradingModule import commands
     from LocalBackTester.Database.methods import store_positions_result
-    from LocalBackTester.backtest_configs import (
-        diver_forex_xau_1m,
-        diver_crypto_solbtc_1m,
-    )
     from LocalBackTester.Database.methods import fetch_diver_siganls
     from ChartModule.plot import DoubleChartPlot
-    from LocalBackTester.Database.backtest_models import PositionsResult
+    from copy import copy
+    from TradingModule.models import PositionsReport
     from LocalBackTester.Database.methods import (
         fetch_positions_result,
         fetch_diver_backtest,
     )
 
-    the_config = diver_forex_xau_1m
     position_handler = the_config.position_handler
-    n_bar = 2000
+    n_bar = the_config.chart.total_bars_number  # type: ignore
 
-    # diver_conf = fetch_diver_backtest(the_config)
-    # if diver_conf is None or diver_conf.id is None:
-    #     raise ValueError(f"TradeConfig not in db: {diver_conf}")
+    if consider_db:
+        diver_conf = fetch_diver_backtest(the_config)
+        if diver_conf is None or diver_conf.id is None:
+            raise ValueError(f"TradeConfig not in db: {diver_conf}")
 
-    # res = fetch_positions_result(position_handler, diver_conf.id)
-    # if res:
-    #     logging.info(res)
-    #     return
+        res = fetch_positions_result(position_handler, diver_conf.id)
+        if res:
+            logging.info(res)
+            return
 
     signals = fetch_diver_siganls(the_config)
     if signals is None:
@@ -94,56 +94,41 @@ async def position_backtester():
         pos.plot = plot
         pos.draw()
 
-    # commands_report = commands.TradeCommand.close_records()
-    # result = store_positions_result(
-    #     position_handler, commands_report, int(signals[0].source)
-    # )
-    # logging.info(result)
-    # plot.show()
-
-    from copy import copy
-    from TradingModule.models import PositionsReport
-
     commands_report = commands.TradeCommand.close_records()
-    all_reports = position_handler.report()
-    logging.info("Result:\n\n" + commands_report)
-    for poses_report in all_reports:
-        logging.info("\n" + str(poses_report))
-    overal_report = PositionsReport.give_overall_report(copy(all_reports))
-    logging.info("\n" + str(overal_report))
+
+    if consider_db:
+        result = store_positions_result(
+            position_handler, commands_report, int(signals[0].source)
+        )
+        logging.info(result)
+    else:
+        all_reports = position_handler.report()
+        logging.info("Result:\n\n" + commands_report)
+        for poses_report in all_reports:
+            logging.info("\n" + str(poses_report))
+        overal_report = PositionsReport.give_overall_report(copy(all_reports))
+        logging.info("\n" + str(overal_report))
 
     plot.show()
 
 
 if __name__ == "__main__":
-    from LocalBackTester.backtest_configs import (
-        diver_forex_xau_1m,
-        diver_crypto_solbtc_1m,
-    )
     from LocalBackTester.methods import *
-    # plot_csv_kline()
+    from LocalBackTester.backtest_configs import (
+        diver_crypto_solbtc_1m,
+        diver_forex_xau_1m_5000_test,
+    )
 
-    # store_meta_klines()
+    the_config = diver_forex_xau_1m_5000_test
 
     create_db()
-    asyncio.run(diver_signal_backtester(diver_crypto_solbtc_1m))
 
-    # load_diver_backtest()
+    # asyncio.run(diver_signal_local_backtest(the_config))
 
-    # asyncio.run(position_backtester())
+    asyncio.run(diver_position_local_backtest(the_config, consider_db=False))
 
 
 # TODO: search and replace candle.time.timestamp() with candle.timestamp
 # TODO: change find candle by timestamp mothod, for returning index of candle
 # TODO: change position model to store timestamp for open_time ...
 # TODO: Handle Extra commands in backtest --> Executed: {'OpenPosition': 23, 'TrailStoploss': 21, 'ChangeTakeProfit': 20, 'SendPositionSignal': 23, 'TakeProfit': 8, 'StopLoss': 15}
-# TODO: handle different timestamp in local db for crypto and forex
-
-# CSV
-# 172 51488 00
-# 172 77372 00
-
-# 172 73808 00
-# 172 77372 00
-
-# 172 55844 00

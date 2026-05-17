@@ -20,6 +20,23 @@ SOLUSDT_1h_2024_9 = CsvChart(
 
 # FOREX
 
+
+SOLUSD_1m_5000_test = CsvChart(
+    "SOLUSD",
+    TimeFrame.one_minute,
+    csv_path=r"D:\TraderBot\LocalBackTester\KlinesCSV\Opofincance\opo_SOLUSD_1m_5000_test.csv",
+    csv_source=KlineSource.OPOFINANCE_META,
+)
+
+
+XAUUSD_1m_5000_test = CsvChart(
+    "XAUUSD",
+    TimeFrame.one_minute,
+    csv_path=r"D:\TraderBot\LocalBackTester\KlinesCSV\Opofincance\opo_XAUUSD_1m_5000_test.csv",
+    csv_source=KlineSource.OPOFINANCE_META,
+)
+
+
 XAUUSD_1m_99000 = CsvChart(
     "XAUUSD",
     TimeFrame.one_minute,
