@@ -22,10 +22,11 @@ local_agent = LocalAgent()
 diver_forex_xau_1m = ForexDiverTradeConfig(
     chart=XAUUSD_1m_99000,
     second_chart=SOLUSD_1m_99000,
+    n_candle_check=500,
     strategy=Divergence(3, 500, [], name="ForexDiver", inverse_diver_long=True),
     position_handler=SlTpRatioForex(
         local_agent,
-        ratio=1.5,
+        ratio=3,
         stoploss_pip=20,
         initial_volume=0.01,
         long_trade=False,
@@ -44,6 +45,7 @@ local_agent = LocalAgent()
 diver_crypto_solbtc_1m = CoinexDiverTradeConfig(
     chart=SOLUSDT_1h_2024_9,
     second_chart=BTCUSDT_1h_2024_9,
+    n_candle_check=100,
     strategy=Divergence(3, 500, [], name="CoinexDiver", inverse_diver_long=True),
     position_handler=SimpleCrypto(
         local_agent,

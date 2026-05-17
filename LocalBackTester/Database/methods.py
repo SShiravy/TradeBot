@@ -62,9 +62,14 @@ def fetch_diver_siganls(
         return None
 
     all_diver_signals = []
-    base_chartdata, second_chartdata = diver_tradeconfig.get_chartdata()  # type: ignore
+    n_bar = diver_tradeconfig.chart.total_bars_number  # type:ignore
+    base_chartdata, second_chartdata = diver_tradeconfig.get_chartdata(n_bar=n_bar)  # type: ignore
     for signal in signal_models:
         signal_candle = base_chartdata.find_candle_by_time(signal.signal_timestamp)
+        if signal_candle is None:
+            logger.error(f"No candle for signal: {signal}")
+            continue
+
         if signal.side == "Bullish":
             line_candlesource = (
                 IndicatorCandleSource.Bottom
@@ -79,9 +84,6 @@ def fetch_diver_siganls(
                 else IndicatorCandleSource.High
             )
 
-        if signal_candle is None:
-            logger.error(f"No candle for signal: {signal}")
-            continue
         diver_signal = DivergenceSignal(
             chart=diver_tradeconfig.chart,
             candle=signal_candle,

@@ -39,7 +39,7 @@ class LocalAgent(ExchangeAgent):
                 low=row["low"],
                 close=row["close"],
                 volume=row["volume"],
-                timestamp=row["open_time"],
+                timestamp=row["open_time"] / timestamp_factor,
             )
             candles.append(candle)
         candles.sort(key=lambda x: x.time)

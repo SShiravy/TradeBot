@@ -21,5 +21,5 @@ class CsvChart(Chart):
         return f"Csv Chart: {self.symbol} {self.timeframe} {self.csv_source}"
 
     @property
-    def number_of_bars(self) -> int:
+    def total_bars_number(self) -> int:
         return len(pd.read_csv(self.csv_path))

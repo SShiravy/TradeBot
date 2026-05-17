@@ -45,8 +45,8 @@ class DiverBacktestRow(SQLModel, table=True):
     second_symbol: str | None
     timeframe: str
 
-    first_candle_timestamp: int
-    last_candle_timestamp: int
+    start_candle_timestamp: int
+    end_candle_timestamp: int
 
     merged_two_chart_time: bool
 
@@ -69,8 +69,8 @@ class DiverBacktestRow(SQLModel, table=True):
 
     @classmethod
     def generate_datapoint(cls, trade_config: DivergenceTradeConfig):
-        first_candle_timestamp = trade_config.get_chartdata()[0][0].timestamp
-        last_candle_timestamp = trade_config.get_chartdata()[0][-1].timestamp
+        start_candle_timestamp = trade_config.get_chartdata()[0][0].timestamp
+        end_candle_timestamp = trade_config.get_chartdata()[0][-1].timestamp
         conf_dict = cls.give_config_dict(trade_config)
 
         datapoint = DiverBacktestRow(
@@ -80,8 +80,8 @@ class DiverBacktestRow(SQLModel, table=True):
             second_symbol=trade_config.second_chart.symbol,
             timeframe=trade_config.chart.timeframe.value,
             merged_two_chart_time=trade_config.merge_two_chart_time,
-            first_candle_timestamp=first_candle_timestamp,
-            last_candle_timestamp=last_candle_timestamp,
+            start_candle_timestamp=start_candle_timestamp,
+            end_candle_timestamp=end_candle_timestamp,
         )
 
         return datapoint
