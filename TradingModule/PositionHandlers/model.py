@@ -85,6 +85,9 @@ class PositionHandler(ABC):
         )
         await commands.OpenPosition(position, self.exchange_agent).execute()
         self.open_positions.append(position)
+        if not real_trade:
+            position.confiremed = True
+            
         logger.info(f"New Position on {position.chart}")
         logger.debug(f"The New Position {position}")
         return position
