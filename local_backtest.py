@@ -69,6 +69,7 @@ async def diver_position_local_backtest(
             signal,
             entry_price=pos_candle.open,  # TODO: add tick data param here
         )
+        position.open_time = pos_candle.time
         # handler
         for candle in chartdata.candles[signal_candle_index + 1 :]:
             ticks = [
