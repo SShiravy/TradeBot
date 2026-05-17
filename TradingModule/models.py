@@ -1,5 +1,4 @@
 from copy import copy
-
 import numpy as np
 from ChartModule.models import (
     Chart,
