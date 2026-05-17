@@ -70,11 +70,12 @@ diver_crypto_solbtc_1m = CoinexDiverTradeConfig(
     second_chart=BTCUSDT_1h_2024_9,
     n_candle_check=100,
     strategy=Divergence(3, 500, [], name="CoinexDiver", inverse_diver_long=True),
-    position_handler=SimpleCrypto(
+    position_handler=SlTpRatioCrypto(
         local_agent,
+        ratio=2,
         stoploss_percent=2,
-        takeprofit_percent=3,
         initial_volume=10,
+        riskfree_trigger_ratio=0,
         leverage=10,
         long_trade=False,
         short_trade=False,

@@ -1,3 +1,4 @@
+from ChartModule.models import MarketSide
 from DivergenceStrategy import DivergenceTradeConfig
 from LocalBackTester.Database.create_db import create_db
 from custom_logger import CustomLogger
@@ -65,9 +66,17 @@ async def diver_position_local_backtest(
     for signal in signals:
         signal_candle_index = chartdata.candles.index(signal.candle)
         pos_candle = chartdata.candles[signal_candle_index + 1]
+
+        entry_source = (
+            signal.base_line.end_candle.high
+            if signal.side is MarketSide.BEARISH
+            else signal.base_line.end_candle.low
+        )
+
         position = await position_handler.generate_position(
             signal,
             entry_price=pos_candle.open,  # TODO: add tick data param here
+            sl_base_price=entry_source,
         )
         position.open_time = pos_candle.time
         # handler
@@ -115,12 +124,12 @@ async def diver_position_local_backtest(
 
 if __name__ == "__main__":
     from LocalBackTester.methods import *
-    from LocalBackTester.backtest_configs import (
+    from LocalBackTester.local_backtest_configs import (
         diver_crypto_solbtc_1m,
         diver_forex_xau_1m_5000_test,
     )
 
-    the_config = diver_forex_xau_1m_5000_test
+    the_config = diver_crypto_solbtc_1m
 
     create_db()
 
