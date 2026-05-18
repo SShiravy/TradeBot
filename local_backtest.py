@@ -134,11 +134,10 @@ if __name__ == "__main__":
     create_db()
 
     # asyncio.run(diver_signal_local_backtest(the_config))
-
     asyncio.run(diver_position_local_backtest(the_config, consider_db=False))
 
 
 # TODO: search and replace candle.time.timestamp() with candle.timestamp
 # TODO: change find candle by timestamp mothod, for returning index of candle
 # TODO: change position model to store timestamp for open_time ...
-# TODO: Handle Extra commands in backtest --> Executed: {'OpenPosition': 23, 'TrailStoploss': 21, 'ChangeTakeProfit': 20, 'SendPositionSignal': 23, 'TakeProfit': 8, 'StopLoss': 15}
+# TODO: add stepping handler for crypto

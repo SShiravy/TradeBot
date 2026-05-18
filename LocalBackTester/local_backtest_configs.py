@@ -2,11 +2,13 @@ from LocalBackTester.agent import LocalAgent
 from Forex.bot_config import ForexDiverTradeConfig
 from DivergenceStrategy.divergence import Divergence
 from Coinex.bot_config import CoinexDiverTradeConfig
-from TradingModule.PositionHandlers.ratio_handlers import (
+from TradingModule.PositionHandlers import (
     SlTpRatioForex,
     SlTpRatioCrypto,
+    RatioSteppingForex,
+    RatioSteppingCrypto,
+
 )
-from TradingModule.PositionHandlers.simple_handlers import SimpleCrypto
 from LocalBackTester.all_charts import (
     XAUUSD_1m_5000_test,
     SOLUSD_1m_5000_test,
@@ -22,20 +24,45 @@ local_agent = LocalAgent()
 
 # Forex -----
 
+
+# RatioSteppingForex(
+#         local_agent,
+#         stoploss_pip=50,
+#         targets_ratio=[1,2,3],
+#         initial_volume=[0.01,0.01,0.01],
+#         trail_stop=True,
+#         long_trade=False,
+#         short_trade=False,
+#     ),
+    
+
+#     SlTpRatioForex(
+#         local_agent,
+#         ratio=4,
+#         stoploss_pip=50,
+#         initial_volume=0.01,
+#         riskfree_trigger_ratio=2,
+#         long_trade=False,
+#         short_trade=False,
+#     ),
+
 diver_forex_xau_1m_5000_test = ForexDiverTradeConfig(
     chart=XAUUSD_1m_5000_test,
     second_chart=SOLUSD_1m_5000_test,
     n_candle_check=500,
     strategy=Divergence(3, 500, [], name="ForexDiver", inverse_diver_long=True),
-    position_handler=SlTpRatioForex(
-        local_agent,
-        ratio=4,
-        stoploss_pip=50,
-        initial_volume=0.01,
-        riskfree_trigger_ratio=2,
-        long_trade=False,
-        short_trade=False,
-    ),
+    position_handler=
+    
+    RatioSteppingForex(
+            local_agent,
+            stoploss_pip=30,
+            targets_ratio=[1,2,3],
+            initial_volume=[0.01,0.01,0.01],
+            trail_stop=True,
+            long_trade=False,
+            short_trade=False,
+        ),
+    
     heikingashi_chartdata=True,
     merge_two_chart_time=True,
     send_signal=False,
@@ -76,7 +103,7 @@ diver_crypto_solbtc_1m = CoinexDiverTradeConfig(
         ratio=1.5,
         stoploss_percent=2,
         initial_volume=10,
-        riskfree_trigger_ratio=0.5,
+        riskfree_trigger_ratio=1,
         leverage=10,
         long_trade=False,
         short_trade=False,
@@ -85,3 +112,4 @@ diver_crypto_solbtc_1m = CoinexDiverTradeConfig(
     heikingashi_chartdata=True,
     send_signal=False,
 )
+
