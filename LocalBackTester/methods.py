@@ -40,6 +40,41 @@ def store_forex_data(chart: CsvChart, n_bars=1000):
     logging.debug(df)
 
 
+def store_mt5_tick_data():
+    import mt5_wrapper as mt5
+    import pandas as pd
+    from datetime import datetime
+
+    mt5.initialize()
+    symbol = "BTCUSD"
+
+    ticks = mt5.copy_ticks_range(
+        symbol, datetime(2024, 1, 1), datetime.now(), mt5.COPY_TICKS_ALL
+    )
+
+    df = pd.DataFrame(ticks)
+
+    logging.debug(f"{df.columns=}")
+    start = datetime.fromtimestamp(df.iloc[0].time).strftime(format="%Y_%m_%d")
+    end = datetime.fromtimestamp(df.iloc[-1].time).strftime(format="%Y_%m_%d")
+    logging.debug(f"{len(df)=}")
+
+    file_name = f"{symbol}_{start}_to_{end}.parquet"
+
+    df.to_parquet(
+        rf"D:\TraderBot\LocalBackTester\TickData\Opofinance\{file_name}", index=False
+    )
+
+
+def read_tick_data():
+    import pandas as pd
+
+    path = r"D:\TraderBot\LocalBackTester\TickData\Opofinance\XAUUSD!_2025_11_03_to_2026_05_19.parquet"
+    df = pd.read_parquet(path)
+    logging.debug(f"{df.iloc[-10:]=}")
+    logging.debug(f"{len(df)=}")
+
+
 def load_diver_backtest(the_config: DivergenceTradeConfig):
     n_bar = the_config.chart.total_bars_number  # type: ignore
     signals = fetch_diver_siganls(the_config)

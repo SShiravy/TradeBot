@@ -103,3 +103,6 @@ Images
 
 # .db
 *.db
+
+# .parquet
+*.parquet

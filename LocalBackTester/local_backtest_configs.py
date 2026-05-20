@@ -7,7 +7,6 @@ from TradingModule.PositionHandlers import (
     SlTpRatioCrypto,
     RatioSteppingForex,
     RatioSteppingCrypto,
-
 )
 from LocalBackTester.all_charts import (
     XAUUSD_1m_5000_test,
@@ -34,7 +33,7 @@ local_agent = LocalAgent()
 #         long_trade=False,
 #         short_trade=False,
 #     ),
-    
+
 
 #     SlTpRatioForex(
 #         local_agent,
@@ -51,18 +50,15 @@ diver_forex_xau_1m_5000_test = ForexDiverTradeConfig(
     second_chart=SOLUSD_1m_5000_test,
     n_candle_check=500,
     strategy=Divergence(3, 500, [], name="ForexDiver", inverse_diver_long=True),
-    position_handler=
-    
-    RatioSteppingForex(
-            local_agent,
-            stoploss_pip=30,
-            targets_ratio=[1,2,3],
-            initial_volume=[0.01,0.01,0.01],
-            trail_stop=True,
-            long_trade=False,
-            short_trade=False,
-        ),
-    
+    position_handler=RatioSteppingForex(
+        local_agent,
+        stoploss_pip=30,
+        targets_ratio=[1, 2, 3],
+        initial_volume=[0.01, 0.01, 0.01],
+        trail_stop=True,
+        long_trade=False,
+        short_trade=False,
+    ),
     heikingashi_chartdata=True,
     merge_two_chart_time=True,
     send_signal=False,
@@ -112,4 +108,3 @@ diver_crypto_solbtc_1m = CoinexDiverTradeConfig(
     heikingashi_chartdata=True,
     send_signal=False,
 )
-

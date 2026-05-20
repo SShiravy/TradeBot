@@ -6,7 +6,6 @@ from config import settings
 import asyncio
 import logging
 
-settings.METATRADER_TERMINAL_PATH = ""
 
 CustomLogger(True, consol_log_level=logging.DEBUG)
 
@@ -33,6 +32,8 @@ def store_klines_from_mt5():
 async def diver_position_local_backtest(
     the_config: DivergenceTradeConfig, consider_db=True
 ):
+    settings.METATRADER_TERMINAL_PATH = ""
+
     from TradingModule import commands
     from LocalBackTester.Database.methods import store_positions_result
     from LocalBackTester.Database.methods import fetch_diver_siganls
@@ -124,17 +125,21 @@ async def diver_position_local_backtest(
 
 if __name__ == "__main__":
     from LocalBackTester.methods import *
-    from LocalBackTester.local_backtest_configs import (
-        diver_crypto_solbtc_1m,
-        diver_forex_xau_1m_5000_test,
-    )
 
-    the_config = diver_forex_xau_1m_5000_test
+    # from LocalBackTester.local_backtest_configs import (
+    #     diver_crypto_solbtc_1m,
+    #     diver_forex_xau_1m_5000_test,
+    # )
 
-    create_db()
+    # the_config = diver_forex_xau_1m_5000_test
+
+    # create_db()
 
     # asyncio.run(diver_signal_local_backtest(the_config))
-    asyncio.run(diver_position_local_backtest(the_config, consider_db=False))
+    # asyncio.run(diver_position_local_backtest(the_config, consider_db=False))
+
+    store_mt5_tick_data()
+    # read_tick_data()
 
 
 # TODO: search and replace candle.time.timestamp() with candle.timestamp

@@ -1,7 +1,10 @@
 from datetime import timedelta
 from ChartModule.models import MarketSide, Signal
 from ChartModule.plot import Plot
-from TradingModule.PositionHandlers.ratio_handlers import SlTpRatioCrypto, SlTpRatioForex
+from TradingModule.PositionHandlers.ratio_handlers import (
+    SlTpRatioCrypto,
+    SlTpRatioForex,
+)
 from TradingModule.models import ExchangeAgent, OrderSide, Position, Trigger
 from TradingModule.commands import TradeCommand
 from TradingModule import commands
@@ -182,8 +185,6 @@ class RatioSteppingForex(SlTpRatioForex):
         return trigger_command
 
 
-
-
 class RatioSteppingCrypto(SlTpRatioCrypto):
     def __init__(
         self,
@@ -237,7 +238,6 @@ class RatioSteppingCrypto(SlTpRatioCrypto):
         sl_percent = abs(pos.entry_price - pos.stoploss) / pos.entry_price
         for ratio, volume in zip(self.targets_ratio, self.targets_volumes):
             steps.append(
-                
                 Trigger(
                     price=round(
                         abs(sl_percent * ratio + pos.side.factor()) * pos.entry_price,
@@ -295,7 +295,7 @@ class RatioSteppingCrypto(SlTpRatioCrypto):
         tp = round(
             abs(sl_percent * self.ratio + side.factor()) * entry_price, precision
         )
-        
+
         position = Position(
             signal.chart,
             side,

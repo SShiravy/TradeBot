@@ -136,7 +136,7 @@ class SlTpRatioCrypto(PositionHandler):
             return res
         if len(position.steps) <= 1 or position.current_step.triggered_time != None:
             return None
-        
+
         step = position.current_step
         if step is None:
             logger.warning(f"checking position that its next step is None! {position=}")
@@ -271,10 +271,10 @@ class SlTpRatioForex(PositionHandler):
             return res
         if not position.steps:
             return None
-        
+
         if len(position.steps) <= 1 or position.current_step.triggered_time != None:
             return None
-        
+
         step = position.current_step
         if step is None:
             logger.warning(f"checking position that its next step is None! {position=}")
@@ -284,7 +284,6 @@ class SlTpRatioForex(PositionHandler):
 
         ticks = np.array(tick_prices) * direction
         trigger = step.price * direction
-
 
         cross = ticks >= trigger
 
