@@ -1,4 +1,3 @@
-from ChartModule.models import MarketSide
 from DivergenceStrategy import DivergenceTradeConfig
 from LocalBackTester.Database.create_db import create_db
 from custom_logger import CustomLogger
@@ -38,6 +37,7 @@ async def diver_position_local_backtest(
     from LocalBackTester.Database.methods import store_positions_result
     from LocalBackTester.Database.methods import fetch_diver_siganls
     from ChartModule.plot import DoubleChartPlot
+    from ChartModule.models import MarketSide
     from copy import copy
     from TradingModule.models import PositionsReport
     from LocalBackTester.Database.methods import (
@@ -101,9 +101,16 @@ async def diver_position_local_backtest(
     plot = DoubleChartPlot(chartdata, second_chartdata, n_bar)
     for signal in signals:
         the_config.strategy.draw(plot, signal)
+
+    pnl_list = []
+    timestamp_list = []
+
     for pos in position_handler.closed_positions:
         pos.plot = plot
         pos.draw()
+
+        pnl_list.append(pos.pnl)
+        timestamp_list.append(pos.open_time)
 
     commands_report = commands.TradeCommand.close_records()
 
@@ -122,23 +129,33 @@ async def diver_position_local_backtest(
 
     plot.show()
 
+    from LocalBackTester.StatisticalMethods.hours_histogram import (
+        plot_hourly_pnl_histogram,
+    )
+
+    plot_hourly_pnl_histogram(
+        pnl_list,
+        timestamp_list,
+        f"{the_config.chart.symbol}_{the_config.chart.timeframe}",
+    )
+
 
 if __name__ == "__main__":
     from LocalBackTester.methods import *
 
-    # from LocalBackTester.local_backtest_configs import (
-    #     diver_crypto_solbtc_1m,
-    #     diver_forex_xau_1m_5000_test,
-    # )
+    from LocalBackTester.local_backtest_configs import (
+        diver_crypto_solbtc_1m,
+        diver_forex_xau_1m_5000_test,
+    )
 
-    # the_config = diver_forex_xau_1m_5000_test
+    the_config = diver_forex_xau_1m_5000_test
 
-    # create_db()
+    create_db()
 
     # asyncio.run(diver_signal_local_backtest(the_config))
-    # asyncio.run(diver_position_local_backtest(the_config, consider_db=False))
+    asyncio.run(diver_position_local_backtest(the_config, consider_db=False))
 
-    store_mt5_tick_data()
+    # store_mt5_tick_data()
     # read_tick_data()
 
 
