@@ -51,7 +51,7 @@ class OrderSide(Enum):
 class Trigger:
     price: float
     volume: float = field(default=0.0)
-    defined_time: datetime = field(default_factory=datetime.now)
+    defined_time: datetime = field(default=datetime.now(timezone.utc))
     triggered_time: datetime | None = field(default=None)
     exchange_id: str = field(default="", init=False)
 
@@ -255,9 +255,14 @@ class Position:
             self.takeprofit,
             self.stoploss,
         )
+        if self._current_step_index == 1:
+            start_of_step = end_of_line - self.chart.timeframe.time_delta * 10
+        else:
+            start_of_step = self.start_time
+
         for step in self.steps[1:]:
             plot.draw_line(
-                self.start_time,
+                start_of_step,
                 step.price,
                 step.triggered_time if step.triggered_time else end_of_line,
                 step.price,
@@ -265,7 +270,7 @@ class Position:
                 width=2,
             )
         plot.draw_line(
-            self.start_time,
+            start_of_step,
             self.initial_stoploss,
             end_of_line,
             self.initial_stoploss,

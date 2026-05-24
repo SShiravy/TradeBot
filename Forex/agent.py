@@ -23,7 +23,7 @@ class MarketState(Enum):
             case MarketState.CLOSED:
                 return 900  # wait for 15m and check again
             case MarketState.CHECK_LATER:
-                return 120  # wait for 2m and check again
+                return 10  # wait for 1m and check again
             case MarketState.NOT_RESPONDING:
                 return 240  # wait for 4m and check again
             case _:
@@ -39,8 +39,7 @@ class ForexAgent(ExchangeAgent):
             ):
                 raise RuntimeError("MT5 initialize failed")
             logger.info("Initialized")
-            cls.last_checked_time: None | datetime = None
-            cls.last_checked_candle: None | Candle = None
+            cls.last_checked_timestamp: None | int = None
             cls.market_state: MarketState = MarketState.CHECK_LATER
         return cls._instance
 
@@ -59,7 +58,6 @@ class ForexAgent(ExchangeAgent):
         symbol_info = mt5.symbol_info(chart.symbol)
         if symbol_info is None:
             raise RuntimeError(f"Failed to get symbol info for {chart.symbol}")
-
         return True
 
     @classmethod
@@ -72,42 +70,38 @@ class ForexAgent(ExchangeAgent):
         )
         return raw_time - delta
 
+    @classmethod
+    def give_current_timestamp(cls, chart: Chart):
+        info = mt5.symbol_info(chart.symbol)
+        if not info:
+            logger.error(
+                f"Failed to get chart info for market open check: {chart=} | {info=}"
+            )
+            return 0
+        logging.debug(f"current timestamp: {info.time=}")
+        return info.time
+
     def check_market_open(self, chart: Chart) -> None | int:
         """
         :return: None if market open or seconds to wait if market closed
         :rtype: int | None
         """
-        data = self.get_chartdata(
-            Chart(chart.symbol, timeframe=TimeFrame.one_minute), n_bars=2
-        )
-        if data is None:
-            logger.error(f"Failed to get chart data for market open check: {chart}")
+        current_timestamp = self.give_current_timestamp(chart)
+
+        if current_timestamp == 0:
             self.market_state = MarketState.NOT_RESPONDING
-            return self.market_state.wait_seconds()
-        now = datetime.now(timezone.utc)
-        if self.last_checked_time is None or self.last_checked_candle is None:
-            self.last_checked_time = now
-            self.last_checked_candle = data.candles[-1]
-            logger.info(f"Set last Checked time {chart}")
+
+        elif self.last_checked_timestamp is None:
+            self.last_checked_timestamp = current_timestamp
             self.market_state = MarketState.CHECK_LATER
 
-        if (now - self.last_checked_time).total_seconds() > 60:
-            self.last_checked_time = now
+        elif self.last_checked_timestamp == current_timestamp:
+            self.market_state = MarketState.CLOSED
+
+        else:
             self.market_state = MarketState.OPEN
-            if (
-                data.candles[-1].time - self.last_checked_candle.time
-            ).total_seconds() < 60:
-                logger.info(
-                    f"Market seems closed for {chart} | last candle time: {self.last_checked_candle.time}"
-                )
-                self.market_state = MarketState.CLOSED
 
-            self.last_checked_candle = data.candles[-1]
-
-        logger.debug(f"Market State for {chart}: {self.market_state}")
-        logger.info(
-            f"\n|last_checked:   {self.last_checked_time}\n|now:            {now}\n|last_candle:    {self.last_checked_candle.time}\n|current_candle: {data.candles[-1].time}"
-        )
+        logger.debug(f"market state = {self.market_state}")
         return self.market_state.wait_seconds()
 
     def get_chartdata(self, chart: Chart, n_bars: int = 100) -> ChartData | None:

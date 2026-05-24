@@ -302,14 +302,13 @@ class TriggerStep(TradeCommand):
         self.exec_price = exec_price
         self.trigger = trigger
 
+    async def execution_report(self):
+        await TelegramReporter().triggered_step(self.position)
+
     def command(self, time) -> bool:
         self.position.update_pnl(self.trigger.price, self.trigger.volume)
         self.position.go_next_step(time)
         return True
-
-    async def execution_report(self):
-        # TODO: complete here
-        pass
 
 
 class TrailStoplossbyStep(TradeCommand):

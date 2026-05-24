@@ -56,10 +56,18 @@ class TelegramReporter:
             f"📊 {position.chart}",
             "🟢 LONG" if position.side is OrderSide.BUY else "🔴 SHORT",
             f"📣 Entry = {position.entry_price}",
-            f"🎯 TP =  {position.takeprofit}",
-            f"⛔️ SL = {position.stoploss}",
-            f"💰 Volume: {position.volume}",
         ]
+
+        if len(position.steps) > 2:
+            i = 1
+            for trigger in position.steps[1:]:
+                msg_list.append(f"🎯 TP {i} =  {trigger.price} with {trigger.volume}💰")
+                i += 1
+        else:
+            msg_list.append(f"🎯 TP =  {position.takeprofit}")
+
+        msg_list.append(f"⛔️ SL = {position.stoploss}")
+        msg_list.append(f"💰 Volume: {position.volume}")
 
         if position.leverage not in [1, 0]:
             msg_list.append(f"⚡Leverage: {position.leverage}")
@@ -120,3 +128,29 @@ class TelegramReporter:
 
     async def public_report(self, msg: str):
         await self.send_msg(self._public_channel, msg)
+
+    async def triggered_step(self, position: Position):
+        trigger = position.previous_step
+        triggered_id = position._current_step_index - 1
+        end_time = (
+            trigger.triggered_time
+            if trigger.triggered_time
+            else datetime.now(tz=timezone.utc)
+        )
+        duration = end_time.replace(
+            microsecond=0,
+            second=0,
+        ) - trigger.defined_time.replace(
+            microsecond=0,
+            second=0,
+        )
+        msg_list = [
+            f"✅ TP {triggered_id} Triggered",
+            position.source,
+            f"📊 {position.chart}",
+            f"💲 Triggered Price = {trigger.price}",
+            f"💰 Volume: {trigger.volume}💵 PNL = {round(position.pnl, 2)}",
+            f"⌛ Duration = {duration}",
+        ]
+        msg = "\n\n".join(msg_list)
+        await self.send_msg(self._public_channel, msg, reply_id=position.msg_id)
