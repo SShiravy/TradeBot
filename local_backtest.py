@@ -29,10 +29,11 @@ def store_klines_from_mt5():
 
 
 async def diver_position_local_backtest(
-    the_config: DivergenceTradeConfig, consider_db=True
+    the_config: DivergenceTradeConfig,
+    consider_db=True,
+    statisical_pnl_methods: list = [],
+    show_plot=True,
 ):
-    settings.METATRADER_TERMINAL_PATH = ""
-
     from TradingModule import commands
     from LocalBackTester.Database.methods import store_positions_result
     from LocalBackTester.Database.methods import fetch_diver_siganls
@@ -99,18 +100,20 @@ async def diver_position_local_backtest(
 
     # plot
     plot = DoubleChartPlot(chartdata, second_chartdata, n_bar)
-    for signal in signals:
-        the_config.strategy.draw(plot, signal)
+    if show_plot:
+        for signal in signals:
+            the_config.strategy.draw(plot, signal)
 
     pnl_list = []
     timestamp_list = []
 
     for pos in position_handler.closed_positions:
-        pos.plot = plot
-        pos.draw()
+        if show_plot:
+            pos.plot = plot
+            pos.draw()
 
         pnl_list.append(pos.pnl)
-        timestamp_list.append(pos.open_time)
+        timestamp_list.append(pos.open_time.timestamp())  # type: ignore
 
     commands_report = commands.TradeCommand.close_records()
 
@@ -127,20 +130,19 @@ async def diver_position_local_backtest(
         overal_report = PositionsReport.give_overall_report(copy(all_reports))
         logging.info("\n" + str(overal_report))
 
-    plot.show()
+    if show_plot:
+        plot.show()
 
-    from LocalBackTester.StatisticalMethods.hours_histogram import (
-        plot_hourly_pnl_histogram,
-    )
-
-    plot_hourly_pnl_histogram(
-        pnl_list,
-        timestamp_list,
-        f"{the_config.chart.symbol}_{the_config.chart.timeframe}",
-    )
+    for method in statisical_pnl_methods:
+        method(
+            pnl_list,
+            timestamp_list,
+            f"{the_config.chart.symbol}_{the_config.chart.timeframe}",
+        ).plot(show=show_plot)
 
 
 if __name__ == "__main__":
+    settings.METATRADER_TERMINAL_PATH = ""
     from LocalBackTester.methods import *
 
     from LocalBackTester.local_backtest_configs import (
@@ -148,12 +150,29 @@ if __name__ == "__main__":
         diver_forex_xau_1m_5000_test,
     )
 
+    from LocalBackTester.StatisticalMethods import (
+        WeekdayPnLHistogram,
+        HourlyPnLHistogram,
+        SessionPnLHistogram,
+    )
+
     the_config = diver_forex_xau_1m_5000_test
 
     create_db()
 
     # asyncio.run(diver_signal_local_backtest(the_config))
-    asyncio.run(diver_position_local_backtest(the_config, consider_db=False))
+    asyncio.run(
+        diver_position_local_backtest(
+            the_config,
+            consider_db=False,
+            statisical_pnl_methods=[
+                WeekdayPnLHistogram,
+                HourlyPnLHistogram,
+                SessionPnLHistogram,
+            ],
+            show_plot=True,
+        )
+    )
 
     # store_mt5_tick_data()
     # read_tick_data()
