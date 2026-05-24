@@ -66,17 +66,32 @@ class ForexDiverTradeConfig(DivergenceTradeConfig):
         return base_chartdata, second_chartdata
 
     def give_delay(self, last_candle: Candle, jump=False) -> timedelta:
-        corrected_time = ForexAgent().correct_time(last_candle.time, self.chart)
+        # TODO: remove unnecessary logs
+        # TODO: move this approach to TradeConfig too. (when its confirmed)
         delay = self.chart.timeframe.time_delta
         if jump:
             delay *= self.bar_between_signals
+        last_candle_time = ForexAgent().get_chartdata(self.chart, n_bars=1).candles[0]  # type: ignore
+        next_timestamp = int(round(last_candle_time.timestamp) + delay.total_seconds())
+        sleep_time_based_on_timestamp = (
+            next_timestamp - ForexAgent().give_current_timestamp(self.chart)
+        )
 
         logging.debug(
-            f"delay + lastcandl.time: {delay + corrected_time} | {datetime.now(timezone.utc)} | {corrected_time=}"
+            f"RECIVED LAST CANDLE TIME: {last_candle_time.timestamp} | gived one: {last_candle.timestamp}"
         )
-        return (
-            (delay + corrected_time) - datetime.now(timezone.utc) + timedelta(seconds=1)
+        logging.debug(
+            f"TEST TIMESTAMP delay: {delay.total_seconds()} | last candle timestamp: {int(round(last_candle.timestamp))} | next time: {next_timestamp}"
         )
+        logging.debug(
+            f"last candle time -> timestamp: {last_candle.timestamp}_{last_candle.time} | now: {datetime.now(timezone.utc)}"
+        )
+        logging.debug(f"TEST TIMESTAMP sleep: {sleep_time_based_on_timestamp}")
+        logging.debug(
+            f"now time stamp: {datetime.now().timestamp()} | now utc: {datetime.now(tz=timezone.utc).timestamp()}"
+        )
+
+        return timedelta(seconds=sleep_time_based_on_timestamp)
 
     async def task(self):
         wait_time = ForexAgent().check_market_open(self.chart)
