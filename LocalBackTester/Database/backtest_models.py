@@ -26,7 +26,7 @@ class PositionsResult(SQLModel, table=True):
     max_lose_in_a_row: int = Field(default=0)
 
     number_of_positions: int = Field(default=1)
-    duration: timedelta
+    duration: str
 
     handler_hash: str = Field(index=True, unique=True)
     handler_config_json: str
@@ -67,7 +67,7 @@ class PositionsResult(SQLModel, table=True):
             max_lose_in_a_row=report.max_lose_in_a_row,
             max_win_in_a_row=report.max_win_in_a_row,
             number_of_positions=report.total_positions,
-            duration=report.calculate_duration(),
+            duration=str(report.calculate_duration()),
             handler_hash=cls.give_handler_hash(handler, backtest_source),
             handler_config_json=json.dumps(handler.export_config()),
             commands_report=commands_report,

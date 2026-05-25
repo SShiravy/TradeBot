@@ -166,25 +166,25 @@ if __name__ == "__main__":
         SessionPnLHistogram,
     )
 
-    # the_config = diver_forex_xau_1m_5000_test
+    the_config = diver_forex_xau_1m_5000_test
 
-    test_tick_data()
+    # test_tick_data()
 
-    # create_db()
+    create_db()
 
     # asyncio.run(diver_signal_local_backtest(the_config))
-    # asyncio.run(
-    #     diver_position_local_backtest(
-    #         the_config,
-    #         consider_db=False,
-    #         statisical_pnl_methods=[
-    #             WeekdayPnLHistogram,
-    #             HourlyPnLHistogram,
-    #             SessionPnLHistogram,
-    #         ],
-    #         show_plot=True,
-    #     )
-    # )
+    asyncio.run(
+        diver_position_local_backtest(
+            the_config,
+            consider_db=True,
+            statisical_pnl_methods=[
+                WeekdayPnLHistogram,
+                HourlyPnLHistogram,
+                SessionPnLHistogram,
+            ],
+            show_plot=True,
+        )
+    )
 
     # store_mt5_tick_data()
     # read_tick_data()
