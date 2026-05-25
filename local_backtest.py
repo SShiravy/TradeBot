@@ -141,6 +141,16 @@ async def diver_position_local_backtest(
         ).plot(show=show_plot)
 
 
+def test_tick_data():
+    from LocalBackTester.models import TickDataHandler
+
+    path = r"D:\TraderBot\LocalBackTester\TickData\Opofinance\XAUUSD!_2025_11_03_to_2026_05_19.parquet"
+
+    # read_tick_data(path)
+    tick_handler = TickDataHandler(path)
+    logging.info(tick_handler.get_ticks_from_timstamp_range(1769543520, 1769543940))
+
+
 if __name__ == "__main__":
     settings.METATRADER_TERMINAL_PATH = ""
     from LocalBackTester.methods import *
@@ -156,23 +166,25 @@ if __name__ == "__main__":
         SessionPnLHistogram,
     )
 
-    the_config = diver_forex_xau_1m_5000_test
+    # the_config = diver_forex_xau_1m_5000_test
 
-    create_db()
+    test_tick_data()
+
+    # create_db()
 
     # asyncio.run(diver_signal_local_backtest(the_config))
-    asyncio.run(
-        diver_position_local_backtest(
-            the_config,
-            consider_db=False,
-            statisical_pnl_methods=[
-                WeekdayPnLHistogram,
-                HourlyPnLHistogram,
-                SessionPnLHistogram,
-            ],
-            show_plot=True,
-        )
-    )
+    # asyncio.run(
+    #     diver_position_local_backtest(
+    #         the_config,
+    #         consider_db=False,
+    #         statisical_pnl_methods=[
+    #             WeekdayPnLHistogram,
+    #             HourlyPnLHistogram,
+    #             SessionPnLHistogram,
+    #         ],
+    #         show_plot=True,
+    #     )
+    # )
 
     # store_mt5_tick_data()
     # read_tick_data()

@@ -66,11 +66,11 @@ def store_mt5_tick_data():
     )
 
 
-def read_tick_data():
+def read_tick_data(path):
     import pandas as pd
 
-    path = r"D:\TraderBot\LocalBackTester\TickData\Opofinance\XAUUSD!_2025_11_03_to_2026_05_19.parquet"
     df = pd.read_parquet(path)
+    logging.debug(f"{df.head(10)=}")
     logging.debug(f"{df.iloc[-10:]=}")
     logging.debug(f"{len(df)=}")
 
