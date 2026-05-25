@@ -1,6 +1,6 @@
 from TradingModule import Position, OrderSide
 from config import settings
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from telegram import Bot
 import logging
 
@@ -85,10 +85,13 @@ class TelegramReporter:
         position.msg_id = res.message_id if res else 0
 
     async def position_closed(self, position: Position, filled_price=None):
-        close_time = position.closed if position.closed else datetime.now(timezone.utc)
-        duration = close_time.replace(
-            microsecond=0, second=0
-        ) - position.start_time.replace(microsecond=0, second=0)
+        end_timestamp = int(datetime.now(timezone.utc).timestamp())
+        duration = timedelta(
+            seconds=end_timestamp - int(position.generated_time.timestamp())
+        )
+        logger.debug(
+            f"Duration in reporter position close: {duration=} | {end_timestamp=} | {position.generated_time.timestamp()=}"
+        )
 
         close_type_msg = "⭕ Flat Close"
         close_price = filled_price if filled_price else position.entry_price
@@ -132,24 +135,25 @@ class TelegramReporter:
     async def triggered_step(self, position: Position):
         trigger = position.previous_step
         triggered_id = position._current_step_index - 1
-        end_time = (
+        end_timestamp = (
             trigger.triggered_time
             if trigger.triggered_time
             else datetime.now(tz=timezone.utc)
+        ).timestamp()
+        duration = timedelta(
+            seconds=end_timestamp - int(trigger.defined_time.timestamp())
         )
-        duration = end_time.replace(
-            microsecond=0,
-            second=0,
-        ) - trigger.defined_time.replace(
-            microsecond=0,
-            second=0,
+        logger.debug(
+            f"Duration in reporter Trigger step: {duration=} | {end_timestamp=} | {trigger.defined_time.timestamp()=}"
         )
+
         msg_list = [
             f"✅ TP {triggered_id} Triggered",
             position.source,
             f"📊 {position.chart}",
             f"💲 Triggered Price = {trigger.price}",
-            f"💰 Volume: {trigger.volume}💵 PNL = {round(position.pnl, 2)}",
+            f"💰 Volume: {trigger.volume}",
+            f"💵 PNL = {round(position.pnl, 2)}",
             f"⌛ Duration = {duration}",
         ]
         msg = "\n\n".join(msg_list)
