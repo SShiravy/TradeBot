@@ -96,7 +96,8 @@ class ForexAgent(ExchangeAgent):
             self.market_state = MarketState.CHECK_LATER
 
         elif self.last_checked_timestamp == current_timestamp:
-            self.market_state = MarketState.CLOSED
+            if self.market_state != MarketState.CHECK_LATER:
+                self.market_state = MarketState.CLOSED
 
         else:
             self.market_state = MarketState.OPEN
