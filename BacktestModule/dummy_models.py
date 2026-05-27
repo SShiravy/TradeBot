@@ -64,11 +64,7 @@ class DummyPositionHanler(PositionHandler):
         self.closed_positions = []
 
     async def generate_position(self, signal, *args, **kwargs) -> Position:
-<<<<<<< HEAD:BacktestModule/dummy_agent.py
-        return None # type:ignore
-=======
         return None  # type:ignore
->>>>>>> master:BacktestModule/dummy_models.py
 
     def init_stoploss(self, entry_price: float, side: OrderSide) -> float:
         return 0.0

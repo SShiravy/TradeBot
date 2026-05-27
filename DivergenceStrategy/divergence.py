@@ -1,4 +1,4 @@
-from BacktestModule.dummy_agent import DummyAgent, DummyPositionHanler
+from BacktestModule.dummy_models import DummyAgent, DummyPositionHanler
 from ChartModule.models import (
     Chart,
     IndicatorBaseModel,
