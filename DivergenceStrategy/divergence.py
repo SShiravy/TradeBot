@@ -338,6 +338,7 @@ class DivergenceTradeConfig(TradeConfig):
             position_handler = copy(self.position_handler)
         else:
             position_handler = DummyPositionHanler()
+            self.position_handler = position_handler
 
         agent = DummyAgent(self.agent, position_handler.open_positions)
         position_handler.exchange_agent = agent

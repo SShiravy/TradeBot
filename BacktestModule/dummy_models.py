@@ -60,19 +60,11 @@ class DummyAgent(ExchangeAgent):
 
 class DummyPositionHanler(PositionHandler):
     def __init__(self) -> None:
-        pass
+        self.open_positions = []
+        self.closed_positions = []
 
-    async def generate_position(self, signal) -> Position:
-        pos = Position(
-            chart=signal.chart,
-            side=signal.side,
-            volume=0.0,
-            stoploss=0.0,
-            takeprofit=0.0,
-            entry_price=signal.candle.close,
-        )
-        logger.info(f"position generated from signal: {pos}")
-        return pos
+    async def generate_position(self, signal, *args, **kwargs) -> Position:
+        return None  # type:ignore
 
     def init_stoploss(self, entry_price: float, side: OrderSide) -> float:
         return 0.0

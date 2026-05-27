@@ -1,6 +1,6 @@
 from TradingModule import ExchangeAgent, Position, commands, PositionsReport
 from TradingModule.reporter import TelegramReporter
-from BacktestModule.dummy_agent import DummyAgent, DummyPositionHanler
+from BacktestModule.dummy_models import DummyAgent, DummyPositionHanler
 from TradingModule.PositionHandlers.model import PositionHandler
 from ChartModule.models import Chart, Candle, Signal, ChartData
 from TradingModule.models import Strategy

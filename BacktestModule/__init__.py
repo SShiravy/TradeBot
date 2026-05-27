@@ -1,3 +1,3 @@
-from BacktestModule.dummy_agent import DummyAgent
+from BacktestModule.dummy_models import DummyAgent
 
 __all__ = ["DummyAgent"]
