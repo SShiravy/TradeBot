@@ -138,14 +138,12 @@ class Chart:
     def __str__(self) -> str:
         return f"{self.symbol} {self.timeframe}"
 
-    
     def export_config(self) -> dict:
         return {
-            "chart": self.symbol,
+            "symbol": self.symbol,
             "timeframe": self.timeframe.value,
             "precision": self.precision,
         }
-
 
 
 @dataclass(slots=True, frozen=True)

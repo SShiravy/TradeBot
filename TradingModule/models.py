@@ -429,7 +429,9 @@ class PositionsReport:
         return report  # type: ignore
 
     def calculate_duration(self):
-        duration = timedelta(seconds=self.last_time.timestamp() - self.first_time.timestamp())
+        duration = timedelta(
+            seconds=self.last_time.timestamp() - self.first_time.timestamp()
+        )
         print(f"{self.last_time.timestamp()=} | {self.first_time.timestamp()}")
         return duration
 
