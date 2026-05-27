@@ -1,4 +1,4 @@
-from BacktestModule.dummy_agent import DummyAgent
+from BacktestModule.dummy_agent import DummyAgent, DummyPositionHanler
 from ChartModule.models import (
     Chart,
     IndicatorBaseModel,
@@ -334,7 +334,11 @@ class DivergenceTradeConfig(TradeConfig):
         show_image=True,
         consider_positions=True,
     ):
-        position_handler = copy(self.position_handler)
+        if consider_positions:
+            position_handler = copy(self.position_handler)
+        else:
+            position_handler = DummyPositionHanler()
+
         agent = DummyAgent(self.agent, position_handler.open_positions)
         position_handler.exchange_agent = agent
         position_handler.long_trade = False
