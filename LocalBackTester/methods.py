@@ -88,7 +88,7 @@ def load_diver_backtest(the_config: DivergenceTradeConfig):
     plot.show()
 
 
-async def diver_signal_local_backtest(the_config: DivergenceTradeConfig):
+async def diver_signal_local_backtest(the_config: DivergenceTradeConfig, show_plot=True):
     diver_backtest = fetch_diver_backtest(the_config)
 
     if diver_backtest:
@@ -100,7 +100,7 @@ async def diver_signal_local_backtest(the_config: DivergenceTradeConfig):
         n_bar=the_config.chart.total_bars_number,  # type: ignore
         len_sub_data=the_config.n_candle_check,
         consider_positions=False,
-        show_image=True,
+        show_image=show_plot,
     )
 
     backtest_datapoint = store_diver_backtest(the_config)
