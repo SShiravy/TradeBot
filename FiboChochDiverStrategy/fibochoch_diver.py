@@ -1,4 +1,4 @@
-from BacktestModule.dummy_agent import DummyAgent, DummyPositionHanler
+from BacktestModule.dummy_models import DummyAgent, DummyPositionHanler
 from FiboChochStrategy.fibochoch import FiboChochSignal
 from TradingModule import Position, commands
 from TradingModule.models import PositionsReport
