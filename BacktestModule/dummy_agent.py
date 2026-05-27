@@ -1,6 +1,7 @@
 from copy import deepcopy
 from ChartModule import ChartData, Chart
-from TradingModule.models import ExchangeAgent, Position
+from TradingModule.PositionHandlers.model import PositionHandler
+from TradingModule.models import ExchangeAgent, OrderSide, Position
 from datetime import datetime
 import logging
 
@@ -55,3 +56,29 @@ class DummyAgent(ExchangeAgent):
     def close_position(self, position: Position) -> float | None:
         logger.info(f"close position on {self.current_price}")
         return self.current_price
+
+
+class DummyPositionHanler(PositionHandler):
+    def __init__(self) -> None:
+        pass
+
+    async def generate_position(self, signal) -> Position:
+        pos = Position(
+            chart=signal.chart,
+            side=signal.side,
+            volume=0.0,
+            stoploss=0.0,
+            takeprofit=0.0,
+            entry_price=signal.candle.close,
+        )
+        logger.info(f"position generated from signal: {pos}")
+        return pos
+
+    def init_stoploss(self, entry_price: float, side: OrderSide) -> float:
+        return 0.0
+
+    def init_takeprofit(self, entry_price: float, side: OrderSide) -> float:
+        return 0.0
+
+    def export_config(self) -> dict:
+        return super().export_config()

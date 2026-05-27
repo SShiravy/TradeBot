@@ -1,4 +1,4 @@
-from BacktestModule.dummy_agent import DummyAgent
+from BacktestModule.dummy_agent import DummyAgent, DummyPositionHanler
 from FiboChochStrategy.fibochoch import FiboChochSignal
 from TradingModule import Position, commands
 from TradingModule.models import PositionsReport
@@ -147,19 +147,22 @@ class FiboChochDiver(FiboChochConfig):
         self.diver_next_check = datetime.now() + timedelta(days=1)
         self.send_signal = False
 
-        position_handler = copy(self.position_handler)
-
         chartdata = self.get_chartdata(n_bar)
         if chartdata is None:
             raise ValueError(f"{chartdata=}")
+
+        if consider_positions:
+            position_handler = copy(self.position_handler)
+        else:
+            position_handler = DummyPositionHanler()
 
         agent = DummyAgent(
             self.agent, position_handler.open_positions, chartdata, len_sub_data
         )
         position_handler.exchange_agent = agent
-        self.agent = agent
         position_handler.long_trade = False
         position_handler.short_trade = False
+        self.agent = agent
 
         all_positions: list[Position] = []
         all_signals: list[FiboChochSignal] = []
