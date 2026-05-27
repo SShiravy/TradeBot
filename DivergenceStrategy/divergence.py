@@ -269,7 +269,7 @@ class DivergenceTradeConfig(TradeConfig):
 
     def export_config(self) -> dict:
         conf_dict = super().export_config()
-        conf_dict.update({"second_symbol": self.second_chart.symbol})
+        conf_dict.update({"second_chart": self.second_chart.export_config()})
         return conf_dict
 
     def get_chartdata(self, n_bar: int | None = None) -> tuple[ChartData, ChartData]:  # type: ignore[override]

@@ -38,8 +38,7 @@ class TradeConfig:
 
     def export_config(self) -> dict:
         return {
-            "symbol": self.chart.symbol,
-            "timeframe": self.chart.timeframe.value,
+            "chart": self.chart.export_config(),
             "bar_between_signals": self.bar_between_signals,
             "heikingashi_chartdata": self.heikingashi_chartdata,
         }
