@@ -21,14 +21,16 @@ class CsvChart(Chart):
 
     def __str__(self) -> str:
         return f"Csv Chart: {self.symbol} {self.timeframe} {self.csv_source}"
-    
+
     def export_config(self) -> dict:
-        conf_dict = super(CsvChart,self).export_config()
-        conf_dict.update({
-            "csv_path": self.csv_path,
-            "csv_source": self.csv_source.value,
-            "ticks_path": self.ticks_path
-        })
+        conf_dict = super(CsvChart, self).export_config()
+        conf_dict.update(
+            {
+                "csv_path": self.csv_path,
+                "csv_source": self.csv_source.value,
+                "ticks_path": self.ticks_path,
+            }
+        )
         return conf_dict
 
     @property

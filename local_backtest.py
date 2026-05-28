@@ -172,19 +172,19 @@ if __name__ == "__main__":
 
     create_db()
 
-    asyncio.run(diver_signal_local_backtest(the_config,show_plot=True))
-    # asyncio.run(
-    #     diver_position_local_backtest(
-    #         the_config,
-    #         consider_db=True,
-    #         statisical_pnl_methods=[
-    #             WeekdayPnLHistogram,
-    #             HourlyPnLHistogram,
-    #             SessionPnLHistogram,
-    #         ],
-    #         show_plot=True,
-    #     )
-    # )
+    asyncio.run(diver_signal_local_backtest(the_config, show_plot=True))
+    asyncio.run(
+        diver_position_local_backtest(
+            the_config,
+            consider_db=False,
+            statisical_pnl_methods=[
+                WeekdayPnLHistogram,
+                HourlyPnLHistogram,
+                SessionPnLHistogram,
+            ],
+            show_plot=True,
+        )
+    )
 
     # store_mt5_tick_data()
     # read_tick_data()

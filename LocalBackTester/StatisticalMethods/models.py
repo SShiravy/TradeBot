@@ -16,6 +16,7 @@ class BasePnLHistogram(ABC):
         self.pnl_list = pnl_list
         self.timestamps = timestamps
         self.plot_name = plot_name
+        self.name = self.__class__.__name__
 
     @abstractmethod
     def get_category(self, timestamp: int) -> str:
@@ -64,7 +65,7 @@ class BasePnLHistogram(ABC):
 
         ax.axhline(0, linewidth=1)
 
-        ax.set_title(f"{self.__class__.__name__}_{self.plot_name}")
+        ax.set_title(f"{self.name} {self.plot_name}")
         ax.set_ylabel("Total PnL")
 
         ax.grid(

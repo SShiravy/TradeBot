@@ -3,6 +3,10 @@ from LocalBackTester.StatisticalMethods.models import BasePnLHistogram
 
 
 class SessionPnLHistogram(BasePnLHistogram):
+    def __init__(self, pnl_list: list[float], timestamps: list[int], plot_name: str):
+        super().__init__(pnl_list, timestamps, plot_name)
+        self.name = "Session PNL"
+
     def get_category(
         self,
         timestamp: int,
@@ -14,25 +18,42 @@ class SessionPnLHistogram(BasePnLHistogram):
 
         hour = dt.hour
 
-        if 0 <= hour < 7:
-            return "Asian"
+        match hour:
+            case h if 0 <= h < 6:
+                return r"Sydney\Tokyo"
 
-        elif 7 <= hour < 10:
-            return "London Open"
+            case h if 6 <= h < 8:
+                return "Tokyo"
 
-        elif 12 <= hour < 16:
-            return r"London\NY Overlap"
+            case h if 8 <= h < 9:
+                return r"Tokyo\London"
 
-        elif 13 <= hour < 22:
-            return "New York"
+            case h if 9 <= h < 13:
+                return "London"
 
-        return "Dead Market"
+            case h if 13 <= h < 17:
+                return r"London\NewYork"
+
+            case h if 17 <= h < 21:
+                return "NewYork"
+
+            case h if 21 <= h < 22:
+                return r"Sydney\NewYork"
+
+            case h if 22 <= h < 0:
+                return "Sydney"
+
+            case _:
+                return "Unknown"
 
     def category_order(self) -> list[str]:
         return [
-            "Asian",
-            "London Open",
-            r"London\NY Overlap",
-            "New York",
-            "Dead Market",
+            r"Sydney\Tokyo",
+            "Tokyo",
+            r"Tokyo\London",
+            "London",
+            r"London\NewYork",
+            "NewYork",
+            r"Sydney\NewYork",
+            "Sydney",
         ]
