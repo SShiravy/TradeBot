@@ -115,6 +115,10 @@ class Position:
         return self.open_time if self.open_time else self.generated_time
 
     @property
+    def open_timestamp(self):
+        return int(self.start_time.timestamp())
+
+    @property
     def steps(self):
         if not self._steps:
             self._steps = [
