@@ -1,5 +1,9 @@
 from DivergenceStrategy import DivergenceTradeConfig
 from LocalBackTester.Database.create_db import create_db
+from LocalBackTester.StatisticalMethods.bucket_pnl_distribution import (
+    BucketPipPnlDistribution,
+)
+from LocalBackTester.models import TickDataHandler
 from custom_logger import CustomLogger
 from config import settings
 import asyncio
@@ -107,6 +111,12 @@ async def diver_position_local_backtest(
     pnl_list = []
     timestamp_list = []
 
+    pos_distribution_test = BucketPipPnlDistribution(
+        max_pip_bucket=30,
+        candles_range=60,
+        plot_name=f"{the_config.chart.symbol}_{the_config.chart.timeframe}",
+    )
+    ticks_handler = TickDataHandler(parquet_path=the_config.chart.ticks_path)  # type: ignore
     for pos in position_handler.closed_positions:
         if show_plot:
             pos.plot = plot
@@ -114,9 +124,12 @@ async def diver_position_local_backtest(
 
         pnl_list.append(pos.pnl)
         timestamp_list.append(pos.open_time.timestamp())  # type: ignore
+        pos_distribution_test._calculate(
+            the_config=the_config, pos=pos, ticks_handler=ticks_handler
+        )
 
     commands_report = commands.TradeCommand.close_records()
-
+    pos_distribution_test.plot(show=show_plot)
     if consider_db:
         result = store_positions_result(
             position_handler, commands_report, int(signals[0].source)
@@ -172,7 +185,7 @@ if __name__ == "__main__":
 
     create_db()
 
-    asyncio.run(diver_signal_local_backtest(the_config, show_plot=True))
+    # asyncio.run(diver_signal_local_backtest(the_config, show_plot=True))
     asyncio.run(
         diver_position_local_backtest(
             the_config,

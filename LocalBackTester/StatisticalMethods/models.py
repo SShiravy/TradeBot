@@ -1,6 +1,12 @@
+from typing import Any
+
+from LocalBackTester.models import CsvChart, TickDataHandler
+from TradingModule.models import Position
+from TradingModule.trader_bot import TradeConfig
 from abc import ABC, abstractmethod
 from collections import defaultdict
 import matplotlib.pyplot as plt
+from copy import deepcopy
 
 
 class BasePnLHistogram(ABC):
@@ -114,3 +120,43 @@ class BasePnLHistogram(ABC):
         )
         if show:
             plt.show()
+
+
+class BasePnLDistribution(ABC):
+    def __init__(
+        self,
+        plot_name: str,
+        candles_range: int = 5,
+        trade_config: TradeConfig | None = None,
+    ):
+        self.name = self.__class__.__name__
+        self.candles_range = candles_range
+        self.trade_config = trade_config
+        self.positions = []
+        self.plot_name = plot_name
+
+    @abstractmethod
+    def _calculate(*args, **kwargs) -> Any:
+        pass
+
+    @abstractmethod
+    def give_distribution(*args, **kwargs) -> Any:
+        pass
+
+    @abstractmethod
+    def plot(show=True):
+        pass
+
+    def set_method(self, the_config: TradeConfig, positions: list[Position]):
+        if (
+            not isinstance(the_config.chart, CsvChart)
+            or the_config.chart.ticks_path is None
+        ):
+            raise ValueError(
+                "Chart must be CsvChart with ticks_path for BucketPipPnlDistribution"
+            )
+        self.positions = deepcopy(positions)
+        self.trade_config = deepcopy(the_config)
+        ticks_handler = TickDataHandler(parquet_path=the_config.chart.ticks_path)
+        for pos in positions:
+            self._calculate(the_config=the_config, pos=pos, ticks_handler=ticks_handler)
