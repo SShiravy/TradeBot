@@ -128,7 +128,7 @@ class Position:
                     defined_time=self.start_time,
                 )
             ]
-        if self._steps[0].price != self.entry_price:
+        elif self._steps[0].price != self.entry_price:
             self._steps[0] = Trigger(
                 price=self.entry_price, volume=self.volume, defined_time=self.start_time
             )
@@ -303,6 +303,8 @@ class PositionsReport:
     flats: int = field(default=0, init=False)
     loses: int = field(default=0, init=False)
 
+    triggered_steps: dict = field(default={}, init=False)
+
     max_win_in_a_row: int = field(default=0, init=False)
     max_lose_in_a_row: int = field(default=0, init=False)
 
@@ -349,6 +351,11 @@ class PositionsReport:
             report.flats = self.flats + other.flats
             report.loses = self.loses + other.loses
 
+            for k, v in self.triggered_steps.items():
+                self.triggered_steps[k] += other.triggered_steps.get(k, 0)
+            other.triggered_steps.update(self.triggered_steps)
+            report.triggered_steps = copy(other.triggered_steps)
+
             report.forex_report = self.forex_report
 
             report.total_positions = self.total_positions + other.total_positions
@@ -389,6 +396,10 @@ class PositionsReport:
             report.loses += 1
         else:
             report.flats += 1
+        if len(position.steps) > 1:
+            for i, step in enumerate(position.steps[1:]):
+                if step.triggered_time:
+                    report.triggered_steps[i] = report.triggered_steps.get(i, 0) + 1
 
         return report
 
@@ -460,6 +471,10 @@ class PositionsReport:
                 f"Win Rate = {round(self.wins / (self.wins + self.loses) * 100, 2)} %"
             )
 
+        if self.triggered_steps:
+            report_msg.append("Number of Triggered Steps:")
+            for k, v in self.triggered_steps.items():
+                report_msg.append(f"  Step_{k} : {v}")
         if self.max_lose_in_a_row or self.max_win_in_a_row:
             report_msg.append(f"Max Win in a Row = {self.max_win_in_a_row}")
             report_msg.append(f"Max Lose in a Row = {self.max_lose_in_a_row}")
