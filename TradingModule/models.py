@@ -303,7 +303,7 @@ class PositionsReport:
     flats: int = field(default=0, init=False)
     loses: int = field(default=0, init=False)
 
-    triggered_steps: dict = field(default={}, init=False)
+    triggered_steps: dict = field(default_factory=dict, init=False)
 
     max_win_in_a_row: int = field(default=0, init=False)
     max_lose_in_a_row: int = field(default=0, init=False)
