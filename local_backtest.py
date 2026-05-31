@@ -130,13 +130,18 @@ async def diver_position_local_backtest(
 
     if show_plot:
         plot.show()
+    del signals, plot
 
     # Indicators -------------------------------
 
     all_positions = position_handler.closed_positions
+    ticks_handler = TickDataHandler(parquet_path=the_config.chart.ticks_path) # type:ignore
     for distribution_indicator in pnl_distribution_indicaotors:
-        distribution_indicator.set_method(the_config, all_positions)
+        distribution_indicator.set_method(the_config, all_positions, ticks_handler)
         distribution_indicator.plot(show_plot)
+
+    del ticks_handler
+
 
     for staticial_indicator in statisical_pnl_indicators:
         staticial_indicator(

@@ -3,7 +3,9 @@ from dataclasses import dataclass, field
 from enum import Enum
 import pandas as pd
 import numpy as np
+import logging
 
+logger = logging.getLogger("BacktestModels")
 
 class KlineSource(Enum):
     BINCANCE = "binance"
@@ -43,6 +45,7 @@ class TickDataHandler:
         self,
         parquet_path: str,
     ):
+        logger.info(f"Reading TickData from: {parquet_path}")
         self.df = pd.read_parquet(
             parquet_path,
         )
@@ -58,6 +61,7 @@ class TickDataHandler:
         start_timestamp: int,
         end_timestamp: int,
     ) -> pd.DataFrame:
+        logger.info(f"getting ticks from {start_timestamp} to {end_timestamp}")
         left = np.searchsorted(
             self.timestamps,
             start_timestamp,
@@ -74,7 +78,5 @@ class TickDataHandler:
 
     def get_ticks_for_candle(self, candle: Candle, chart: Chart) -> pd.DataFrame:
         start_ts = candle.timestamp
-
         end_ts = start_ts + chart.timeframe.minutes * 60
-
         return self.get_ticks_from_timstamp_range(start_ts, end_ts)
