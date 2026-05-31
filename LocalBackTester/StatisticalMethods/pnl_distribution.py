@@ -13,14 +13,12 @@ logger = logging.getLogger("BucketPipPnlDistribution")
 class PipPnlDistribution(BasePnLDistribution):
     def __init__(
         self,
-        max_pip_bucket: int,
         candles_range: int,
         plot_name: str,
         trade_config: TradeConfig | None = None,
     ):
         super().__init__(plot_name, candles_range, trade_config)
         self.name = "Pip Pnl Distribution"
-        self.max_pip_bucket = max_pip_bucket
         self.long_max_profit_pip_list = []
         self.short_max_profit_pip_list = []
 

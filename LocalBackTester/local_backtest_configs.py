@@ -23,28 +23,6 @@ local_agent = LocalAgent()
 
 # Forex -----
 
-
-# RatioSteppingForex(
-#         local_agent,
-#         stoploss_pip=50,
-#         targets_ratio=[1,2,3],
-#         initial_volume=[0.01,0.01,0.01],
-#         trail_stop=True,
-#         long_trade=False,
-#         short_trade=False,
-#     ),
-
-
-#     SlTpRatioForex(
-#         local_agent,
-#         ratio=4,
-#         stoploss_pip=50,
-#         initial_volume=0.01,
-#         riskfree_trigger_ratio=2,
-#         long_trade=False,
-#         short_trade=False,
-#     ),
-
 diver_forex_xau_1m_5000_test = ForexDiverTradeConfig(
     chart=XAUUSD_1m_5000_test,
     second_chart=SOLUSD_1m_5000_test,
@@ -66,16 +44,17 @@ diver_forex_xau_1m_5000_test = ForexDiverTradeConfig(
 diver_forex_xau_1m_5000_test.agent = local_agent
 
 
-diver_forex_xau_1m = ForexDiverTradeConfig(
+diver_forex_xau_1m_99000 = ForexDiverTradeConfig(
     chart=XAUUSD_1m_99000,
     second_chart=SOLUSD_1m_99000,
     n_candle_check=500,
     strategy=Divergence(3, 500, [], name="ForexDiver", inverse_diver_long=True),
-    position_handler=SlTpRatioForex(
+    position_handler=RatioSteppingForex(
         local_agent,
-        ratio=3,
-        stoploss_pip=20,
-        initial_volume=0.01,
+        stoploss_pip=30,
+        targets_ratio=[1, 2, 3],
+        initial_volume=[0.01, 0.01, 0.01],
+        trail_stop=True,
         long_trade=False,
         short_trade=False,
     ),
@@ -83,7 +62,7 @@ diver_forex_xau_1m = ForexDiverTradeConfig(
     merge_two_chart_time=True,
     send_signal=False,
 )
-diver_forex_xau_1m.agent = local_agent
+diver_forex_xau_1m_99000.agent = local_agent
 
 
 # Crypto

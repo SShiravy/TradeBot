@@ -5,6 +5,7 @@ from LocalBackTester.Database.create_db import create_db
 from LocalBackTester.StatisticalMethods.pnl_distribution import (
     PipPnlDistribution,
 )
+from LocalBackTester.StatisticalMethods.sl_pip_distribution import PipAfterSLDistribution
 from LocalBackTester.models import TickDataHandler
 from custom_logger import CustomLogger
 from config import settings
@@ -130,24 +131,28 @@ async def diver_position_local_backtest(
 
     if show_plot:
         plot.show()
-    del signals, plot
+    del signals, plot, commands_report
 
     # Indicators -------------------------------
 
     all_positions = position_handler.closed_positions
     ticks_handler = TickDataHandler(parquet_path=the_config.chart.ticks_path) # type:ignore
-    for distribution_indicator in pnl_distribution_indicaotors:
-        distribution_indicator.set_method(the_config, all_positions, ticks_handler)
-        distribution_indicator.plot(show_plot)
+    for i,indicator in enumerate(pnl_distribution_indicaotors):
+        indicator.set_method(the_config, all_positions, ticks_handler)
+        indicator.plot(show_plot)
+        pnl_distribution_indicaotors[i] = None
 
-    del ticks_handler
+    del ticks_handler, pnl_distribution_indicaotors
 
 
-    for staticial_indicator in statisical_pnl_indicators:
+    for i,staticial_indicator in enumerate(statisical_pnl_indicators):
         staticial_indicator(
             all_positions,
             f"{the_config.chart.symbol}_{the_config.chart.timeframe}",
         ).plot(show=show_plot)
+        statisical_pnl_indicators[i] = None
+    
+    del statisical_pnl_indicators
 
 
 def test_tick_data():
@@ -167,6 +172,7 @@ if __name__ == "__main__":
     from LocalBackTester.local_backtest_configs import (
         diver_crypto_solbtc_1m,
         diver_forex_xau_1m_5000_test,
+        diver_forex_xau_1m_99000
     )
 
     from LocalBackTester.StatisticalMethods import (
@@ -180,8 +186,17 @@ if __name__ == "__main__":
     # test_tick_data()
 
     create_db()
+    import cProfile
+    import pstats
 
-    # asyncio.run(diver_signal_local_backtest(the_config, show_plot=True))
+    profiler = cProfile.Profile()
+    profiler.enable()
+
+
+    # asyncio.run(diver_signal_local_backtest(the_config, show_plot=False))
+
+    plot_name = f"{the_config.chart.symbol}_{the_config.chart.timeframe}"
+
     asyncio.run(
         diver_position_local_backtest(
             the_config,
@@ -193,14 +208,23 @@ if __name__ == "__main__":
             ],
             pnl_distribution_indicaotors=[
                 PipPnlDistribution(
-                    max_pip_bucket=30,
                     candles_range=60,
-                    plot_name=f"{the_config.chart.symbol}_{the_config.chart.timeframe}",
+                    plot_name=plot_name,
+                ),
+                PipAfterSLDistribution(
+                    candles_range=60,
+                    plot_name=plot_name,
+                    
                 )
             ],
             show_plot=True,
         )
     )
+
+    profiler.disable()
+    stats = pstats.Stats(profiler)
+    stats.sort_stats("cumtime")
+    stats.print_stats(30)
 
     # store_mt5_tick_data()
     # read_tick_data()
@@ -211,5 +235,4 @@ if __name__ == "__main__":
 # TODO: change position model to store timestamp for open_time ...
 # TODO: add stepping handler for crypto
 # TODO: add after sl pnl distribution
-# TODO: add how many step triggered report
 
