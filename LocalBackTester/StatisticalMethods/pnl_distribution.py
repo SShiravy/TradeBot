@@ -10,7 +10,7 @@ import logging
 logger = logging.getLogger("BucketPipPnlDistribution")
 
 
-class BucketPipPnlDistribution(BasePnLDistribution):
+class PipPnlDistribution(BasePnLDistribution):
     def __init__(
         self,
         max_pip_bucket: int,
@@ -24,8 +24,6 @@ class BucketPipPnlDistribution(BasePnLDistribution):
         self.long_max_profit_pip_list = []
         self.short_max_profit_pip_list = []
 
-        # TODO: add one to one list for extra information
-
     def _calculate(
         self,
         the_config: TradeConfig,
@@ -34,6 +32,7 @@ class BucketPipPnlDistribution(BasePnLDistribution):
         *args,
         **kwargs,
     ):
+        logger.info(f"calculate pnl distribution on pos:{pos}")
         seconds_check_range = (
             the_config.chart.timeframe.minutes * 60 * self.candles_range
         )
@@ -43,16 +42,13 @@ class BucketPipPnlDistribution(BasePnLDistribution):
         # If pos is Buy, then you can sell in ask price & otherwise in bid price
         if pos.side is OrderSide.BUY:
             prices = pos_ticks["ask"].to_numpy()
-            logger.debug(f"{prices=}")
             hit_indices = np.where(prices <= pos.stoploss)[0]
-            logger.debug(f"{hit_indices =}")
             if hit_indices.size == 0 or hit_indices[0] == 0:
                 return
             hit_index = hit_indices[0]
             prices = prices[:hit_index]
             if prices.size == 0:
                 return
-            logger.debug(f"{prices=} | by hit_index")
             max_profit = (prices - pos.entry_price).max()
             if max_profit <= 0:
                 return
@@ -61,14 +57,12 @@ class BucketPipPnlDistribution(BasePnLDistribution):
         else:  # pos.side is OrderSide.SELL
             prices = pos_ticks["bid"].to_numpy()
             hit_indices = np.where(prices >= pos.stoploss)[0]
-            logger.debug(f"{hit_indices=}")
             if hit_indices.size == 0 or hit_indices[0] == 0:
                 return
             hit_index = hit_indices[0]
             prices = prices[:hit_index]
             if prices.size == 0:
                 return
-            logger.debug(f"{prices=} | by hit_index")
             max_profit = (prices - pos.entry_price).min() * -1
             if max_profit <= 0:
                 return
@@ -95,9 +89,7 @@ class BucketPipPnlDistribution(BasePnLDistribution):
         levels = np.arange(int(all_profits.min()), int(all_profits.max()) + 1)
         long_profits = np.array(self.long_max_profit_pip_list)
         short_profits = np.array(self.short_max_profit_pip_list)
-
         long_counts = np.array([(long_profits >= level).sum() for level in levels])
-
         short_counts = np.array([(short_profits >= level).sum() for level in levels])
 
         return {"long": long_counts, "short": short_counts, "levels": levels}
@@ -137,7 +129,7 @@ class BucketPipPnlDistribution(BasePnLDistribution):
             bucket_upper_bounds, [f"{x:.1f}" for x in bucket_upper_bounds], rotation=90
         )
         plt.title(self.name + " " + self.plot_name)
-        plt.xlabel("Pip Pnl Bucket")
+        plt.xlabel("Pip Pnl")
         plt.ylabel("Count")
         plt.legend()
         plt.tight_layout()
@@ -164,7 +156,7 @@ class BucketPipPnlDistribution(BasePnLDistribution):
         plt.plot(levels, long_counts + short_counts, label="total", linewidth=3)
 
         plt.title(self.name + " " + self.plot_name)
-        plt.xlabel("Cumulative Pip Pnl Bucket")
+        plt.xlabel("Cumulative Pip Pnl")
         plt.ylabel("Count")
         plt.legend()
         plt.tight_layout()

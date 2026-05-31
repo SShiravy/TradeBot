@@ -12,15 +12,10 @@ from copy import deepcopy
 class BasePnLHistogram(ABC):
     def __init__(
         self,
-        pnl_list: list[float],
-        timestamps: list[int],
+        all_positions: list[Position],
         plot_name: str,
     ):
-        if len(pnl_list) != len(timestamps):
-            raise ValueError("pnl_list and timestamps must have same length")
-
-        self.pnl_list = pnl_list
-        self.timestamps = timestamps
+        self.all_positions = all_positions
         self.plot_name = plot_name
         self.name = self.__class__.__name__
 
@@ -41,16 +36,11 @@ class BasePnLHistogram(ABC):
         trade_count = defaultdict(int)
         wins = defaultdict(int)
 
-        for pnl, ts in zip(
-            self.pnl_list,
-            self.timestamps,
-        ):
-            category = self.get_category(ts)
-
-            pnl_data[category] += pnl
+        for pos in self.all_positions:
+            category = self.get_category(pos.open_timestamp)
+            pnl_data[category] += pos.pnl
             trade_count[category] += 1
-
-            if pnl > 0:
+            if pos.pnl > 0:
                 wins[category] += 1
 
         return pnl_data, trade_count, wins

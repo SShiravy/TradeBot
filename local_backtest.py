@@ -1,7 +1,9 @@
+from copy import deepcopy
+
 from DivergenceStrategy import DivergenceTradeConfig
 from LocalBackTester.Database.create_db import create_db
-from LocalBackTester.StatisticalMethods.bucket_pnl_distribution import (
-    BucketPipPnlDistribution,
+from LocalBackTester.StatisticalMethods.pnl_distribution import (
+    PipPnlDistribution,
 )
 from LocalBackTester.models import TickDataHandler
 from custom_logger import CustomLogger
@@ -35,7 +37,8 @@ def store_klines_from_mt5():
 async def diver_position_local_backtest(
     the_config: DivergenceTradeConfig,
     consider_db=True,
-    statisical_pnl_methods: list = [],
+    statisical_pnl_indicators: list = [],
+    pnl_distribution_indicaotors: list = [],
     show_plot=True,
 ):
     from TradingModule import commands
@@ -107,36 +110,18 @@ async def diver_position_local_backtest(
     if show_plot:
         for signal in signals:
             the_config.strategy.draw(plot, signal)
-
-    pnl_list = []
-    timestamp_list = []
-
-    pos_distribution_test = BucketPipPnlDistribution(
-        max_pip_bucket=30,
-        candles_range=60,
-        plot_name=f"{the_config.chart.symbol}_{the_config.chart.timeframe}",
-    )
-    ticks_handler = TickDataHandler(parquet_path=the_config.chart.ticks_path)  # type: ignore
     for pos in position_handler.closed_positions:
         if show_plot:
             pos.plot = plot
             pos.draw()
-
-        pnl_list.append(pos.pnl)
-        timestamp_list.append(pos.open_time.timestamp())  # type: ignore
-        pos_distribution_test._calculate(
-            the_config=the_config, pos=pos, ticks_handler=ticks_handler
-        )
-
     commands_report = commands.TradeCommand.close_records()
-    pos_distribution_test.plot(show=show_plot)
     if consider_db:
         result = store_positions_result(
             position_handler, commands_report, int(signals[0].source)
         )
         logging.info(result)
     else:
-        all_reports = position_handler.report()
+        all_reports = position_handler.report(flush=False)
         logging.info("Result:\n\n" + commands_report)
         for poses_report in all_reports:
             logging.info("\n" + str(poses_report))
@@ -146,10 +131,16 @@ async def diver_position_local_backtest(
     if show_plot:
         plot.show()
 
-    for method in statisical_pnl_methods:
-        method(
-            pnl_list,
-            timestamp_list,
+    # Indicators -------------------------------
+
+    all_positions = position_handler.closed_positions
+    for distribution_indicator in pnl_distribution_indicaotors:
+        distribution_indicator.set_method(the_config, all_positions)
+        distribution_indicator.plot(show_plot)
+
+    for staticial_indicator in statisical_pnl_indicators:
+        staticial_indicator(
+            all_positions,
             f"{the_config.chart.symbol}_{the_config.chart.timeframe}",
         ).plot(show=show_plot)
 
@@ -190,10 +181,17 @@ if __name__ == "__main__":
         diver_position_local_backtest(
             the_config,
             consider_db=False,
-            statisical_pnl_methods=[
+            statisical_pnl_indicators=[
                 WeekdayPnLHistogram,
                 HourlyPnLHistogram,
                 SessionPnLHistogram,
+            ],
+            pnl_distribution_indicaotors=[
+                PipPnlDistribution(
+                    max_pip_bucket=30,
+                    candles_range=60,
+                    plot_name=f"{the_config.chart.symbol}_{the_config.chart.timeframe}",
+                )
             ],
             show_plot=True,
         )
@@ -207,3 +205,6 @@ if __name__ == "__main__":
 # TODO: change find candle by timestamp mothod, for returning index of candle
 # TODO: change position model to store timestamp for open_time ...
 # TODO: add stepping handler for crypto
+# TODO: add after sl pnl distribution
+# TODO: add how many step triggered report
+

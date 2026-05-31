@@ -1,10 +1,11 @@
 from datetime import datetime, timezone
 from LocalBackTester.StatisticalMethods.models import BasePnLHistogram
+from TradingModule.models import Position
 
 
 class SessionPnLHistogram(BasePnLHistogram):
-    def __init__(self, pnl_list: list[float], timestamps: list[int], plot_name: str):
-        super().__init__(pnl_list, timestamps, plot_name)
+    def __init__(self, all_positions: list[Position], plot_name: str):
+        super().__init__(all_positions, plot_name)
         self.name = "Session PNL"
 
     def get_category(
