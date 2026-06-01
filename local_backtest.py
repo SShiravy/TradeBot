@@ -107,13 +107,13 @@ async def diver_position_local_backtest(
                 break
 
     # plot
-    plot = DoubleChartPlot(chartdata, second_chartdata, n_bar)
     if show_plot:
+        plot = DoubleChartPlot(chartdata, second_chartdata, n_bar)
         for signal in signals:
             the_config.strategy.draw(plot, signal)
     for pos in position_handler.closed_positions:
         if show_plot:
-            pos.plot = plot
+            pos.plot = plot # type: ignore
             pos.draw()
     commands_report = commands.TradeCommand.close_records()
     if consider_db:
@@ -130,16 +130,17 @@ async def diver_position_local_backtest(
         logging.info("\n" + str(overal_report))
 
     if show_plot:
-        plot.show()
-    del signals, plot, commands_report
+        plot.show() # type: ignore
+        del plot # type: ignore
+    del signals, commands_report
 
     # Indicators -------------------------------
-
+    input("Enter for Continue ....")
     all_positions = position_handler.closed_positions
     ticks_handler = TickDataHandler(parquet_path=the_config.chart.ticks_path) # type:ignore
     for i,indicator in enumerate(pnl_distribution_indicaotors):
         indicator.set_method(the_config, all_positions, ticks_handler)
-        indicator.plot(show_plot)
+        indicator.plot(show=True)
         pnl_distribution_indicaotors[i] = None
 
     del ticks_handler, pnl_distribution_indicaotors
@@ -149,7 +150,7 @@ async def diver_position_local_backtest(
         staticial_indicator(
             all_positions,
             f"{the_config.chart.symbol}_{the_config.chart.timeframe}",
-        ).plot(show=show_plot)
+        ).plot(show=True)
         statisical_pnl_indicators[i] = None
     
     del statisical_pnl_indicators
@@ -181,7 +182,7 @@ if __name__ == "__main__":
         SessionPnLHistogram,
     )
 
-    the_config = diver_forex_xau_1m_5000_test
+    the_config = diver_forex_xau_1m_99000
 
     # test_tick_data()
 
@@ -195,7 +196,7 @@ if __name__ == "__main__":
 
     # asyncio.run(diver_signal_local_backtest(the_config, show_plot=False))
 
-    plot_name = f"{the_config.chart.symbol}_{the_config.chart.timeframe}"
+    plot_name = f"{the_config.chart.symbol}_{the_config.chart.timeframe}_99000"
 
     asyncio.run(
         diver_position_local_backtest(
@@ -214,10 +215,11 @@ if __name__ == "__main__":
                 PipAfterSLDistribution(
                     candles_range=60,
                     plot_name=plot_name,
+                    tolerance_pip=10
                     
-                )
+                ),
             ],
-            show_plot=True,
+            show_plot=False,
         )
     )
 

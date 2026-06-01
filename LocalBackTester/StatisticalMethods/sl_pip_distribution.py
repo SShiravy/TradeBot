@@ -20,7 +20,7 @@ class PipAfterSLDistribution(BasePnLDistribution):
     ):
         super().__init__(plot_name, candles_range, trade_config)
         self.name = "Pip After SL Distribution"
-        self.tolerance_pip = tolerance_pip
+        self.tolerance_price = int(tolerance_pip/10)
         self.long_max_pip_list = []
         self.short_max_pip_list = []
 
@@ -44,7 +44,7 @@ class PipAfterSLDistribution(BasePnLDistribution):
         )
         # If pos is Buy, then you can sell in ask price & otherwise in bid price
         if pos.side is OrderSide.BUY:
-            sl_tolerance = pos.stoploss + self.tolerance_pip
+            sl_tolerance = pos.stoploss + self.tolerance_price
             prices = pos_ticks_after_sl["ask"].to_numpy()
             hit_indices = np.where(prices > sl_tolerance)[0]
             if hit_indices.size == 0 or hit_indices[0] == 0:
@@ -59,7 +59,7 @@ class PipAfterSLDistribution(BasePnLDistribution):
             self.long_max_pip_list.append(max_pip * 10)
 
         else:  # pos.side is OrderSide.SELL
-            sl_tolerance = pos.stoploss - self.tolerance_pip
+            sl_tolerance = pos.stoploss - self.tolerance_price
             prices = pos_ticks_after_sl["bid"].to_numpy()
             hit_indices = np.where(prices < sl_tolerance)[0]
             if hit_indices.size == 0 or hit_indices[0] == 0:
