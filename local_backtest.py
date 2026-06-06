@@ -1,5 +1,3 @@
-from copy import deepcopy
-
 from DivergenceStrategy import DivergenceTradeConfig
 from LocalBackTester.Database.create_db import create_db
 from LocalBackTester.StatisticalMethods.pnl_distribution import (
@@ -209,13 +207,13 @@ if __name__ == "__main__":
             ],
             pnl_distribution_indicaotors=[
                 PipPnlDistribution(
-                    candles_range=60,
+                    candles_range=200,
                     plot_name=plot_name,
                 ),
                 PipAfterSLDistribution(
-                    candles_range=60,
+                    candles_range=200,
                     plot_name=plot_name,
-                    tolerance_pip=10
+                    tolerance_pip=30
                     
                 ),
             ],
@@ -236,5 +234,4 @@ if __name__ == "__main__":
 # TODO: change find candle by timestamp mothod, for returning index of candle
 # TODO: change position model to store timestamp for open_time ...
 # TODO: add stepping handler for crypto
-# TODO: add after sl pnl distribution
 
