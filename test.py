@@ -3,7 +3,7 @@ import logging
 import asyncio
 
 
-CustomLogger(True, consol_log_level=logging.DEBUG)
+CustomLogger(True, consol_log_level=logging.INFO)
 
 
 async def start_diver_backtest():
@@ -25,15 +25,15 @@ async def start_diver_crypto_backtest_pack():
 
 
 async def start_fibochoch_backtest():
-    from FiboChochStrategy.backtest_configs import one_m_forex, coinex_five_m
+    from FiboChochStrategy.backtest_configs import forex_five_m, coinex_five_m
 
-    await coinex_five_m.backtest(1000)
+    await forex_five_m.backtest(2000, consider_positions=False)
 
 
 async def start_fich_diver_backtest():
     from FiboChochDiverStrategy.backtest_configs import coinex_five_m, forex_one_m
 
-    await coinex_five_m.backtest(1000)
+    await forex_one_m.backtest(1000)
 
 
 async def test_meta_open_positions():
@@ -80,13 +80,13 @@ def test_handler_export_config():
 if __name__ == "__main__":
     # asyncio.run(start_diver_crypto_backtest_pack())
     # asyncio.run(start_diver_backtest())
-    # asyncio.run(start_fibochoch_backtest())
+    asyncio.run(start_fibochoch_backtest())
     # asyncio.run(start_fich_diver_backtest())
 
     # new_backtest()
 
     # asyncio.run(test_meta_open_positions())
-    test_handler_export_config()
+    # test_handler_export_config()
 
 
 # TODO: position handler with MA and control tp sl with it
