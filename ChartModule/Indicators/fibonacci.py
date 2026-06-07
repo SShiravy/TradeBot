@@ -61,7 +61,7 @@ class FibonacciRetracement(IndicatorBaseModel):
 
     def give_level_price(self, level: FiboLevels):
         diff = self.start_tick.price - self.end_tick.price
-        return self.end_tick.price + level.value * diff
+        return round(self.end_tick.price + level.value * diff, 4)
 
     def _forcast(self) -> MarketSide:
         return MarketSide.NEUTRAL
@@ -81,7 +81,7 @@ class FibonacciRetracement(IndicatorBaseModel):
             return MarketSide.BEARISH
 
     def plot(self, plot: ChartPlot, end_time: datetime | None = None):
-        end_time = end_time if end_time else self.end_tick.time + timedelta(minutes=5)
+        end_time = end_time if end_time else self.end_tick.time
         for level in self.fibonacci_levels:
             end_price = self.values[self.fibonacci_levels.index(level)]
             plot.draw_line(

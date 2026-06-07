@@ -3,7 +3,7 @@ import logging
 import asyncio
 
 
-CustomLogger(True, consol_log_level=logging.INFO)
+CustomLogger(True, consol_log_level=logging.DEBUG)
 
 
 async def start_diver_backtest():
@@ -74,7 +74,7 @@ def test_handler_export_config():
         coinex_4h_diver,
     )
 
-    print(cvd_diver_one_m_cvd.position_handler.export_config())
+    logging.info(cvd_diver_one_m_cvd.position_handler.export_config())
 
 
 if __name__ == "__main__":

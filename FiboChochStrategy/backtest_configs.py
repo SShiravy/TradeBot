@@ -58,9 +58,15 @@ coinex_one_h = FiboChochConfig(
 
 
 forex_five_m = FiboChochConfig(
-    chart=Chart("XAUUSD!", TimeFrame.five_minutes),
+    chart=Chart("XAUUSD!", TimeFrame.one_minute),
     agent=ForexAgent(),
-    strategy=FiboChoch("CoinexFiboChochTest"),
+    strategy=FiboChoch(
+        "CoinexFiboChochTest",
+        long_pivot_left=15,
+        long_pivot_right=3,
+        short_pivot_left=15,
+        short_pivot_right=3,
+    ),
     position_handler=RatioSteppingForex(
         ForexAgent(),
         targets_ratio=[1],
@@ -72,4 +78,5 @@ forex_five_m = FiboChochConfig(
     ),
     bar_between_signals=1,
     send_signal=False,
+    short_signal=False,
 )

@@ -447,7 +447,6 @@ class PositionsReport:
         duration = timedelta(
             seconds=self.last_time.timestamp() - self.first_time.timestamp()
         )
-        print(f"{self.last_time.timestamp()=} | {self.first_time.timestamp()}")
         return duration
 
     def __str__(self) -> str:

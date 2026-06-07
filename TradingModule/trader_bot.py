@@ -148,7 +148,6 @@ class TradeConfig:
             agent.index += candle_delay
 
             logger.debug(f"{candle_delay} Candle next")
-
         plot = ChartPlot(agent.chartdata)  # type: ignore
         for signal in all_signals:
             self.strategy.draw(plot, signal)
@@ -157,7 +156,6 @@ class TradeConfig:
                 continue
             pos.plot = plot
             pos.draw()
-
         commands_report = commands.TradeCommand.close_records()
         all_reports = position_handler.report()
         logger.info("Result:\n\n" + commands_report)
@@ -166,7 +164,7 @@ class TradeConfig:
         overal_report = PositionsReport.give_overall_report(copy(all_reports))
         logger.info("\n" + str(overal_report))
         logger.info(
-            f"total time: {agent.chartdata[-1].time - agent.chartdata[0].time} with {len(agent.chartdata)} candles"  # type: ignore
+            f"total time: {agent.chartdata[-1].time - agent.chartdata[0].time} with {len(agent.chartdata.candles)} candles"  # type: ignore
         )
         if show_image:
             plot.show()
