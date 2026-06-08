@@ -90,6 +90,7 @@ class RatioSteppingForex(SlTpRatioForex):
                 real_trade=True,
             )
             await commands.OpenPosition(step_position, self.exchange_agent).execute()
+            pos.entry_price = step_position.entry_price
 
     async def generate_position(
         self,

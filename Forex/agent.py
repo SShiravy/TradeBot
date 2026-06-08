@@ -78,7 +78,6 @@ class ForexAgent(ExchangeAgent):
                 f"Failed to get chart info for market open check: {chart=} | {info=}"
             )
             return 0
-        logging.debug(f"current timestamp: {info.time=}")
         return info.time
 
     def check_market_open(self, chart: Chart) -> None | int:
@@ -102,7 +101,8 @@ class ForexAgent(ExchangeAgent):
         else:
             self.market_state = MarketState.OPEN
 
-        logger.debug(f"market state = {self.market_state}")
+        if self.market_state != MarketState.OPEN:
+            logger.debug(f"Market State = {self.market_state}")
         return self.market_state.wait_seconds()
 
     def get_chartdata(self, chart: Chart, n_bars: int = 100) -> ChartData | None:
@@ -196,7 +196,7 @@ class ForexAgent(ExchangeAgent):
         if not result:
             logger.error(f"New SL Request Failed:{position=}\n{result=}")
             return False
-        logging.debug(f"SL Changed of {position=}\n{result=}")
+        logger.debug(f"SL Changed of {position=}\n{result=}")
         return True
 
     def change_takeprofit(self, position: Position, price) -> bool:
@@ -212,7 +212,7 @@ class ForexAgent(ExchangeAgent):
         if not result:
             logger.error(f"New TP Request Failed:{position=}\n{result=}")
             return False
-        logging.debug(f"TP Changed of {position=}\n{result=}")
+        logger.debug(f"TP Changed of {position=}\n{result=}")
         return True
 
     def partial_close(self, position: Position, volume) -> float | None:
@@ -234,7 +234,7 @@ class ForexAgent(ExchangeAgent):
         if not result:
             logger.error(f"Partial Close Request Failed:{position=}\n{result=}")
             return None
-        logging.debug(f"Partial Close for {position=}\n{result=}")
+        logger.debug(f"Partial Close for {position=}\n{result=}")
         return result.price
 
     def close_position(self, position: Position) -> float | None:
@@ -256,7 +256,7 @@ class ForexAgent(ExchangeAgent):
         if not result:
             logger.error(f"Close Position Failed: {position}\n{result=}")
             return None
-        logging.debug(f"Position Close for {position=}\n{result=}")
+        logger.debug(f"Position Close for {position=}\n{result=}")
         return result.price
 
     def mt5_pos_to_position(self, mt5_pos: mt5.TradePosition) -> Position:

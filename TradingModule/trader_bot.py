@@ -215,7 +215,7 @@ class TraderBot:
                 await asyncio.sleep(10)
 
     async def trade_task(self, config: TradeConfig):
-        logging.debug(f"Task with config:{str(config)} initilized")
+        logging.info(f"Task with config:{str(config)} initilized")
         error_number = 0
         while True:
             try:
@@ -268,14 +268,18 @@ class TraderBot:
             await TelegramReporter().log_report("\n".join(msg))
 
     async def report(self):
-        now = datetime.now()
+        now = datetime.now(tz=timezone.utc)
         report_time = now.replace(
-            hour=self.report_time["h"], minute=self.report_time["m"], microsecond=0
+            hour=self.report_time["h"],
+            minute=self.report_time["m"],
+            second=0,
+            microsecond=0,
         )
         if report_time < now:
             report_time += timedelta(days=1)
         sleep_time = report_time - now
         while True:
+            logging.info(f"Next daily report in {sleep_time}")
             await asyncio.sleep(sleep_time.total_seconds())
             commands_report = commands.TradeCommand.close_records()
             await TelegramReporter().log_report(f"{self.name}\n{commands_report}")
@@ -291,7 +295,7 @@ class TraderBot:
                 self.name + "\n" + str(overall_report)
             )
 
-            now = datetime.now()
+            now = datetime.now(tz=timezone.utc)
             report_time = (now + timedelta(days=1)).replace(
                 hour=self.report_time["h"], minute=self.report_time["m"], microsecond=0
             )

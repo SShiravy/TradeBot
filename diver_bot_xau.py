@@ -39,13 +39,15 @@ five_m = ForexDiverTradeConfig(
         targets_ratio=[1, 2, 3],
         initial_volume=[0.01, 0.01, 0.01],
         trail_stop=True,
+        long_trade=False,
+        short_trade=False,
     ),
     merge_two_chart_time=True,
     heikingashi_chartdata=True,
 )
 
 
-TraderBot("Gold Diver Bot", [one_m, five_m], report_time={"h": 23, "m": 55})
+TraderBot("Gold Diver Bot", [one_m], report_time={"h": 20, "m": 0})
 
 
 if __name__ == "__main__":
