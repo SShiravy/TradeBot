@@ -19,8 +19,8 @@ one_m = ForexDiverTradeConfig(
     position_handler=RatioSteppingForex(
         ForexAgent(),
         stoploss_pip=30,
-        targets_ratio=[1, 1.5, 2],
-        initial_volume=[0.02, 0.01, 0.01],
+        targets_ratio=[1, 2, 3],
+        initial_volume=[0.01, 0.01, 0.01],
         trail_stop=True,
     ),
     merge_two_chart_time=True,
