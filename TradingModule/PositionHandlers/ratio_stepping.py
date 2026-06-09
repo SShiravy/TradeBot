@@ -144,12 +144,17 @@ class RatioSteppingForex(SlTpRatioForex):
             await self.open_steps_position(position)
         return position
 
+    def modify_init_sl_tp(self, position: Position):
+        position.confiremed = True
+        # TODO: what about modifing steps?
+        logger.info(f"Position Updated on {position.chart}")
+        pass
+
     def handler(
         self, position: Position, tick_prices: list[float]
     ) -> TradeCommand | None:
         if not position.confiremed:
             self.modify_init_sl_tp(position)
-        # TODO: what about modifing steps?
         if position.confiremed and not position.sended:
             commands.SendPositionSignal(position, self.exchange_agent)
 
