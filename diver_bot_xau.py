@@ -14,7 +14,7 @@ CustomLogger(
 one_m = ForexDiverTradeConfig(
     chart=Chart("XAUUSD!", TimeFrame.one_minute),
     second_chart=Chart("SOLUSD", TimeFrame.one_minute),
-    strategy=Divergence(2, 300, [], name="ForexDiver"),
+    strategy=Divergence(5, 300, [], name="ForexDiver"),
     bar_between_signals=2,
     position_handler=RatioSteppingForex(
         ForexAgent(),

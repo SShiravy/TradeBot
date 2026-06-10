@@ -100,6 +100,7 @@ class ForexAgent(ExchangeAgent):
 
         else:
             self.market_state = MarketState.OPEN
+            self.last_checked_timestamp = current_timestamp
 
         if self.market_state != MarketState.OPEN:
             logger.debug(f"Market State = {self.market_state}")
