@@ -259,7 +259,7 @@ class Position:
             self.takeprofit,
             self.stoploss,
         )
-        if self._current_step_index == 1:
+        if not self.closed:
             start_of_step = end_of_line - self.chart.timeframe.time_delta * 10
         else:
             start_of_step = self.start_time

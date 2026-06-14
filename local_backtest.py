@@ -3,7 +3,9 @@ from LocalBackTester.Database.create_db import create_db
 from LocalBackTester.StatisticalMethods.pnl_distribution import (
     PipPnlDistribution,
 )
-from LocalBackTester.StatisticalMethods.sl_pip_distribution import PipAfterSLDistribution
+from LocalBackTester.StatisticalMethods.sl_pip_distribution import (
+    PipAfterSLDistribution,
+)
 from LocalBackTester.models import TickDataHandler
 from custom_logger import CustomLogger
 from config import settings
@@ -111,7 +113,7 @@ async def diver_position_local_backtest(
             the_config.strategy.draw(plot, signal)
     for pos in position_handler.closed_positions:
         if show_plot:
-            pos.plot = plot # type: ignore
+            pos.plot = plot  # type: ignore
             pos.draw()
     commands_report = commands.TradeCommand.close_records()
     if consider_db:
@@ -128,30 +130,31 @@ async def diver_position_local_backtest(
         logging.info("\n" + str(overal_report))
 
     if show_plot:
-        plot.show() # type: ignore
-        del plot # type: ignore
+        plot.show()  # type: ignore
+        del plot  # type: ignore
     del signals, commands_report
 
     # Indicators -------------------------------
     input("Enter for Continue ....")
     all_positions = position_handler.closed_positions
-    ticks_handler = TickDataHandler(parquet_path=the_config.chart.ticks_path) # type:ignore
-    for i,indicator in enumerate(pnl_distribution_indicaotors):
-        indicator.set_method(the_config, all_positions, ticks_handler)
-        indicator.plot(show=True)
-        pnl_distribution_indicaotors[i] = None
+    if pnl_distribution_indicaotors:
+        ticks_handler = TickDataHandler(parquet_path=the_config.chart.ticks_path)  # type:ignore
+        for i, indicator in enumerate(pnl_distribution_indicaotors):
+            indicator.set_method(the_config, all_positions, ticks_handler)
+            indicator.plot(show=True)
+            pnl_distribution_indicaotors[i] = None
 
-    del ticks_handler, pnl_distribution_indicaotors
+        del ticks_handler, pnl_distribution_indicaotors
 
+    if statisical_pnl_indicators:
+        for i, staticial_indicator in enumerate(statisical_pnl_indicators):
+            staticial_indicator(
+                all_positions,
+                f"{the_config.chart.symbol}_{the_config.chart.timeframe}",
+            ).plot(show=True)
+            statisical_pnl_indicators[i] = None
 
-    for i,staticial_indicator in enumerate(statisical_pnl_indicators):
-        staticial_indicator(
-            all_positions,
-            f"{the_config.chart.symbol}_{the_config.chart.timeframe}",
-        ).plot(show=True)
-        statisical_pnl_indicators[i] = None
-    
-    del statisical_pnl_indicators
+        del statisical_pnl_indicators
 
 
 def test_tick_data():
@@ -169,9 +172,10 @@ if __name__ == "__main__":
     from LocalBackTester.methods import *
 
     from LocalBackTester.local_backtest_configs import (
-        diver_crypto_solbtc_1m,
+        diver_solbtc_5m_17570,
+        diver_solbtc_5m_1000,
         diver_forex_xau_1m_5000_test,
-        diver_forex_xau_1m_99000
+        diver_forex_xau_1m_99000,
     )
 
     from LocalBackTester.StatisticalMethods import (
@@ -180,7 +184,7 @@ if __name__ == "__main__":
         SessionPnLHistogram,
     )
 
-    the_config = diver_forex_xau_1m_99000
+    the_config = diver_solbtc_5m_1000
 
     # test_tick_data()
 
@@ -191,10 +195,12 @@ if __name__ == "__main__":
     profiler = cProfile.Profile()
     profiler.enable()
 
+    # plot_csv_kline(the_config.second_chart) # type: ignore
 
-    # asyncio.run(diver_signal_local_backtest(the_config, show_plot=False))
+    asyncio.run(diver_signal_local_backtest(the_config, show_plot=True))
 
-    plot_name = f"{the_config.chart.symbol}_{the_config.chart.timeframe}_99000"
+    # plot_name = f"{the_config.chart.symbol}_{the_config.chart.timeframe}_99000"
+    plot_name = f"{the_config.chart.symbol}_{the_config.chart.timeframe}_17570"
 
     asyncio.run(
         diver_position_local_backtest(
@@ -211,13 +217,10 @@ if __name__ == "__main__":
                     plot_name=plot_name,
                 ),
                 PipAfterSLDistribution(
-                    candles_range=200,
-                    plot_name=plot_name,
-                    tolerance_pip=30
-                    
+                    candles_range=200, plot_name=plot_name, tolerance_pip=30
                 ),
             ],
-            show_plot=False,
+            show_plot=True,
         )
     )
 
@@ -234,4 +237,3 @@ if __name__ == "__main__":
 # TODO: change find candle by timestamp mothod, for returning index of candle
 # TODO: change position model to store timestamp for open_time ...
 # TODO: add stepping handler for crypto
-

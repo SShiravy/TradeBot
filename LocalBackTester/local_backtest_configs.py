@@ -4,7 +4,6 @@ from DivergenceStrategy.divergence import Divergence
 from Coinex.bot_config import CoinexDiverTradeConfig
 from TradingModule.PositionHandlers import (
     SlTpRatioForex,
-    SlTpRatioCrypto,
     RatioSteppingForex,
     RatioSteppingCrypto,
 )
@@ -15,6 +14,8 @@ from LocalBackTester.all_charts import (
     SOLUSD_1m_99000,
     SOLUSDT_5m_2024_4_5,
     BTCUSDT_5m_2024_4_5,
+    SOLUSDT_5m_test,
+    BTCUSDT_5m_test,
 )
 
 
@@ -68,18 +69,40 @@ diver_forex_xau_1m_99000.agent = local_agent
 # Crypto
 
 local_agent = LocalAgent()
-diver_crypto_solbtc_1m = CoinexDiverTradeConfig(
+diver_solbtc_5m_17570 = CoinexDiverTradeConfig(
     chart=SOLUSDT_5m_2024_4_5,
     second_chart=BTCUSDT_5m_2024_4_5,
     n_candle_check=100,
     strategy=Divergence(3, 500, [], name="CoinexDiver", inverse_diver_long=True),
-    position_handler=SlTpRatioCrypto(
+    position_handler=RatioSteppingCrypto(
         local_agent,
-        ratio=1.5,
-        stoploss_percent=2,
-        initial_volume=10,
-        riskfree_trigger_ratio=1,
-        leverage=10,
+        leverage=30,
+        stoploss_percent=0.5,
+        targets_ratio=[1, 2, 3],
+        initial_volume=[2, 2, 2],
+        trail_stop=True,
+        long_trade=False,
+        short_trade=False,
+    ),
+    agent=local_agent,  # type: ignore
+    heikingashi_chartdata=True,
+    send_signal=False,
+)
+
+
+local_agent = LocalAgent()
+diver_solbtc_5m_1000 = CoinexDiverTradeConfig(
+    chart=SOLUSDT_5m_test,
+    second_chart=BTCUSDT_5m_test,
+    n_candle_check=100,
+    strategy=Divergence(3, 500, [], name="CoinexDiver", inverse_diver_long=True),
+    position_handler=RatioSteppingCrypto(
+        local_agent,
+        leverage=30,
+        stoploss_percent=0.5,
+        targets_ratio=[1, 2, 3],
+        initial_volume=[2, 2, 2],
+        trail_stop=True,
         long_trade=False,
         short_trade=False,
     ),

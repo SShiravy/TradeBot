@@ -137,16 +137,24 @@ class BasePnLDistribution(ABC):
     def plot(show=True):
         pass
 
-    def set_method(self, the_config: TradeConfig, positions: list[Position], ticks_handler:TickDataHandler|None=None):
+    def set_method(
+        self,
+        the_config: TradeConfig,
+        positions: list[Position],
+        ticks_handler: TickDataHandler | None = None,
+    ):
         if not ticks_handler:
             if (
-            not isinstance(the_config.chart, CsvChart)
-            or the_config.chart.ticks_path is None):
+                not isinstance(the_config.chart, CsvChart)
+                or the_config.chart.ticks_path is None
+            ):
                 raise ValueError(
                     "Chart must be CsvChart with ticks_path for BucketPipPnlDistribution"
                 )
             else:
-                ticks_handler = TickDataHandler(parquet_path=the_config.chart.ticks_path)
+                ticks_handler = TickDataHandler(
+                    parquet_path=the_config.chart.ticks_path
+                )
         self.positions = positions
         self.trade_config = the_config
         for pos in positions:

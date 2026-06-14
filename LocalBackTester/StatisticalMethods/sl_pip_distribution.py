@@ -16,11 +16,11 @@ class PipAfterSLDistribution(BasePnLDistribution):
         candles_range: int,
         plot_name: str,
         trade_config: TradeConfig | None = None,
-        tolerance_pip: float = 0.0
+        tolerance_pip: float = 0.0,
     ):
         super().__init__(plot_name, candles_range, trade_config)
         self.name = "Pip After SL Distribution"
-        self.tolerance_price = int(tolerance_pip/10)
+        self.tolerance_price = int(tolerance_pip / 10)
         self.long_max_pip_list = []
         self.short_max_pip_list = []
 
@@ -78,9 +78,7 @@ class PipAfterSLDistribution(BasePnLDistribution):
         return:
             long_hist, short_hist, bins
         """
-        total_max_profit_pip_list = (
-            self.long_max_pip_list + self.short_max_pip_list
-        )
+        total_max_profit_pip_list = self.long_max_pip_list + self.short_max_pip_list
         pip_step = 5
         bins = np.arange(0, max(total_max_profit_pip_list) + pip_step, pip_step)
         long_hist, _ = np.histogram(self.long_max_pip_list, bins=bins)
@@ -88,9 +86,7 @@ class PipAfterSLDistribution(BasePnLDistribution):
         return {"long": long_hist, "short": short_hist, "bins": bins}
 
     def give_cumulative_distribution(self):
-        all_pips = np.array(
-            self.long_max_pip_list + self.short_max_pip_list
-        )
+        all_pips = np.array(self.long_max_pip_list + self.short_max_pip_list)
         levels = np.arange(int(all_pips.min()), int(all_pips.max()) + 1)
         long_profits = np.array(self.long_max_pip_list)
         short_profits = np.array(self.short_max_pip_list)

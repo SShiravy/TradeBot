@@ -22,7 +22,7 @@ SOLUSDT_1h_2024_9 = CsvChart(
 BTCUSDT_5m_2024_4_5 = CsvChart(
     "BTCUSDT",
     TimeFrame.five_minutes,
-    csv_path=r"D:\TraderBot\LocalBackTester\KlinesCSV\Binance\BTCUSDT-5m-2024-04-05.csv",
+    csv_path=r"D:\TraderBot\LocalBackTester\KlinesCSV\Binance\BTCUSDT-5m-2026-04-05.csv",
     csv_source=KlineSource.BINCANCE,
 )
 
@@ -30,7 +30,23 @@ BTCUSDT_5m_2024_4_5 = CsvChart(
 SOLUSDT_5m_2024_4_5 = CsvChart(
     "SOLUSDT",
     TimeFrame.five_minutes,
-    csv_path=r"D:\TraderBot\LocalBackTester\KlinesCSV\Binance\SOLUSDT-5m-2024-04-05.csv",
+    csv_path=r"D:\TraderBot\LocalBackTester\KlinesCSV\Binance\SOLUSDT-5m-2026-04-05.csv",
+    csv_source=KlineSource.BINCANCE,
+)
+
+
+BTCUSDT_5m_test = CsvChart(
+    "BTCUSDT",
+    TimeFrame.five_minutes,
+    csv_path=r"D:\TraderBot\LocalBackTester\KlinesCSV\Binance\BTCUSDT-5m-test.csv",
+    csv_source=KlineSource.BINCANCE,
+)
+
+
+SOLUSDT_5m_test = CsvChart(
+    "SOLUSDT",
+    TimeFrame.five_minutes,
+    csv_path=r"D:\TraderBot\LocalBackTester\KlinesCSV\Binance\SOLUSDT-5m-test.csv",
     csv_source=KlineSource.BINCANCE,
 )
 # FOREX
@@ -59,7 +75,6 @@ XAUUSD_1m_99000 = CsvChart(
     csv_path=r"D:\TraderBot\LocalBackTester\KlinesCSV\Opofincance\opo_XAUUSD_1m_99000.csv",
     csv_source=KlineSource.OPOFINANCE_META,
     ticks_path=r"D:\TraderBot\LocalBackTester\TickData\Opofinance\XAUUSD!_2025_11_03_to_2026_05_19.parquet",
-
 )
 
 SOLUSD_1m_99000 = CsvChart(

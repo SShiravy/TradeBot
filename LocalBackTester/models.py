@@ -7,6 +7,7 @@ import logging
 
 logger = logging.getLogger("BacktestModels")
 
+
 class KlineSource(Enum):
     BINCANCE = "binance"
     OPOFINANCE_META = "opofinance"
