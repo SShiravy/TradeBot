@@ -78,6 +78,7 @@ class RatioSteppingForex(SlTpRatioForex):
             )
         logger.debug(f"steps for position set to: {steps}")
         pos.steps = steps
+        pos.takeprofit = steps[-1].price
 
     async def open_steps_position(self, pos: Position):
         for step in pos.steps[1:]:  # first step is entry

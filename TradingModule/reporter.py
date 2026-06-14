@@ -85,6 +85,9 @@ class TelegramReporter:
 
         msg = "\n\n".join(msg_list)
         res = await self.send_msg(self._public_channel, msg, img_path)
+        logger.debug(
+            f"response from telegram for new position: {res} , id: {res.message_id if res else None}"
+        )
         position.msg_id = res.message_id if res else 0
 
     async def position_closed(self, position: Position, filled_price=None):
