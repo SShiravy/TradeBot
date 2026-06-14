@@ -18,6 +18,21 @@ SOLUSDT_1h_2024_9 = CsvChart(
     csv_source=KlineSource.BINCANCE,
 )
 
+
+BTCUSDT_5m_2024_4_5 = CsvChart(
+    "BTCUSDT",
+    TimeFrame.five_minutes,
+    csv_path=r"D:\TraderBot\LocalBackTester\KlinesCSV\Binance\BTCUSDT-5m-2024-04-05.csv",
+    csv_source=KlineSource.BINCANCE,
+)
+
+
+SOLUSDT_5m_2024_4_5 = CsvChart(
+    "SOLUSDT",
+    TimeFrame.five_minutes,
+    csv_path=r"D:\TraderBot\LocalBackTester\KlinesCSV\Binance\SOLUSDT-5m-2024-04-05.csv",
+    csv_source=KlineSource.BINCANCE,
+)
 # FOREX
 
 

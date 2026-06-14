@@ -13,8 +13,8 @@ from LocalBackTester.all_charts import (
     SOLUSD_1m_5000_test,
     XAUUSD_1m_99000,
     SOLUSD_1m_99000,
-    BTCUSDT_1h_2024_9,
-    SOLUSDT_1h_2024_9,
+    SOLUSDT_5m_2024_4_5,
+    BTCUSDT_5m_2024_4_5,
 )
 
 
@@ -69,8 +69,8 @@ diver_forex_xau_1m_99000.agent = local_agent
 
 local_agent = LocalAgent()
 diver_crypto_solbtc_1m = CoinexDiverTradeConfig(
-    chart=SOLUSDT_1h_2024_9,
-    second_chart=BTCUSDT_1h_2024_9,
+    chart=SOLUSDT_5m_2024_4_5,
+    second_chart=BTCUSDT_5m_2024_4_5,
     n_candle_check=100,
     strategy=Divergence(3, 500, [], name="CoinexDiver", inverse_diver_long=True),
     position_handler=SlTpRatioCrypto(
