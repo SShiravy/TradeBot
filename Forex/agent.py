@@ -260,7 +260,7 @@ class ForexAgent(ExchangeAgent):
         logger.debug(f"Position Close for {position=}\n{result=}")
         return result.price
 
-    def mt5_pos_to_position(self, mt5_pos: mt5.TradePosition) -> Position:
+    def mt5_trade_to_position(self, mt5_pos: mt5.TradePosition) -> Position:
         pos = Position(
             chart=Chart(mt5_pos.symbol, TimeFrame.one_minute),
             side=OrderSide.BUY
@@ -291,7 +291,7 @@ class ForexAgent(ExchangeAgent):
             if comment_filter:
                 if comment_filter not in pos.comment:
                     continue
-            filtered_poses.append(self.mt5_pos_to_position(pos))
+            filtered_poses.append(self.mt5_trade_to_position(pos))
             logger.debug(f"mt5 filtered open pos: {open_poses}")
         return filtered_poses
 

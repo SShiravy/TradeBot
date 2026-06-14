@@ -102,7 +102,12 @@ class TradeCommand(ABC):
                 + f" for {self.position.exchange_id if self.position.exchange_id else self.position.id}"
             )
             if self.report:
-                await self.execution_report()
+                try:
+                    await self.execution_report()
+                except Exception as e:
+                    logger.error(
+                        f"error in execution_report of {self.__class__.__name__} for {self.position}: {e}"
+                    )
             return True
 
         else:

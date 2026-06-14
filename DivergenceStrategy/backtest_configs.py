@@ -81,7 +81,7 @@ forex_diver_one_m = ForexDiverTradeConfig(
         ForexAgent(),
         targets_ratio=[1, 2, 3],
         stoploss_pip=30,
-        initial_volume=[0.01, 0.01, 0.01],
+        initial_volume=[0.02, 0.01, 0.01],
         long_trade=False,
         short_trade=False,
         trail_stop=True,

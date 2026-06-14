@@ -149,9 +149,19 @@ class RatioSteppingForex(SlTpRatioForex):
 
     def modify_init_sl_tp(self, position: Position):
         position.confiremed = True
-        # TODO: what about modifing steps?
+        self.set_steps(position)
+        tp_positions = self.exchange_agent.get_open_positions(
+            comment_filter=position.id
+        )
+        try:
+            for tp_pos, step in zip(tp_positions, position.steps[1:]):
+                commands.ChangeTakeProfit(tp_pos, self.exchange_agent, step.price)
+        except Exception as e:
+            logger.error(
+                f"Error occurred while modifying take profit: {e} for position {position} and {tp_positions=}"
+            )
+
         logger.info(f"Position Updated on {position.chart}")
-        pass
 
     def handler(
         self, position: Position, tick_prices: list[float]

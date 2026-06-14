@@ -94,7 +94,11 @@ class Position:
     sended: bool = field(default=False, init=False)
     _steps: list[Trigger] = field(default_factory=list[Trigger], init=False)
     _current_step_index: int = field(default=1, init=False)
+
     initial_stoploss: float = field(init=False)
+    initial_timestamp: float = field(
+        default_factory=lambda: datetime.now(timezone.utc).timestamp()
+    )
 
     exchange_id: str = field(default="", init=False)
     spread: float = field(default=0.0, init=False)
