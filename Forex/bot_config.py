@@ -77,20 +77,6 @@ class ForexDiverTradeConfig(DivergenceTradeConfig):
             next_timestamp - ForexAgent().give_current_timestamp(self.chart)
         )
 
-        logging.debug(
-            f"RECIVED LAST CANDLE TIME: {last_candle_time.timestamp} | gived one: {last_candle.timestamp}"
-        )
-        logging.debug(
-            f"TEST TIMESTAMP delay: {delay.total_seconds()} | last candle timestamp: {int(round(last_candle.timestamp))} | next time: {next_timestamp}"
-        )
-        logging.debug(
-            f"last candle time -> timestamp: {last_candle.timestamp}_{last_candle.time} | now: {datetime.now(timezone.utc)}"
-        )
-        logging.debug(f"TEST TIMESTAMP sleep: {sleep_time_based_on_timestamp}")
-        logging.debug(
-            f"now time stamp: {datetime.now().timestamp()} | now utc: {datetime.now(tz=timezone.utc).timestamp()}"
-        )
-
         return timedelta(seconds=sleep_time_based_on_timestamp)
 
     async def task(self):

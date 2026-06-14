@@ -107,22 +107,20 @@ class FiboChoch(Strategy):
         )
 
     def long_find_end_pivot(self, model: FiboChochModel):
-        index = self.all_checked_candles.index(model.start_pivot_candle)
-        high = max(self.all_high_price[index:])
+        high = max(self.all_high_price[model.start_index :])
         high_index = self.all_high_price.index(high)
-        if high_index - index < self.long_right:
+        if high_index - model.start_index < self.long_right:
             return None
         top_pivot = self.all_checked_candles[high_index]
-        return top_pivot
+        return top_pivot, high_index
 
     def short_find_end_pivot(self, model: FiboChochModel):
-        index = self.all_checked_candles.index(model.start_pivot_candle)
-        low = min(self.all_low_price[index:])
+        low = min(self.all_low_price[model.start_index :])
         low_index = self.all_low_price.index(low)
-        if low_index - index < self.short_right:
+        if low_index - model.start_index < self.short_right:
             return None
         down_pivot = self.all_checked_candles[low_index]
-        return down_pivot
+        return down_pivot, low_index
 
     def long_check_model(self, model: FiboChochModel):
         if not model.available:
@@ -137,11 +135,10 @@ class FiboChoch(Strategy):
             logger.debug(f"long: new lower pivot, {model} is not available any more")
             return None
 
-        top_pivot = self.long_find_end_pivot(model)
-        if not top_pivot:
+        res = self.long_find_end_pivot(model)
+        if not res:
             return None
-        top_index = self.all_checked_candles.index(top_pivot)
-
+        top_pivot, top_index = res
         if model.end_pivot_candle != top_pivot:
             model.end_pivot_candle = None
 
@@ -208,11 +205,10 @@ class FiboChoch(Strategy):
             logger.debug(f"short: new higher pivot, {model} is not available any more")
             return None
 
-        down_pivot = self.short_find_end_pivot(model)
-        if not down_pivot:
+        res = self.short_find_end_pivot(model)
+        if not res:
             return None
-        down_index = self.all_checked_candles.index(down_pivot)
-
+        down_pivot, down_index = res
         if model.end_pivot_candle != down_pivot:
             model.end_pivot_candle = None
 
@@ -278,7 +274,7 @@ class FiboChoch(Strategy):
             model_res = self.long_check_model(model)
             if model_res is None:
                 continue
-            res = copy(model_res)
+            res = model_res
         return res
 
     def check_all_short_models(self):
@@ -294,7 +290,7 @@ class FiboChoch(Strategy):
             model_res = self.short_check_model(model)
             if model_res is None:
                 continue
-            res = copy(model_res)
+            res = model_res
         return res
 
     def init_fibochochs(self, chartdata: ChartData):

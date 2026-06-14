@@ -85,9 +85,9 @@ class TelegramReporter:
         position.msg_id = res.message_id if res else 0
 
     async def position_closed(self, position: Position, filled_price=None):
-        end_timestamp = int(datetime.now(timezone.utc).timestamp())
+        end_timestamp = datetime.now(timezone.utc).timestamp()
         duration = timedelta(
-            seconds=end_timestamp - int(position.generated_time.timestamp())
+            seconds=int(end_timestamp) - int(position.generated_time.timestamp())
         )
         logger.debug(
             f"Duration in reporter position close: {duration=} | {end_timestamp=} | {position.generated_time.timestamp()=}"
@@ -141,7 +141,7 @@ class TelegramReporter:
             else datetime.now(tz=timezone.utc)
         ).timestamp()
         duration = timedelta(
-            seconds=end_timestamp - int(trigger.defined_time.timestamp())
+            seconds=int(end_timestamp) - int(trigger.defined_time.timestamp())
         )
         logger.debug(
             f"Duration in reporter Trigger step: {duration=} | {end_timestamp=} | {trigger.defined_time.timestamp()=}"

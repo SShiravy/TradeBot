@@ -14,7 +14,7 @@ class DummyAgent(ExchangeAgent):
         real_agent: ExchangeAgent,
         open_positions=[],
         chartdata: ChartData | None = None,
-        start_index=0,
+        start_index=1,
     ) -> None:
         self.real_agent = real_agent
         self.current_price = 0.0

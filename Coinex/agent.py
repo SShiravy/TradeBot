@@ -128,7 +128,7 @@ class CoinexAgent(ExchangeAgent):
         logging.debug(f"Position Close for {position=}\n{res=}")
         return res["last_filled_price"]
 
-    def get_open_positions(self, chart: Chart):
+    def get_open_positions(self, chart: Chart, *args, **kwargs):
         pass
 
 

@@ -94,33 +94,49 @@ class TradeConfig:
         return self.give_delay(chartdata[-1], jump=True), signal, position
 
     async def backtest(
-        self, n_bar=500, len_sub_data=100, show_image=True, consider_positions=True
+        self,
+        n_bar=500,
+        show_image=True,
+        len_sub_data=100,
+        consider_positions=True,
+        *args,
+        **kwargs,
     ):
-        logger = logging.getLogger("Backtest")
-
-        self.send_signal = False
-
-        chartdata = self.get_chartdata(n_bar)
-        if chartdata is None:
-            raise ValueError(f"{chartdata=}")
+        logger = logging.getLogger(f"{self.__class__.__name__} Backtest")
 
         if consider_positions:
             position_handler = copy(self.position_handler)
         else:
             position_handler = DummyPositionHanler()
+            self.position_handler = position_handler
+
+        chartdata = self.get_chartdata(n_bar)
+        if chartdata is None:
+            raise ValueError(f"{chartdata=}")
 
         agent = DummyAgent(
-            self.agent, position_handler.open_positions, chartdata, len_sub_data
+            self.agent,
+            chartdata=chartdata,
+            open_positions=position_handler.open_positions,
+            start_index=len_sub_data,
         )
+
         position_handler.exchange_agent = agent
         position_handler.long_trade = False
         position_handler.short_trade = False
         self.agent = agent
+        self.send_signal = False
 
         all_positions: list[Position] = []
         all_signals: list[Signal] = []
 
         while agent.index < len(agent.chartdata.candles) - 1:  # type: ignore
+            if consider_positions:
+                position_handler.manage_positions()
+                await commands.TradeCommand.execute_pending_commands(
+                    time=agent.get_chartdata(self.chart)[-1].time,  # type: ignore
+                    report=False,
+                )
             res = await self.task()
             if isinstance(res, timedelta):
                 candle_delay = 1
@@ -130,21 +146,16 @@ class TradeConfig:
                     all_positions.append(res[2])
                 candle_delay = self.bar_between_signals + 1
             agent.index += candle_delay
-            if consider_positions:
-                position_handler.manage_positions()
-                await commands.TradeCommand.execute_pending_commands(
-                    time=agent.get_chartdata(self.chart)[-1].time,  # type: ignore
-                    report=False,
-                )
-            logger.debug(f"{candle_delay} Candle next")
 
+            logger.debug(f"{candle_delay} Candle next")
         plot = ChartPlot(agent.chartdata)  # type: ignore
         for signal in all_signals:
             self.strategy.draw(plot, signal)
         for pos in all_positions:
+            if not pos.closed:
+                continue
             pos.plot = plot
             pos.draw()
-
         commands_report = commands.TradeCommand.close_records()
         all_reports = position_handler.report()
         logger.info("Result:\n\n" + commands_report)
@@ -153,7 +164,7 @@ class TradeConfig:
         overal_report = PositionsReport.give_overall_report(copy(all_reports))
         logger.info("\n" + str(overal_report))
         logger.info(
-            f"total time: {agent.chartdata[-1].time - agent.chartdata[0].time} with {len(agent.chartdata)} candles"  # type: ignore
+            f"total time: {agent.chartdata[-1].time - agent.chartdata[0].time} with {len(agent.chartdata.candles)} candles"  # type: ignore
         )
         if show_image:
             plot.show()
@@ -204,7 +215,7 @@ class TraderBot:
                 await asyncio.sleep(10)
 
     async def trade_task(self, config: TradeConfig):
-        logging.debug(f"Task with config:{str(config)} initilized")
+        logging.info(f"Task with config:{str(config)} initilized")
         error_number = 0
         while True:
             try:
@@ -257,14 +268,18 @@ class TraderBot:
             await TelegramReporter().log_report("\n".join(msg))
 
     async def report(self):
-        now = datetime.now()
+        now = datetime.now(tz=timezone.utc)
         report_time = now.replace(
-            hour=self.report_time["h"], minute=self.report_time["m"], microsecond=0
+            hour=self.report_time["h"],
+            minute=self.report_time["m"],
+            second=0,
+            microsecond=0,
         )
         if report_time < now:
             report_time += timedelta(days=1)
         sleep_time = report_time - now
         while True:
+            logging.info(f"Next daily report in {sleep_time}")
             await asyncio.sleep(sleep_time.total_seconds())
             commands_report = commands.TradeCommand.close_records()
             await TelegramReporter().log_report(f"{self.name}\n{commands_report}")
@@ -280,7 +295,7 @@ class TraderBot:
                 self.name + "\n" + str(overall_report)
             )
 
-            now = datetime.now()
+            now = datetime.now(tz=timezone.utc)
             report_time = (now + timedelta(days=1)).replace(
                 hour=self.report_time["h"], minute=self.report_time["m"], microsecond=0
             )

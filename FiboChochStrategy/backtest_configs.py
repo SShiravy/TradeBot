@@ -7,6 +7,7 @@ from TradingModule.PositionHandlers import (
 from ChartModule.Indicators.fibonacci import FiboLevels
 from Coinex import CoinexAgent
 from ChartModule import Chart, TimeFrame
+from TradingModule.PositionHandlers.ratio_stepping import RatioSteppingForex
 from config import settings
 
 
@@ -29,10 +30,11 @@ coinex_five_m = FiboChochConfig(
         takeprofit_percent=0.5,
         leverage=10,
         initial_volume=10,
+        long_trade=False,
+        short_trade=False,
     ),
     bar_between_signals=1,
     send_signal=False,
-    short_signal=False,
 )
 
 
@@ -56,29 +58,25 @@ coinex_one_h = FiboChochConfig(
 
 
 forex_five_m = FiboChochConfig(
-    chart=Chart("SOLUSD", TimeFrame.five_minutes),
+    chart=Chart("XAUUSD!", TimeFrame.one_minute),
     agent=ForexAgent(),
-    strategy=FiboChoch("CoinexFiboChochTest"),
-    position_handler=SimpleForex(
-        ForexAgent(),
-        stoploss_pip=5,
-        takeprofit_pip=5,
-        initial_volume=0.01,
+    strategy=FiboChoch(
+        "CoinexFiboChochTest",
+        long_pivot_left=15,
+        long_pivot_right=3,
+        short_pivot_left=15,
+        short_pivot_right=3,
     ),
-    bar_between_signals=0,
-    send_signal=False,
-)
-
-one_m_forex = FiboChochConfig(
-    chart=Chart("SOLUSD", TimeFrame.one_minute),
-    agent=ForexAgent(),
-    strategy=FiboChoch("CoinexFiboChochTest"),
-    position_handler=SimpleForex(
+    position_handler=RatioSteppingForex(
         ForexAgent(),
-        stoploss_pip=5,
-        takeprofit_pip=5,
-        initial_volume=0.01,
+        targets_ratio=[1],
+        stoploss_pip=10,
+        initial_volume=[0.01],
+        long_trade=False,
+        short_trade=False,
+        trail_stop=True,
     ),
-    bar_between_signals=0,
+    bar_between_signals=1,
     send_signal=False,
+    short_signal=False,
 )

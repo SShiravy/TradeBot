@@ -51,7 +51,7 @@ class OrderSide(Enum):
 class Trigger:
     price: float
     volume: float = field(default=0.0)
-    defined_time: datetime = field(default=datetime.now(timezone.utc))
+    defined_time: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
     triggered_time: datetime | None = field(default=None)
     exchange_id: str = field(default="", init=False)
 
@@ -84,7 +84,7 @@ class Position:
     stoploss: float
     takeprofit: float
     leverage: int = 1
-    generated_time: datetime = field(default=datetime.now(timezone.utc))
+    generated_time: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
     source: str = "Unknown"
     real_trade: bool = field(default=True)
     plot: Plot | None = field(default=None)
@@ -447,7 +447,6 @@ class PositionsReport:
         duration = timedelta(
             seconds=self.last_time.timestamp() - self.first_time.timestamp()
         )
-        print(f"{self.last_time.timestamp()=} | {self.first_time.timestamp()}")
         return duration
 
     def __str__(self) -> str:
@@ -474,7 +473,7 @@ class PositionsReport:
         if self.triggered_steps:
             report_msg.append("Number of Triggered Steps:")
             for k, v in self.triggered_steps.items():
-                report_msg.append(f"  Step_{k+1} : {v}")
+                report_msg.append(f"  TP_{k + 1} : {v}")
         if self.max_lose_in_a_row or self.max_win_in_a_row:
             report_msg.append(f"Max Win in a Row = {self.max_win_in_a_row}")
             report_msg.append(f"Max Lose in a Row = {self.max_lose_in_a_row}")
