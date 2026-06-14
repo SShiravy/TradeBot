@@ -66,6 +66,23 @@ def store_mt5_tick_data():
     )
 
 
+def store_binance_tick_data(chart: CsvChart):
+    # TODO: implement this function to store binance tick data
+    import pandas as pd
+    from datetime import datetime
+    df = pd.read_csv(chart.csv_path)
+    logging.debug(f"{df.columns=}")
+    start = datetime.fromtimestamp(df.iloc[0].time).strftime(format="%Y_%m_%d")
+    end = datetime.fromtimestamp(df.iloc[-1].time).strftime(format="%Y_%m_%d")
+    logging.debug(f"{len(df)=}")
+
+    file_name = f"{chart.symbol}_{start}_to_{end}.parquet"
+
+    df.to_parquet(
+        rf"D:\TraderBot\LocalBackTester\TickData\Opofinance\{file_name}", index=False
+    )
+
+
 def read_tick_data(path):
     import pandas as pd
 

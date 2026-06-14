@@ -197,7 +197,7 @@ if __name__ == "__main__":
 
     # plot_csv_kline(the_config.second_chart) # type: ignore
 
-    asyncio.run(diver_signal_local_backtest(the_config, show_plot=True))
+    # asyncio.run(diver_signal_local_backtest(the_config, show_plot=False))
 
     # plot_name = f"{the_config.chart.symbol}_{the_config.chart.timeframe}_99000"
     plot_name = f"{the_config.chart.symbol}_{the_config.chart.timeframe}_17570"
@@ -205,20 +205,20 @@ if __name__ == "__main__":
     asyncio.run(
         diver_position_local_backtest(
             the_config,
-            consider_db=False,
+            consider_db=True,
             statisical_pnl_indicators=[
-                WeekdayPnLHistogram,
-                HourlyPnLHistogram,
-                SessionPnLHistogram,
+                # WeekdayPnLHistogram,
+                # HourlyPnLHistogram,
+                # SessionPnLHistogram,
             ],
             pnl_distribution_indicaotors=[
-                PipPnlDistribution(
-                    candles_range=200,
-                    plot_name=plot_name,
-                ),
-                PipAfterSLDistribution(
-                    candles_range=200, plot_name=plot_name, tolerance_pip=30
-                ),
+                # PipPnlDistribution(
+                #     candles_range=200,
+                #     plot_name=plot_name,
+                # ),
+                # PipAfterSLDistribution(
+                #     candles_range=200, plot_name=plot_name, tolerance_pip=30
+                # ),
             ],
             show_plot=True,
         )
@@ -229,7 +229,7 @@ if __name__ == "__main__":
     stats.sort_stats("cumtime")
     stats.print_stats(30)
 
-    # store_mt5_tick_data()
+    store_mt5_tick_data()
     # read_tick_data()
 
 
