@@ -10,9 +10,9 @@ async def start_diver_backtest():
     from DivergenceStrategy.backtest_configs import (
         forex_diver_five_m,
         forex_diver_one_m,
-        five_m_diver,
         cvd_diver_one_m_cvd,
         coinex_4h_diver,
+        crypto_diver_five_m,
     )
 
     await forex_diver_one_m.backtest(1000, show_image=True)
@@ -36,17 +36,18 @@ async def start_fich_diver_backtest():
     await forex_one_m.backtest(1000)
 
 
-async def test_meta_open_positions():
+async def test_open_position():
     from Forex.agent import ForexAgent
     from TradingModule.trader_bot import TraderBot
     from TradingModule.reporter import TelegramReporter
     from ChartModule.models import MarketSide
     from DivergenceStrategy.backtest_configs import (
         forex_diver_one_m,
+        crypto_diver_five_m,
     )
 
     TelegramReporter().disable_reporting()
-    the_config = forex_diver_one_m
+    the_config = crypto_diver_five_m
     the_config.position_handler.short_trade = True
     the_config.position_handler.long_trade = True
 
@@ -58,7 +59,7 @@ async def test_meta_open_positions():
     pos = await the_config.position_handler.generate_position(diver_signal)
     logging.info(f"position created from the dummy signal: {pos}")
     logging.info(
-        f"opoen positions in mt5: {ForexAgent().get_open_positions(comment_filter='')}"
+        f"opoen position: {the_config.agent.get_open_positions(chart=the_config.chart, comment_filter='')}"
     )
     await asyncio.gather(
         TraderBot(name="test opening pos", configs=[the_config]).manage()
@@ -69,9 +70,9 @@ def test_handler_export_config():
     from DivergenceStrategy.backtest_configs import (
         forex_diver_five_m,
         forex_diver_one_m,
-        five_m_diver,
         cvd_diver_one_m_cvd,
         coinex_4h_diver,
+        crypto_diver_five_m,
     )
 
     logging.info(cvd_diver_one_m_cvd.position_handler.export_config())
@@ -80,12 +81,12 @@ def test_handler_export_config():
 if __name__ == "__main__":
     # asyncio.run(start_diver_crypto_backtest_pack())
     # asyncio.run(start_diver_backtest())
-    asyncio.run(start_fibochoch_backtest())
+    # asyncio.run(start_fibochoch_backtest())
     # asyncio.run(start_fich_diver_backtest())
 
     # new_backtest()
 
-    # asyncio.run(test_meta_open_positions())
+    asyncio.run(test_open_position())
     # test_handler_export_config()
 
 

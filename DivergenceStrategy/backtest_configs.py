@@ -10,6 +10,7 @@ from TradingModule.PositionHandlers import (
     SlTpRatioForex,
     SteppingForex,
     RatioSteppingForex,
+    RatioSteppingCrypto,
 )
 from config import settings
 # Coinex ----------------------------------------------------------------
@@ -17,18 +18,18 @@ from config import settings
 
 coinex_agent = CoinexAgent(settings.COINEX_ACCESS_ID, settings.COINEX_SECRET_KEY)
 
-five_m_diver = CoinexDiverTradeConfig(
-    chart=Chart("ETHUSDT", TimeFrame.five_minutes),
+crypto_diver_five_m = CoinexDiverTradeConfig(
+    chart=Chart("SOLUSDT", TimeFrame.five_minutes),
     second_chart=Chart("BTCUSDT", TimeFrame.five_minutes),
-    strategy=Divergence(5, 500, [], name="CoinexDiver", inverse_diver_long=True),
-    position_handler=SlTpRatioCrypto(
+    strategy=Divergence(2, 500, [], name="CoinexDiver", inverse_diver_long=True),
+    position_handler=RatioSteppingCrypto(
         coinex_agent,
-        ratio=1.5,
-        stoploss_percent=0.5,
-        initial_volume=10,
-        leverage=10,
+        leverage=30,
+        stoploss_percent=0.25,
+        initial_volume=1,
         long_trade=False,
         short_trade=False,
+        trail_stop=True,
     ),
     agent=coinex_agent,
     heikingashi_chartdata=True,
@@ -78,15 +79,15 @@ forex_diver_one_m = ForexDiverTradeConfig(
     bar_between_signals=2,
     position_handler=RatioSteppingForex(
         ForexAgent(),
-        targets_ratio=[1, 1.5, 3],
-        stoploss_pip=15,
-        initial_volume=[0.02, 0.01, 0.01],
+        targets_ratio=[1, 2, 3],
+        stoploss_pip=30,
+        initial_volume=[0.01, 0.01, 0.01],
         long_trade=False,
         short_trade=False,
         trail_stop=True,
     ),
     merge_two_chart_time=False,
-    heikingashi_chartdata=False,
+    heikingashi_chartdata=True,
 )
 
 
