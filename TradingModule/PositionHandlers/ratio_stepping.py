@@ -175,7 +175,8 @@ class RatioSteppingForex(SlTpRatioForex):
         step = position.current_step
         if step is None:
             logger.warning(f"checking position that its next step is None! {position=}")
-            step = position.previous_step
+            step = position.steps[-1]
+            position._current_step_index = len(position.steps) - 1
             # TODO: check above line!!!
         direction = position.side.factor()
         ticks = np.array(tick_prices) * direction

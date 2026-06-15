@@ -38,6 +38,10 @@ class TelegramReporter:
                 chat_id=channel_id, photo=img, caption=msg, reply_to_message_id=reply_id
             )
             img.close()
+            logger.debug(
+                    f"response from telegram for new position: {res} , id: {res.message_id if res else None}"
+                )
+            return res
         else:
             try:
                 res = await self.bot.send_message(
