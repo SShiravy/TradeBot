@@ -143,8 +143,12 @@ class TelegramReporter:
         await self.send_msg(self._public_channel, msg)
 
     async def triggered_step(self, position: Position):
-        trigger = position.previous_step
-        triggered_id = position._current_step_index - 1
+        if position.closed:
+            trigger = position.steps[-1]
+            triggered_id = len(position.steps) - 1
+        else:
+            trigger = position.previous_step
+            triggered_id = position._current_step_index - 1
         end_timestamp = (
             trigger.triggered_time
             if trigger.triggered_time
