@@ -66,7 +66,6 @@ class ForexDiverTradeConfig(DivergenceTradeConfig):
         return base_chartdata, second_chartdata
 
     def give_delay(self, last_candle: Candle, jump=False) -> timedelta:
-        # TODO: remove unnecessary logs
         # TODO: move this approach to TradeConfig too. (when its confirmed)
         delay = self.chart.timeframe.time_delta
         if jump:
@@ -77,7 +76,7 @@ class ForexDiverTradeConfig(DivergenceTradeConfig):
             next_timestamp - ForexAgent().give_current_timestamp(self.chart)
         )
 
-        return timedelta(seconds=sleep_time_based_on_timestamp)
+        return timedelta(seconds=sleep_time_based_on_timestamp-1)
 
     async def task(self):
         wait_time = ForexAgent().check_market_open(self.chart)
