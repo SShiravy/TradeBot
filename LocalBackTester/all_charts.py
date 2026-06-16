@@ -19,7 +19,7 @@ SOLUSDT_1h_2024_9 = CsvChart(
 )
 
 
-BTCUSDT_5m_2024_4_5 = CsvChart(
+BTCUSDT_5m_2026_4_5 = CsvChart(
     "BTCUSDT",
     TimeFrame.five_minutes,
     csv_path=r"D:\TraderBot\LocalBackTester\KlinesCSV\Binance\BTCUSDT-5m-2026-04-05.csv",
@@ -27,7 +27,7 @@ BTCUSDT_5m_2024_4_5 = CsvChart(
 )
 
 
-SOLUSDT_5m_2024_4_5 = CsvChart(
+SOLUSDT_5m_2026_4_5 = CsvChart(
     "SOLUSDT",
     TimeFrame.five_minutes,
     csv_path=r"D:\TraderBot\LocalBackTester\KlinesCSV\Binance\SOLUSDT-5m-2026-04-05.csv",
@@ -49,6 +49,38 @@ SOLUSDT_5m_test = CsvChart(
     csv_path=r"D:\TraderBot\LocalBackTester\KlinesCSV\Binance\SOLUSDT-5m-test.csv",
     csv_source=KlineSource.BINCANCE,
 )
+
+BTCUSDT_5m_test_2024 = CsvChart(
+    "BTCUSDT",
+    TimeFrame.five_minutes,
+    csv_path=r"D:\TraderBot\LocalBackTester\KlinesCSV\Binance\BTCUSDT-5m-2024test.csv",
+    csv_source=KlineSource.BINCANCE,
+)
+
+
+FTMUSDT_5m_test_2024 = CsvChart(
+    "FTMUSDT",
+    TimeFrame.five_minutes,
+    csv_path=r"D:\TraderBot\LocalBackTester\KlinesCSV\Binance\FTMUSDT-5m-2024test.csv",
+    csv_source=KlineSource.BINCANCE,
+)
+
+
+BTCUSDT_5m_2024_month0203 = CsvChart(
+    "BTCUSDT",
+    TimeFrame.five_minutes,
+    csv_path=r"D:\TraderBot\LocalBackTester\KlinesCSV\Binance\BTCUSDT-5m-2024-month0203.csv",
+    csv_source=KlineSource.BINCANCE,
+)
+
+
+FTMUSDT_5m_2024_month0203 = CsvChart(
+    "FTMUSDT",
+    TimeFrame.five_minutes,
+    csv_path=r"D:\TraderBot\LocalBackTester\KlinesCSV\Binance\FTMUSDT-5m-2024-month0203.csv",
+    csv_source=KlineSource.BINCANCE,
+)
+
 # FOREX
 
 

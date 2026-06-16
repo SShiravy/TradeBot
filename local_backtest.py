@@ -176,6 +176,8 @@ if __name__ == "__main__":
         diver_solbtc_5m_1000,
         diver_forex_xau_1m_5000_test,
         diver_forex_xau_1m_99000,
+        diver_ftmbtc_5m_test,
+        diver_ftmbtc_5m_17282_2024_month0203,
     )
 
     from LocalBackTester.StatisticalMethods import (
@@ -184,7 +186,7 @@ if __name__ == "__main__":
         SessionPnLHistogram,
     )
 
-    the_config = diver_solbtc_5m_1000
+    the_config = diver_ftmbtc_5m_17282_2024_month0203
 
     # test_tick_data()
 
@@ -195,34 +197,34 @@ if __name__ == "__main__":
     profiler = cProfile.Profile()
     profiler.enable()
 
-    # plot_csv_kline(the_config.second_chart) # type: ignore
+    # plot_csv_kline(the_config.chart) # type: ignore
 
-    # asyncio.run(diver_signal_local_backtest(the_config, show_plot=False))
+    asyncio.run(diver_signal_local_backtest(the_config, show_plot=False))
 
     # plot_name = f"{the_config.chart.symbol}_{the_config.chart.timeframe}_99000"
-    plot_name = f"{the_config.chart.symbol}_{the_config.chart.timeframe}_17570"
+    # plot_name = f"{the_config.chart.symbol}_{the_config.chart.timeframe}_17570"
 
-    asyncio.run(
-        diver_position_local_backtest(
-            the_config,
-            consider_db=True,
-            statisical_pnl_indicators=[
-                # WeekdayPnLHistogram,
-                # HourlyPnLHistogram,
-                # SessionPnLHistogram,
-            ],
-            pnl_distribution_indicaotors=[
-                # PipPnlDistribution(
-                #     candles_range=200,
-                #     plot_name=plot_name,
-                # ),
-                # PipAfterSLDistribution(
-                #     candles_range=200, plot_name=plot_name, tolerance_pip=30
-                # ),
-            ],
-            show_plot=True,
-        )
-    )
+    # asyncio.run(
+    #     diver_position_local_backtest(
+    #         the_config,
+    #         consider_db=True,
+    #         statisical_pnl_indicators=[
+    #             # WeekdayPnLHistogram,
+    #             # HourlyPnLHistogram,
+    #             # SessionPnLHistogram,
+    #         ],
+    #         pnl_distribution_indicaotors=[
+    #             # PipPnlDistribution(
+    #             #     candles_range=200,
+    #             #     plot_name=plot_name,
+    #             # ),
+    #             # PipAfterSLDistribution(
+    #             #     candles_range=200, plot_name=plot_name, tolerance_pip=30
+    #             # ),
+    #         ],
+    #         show_plot=True,
+    #     )
+    # )
 
     profiler.disable()
     stats = pstats.Stats(profiler)
