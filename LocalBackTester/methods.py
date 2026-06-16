@@ -70,6 +70,7 @@ def store_binance_tick_data(chart: CsvChart):
     # TODO: implement this function to store binance tick data
     import pandas as pd
     from datetime import datetime
+
     df = pd.read_csv(chart.csv_path)
     logging.debug(f"{df.columns=}")
     start = datetime.fromtimestamp(df.iloc[0].time).strftime(format="%Y_%m_%d")
@@ -108,12 +109,12 @@ def load_diver_backtest(the_config: DivergenceTradeConfig):
 async def diver_signal_local_backtest(
     the_config: DivergenceTradeConfig, show_plot=True
 ):
-    diver_backtest = fetch_diver_backtest(the_config)
+    # diver_backtest = fetch_diver_backtest(the_config)
 
-    if diver_backtest:
-        logging.info("Already in db. Loading previous backtest ....")
-        load_diver_backtest(the_config)
-        return
+    # if diver_backtest:
+    #     logging.info("Already in db. Loading previous backtest ....")
+    #     load_diver_backtest(the_config)
+    #     return
 
     res = await the_config.backtest(
         n_bar=the_config.chart.total_bars_number,  # type: ignore
@@ -122,7 +123,7 @@ async def diver_signal_local_backtest(
         show_image=show_plot,
     )
 
-    backtest_datapoint = store_diver_backtest(the_config)
-    logging.debug(backtest_datapoint)
-    diver_signals = res[0]
-    store_diver_signal(diver_signals, backtest_datapoint.id)  # type: ignore
+    # backtest_datapoint = store_diver_backtest(the_config)
+    # logging.debug(backtest_datapoint)
+    # diver_signals = res[0]
+    # store_diver_signal(diver_signals, backtest_datapoint.id)  # type: ignore

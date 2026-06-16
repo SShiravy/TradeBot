@@ -58,14 +58,6 @@ BTCUSDT_5m_test_2024 = CsvChart(
 )
 
 
-FTMUSDT_5m_test_2024 = CsvChart(
-    "FTMUSDT",
-    TimeFrame.five_minutes,
-    csv_path=r"D:\TraderBot\LocalBackTester\KlinesCSV\Binance\FTMUSDT-5m-2024test.csv",
-    csv_source=KlineSource.BINCANCE,
-)
-
-
 BTCUSDT_5m_2024_month0203 = CsvChart(
     "BTCUSDT",
     TimeFrame.five_minutes,
@@ -74,10 +66,47 @@ BTCUSDT_5m_2024_month0203 = CsvChart(
 )
 
 
+FTMUSDT_5m_test_2024 = CsvChart(
+    "FTMUSDT",
+    TimeFrame.five_minutes,
+    csv_path=r"D:\TraderBot\LocalBackTester\KlinesCSV\Binance\FTMUSDT-5m-2024test.csv",
+    csv_source=KlineSource.BINCANCE,
+)
+
 FTMUSDT_5m_2024_month0203 = CsvChart(
     "FTMUSDT",
     TimeFrame.five_minutes,
     csv_path=r"D:\TraderBot\LocalBackTester\KlinesCSV\Binance\FTMUSDT-5m-2024-month0203.csv",
+    csv_source=KlineSource.BINCANCE,
+)
+
+
+AVAXUSDT_5m_test_2024 = CsvChart(
+    "AVAXUSDT",
+    TimeFrame.five_minutes,
+    csv_path=r"D:\TraderBot\LocalBackTester\KlinesCSV\Binance\AVAXUSDT-5m-2024test.csv",
+    csv_source=KlineSource.BINCANCE,
+)
+
+AVAXUSDT_5m_2024_month0203 = CsvChart(
+    "AVAXUSDT",
+    TimeFrame.five_minutes,
+    csv_path=r"D:\TraderBot\LocalBackTester\KlinesCSV\Binance\AVAXUSDT-5m-2024-month0203.csv",
+    csv_source=KlineSource.BINCANCE,
+)
+
+
+NEARUSDT_5m_test_2024 = CsvChart(
+    "NEARUSDT",
+    TimeFrame.five_minutes,
+    csv_path=r"D:\TraderBot\LocalBackTester\KlinesCSV\Binance\NEARUSDT-5m-2024test.csv",
+    csv_source=KlineSource.BINCANCE,
+)
+
+NEARUSDT_5m_2024_month0203 = CsvChart(
+    "NEARUSDT",
+    TimeFrame.five_minutes,
+    csv_path=r"D:\TraderBot\LocalBackTester\KlinesCSV\Binance\NEARUSDT-5m-2024-month0203.csv",
     csv_source=KlineSource.BINCANCE,
 )
 

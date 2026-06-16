@@ -177,7 +177,11 @@ if __name__ == "__main__":
         diver_forex_xau_1m_5000_test,
         diver_forex_xau_1m_99000,
         diver_ftmbtc_5m_test,
-        diver_ftmbtc_5m_17282_2024_month0203,
+        diver_ftmbtc_5m_17280_2024_month0203,
+        diver_avaxbtc_5m_test,
+        diver_avaxbtc_5m_17280_2024_month0203,
+        diver_nearbtc_5m_test,
+        diver_nearbtc_5m_17280_2024_month0203,
     )
 
     from LocalBackTester.StatisticalMethods import (
@@ -186,7 +190,7 @@ if __name__ == "__main__":
         SessionPnLHistogram,
     )
 
-    the_config = diver_ftmbtc_5m_17282_2024_month0203
+    the_config = diver_nearbtc_5m_17280_2024_month0203
 
     # test_tick_data()
 
