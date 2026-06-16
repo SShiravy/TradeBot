@@ -38,11 +38,21 @@ class TelegramReporter:
                 chat_id=channel_id, photo=img, caption=msg, reply_to_message_id=reply_id
             )
             img.close()
+            logger.debug(
+                    f"response from telegram for new position: {res} , id: {res.message_id if res else None}"
+                )
+            return res
         else:
-            res = await self.bot.send_message(
-                chat_id=channel_id, text=msg, reply_to_message_id=reply_id
-            )
-        return res
+            try:
+                res = await self.bot.send_message(
+                    chat_id=channel_id, text=msg, reply_to_message_id=reply_id
+                )
+                logger.debug(
+                    f"response from telegram for new position: {res} , id: {res.message_id if res else None}"
+                )
+                return res
+            except Exception as e:
+                logger.error(f"Error occurred while sending {msg=}: {e}")
 
     async def log_report(self, msg):
         if not self._reporting:
@@ -87,10 +97,10 @@ class TelegramReporter:
     async def position_closed(self, position: Position, filled_price=None):
         end_timestamp = datetime.now(timezone.utc).timestamp()
         duration = timedelta(
-            seconds=int(end_timestamp) - int(position.generated_time.timestamp())
+            seconds=int(end_timestamp) - int(position.initial_timestamp)
         )
         logger.debug(
-            f"Duration in reporter position close: {duration=} | {end_timestamp=} | {position.generated_time.timestamp()=}"
+            f"Duration in reporter position close: {duration=} | {end_timestamp=} | {position.initial_timestamp=}"
         )
 
         close_type_msg = "⭕ Flat Close"
@@ -133,8 +143,12 @@ class TelegramReporter:
         await self.send_msg(self._public_channel, msg)
 
     async def triggered_step(self, position: Position):
-        trigger = position.previous_step
-        triggered_id = position._current_step_index - 1
+        if position.closed:
+            trigger = position.steps[-1]
+            triggered_id = len(position.steps) - 1
+        else:
+            trigger = position.previous_step
+            triggered_id = position._current_step_index - 1
         end_timestamp = (
             trigger.triggered_time
             if trigger.triggered_time

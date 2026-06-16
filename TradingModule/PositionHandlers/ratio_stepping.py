@@ -78,6 +78,7 @@ class RatioSteppingForex(SlTpRatioForex):
             )
         logger.debug(f"steps for position set to: {steps}")
         pos.steps = steps
+        pos.takeprofit = steps[-1].price
 
     async def open_steps_position(self, pos: Position):
         for step in pos.steps[1:]:  # first step is entry
@@ -149,9 +150,19 @@ class RatioSteppingForex(SlTpRatioForex):
 
     def modify_init_sl_tp(self, position: Position):
         position.confiremed = True
-        # TODO: what about modifing steps?
+        self.set_steps(position)
+        tp_positions = self.exchange_agent.get_open_positions(
+            comment_filter=position.id
+        )
+        try:
+            for tp_pos, step in zip(tp_positions, position.steps[1:]):
+                commands.ChangeTakeProfit(tp_pos, self.exchange_agent, step.price)
+        except Exception as e:
+            logger.error(
+                f"Error occurred while modifying take profit: {e} for position {position} and {tp_positions=}"
+            )
+
         logger.info(f"Position Updated on {position.chart}")
-        pass
 
     def handler(
         self, position: Position, tick_prices: list[float]
@@ -164,7 +175,8 @@ class RatioSteppingForex(SlTpRatioForex):
         step = position.current_step
         if step is None:
             logger.warning(f"checking position that its next step is None! {position=}")
-            step = position.previous_step
+            step = position.steps[-1]
+            position._current_step_index = len(position.steps) - 1
             # TODO: check above line!!!
         direction = position.side.factor()
         ticks = np.array(tick_prices) * direction
