@@ -5,8 +5,7 @@ from ChartModule import Chart, ChartData
 from TradingModule import ExchangeAgent
 from DivergenceStrategy.divergence import Divergence, DivergenceTradeConfig
 from dataclasses import dataclass, field
-from datetime import datetime, timedelta, timezone
-import logging
+from datetime import timedelta
 
 
 @dataclass(kw_only=True)
@@ -76,7 +75,7 @@ class ForexDiverTradeConfig(DivergenceTradeConfig):
             next_timestamp - ForexAgent().give_current_timestamp(self.chart)
         )
 
-        return timedelta(seconds=sleep_time_based_on_timestamp+1)
+        return timedelta(seconds=sleep_time_based_on_timestamp + 1)
 
     async def task(self):
         wait_time = ForexAgent().check_market_open(self.chart)

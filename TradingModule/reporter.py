@@ -39,8 +39,8 @@ class TelegramReporter:
             )
             img.close()
             logger.debug(
-                    f"response from telegram for new position: {res} , id: {res.message_id if res else None}"
-                )
+                f"response from telegram for new position: {res} , id: {res.message_id if res else None}"
+            )
             return res
         else:
             try:
