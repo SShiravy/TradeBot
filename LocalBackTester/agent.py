@@ -56,7 +56,7 @@ class LocalAgent(ExchangeAgent):
         """
         pass
 
-    def get_open_positions(self, chart: Chart) -> Any:
+    def get_open_positions(self, chart: Chart, *args, **kwargs) -> Any:
         pass
 
     def change_stoploss(self, position: Position, price: float) -> bool:

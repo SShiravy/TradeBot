@@ -1,12 +1,6 @@
 from DivergenceStrategy import DivergenceTradeConfig
 from LocalBackTester.Database.create_db import create_db
-from LocalBackTester.StatisticalMethods.pnl_distribution import (
-    PipPnlDistribution,
-)
-from LocalBackTester.StatisticalMethods.sl_pip_distribution import (
-    PipAfterSLDistribution,
-)
-from LocalBackTester.models import TickDataHandler
+from LocalBackTester.StatisticalMethods.models import StatisticalIndicator
 from custom_logger import CustomLogger
 from config import settings
 import asyncio
@@ -16,30 +10,11 @@ import logging
 CustomLogger(True, consol_log_level=logging.DEBUG)
 
 
-def store_klines_from_mt5():
-    from LocalBackTester.methods import store_forex_data
-    from ChartModule.models import TimeFrame
-    from LocalBackTester.models import CsvChart, KlineSource
-
-    symbol = "BTCUSD"
-    len_bar = 99000
-    timeframe = TimeFrame.one_minute
-
-    chart = CsvChart(
-        symbol,
-        timeframe,
-        csv_path=rf"D:\TraderBot\LocalBackTester\KlinesCSV\Opofincance\opo_{symbol.replace('!', '')}_{timeframe.value}_{len_bar}.csv",
-        csv_source=KlineSource.OPOFINANCE_META,
-    )
-
-    store_forex_data(chart, n_bars=len_bar)
-
-
 async def diver_position_local_backtest(
     the_config: DivergenceTradeConfig,
     consider_db=True,
-    statisical_pnl_indicators: list = [],
-    pnl_distribution_indicaotors: list = [],
+    statistical_indicators: list[StatisticalIndicator] = [],
+    show_chartdata=False,
     show_plot=True,
 ):
     from TradingModule import commands
@@ -87,6 +62,8 @@ async def diver_position_local_backtest(
             entry_price=pos_candle.open,  # TODO: add tick data param here
             sl_base_price=entry_source,
         )
+        if not position:
+            continue
         position.open_time = pos_candle.time
         # handler
         for candle in chartdata.candles[signal_candle_index + 1 :]:
@@ -106,14 +83,16 @@ async def diver_position_local_backtest(
                 break
 
     # plot
-    if show_plot:
+    if show_chartdata:
         plot = DoubleChartPlot(chartdata, second_chartdata, n_bar)
         for signal in signals:
             the_config.strategy.draw(plot, signal)
-    for pos in position_handler.closed_positions:
-        if show_plot:
-            pos.plot = plot  # type: ignore
+        for pos in position_handler.closed_positions:
+            pos.plot = plot
             pos.draw()
+        plot.show()
+        del plot
+
     commands_report = commands.TradeCommand.close_records()
     if consider_db:
         result = store_positions_result(
@@ -128,76 +107,37 @@ async def diver_position_local_backtest(
         overal_report = PositionsReport.give_overall_report(all_reports)
         logging.info("\n" + str(overal_report))
 
-    if show_plot:
-        plot.show()  # type: ignore
-        del plot  # type: ignore
     del signals, commands_report
 
     # Indicators -------------------------------
     input("Enter for Continue ....")
     all_positions = position_handler.closed_positions
-    if pnl_distribution_indicaotors:
-        ticks_handler = TickDataHandler(parquet_path=the_config.chart.ticks_path)  # type:ignore
-        for i, indicator in enumerate(pnl_distribution_indicaotors):
-            indicator.set_method(the_config, all_positions, ticks_handler)
-            indicator.plot(show=True)
-            pnl_distribution_indicaotors[i] = None
+    plot_name = (
+        f"{the_config.chart.symbol}_{the_config.chart.timeframe}_{len(chartdata)}"
+    )
+    if statistical_indicators:
+        for i, indicator in enumerate(statistical_indicators):
+            indicator.analyze(all_positions, the_config)
+            indicator.plot(plot_name, show=show_plot)
+            statistical_indicators[i] = None  # type: ignore
 
-        del ticks_handler, pnl_distribution_indicaotors
-
-    if statisical_pnl_indicators:
-        for i, staticial_indicator in enumerate(statisical_pnl_indicators):
-            staticial_indicator(
-                all_positions,
-                f"{the_config.chart.symbol}_{the_config.chart.timeframe}",
-            ).plot(show=True)
-            statisical_pnl_indicators[i] = None
-
-        del statisical_pnl_indicators
-
-
-def test_tick_data():
-    from LocalBackTester.models import TickDataHandler
-
-    path = r"D:\TraderBot\LocalBackTester\TickData\Opofinance\XAUUSD!_2025_11_03_to_2026_05_19.parquet"
-
-    # read_tick_data(path)
-    tick_handler = TickDataHandler(path)
-    logging.info(tick_handler.get_ticks_from_timstamp_range(1769543520, 1769543940))
+        del statistical_indicators
 
 
 if __name__ == "__main__":
     settings.METATRADER_TERMINAL_PATH = ""
     from LocalBackTester.methods import *
-
-    from LocalBackTester.local_backtest_configs import (
-        diver_solbtc_5m_17570,
-        diver_solbtc_5m_1000,
-        diver_forex_xau_1m_5000_test,
-        diver_forex_xau_1m_99000,
-        diver_ftmbtc_5m_test,
-        diver_ftmbtc_5m_17280_2024_month0203,
-        diver_avaxbtc_5m_test,
-        diver_avaxbtc_5m_17280_2024_month0203,
-        diver_nearbtc_5m_test,
-        diver_nearbtc_5m_17280_2024_month0203,
-        diver_pendlebtc_5m_test,
-        diver_pendlebtc_5m_17280_2024_month0203,
-        diver_rndrbtc_5m_test,
-        diver_rndrbtc_5m_17280_2024_month0203,
-        diver_solbtc_5m_test,
-        diver_solbtc_5m_17280_2024_month0203,
-    )
-
+    from LocalBackTester.local_backtest_configs import *
     from LocalBackTester.StatisticalMethods import (
         WeekdayPnLHistogram,
         HourlyPnLHistogram,
         SessionPnLHistogram,
+        PipPnlDistribution,
+        PipAfterSLDistribution,
+        RiskAnalysis,
     )
 
-    the_config = diver_solbtc_5m_17280_2024_month0203
-
-    # test_tick_data()
+    the_config = diver_pendlebtc_5m_17280_2024_month0203
 
     create_db()
     import cProfile
@@ -208,43 +148,35 @@ if __name__ == "__main__":
 
     # plot_csv_kline(the_config.chart) # type: ignore
 
-    asyncio.run(diver_signal_local_backtest(the_config, show_plot=True))
+    # asyncio.run(diver_signal_local_backtest(the_config, show_plot=True))
 
-    # plot_name = f"{the_config.chart.symbol}_{the_config.chart.timeframe}_99000"
-    # plot_name = f"{the_config.chart.symbol}_{the_config.chart.timeframe}_17570"
-
-    # asyncio.run(
-    #     diver_position_local_backtest(
-    #         the_config,
-    #         consider_db=True,
-    #         statisical_pnl_indicators=[
-    #             # WeekdayPnLHistogram,
-    #             # HourlyPnLHistogram,
-    #             # SessionPnLHistogram,
-    #         ],
-    #         pnl_distribution_indicaotors=[
-    #             # PipPnlDistribution(
-    #             #     candles_range=200,
-    #             #     plot_name=plot_name,
-    #             # ),
-    #             # PipAfterSLDistribution(
-    #             #     candles_range=200, plot_name=plot_name, tolerance_pip=30
-    #             # ),
-    #         ],
-    #         show_plot=True,
-    #     )
-    # )
+    asyncio.run(
+        diver_position_local_backtest(
+            the_config,
+            consider_db=False,
+            statistical_indicators=[
+                WeekdayPnLHistogram(),
+                HourlyPnLHistogram(),
+                SessionPnLHistogram(),
+                # PipPnlDistribution(
+                #     candles_range=200,
+                # ),
+                # PipAfterSLDistribution(
+                #     candles_range=200,
+                #     tolerance_pip=30
+                # ),
+                RiskAnalysis(),
+            ],
+            show_chartdata=False,
+            show_plot=True,
+        )
+    )
 
     profiler.disable()
     stats = pstats.Stats(profiler)
     stats.sort_stats("cumtime")
     stats.print_stats(30)
 
-    # store_mt5_tick_data()
-    # read_tick_data()
-
-
 # TODO: search and replace candle.time.timestamp() with candle.timestamp
 # TODO: change find candle by timestamp mothod, for returning index of candle
 # TODO: change position model to store timestamp for open_time ...
-# TODO: add stepping handler for crypto

@@ -1,5 +1,19 @@
-from LocalBackTester.StatisticalMethods.weekday_histogram import WeekdayPnLHistogram
-from LocalBackTester.StatisticalMethods.hours_histogram import HourlyPnLHistogram
-from LocalBackTester.StatisticalMethods.session_histogram import SessionPnLHistogram
+from LocalBackTester.StatisticalMethods.time_based_histogram import (
+    WeekdayPnLHistogram,
+    SessionPnLHistogram,
+    HourlyPnLHistogram,
+)
+from LocalBackTester.StatisticalMethods.risk_analysis import RiskAnalysis
+from LocalBackTester.StatisticalMethods.pip_pnl_distribution import (
+    PipAfterSLDistribution,
+    PipPnlDistribution,
+)
 
-__all__ = ["WeekdayPnLHistogram", "HourlyPnLHistogram", "SessionPnLHistogram"]
+__all__ = [
+    "WeekdayPnLHistogram",
+    "HourlyPnLHistogram",
+    "SessionPnLHistogram",
+    "RiskAnalysis",
+    "PipPnlDistribution",
+    "PipAfterSLDistribution",
+]

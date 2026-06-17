@@ -93,6 +93,16 @@ def read_tick_data(path):
     logging.debug(f"{len(df)=}")
 
 
+def test_tick_data():
+    from LocalBackTester.models import TickDataHandler
+
+    path = r"D:\TraderBot\LocalBackTester\TickData\Opofinance\XAUUSD!_2025_11_03_to_2026_05_19.parquet"
+
+    read_tick_data(path)
+    tick_handler = TickDataHandler(path)
+    logging.info(tick_handler.get_ticks_from_timstamp_range(1769543520, 1769543940))
+
+
 def load_diver_backtest(the_config: DivergenceTradeConfig):
     n_bar = the_config.chart.total_bars_number  # type: ignore
     signals = fetch_diver_siganls(the_config)
@@ -127,3 +137,22 @@ async def diver_signal_local_backtest(
     logging.debug(backtest_datapoint)
     diver_signals = res[0]
     store_diver_signal(diver_signals, backtest_datapoint.id)  # type: ignore
+
+
+def store_klines_from_mt5():
+    from LocalBackTester.methods import store_forex_data
+    from ChartModule.models import TimeFrame
+    from LocalBackTester.models import CsvChart, KlineSource
+
+    symbol = "BTCUSD"
+    len_bar = 99000
+    timeframe = TimeFrame.one_minute
+
+    chart = CsvChart(
+        symbol,
+        timeframe,
+        csv_path=rf"D:\TraderBot\LocalBackTester\KlinesCSV\Opofincance\opo_{symbol.replace('!', '')}_{timeframe.value}_{len_bar}.csv",
+        csv_source=KlineSource.OPOFINANCE_META,
+    )
+
+    store_forex_data(chart, n_bars=len_bar)

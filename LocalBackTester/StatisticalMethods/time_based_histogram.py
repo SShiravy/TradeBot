@@ -1,11 +1,55 @@
-from datetime import datetime, timezone
 from LocalBackTester.StatisticalMethods.models import BasePnLHistogram
-from TradingModule.models import Position
+from datetime import datetime, timezone
+
+
+class HourlyPnLHistogram(BasePnLHistogram):
+    def __init__(self):
+        super().__init__()
+        self.name = "Hourly PNL"
+
+    def get_category(
+        self,
+        timestamp: int,
+    ) -> str:
+        dt = datetime.fromtimestamp(
+            timestamp,
+            tz=timezone.utc,
+        )
+
+        return str(dt.hour)
+
+    def category_order(self) -> list[str]:
+        return [str(i) for i in range(24)]
+
+
+class WeekdayPnLHistogram(BasePnLHistogram):
+    def __init__(self):
+        super().__init__()
+        self.name = "Weekday PNL"
+
+    def get_category(
+        self,
+        timestamp: int,
+    ) -> str:
+        dt = datetime.fromtimestamp(timestamp)
+
+        return dt.strftime("%A")
+
+    def category_order(self) -> list[str]:
+        return [
+            "Monday",
+            "Tuesday",
+            "Wednesday",
+            "Thursday",
+            "Friday",
+            "Saturday",
+            "Sunday",
+        ]
 
 
 class SessionPnLHistogram(BasePnLHistogram):
-    def __init__(self, all_positions: list[Position], plot_name: str):
-        super().__init__(all_positions, plot_name)
+    def __init__(self):
+        super().__init__()
         self.name = "Session PNL"
 
     def get_category(

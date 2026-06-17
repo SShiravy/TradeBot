@@ -150,6 +150,8 @@ class RatioSteppingForex(SlTpRatioForex):
 
     def modify_init_sl_tp(self, position: Position):
         position.confiremed = True
+        if not position.real_trade:
+            return
         self.set_steps(position)
         tp_positions = self.exchange_agent.get_open_positions(
             comment_filter=position.id

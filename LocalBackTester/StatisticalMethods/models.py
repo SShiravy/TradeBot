@@ -1,23 +1,145 @@
-from typing import Any
-
-from LocalBackTester.models import CsvChart, TickDataHandler
+from LocalBackTester.models import CsvChart
 from TradingModule.models import Position
 from TradingModule.trader_bot import TradeConfig
 from abc import ABC, abstractmethod
 from collections import defaultdict
 import matplotlib.pyplot as plt
+from typing import Any, TypeAlias
 
 
-class BasePnLHistogram(ABC):
+class BaseStatisticalAnalysis(ABC):
     def __init__(
         self,
-        all_positions: list[Position],
-        plot_name: str,
     ):
-        self.all_positions = all_positions
-        self.plot_name = plot_name
         self.name = self.__class__.__name__
+        self.all_positions = []
 
+    @abstractmethod
+    def analyze(
+        self,
+        all_positions: list[Position],
+        the_config: TradeConfig | None,
+        *args,
+        **kwargs,
+    ) -> Any:
+        pass
+
+    @abstractmethod
+    def plot(self, plot_name: str, show: bool = True):
+        pass
+
+    @classmethod
+    def linear_plot(
+        cls,
+        series: list[float] | list[int],
+        title: str,
+        xlabel: str,
+        ylabel: str,
+        plot_name: str,
+        filename: str,
+        show: bool = True,
+        horizontal_marks: list[float] = [],
+    ):
+        plt.figure(figsize=(16, 8))
+
+        x = range(len(series))
+
+        plt.axhline(
+            y=0,
+            linestyle="--",
+            linewidth=1.5,
+            alpha=0.7,
+        )
+
+        plt.plot(
+            x,
+            series,
+            linewidth=2,
+        )
+
+        if horizontal_marks is not None:
+            for value in horizontal_marks:
+                plt.axhline(
+                    y=value,
+                    color="red",
+                    linestyle="--",
+                    linewidth=1.5,
+                )
+
+                plt.text(
+                    x=len(series) - 1,
+                    y=value,
+                    s=f"{value:.2f}",
+                    color="red",
+                    fontsize=11,
+                    ha="right",
+                    va="bottom",
+                    bbox=dict(
+                        facecolor="white",
+                        edgecolor="red",
+                        alpha=0.7,
+                    ),
+                )
+
+        plt.title(title, fontsize=18)
+        plt.xlabel(xlabel, fontsize=14)
+        plt.ylabel(ylabel, fontsize=14)
+        plt.xlim(0, len(series) - 1)
+        plt.grid(True, which="major", alpha=0.3)
+        plt.tight_layout()
+
+        plt.savefig(rf"D:\TraderBot\LocalBackTester\Images\{plot_name}_{filename}.png")
+
+        if show:
+            plt.show()
+
+        plt.close()
+
+    @classmethod
+    def histogram_plot(
+        cls,
+        distribution: dict,
+        title: str,
+        xlabel: str,
+        filename: str,
+        plot_name: str,
+        show: bool = True,
+    ):
+        if not distribution:
+            return
+
+        lengths = sorted(distribution.keys())
+        counts = [distribution[length] for length in lengths]
+        plt.figure(figsize=(16, 8))
+        plt.bar(
+            lengths,
+            counts,
+            width=0.8,
+        )
+
+        for x, y in zip(lengths, counts):
+            plt.text(
+                x,
+                y,
+                str(y),
+                ha="center",
+                va="bottom",
+                fontsize=10,
+            )
+
+        plt.title(title, fontsize=18)
+        plt.xlabel(xlabel, fontsize=14)
+        plt.ylabel("Occurrences", fontsize=14)
+        plt.xticks(lengths)
+        plt.grid(axis="y", alpha=0.3)
+        plt.tight_layout()
+        plt.savefig(rf"D:\TraderBot\LocalBackTester\Images\{plot_name}_{filename}.png")
+        if show:
+            plt.show()
+        plt.close()
+
+
+class BasePnLHistogram(BaseStatisticalAnalysis):
     @abstractmethod
     def get_category(self, timestamp: int) -> str:
         """
@@ -41,17 +163,21 @@ class BasePnLHistogram(ABC):
             trade_count[category] += 1
             if pos.pnl > 0:
                 wins[category] += 1
+        self.pnl_data = pnl_data
+        self.trade_count = trade_count
+        self.wins = wins
 
-        return pnl_data, trade_count, wins
+    def analyze(self, all_positions: list[Position], *args, **kwargs) -> Any:
+        self.all_positions = all_positions
+        self.aggregate()
 
-    def plot(self, show: bool = True):
-        pnl_data, trade_count, wins = self.aggregate()
+    def plot(self, plot_name: str, show: bool = True):
+        if self.pnl_data is None or self.trade_count is None or self.wins is None:
+            self.aggregate()
 
         categories = self.category_order()
-
-        pnl_values = [float(pnl_data[c]) for c in categories]
-
-        fig, ax = plt.subplots(figsize=(14, 6))
+        pnl_values = [float(self.pnl_data[c]) for c in categories]
+        _, ax = plt.subplots(figsize=(14, 6))
 
         bars = ax.bar(
             categories,
@@ -59,8 +185,7 @@ class BasePnLHistogram(ABC):
         )
 
         ax.axhline(0, linewidth=1)
-
-        ax.set_title(f"{self.name} {self.plot_name}")
+        ax.set_title(f"{self.name} {plot_name}")
         ax.set_ylabel("Total PnL")
 
         ax.grid(
@@ -84,10 +209,10 @@ class BasePnLHistogram(ABC):
             bars,
             categories,
         ):
-            pnl = pnl_data[category]
-            trades = trade_count[category]
+            pnl = self.pnl_data[category]
+            trades = self.trade_count[category]
 
-            winrate = wins[category] / trades * 100 if trades > 0 else 0
+            winrate = self.wins[category] / trades * 100 if trades > 0 else 0
 
             label = f"PnL: {pnl:.1f}\nTrades: {trades}\nWR: {winrate:.0f}%"
 
@@ -104,25 +229,20 @@ class BasePnLHistogram(ABC):
 
         plt.tight_layout()
 
-        plt.savefig(
-            rf"D:\TraderBot\LocalBackTester\Images\{self.__class__.__name__}_{self.plot_name}.png"
-        )
+        plt.savefig(rf"D:\TraderBot\LocalBackTester\Images\{plot_name}_{self.name}.png")
         if show:
             plt.show()
 
 
-class BasePnLDistribution(ABC):
+class BasePnLDistribution(BaseStatisticalAnalysis):
     def __init__(
         self,
-        plot_name: str,
-        candles_range: int = 5,
-        trade_config: TradeConfig | None = None,
+        candles_range: int = 30,
     ):
+        super().__init__()
         self.name = self.__class__.__name__
         self.candles_range = candles_range
-        self.trade_config = trade_config
         self.positions = []
-        self.plot_name = plot_name
 
     @abstractmethod
     def _calculate(*args, **kwargs) -> Any:
@@ -132,29 +252,25 @@ class BasePnLDistribution(ABC):
     def give_distribution(*args, **kwargs) -> Any:
         pass
 
-    @abstractmethod
-    def plot(show=True):
-        pass
-
-    def set_method(
+    def analyze(
         self,
-        the_config: TradeConfig,
         positions: list[Position],
-        ticks_handler: TickDataHandler | None = None,
+        the_config: TradeConfig,
     ):
-        if not ticks_handler:
-            if (
-                not isinstance(the_config.chart, CsvChart)
-                or the_config.chart.ticks_path is None
-            ):
-                raise ValueError(
-                    "Chart must be CsvChart with ticks_path for BucketPipPnlDistribution"
-                )
-            else:
-                ticks_handler = TickDataHandler(
-                    parquet_path=the_config.chart.ticks_path
-                )
+        if not isinstance(the_config.chart, CsvChart):
+            raise ValueError(
+                "Chart must be CsvChart with ticks_path for BucketPipPnlDistribution"
+            )
         self.positions = positions
         self.trade_config = the_config
         for pos in positions:
-            self._calculate(the_config=the_config, pos=pos, ticks_handler=ticks_handler)
+            self._calculate(
+                the_config=the_config,
+                pos=pos,
+                ticks_handler=the_config.chart.tick_handler,
+            )
+
+
+StatisticalIndicator: TypeAlias = (
+    BasePnLDistribution | BasePnLHistogram | BaseStatisticalAnalysis
+)
