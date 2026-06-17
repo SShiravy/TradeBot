@@ -137,7 +137,7 @@ if __name__ == "__main__":
         RiskAnalysis,
     )
 
-    the_config = diver_pendlebtc_5m_17280_2024_month0203
+    the_config = diver_forex_xau_1m_99000
 
     create_db()
     import cProfile

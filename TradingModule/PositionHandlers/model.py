@@ -54,7 +54,7 @@ class PositionHandler(ABC):
         plot: Plot | None = None,
         *args,
         **kwargs,
-    ) -> Position:
+    ) -> Position | None:
         real_trade = False
         if signal.side is MarketSide.BEARISH:
             side = OrderSide.SELL

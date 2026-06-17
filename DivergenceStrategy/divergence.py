@@ -308,7 +308,9 @@ class DivergenceTradeConfig(TradeConfig):
         position = await self.position_handler.generate_position(
             signal, sl_base_price=entry_source, plot=plot
         )
-        return signal, position
+        if position:
+            return signal, position
+        return None
 
     async def task(self):
         base_chartdata, second_chartdata = self.get_chartdata()
