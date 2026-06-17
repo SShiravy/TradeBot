@@ -3,7 +3,6 @@ from Forex.bot_config import ForexDiverTradeConfig
 from DivergenceStrategy.divergence import Divergence
 from Coinex.bot_config import CoinexDiverTradeConfig
 from TradingModule.PositionHandlers import (
-    SlTpRatioForex,
     RatioSteppingForex,
     RatioSteppingCrypto,
 )
@@ -16,6 +15,12 @@ from LocalBackTester.all_charts import (
     FTMUSDT_5m_test_2024,
     NEARUSDT_5m_2024_month0203,
     NEARUSDT_5m_test_2024,
+    PENDLEUSDT_5m_2024_month0203,
+    PENDLEUSDT_5m_test_2024,
+    RNDRUSDT_5m_2024_month0203,
+    RNDRUSDT_5m_test_2024,
+    SOLUSDT_5m_2024_month0203,
+    SOLUSDT_5m_test_2024,
     XAUUSD_1m_5000_test,
     SOLUSD_1m_5000_test,
     XAUUSD_1m_99000,
@@ -229,6 +234,135 @@ diver_nearbtc_5m_17280_2024_month0203 = CoinexDiverTradeConfig(
 
 diver_nearbtc_5m_test = CoinexDiverTradeConfig(
     chart=NEARUSDT_5m_test_2024,
+    second_chart=BTCUSDT_5m_test_2024,
+    n_candle_check=100,
+    strategy=Divergence(3, 300, [], name="CoinexDiver", inverse_diver_long=True),
+    position_handler=RatioSteppingCrypto(
+        local_agent,
+        leverage=10,
+        stoploss_percent=0.1,
+        targets_ratio=[1, 2, 3],
+        initial_volume=[10, 10, 10],
+        trail_stop=True,
+        long_trade=False,
+        short_trade=False,
+    ),
+    agent=local_agent,  # type: ignore
+    heikingashi_chartdata=True,
+    send_signal=False,
+)
+
+
+diver_pendlebtc_5m_17280_2024_month0203 = CoinexDiverTradeConfig(
+    chart=PENDLEUSDT_5m_2024_month0203,
+    second_chart=BTCUSDT_5m_2024_month0203,
+    n_candle_check=100,
+    strategy=Divergence(3, 300, [], name="CoinexDiver", inverse_diver_long=True),
+    position_handler=RatioSteppingCrypto(
+        local_agent,
+        leverage=10,
+        stoploss_percent=0.25,
+        targets_ratio=[1, 2, 3],
+        initial_volume=[3, 3, 3],
+        trail_stop=True,
+        long_trade=False,
+        short_trade=False,
+    ),
+    agent=local_agent,  # type: ignore
+    heikingashi_chartdata=True,
+    send_signal=False,
+    merge_two_chart_time=False,
+)
+
+
+diver_pendlebtc_5m_test = CoinexDiverTradeConfig(
+    chart=PENDLEUSDT_5m_test_2024,
+    second_chart=BTCUSDT_5m_test_2024,
+    n_candle_check=100,
+    strategy=Divergence(3, 300, [], name="CoinexDiver", inverse_diver_long=True),
+    position_handler=RatioSteppingCrypto(
+        local_agent,
+        leverage=10,
+        stoploss_percent=0.1,
+        targets_ratio=[1, 2, 3],
+        initial_volume=[10, 10, 10],
+        trail_stop=True,
+        long_trade=False,
+        short_trade=False,
+    ),
+    agent=local_agent,  # type: ignore
+    heikingashi_chartdata=True,
+    send_signal=False,
+)
+
+
+diver_rndrbtc_5m_17280_2024_month0203 = CoinexDiverTradeConfig(
+    chart=RNDRUSDT_5m_2024_month0203,
+    second_chart=BTCUSDT_5m_2024_month0203,
+    n_candle_check=100,
+    strategy=Divergence(3, 300, [], name="CoinexDiver", inverse_diver_long=True),
+    position_handler=RatioSteppingCrypto(
+        local_agent,
+        leverage=10,
+        stoploss_percent=0.25,
+        targets_ratio=[1, 2, 3],
+        initial_volume=[3, 3, 3],
+        trail_stop=True,
+        long_trade=False,
+        short_trade=False,
+    ),
+    agent=local_agent,  # type: ignore
+    heikingashi_chartdata=True,
+    send_signal=False,
+    merge_two_chart_time=False,
+)
+
+
+diver_rndrbtc_5m_test = CoinexDiverTradeConfig(
+    chart=RNDRUSDT_5m_test_2024,
+    second_chart=BTCUSDT_5m_test_2024,
+    n_candle_check=100,
+    strategy=Divergence(3, 300, [], name="CoinexDiver", inverse_diver_long=True),
+    position_handler=RatioSteppingCrypto(
+        local_agent,
+        leverage=10,
+        stoploss_percent=0.1,
+        targets_ratio=[1, 2, 3],
+        initial_volume=[10, 10, 10],
+        trail_stop=True,
+        long_trade=False,
+        short_trade=False,
+    ),
+    agent=local_agent,  # type: ignore
+    heikingashi_chartdata=True,
+    send_signal=False,
+)
+
+
+diver_solbtc_5m_17280_2024_month0203 = CoinexDiverTradeConfig(
+    chart=SOLUSDT_5m_2024_month0203,
+    second_chart=BTCUSDT_5m_2024_month0203,
+    n_candle_check=100,
+    strategy=Divergence(3, 300, [], name="CoinexDiver", inverse_diver_long=True),
+    position_handler=RatioSteppingCrypto(
+        local_agent,
+        leverage=10,
+        stoploss_percent=0.25,
+        targets_ratio=[1, 2, 3],
+        initial_volume=[3, 3, 3],
+        trail_stop=True,
+        long_trade=False,
+        short_trade=False,
+    ),
+    agent=local_agent,  # type: ignore
+    heikingashi_chartdata=True,
+    send_signal=False,
+    merge_two_chart_time=False,
+)
+
+
+diver_solbtc_5m_test = CoinexDiverTradeConfig(
+    chart=SOLUSDT_5m_test_2024,
     second_chart=BTCUSDT_5m_test_2024,
     n_candle_check=100,
     strategy=Divergence(3, 300, [], name="CoinexDiver", inverse_diver_long=True),

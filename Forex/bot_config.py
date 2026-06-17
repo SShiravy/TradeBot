@@ -5,8 +5,7 @@ from ChartModule import Chart, ChartData
 from TradingModule import ExchangeAgent
 from DivergenceStrategy.divergence import Divergence, DivergenceTradeConfig
 from dataclasses import dataclass, field
-from datetime import datetime, timedelta, timezone
-import logging
+from datetime import timedelta
 
 
 @dataclass(kw_only=True)

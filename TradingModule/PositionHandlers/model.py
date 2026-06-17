@@ -5,7 +5,6 @@ from TradingModule.commands import TradeCommand
 from TradingModule import commands
 from abc import ABC, abstractmethod
 from datetime import timedelta
-from copy import copy
 import numpy as np
 import logging
 
@@ -142,7 +141,7 @@ class PositionHandler(ABC):
         return self.handler(position, ticks)
 
     def manage_positions(self):
-        all_pos = copy(self.open_positions)
+        all_pos = self.open_positions.copy()
         for pos in all_pos:
             if pos.closed:
                 self.closed_positions.append(pos)

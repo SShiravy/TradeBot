@@ -34,7 +34,7 @@ class PipAfterSLDistribution(BasePnLDistribution):
     ):
         logger.info(f"calculate pip distribution after sl triggered on pos:{pos}")
         if pos.closed is None:
-            raise ValueError(f"position closed time is None!!")
+            raise ValueError("position closed time is None!!")
         seconds_check_range = (
             the_config.chart.timeframe.minutes * 60 * self.candles_range
         )

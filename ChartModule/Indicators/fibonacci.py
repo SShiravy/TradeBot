@@ -1,6 +1,6 @@
 from ChartModule.models import IndicatorBaseModel, TickPrice, MarketSide
 from ChartModule.plot import ChartPlot
-from datetime import timedelta, datetime
+from datetime import datetime
 from enum import Enum
 import numpy as np
 

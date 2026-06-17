@@ -110,6 +110,51 @@ NEARUSDT_5m_2024_month0203 = CsvChart(
     csv_source=KlineSource.BINCANCE,
 )
 
+
+PENDLEUSDT_5m_test_2024 = CsvChart(
+    "PENDLEUSDT",
+    TimeFrame.five_minutes,
+    csv_path=r"D:\TraderBot\LocalBackTester\KlinesCSV\Binance\PENDLEUSDT-5m-2024test.csv",
+    csv_source=KlineSource.BINCANCE,
+)
+
+PENDLEUSDT_5m_2024_month0203 = CsvChart(
+    "PENDLEUSDT",
+    TimeFrame.five_minutes,
+    csv_path=r"D:\TraderBot\LocalBackTester\KlinesCSV\Binance\PENDLEUSDT-5m-2024-month0203.csv",
+    csv_source=KlineSource.BINCANCE,
+)
+
+
+RNDRUSDT_5m_test_2024 = CsvChart(
+    "RNDRUSDT",
+    TimeFrame.five_minutes,
+    csv_path=r"D:\TraderBot\LocalBackTester\KlinesCSV\Binance\RNDRUSDT-5m-2024test.csv",
+    csv_source=KlineSource.BINCANCE,
+)
+
+RNDRUSDT_5m_2024_month0203 = CsvChart(
+    "RNDRUSDT",
+    TimeFrame.five_minutes,
+    csv_path=r"D:\TraderBot\LocalBackTester\KlinesCSV\Binance\RNDRUSDT-5m-2024-month0203.csv",
+    csv_source=KlineSource.BINCANCE,
+)
+
+
+SOLUSDT_5m_test_2024 = CsvChart(
+    "SOLUSDT",
+    TimeFrame.five_minutes,
+    csv_path=r"D:\TraderBot\LocalBackTester\KlinesCSV\Binance\SOLUSDT-5m-2024test.csv",
+    csv_source=KlineSource.BINCANCE,
+)
+
+SOLUSDT_5m_2024_month0203 = CsvChart(
+    "SOLUSDT",
+    TimeFrame.five_minutes,
+    csv_path=r"D:\TraderBot\LocalBackTester\KlinesCSV\Binance\SOLUSDT-5m-2024-month0203.csv",
+    csv_source=KlineSource.BINCANCE,
+)
+
 # FOREX
 
 

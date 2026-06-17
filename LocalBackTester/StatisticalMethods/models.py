@@ -6,7 +6,6 @@ from TradingModule.trader_bot import TradeConfig
 from abc import ABC, abstractmethod
 from collections import defaultdict
 import matplotlib.pyplot as plt
-from copy import deepcopy
 
 
 class BasePnLHistogram(ABC):

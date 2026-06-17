@@ -1,9 +1,8 @@
-from datetime import timedelta
 from sqlmodel import SQLModel, Field
-import json
 from LocalBackTester.Database.hashing import generate_hash
 from TradingModule.PositionHandlers.model import PositionHandler
 from TradingModule.models import PositionsReport
+import json
 
 
 class PositionsResult(SQLModel, table=True):

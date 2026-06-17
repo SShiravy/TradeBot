@@ -4,7 +4,6 @@ from TradingModule.reporter import TelegramReporter
 from datetime import datetime, timezone
 from abc import ABC, abstractmethod
 from enum import Enum
-from copy import copy
 import logging
 
 logger = logging.getLogger("TradeCommand")
@@ -125,7 +124,7 @@ class TradeCommand(ABC):
     async def execute_pending_commands(cls, time: datetime | None = None, report=True):
         if time is None:
             time = datetime.now(timezone.utc)
-        all_commands = copy(TradeCommand.all_pending_commands)
+        all_commands = TradeCommand.all_pending_commands.copy()
         for command in all_commands:
             command.report = report
             await command.execute(time)

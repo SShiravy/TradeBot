@@ -408,7 +408,7 @@ class PositionsReport:
         return report
 
     def calculate_max_win_lose_in_row(self, all_positions: list[Position]):
-        all_pos = copy(all_positions)
+        all_pos = all_positions.copy()
         all_pos.sort(
             key=lambda pos: pos.closed if pos.closed else datetime.now(tz=timezone.utc)
         )

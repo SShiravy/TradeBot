@@ -6,7 +6,6 @@ from ChartModule.models import (
 )
 from ChartModule.Indicators.models import SupportConditions
 from ChartModule.plot import ChartPlot
-from copy import copy
 import numpy as np
 
 
@@ -65,7 +64,7 @@ class TrendLine(IndicatorBaseModel):
         start_candle = candles[start_index]
         the_line = Line(self.source, start_candle, candles[end_index])
 
-        candle_source = copy(self.source)
+        candle_source = self.source
         if self.source in [IndicatorCandleSource.Low, IndicatorCandleSource.Bottom]:
             cross_multiplier = 1
             if self.ignore_shadow_cross:
@@ -95,8 +94,7 @@ class TrendLine(IndicatorBaseModel):
         source_list = []
         time_list = []
 
-        candle_source = copy(self.source)
-
+        candle_source = self.source
         if self.source in [IndicatorCandleSource.Low, IndicatorCandleSource.Bottom]:
             cross_multiplier = 1
             if self.ignore_shadow_cross:

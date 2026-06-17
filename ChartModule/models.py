@@ -247,7 +247,21 @@ class ChartData:
     def __str__(self):
         return f"{self.chart} with {len(self.candles)} candles & {len(self.indicators)} Idicator"
 
-    def index(self, value):
+    def index(self, value: Candle):
+        left = 0
+        right = len(self.candles) - 1
+        candle_time = value.time
+
+        while left <= right:
+            mid = (left + right) // 2
+            mid_time = self.candles[mid].time
+            if mid_time == candle_time:
+                return mid
+            if mid_time < candle_time:
+                left = mid + 1
+            else:
+                right = mid - 1
+
         return self.candles.index(value)
 
     @classmethod

@@ -47,7 +47,6 @@ async def diver_position_local_backtest(
     from LocalBackTester.Database.methods import fetch_diver_siganls
     from ChartModule.plot import DoubleChartPlot
     from ChartModule.models import MarketSide
-    from copy import copy
     from TradingModule.models import PositionsReport
     from LocalBackTester.Database.methods import (
         fetch_positions_result,
@@ -126,7 +125,7 @@ async def diver_position_local_backtest(
         logging.info("Result:\n\n" + commands_report)
         for poses_report in all_reports:
             logging.info("\n" + str(poses_report))
-        overal_report = PositionsReport.give_overall_report(copy(all_reports))
+        overal_report = PositionsReport.give_overall_report(all_reports)
         logging.info("\n" + str(overal_report))
 
     if show_plot:
@@ -182,6 +181,12 @@ if __name__ == "__main__":
         diver_avaxbtc_5m_17280_2024_month0203,
         diver_nearbtc_5m_test,
         diver_nearbtc_5m_17280_2024_month0203,
+        diver_pendlebtc_5m_test,
+        diver_pendlebtc_5m_17280_2024_month0203,
+        diver_rndrbtc_5m_test,
+        diver_rndrbtc_5m_17280_2024_month0203,
+        diver_solbtc_5m_test,
+        diver_solbtc_5m_17280_2024_month0203,
     )
 
     from LocalBackTester.StatisticalMethods import (
@@ -190,7 +195,7 @@ if __name__ == "__main__":
         SessionPnLHistogram,
     )
 
-    the_config = diver_nearbtc_5m_17280_2024_month0203
+    the_config = diver_solbtc_5m_17280_2024_month0203
 
     # test_tick_data()
 
@@ -203,7 +208,7 @@ if __name__ == "__main__":
 
     # plot_csv_kline(the_config.chart) # type: ignore
 
-    asyncio.run(diver_signal_local_backtest(the_config, show_plot=False))
+    asyncio.run(diver_signal_local_backtest(the_config, show_plot=True))
 
     # plot_name = f"{the_config.chart.symbol}_{the_config.chart.timeframe}_99000"
     # plot_name = f"{the_config.chart.symbol}_{the_config.chart.timeframe}_17570"
@@ -235,7 +240,7 @@ if __name__ == "__main__":
     stats.sort_stats("cumtime")
     stats.print_stats(30)
 
-    store_mt5_tick_data()
+    # store_mt5_tick_data()
     # read_tick_data()
 
 

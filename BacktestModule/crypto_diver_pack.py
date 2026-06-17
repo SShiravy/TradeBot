@@ -6,7 +6,6 @@ from TradingModule.models import PositionsReport
 from TradingModule.reporter import TelegramReporter
 from itertools import product
 from config import settings
-from copy import copy
 from datetime import datetime
 import logging
 
@@ -63,7 +62,7 @@ async def start_diver_crypto_backtest_pack(send_report=False):
             heikingashi_chartdata=True,
         )
         res = await five_m_diver.backtest(1000, show_image=False)
-        overal_report = PositionsReport.give_overall_report(copy(res[-2]))
+        overal_report = PositionsReport.give_overall_report(res[-2])
         final_report = str(overal_report) + "\n" + f"Params:\n{params_set}"
         pnl = overal_report.pnl
         if pnl > 0:
