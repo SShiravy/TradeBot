@@ -8,8 +8,7 @@ from TradingModule.PositionHandlers import (
     RiskFreeCrypto,
     SlTpRatioCrypto,
     SlTpRatioForex,
-    SteppingForex,
-    RatioSteppingForex,
+    SteppingHandlerForex,
     RatioSteppingCrypto,
 )
 from config import settings
@@ -77,11 +76,13 @@ forex_diver_one_m = ForexDiverTradeConfig(
     second_chart=Chart("SOLUSD", TimeFrame.one_minute),
     strategy=Divergence(5, 200, [], name="ForexDiver", body_candle=True),
     bar_between_signals=2,
-    position_handler=RatioSteppingForex(
+    position_handler=SteppingHandlerForex(
         ForexAgent(),
         targets_ratio=[1, 2, 3],
         stoploss_pip=30,
-        initial_volume=[0.01, 0.01, 0.01],
+        targets_ratio_volumes=[0.01, 0.01, 0.01],
+        targets_in_pip=[15],
+        targets_in_pip_volumes=[0.01],
         long_trade=False,
         short_trade=False,
         trail_stop=True,
@@ -97,11 +98,11 @@ forex_diver_five_m = ForexDiverTradeConfig(
     strategy=Divergence(5, 50, [], name="ForexDiver"),
     bar_between_signals=5,
     position_handler=(
-        SteppingForex(
+        SteppingHandlerForex(
             ForexAgent(),
-            initial_volume=[0.01, 0.01, 0.01],
+            targets_ratio_volumes=[0.01, 0.01, 0.01],
             stoploss_pip=50,
-            targets_pip=[50, 100, 150],
+            targets_in_pip=[50, 100, 150],
             long_trade=False,
             short_trade=False,
             trail_stop=True,

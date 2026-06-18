@@ -3,7 +3,7 @@ from Forex.bot_config import ForexDiverTradeConfig
 from DivergenceStrategy.divergence import Divergence
 from Coinex.bot_config import CoinexDiverTradeConfig
 from TradingModule.PositionHandlers import (
-    RatioSteppingForex,
+    SteppingHandlerForex,
     RatioSteppingCrypto,
 )
 from LocalBackTester.all_charts import (
@@ -43,11 +43,11 @@ diver_forex_xau_1m_5000_test = ForexDiverTradeConfig(
     second_chart=SOLUSD_1m_5000_test,
     n_candle_check=500,
     strategy=Divergence(3, 500, [], name="ForexDiver", inverse_diver_long=True),
-    position_handler=RatioSteppingForex(
+    position_handler=SteppingHandlerForex(
         local_agent,
         stoploss_pip=30,
         targets_ratio=[1, 2, 3],
-        initial_volume=[0.01, 0.01, 0.01],
+        targets_ratio_volumes=[0.01, 0.01, 0.01],
         trail_stop=True,
         long_trade=False,
         short_trade=False,
@@ -67,11 +67,11 @@ diver_forex_xau_1m_99000 = ForexDiverTradeConfig(
     second_chart=SOLUSD_1m_99000,
     n_candle_check=500,
     strategy=Divergence(3, 500, [], name="ForexDiver", inverse_diver_long=True),
-    position_handler=RatioSteppingForex(
+    position_handler=SteppingHandlerForex(
         local_agent,
         stoploss_pip=30,
         targets_ratio=[1, 2, 3],
-        initial_volume=[0.01, 0.01, 0.01],
+        targets_ratio_volumes=[0.01, 0.01, 0.01],
         trail_stop=True,
         long_trade=False,
         short_trade=False,

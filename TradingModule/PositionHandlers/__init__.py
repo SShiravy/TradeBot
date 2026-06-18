@@ -12,11 +12,8 @@ from TradingModule.PositionHandlers.ratio_handlers import (
     SlTpRatioCrypto,
     SlTpRatioForex,
 )
-from TradingModule.PositionHandlers.stepping_handlers import (
-    SteppingForex,
-)
-from TradingModule.PositionHandlers.ratio_stepping import (
-    RatioSteppingForex,
+from TradingModule.PositionHandlers.stepping_handler import (
+    SteppingHandlerForex,
     RatioSteppingCrypto,
 )
 
@@ -31,6 +28,6 @@ __all__ = [
     "SlTpRatioForex",
     "SlTpRatioCrypto",
     "SteppingForex",
-    "RatioSteppingForex",
+    "SteppingHandlerForex",
     "RatioSteppingCrypto",
 ]

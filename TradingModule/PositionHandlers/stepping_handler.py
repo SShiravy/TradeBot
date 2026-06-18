@@ -16,42 +16,59 @@ import logging
 logger = logging.getLogger("PositionHandler")
 
 
-class RatioSteppingForex(SlTpRatioForex):
+class SteppingHandlerForex(SlTpRatioForex):
     def __init__(
         self,
         exchange_agent: ExchangeAgent,
         stoploss_pip: int = 10,
         targets_ratio: list[float] = [1, 1.5, 2],
-        initial_volume: float | list[float] = 0.01,
+        targets_ratio_volumes: float | list[float] = 0.01,
+        targets_in_pip: list[float] = [10],
+        targets_in_pip_volumes: float | list[float] = 0.01,
         trail_stop: bool = True,
         long_trade=True,
         short_trade=True,
         trading_constraints: list[TradingConstraint] = [],
     ) -> None:
-        if isinstance(initial_volume, float | int):
-            # make it list with same size as targets_pip if it's not
-            initial_volume = [float(initial_volume)] * len(targets_ratio)
+        if isinstance(targets_ratio_volumes, float | int):
+            # make it list with same size as targets_ratio if it's not
+            targets_ratio_volumes = [float(targets_ratio_volumes)] * len(targets_ratio)
 
-        if len(targets_ratio) != len(initial_volume):
+        if len(targets_ratio) != len(targets_ratio_volumes):
             raise ValueError(
                 f"targets_volumes_lot param must be \
                              float or list[float] with same size as targets_pip\
-                             {len(initial_volume)} != {len(targets_ratio)}"
+                             {len(targets_ratio_volumes)} != {len(targets_ratio)}"
+            )
+
+        if isinstance(targets_in_pip_volumes, float | int):
+            # make it list with same size as targets_pip if it's not
+            targets_in_pip_volumes = [float(targets_in_pip_volumes)] * len(
+                targets_in_pip
+            )
+
+        if len(targets_in_pip) != len(targets_in_pip_volumes):
+            raise ValueError(
+                f"targets_volumes_lot param must be \
+                             float or list[float] with same size as targets_pip\
+                             {len(targets_in_pip_volumes)} != {len(targets_in_pip)}"
             )
 
         super().__init__(
             exchange_agent,
             targets_ratio[-1],
-            sum(initial_volume),
+            sum(targets_ratio_volumes),
             stoploss_pip,
             long_trade=long_trade,
             short_trade=short_trade,
         )
 
         self.targets_ratio = targets_ratio
-        self.targets_volumes_lot = initial_volume
+        self.targets_ratio_volumes = targets_ratio_volumes
         self.trail_stop = trail_stop
         self.trading_constraints = trading_constraints
+        self.targets_in_pip = targets_in_pip
+        self.targets_in_pip_volumes = targets_in_pip_volumes
 
     def export_config(self) -> dict:
         conf_dict = super().export_config()
@@ -60,7 +77,7 @@ class RatioSteppingForex(SlTpRatioForex):
         conf_dict.update(
             {
                 "targets_ratio": self.targets_ratio,
-                "targets_volumes_lot": self.targets_volumes_lot,
+                "targets_volumes_lot": self.targets_ratio_volumes,
                 "trail_stop": self.trail_stop,
             }
         )
@@ -68,8 +85,19 @@ class RatioSteppingForex(SlTpRatioForex):
 
     def set_steps(self, pos: Position):
         steps = []
+        for pip, volume in zip(self.targets_in_pip, self.targets_in_pip_volumes):
+            steps.append(
+                Trigger(
+                    price=round(
+                        abs(pos.entry_price + pos.side.factor() * pip / 10),
+                        pos.chart.precision,
+                    ),
+                    volume=volume,
+                )
+            )
+
         sl_pip = abs(pos.stoploss - pos.entry_price)
-        for ratio, volume in zip(self.targets_ratio, self.targets_volumes_lot):
+        for ratio, volume in zip(self.targets_ratio, self.targets_ratio_volumes):
             steps.append(
                 Trigger(
                     price=round(
@@ -81,7 +109,7 @@ class RatioSteppingForex(SlTpRatioForex):
             )
         logger.debug(f"steps for position set to: {steps}")
         pos.steps = steps
-        pos.takeprofit = steps[-1].price
+        pos.takeprofit = pos.steps[-1].price
 
     async def open_steps_position(self, pos: Position):
         for step in pos.steps[1:]:  # first step is entry
