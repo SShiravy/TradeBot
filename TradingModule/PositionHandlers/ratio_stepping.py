@@ -231,6 +231,7 @@ class RatioSteppingCrypto(SlTpRatioCrypto):
         trail_stop: bool = True,
         long_trade=True,
         short_trade=True,
+        trading_constraints: list[TradingConstraint] = [],
     ) -> None:
         if isinstance(initial_volume, float | int):
             # make it list with same size as targets_pip if it's not
@@ -256,6 +257,7 @@ class RatioSteppingCrypto(SlTpRatioCrypto):
         self.targets_ratio = targets_ratio
         self.targets_volumes_lot = initial_volume
         self.trail_stop = trail_stop
+        self.trading_constraints = trading_constraints
 
     def export_config(self) -> dict:
         conf_dict = super().export_config()
@@ -312,7 +314,7 @@ class RatioSteppingCrypto(SlTpRatioCrypto):
         sl_base_price: float | None = None,
         *args,
         **kwargs,
-    ) -> Position:
+    ) -> Position | None:
         real_trade = False
         if signal.side is MarketSide.BEARISH:
             side = OrderSide.SELL
@@ -348,6 +350,17 @@ class RatioSteppingCrypto(SlTpRatioCrypto):
             real_trade=real_trade,
             plot=plot,
         )
+        for constraint in self.trading_constraints:
+            res = constraint.check(
+                signal, position, self.open_positions, self.closed_positions
+            )
+            if res is False:
+                logger.info(f"Opening New Position Denied due to the: {constraint}")
+                logger.debug(
+                    f"open_pos: {self.open_positions=} | closed_pos: {self.closed_positions} | new_pos: {position}"
+                )
+                return None
+
         self.open_positions.append(position)
         logger.info(f"New Position on {position.chart}")
         logger.debug(f"The New Position {position}")

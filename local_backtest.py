@@ -1,6 +1,7 @@
 from DivergenceStrategy import DivergenceTradeConfig
 from LocalBackTester.Database.create_db import create_db
 from LocalBackTester.StatisticalMethods.models import StatisticalIndicator
+from LocalBackTester.diver_backtester import DiverBacktester
 from custom_logger import CustomLogger
 from config import settings
 import asyncio
@@ -105,6 +106,7 @@ async def diver_position_local_backtest(
         for poses_report in all_reports:
             logging.info("\n" + str(poses_report))
         overal_report = PositionsReport.give_overall_report(all_reports)
+        logging.info(f"\n{len(signals)=}")
         logging.info("\n" + str(overal_report))
 
     del signals, commands_report
@@ -137,7 +139,7 @@ if __name__ == "__main__":
         RiskAnalysis,
     )
 
-    the_config = diver_forex_xau_1m_99000
+    the_config = diver_forex_xau_1m_5000_test
 
     create_db()
     import cProfile
@@ -149,26 +151,34 @@ if __name__ == "__main__":
     # plot_csv_kline(the_config.chart) # type: ignore
 
     # asyncio.run(diver_signal_local_backtest(the_config, show_plot=True))
+    statistical_indicators = [
+        WeekdayPnLHistogram(),
+        HourlyPnLHistogram(),
+        SessionPnLHistogram(),
+        # PipPnlDistribution(
+        #     candles_range=200,
+        # ),
+        # PipAfterSLDistribution(
+        #     candles_range=200,
+        #     tolerance_pip=30
+        # ),
+        RiskAnalysis(),
+    ]
+
+    diver_backtester = DiverBacktester(
+        the_config, statistical_indicators, show_chartdata=True
+    )
+    asyncio.run(
+        diver_backtester.positions_backtest(use_database=False, show_plots=False)
+    )
 
     asyncio.run(
         diver_position_local_backtest(
             the_config,
             consider_db=False,
-            statistical_indicators=[
-                WeekdayPnLHistogram(),
-                HourlyPnLHistogram(),
-                SessionPnLHistogram(),
-                # PipPnlDistribution(
-                #     candles_range=200,
-                # ),
-                # PipAfterSLDistribution(
-                #     candles_range=200,
-                #     tolerance_pip=30
-                # ),
-                RiskAnalysis(),
-            ],
-            show_chartdata=False,
-            show_plot=True,
+            statistical_indicators=statistical_indicators,
+            show_chartdata=True,
+            show_plot=False,
         )
     )
 

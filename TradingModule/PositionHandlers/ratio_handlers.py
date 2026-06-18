@@ -68,7 +68,7 @@ class SlTpRatioCrypto(PositionHandler):
         entry_price: float | None = None,
         plot: Plot | None = None,
         sl_base_price: float | None = None,
-    ) -> Position:
+    ) -> Position | None:
         real_trade = False
         if signal.side is MarketSide.BEARISH:
             side = OrderSide.SELL

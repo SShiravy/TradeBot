@@ -51,7 +51,9 @@ diver_forex_xau_1m_5000_test = ForexDiverTradeConfig(
         trail_stop=True,
         long_trade=False,
         short_trade=False,
-        trading_constraints=[SideConstraint(n_pos_each_side=1, n_bar=30)],
+        trading_constraints=[
+            # SideConstraint(n_pos_each_side=1, n_bar=30)
+        ],
     ),
     heikingashi_chartdata=True,
     merge_two_chart_time=True,
