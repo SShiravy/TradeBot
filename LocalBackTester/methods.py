@@ -49,7 +49,7 @@ def store_mt5_tick_data():
     symbol = "BTCUSD"
 
     ticks = mt5.copy_ticks_range(
-        symbol, datetime(2024, 1, 1), datetime.now(), mt5.COPY_TICKS_ALL
+        symbol, datetime(2026, 6, 18), datetime.now(), mt5.COPY_TICKS_ALL
     )
 
     df = pd.DataFrame(ticks)
@@ -66,22 +66,43 @@ def store_mt5_tick_data():
     )
 
 
-def store_binance_tick_data(chart: CsvChart):
-    # TODO: implement this function to store binance tick data
+def store_binance_tick_data(csv_path: str):
+    import logging
     import pandas as pd
     from datetime import datetime
 
-    df = pd.read_csv(chart.csv_path)
+    df = pd.read_csv(csv_path)
+
     logging.debug(f"{df.columns=}")
-    start = datetime.fromtimestamp(df.iloc[0].time).strftime(format="%Y_%m_%d")
-    end = datetime.fromtimestamp(df.iloc[-1].time).strftime(format="%Y_%m_%d")
     logging.debug(f"{len(df)=}")
 
-    file_name = f"{chart.symbol}_{start}_to_{end}.parquet"
-
-    df.to_parquet(
-        rf"D:\TraderBot\LocalBackTester\TickData\Opofinance\{file_name}", index=False
+    mt5_df = pd.DataFrame(
+        {
+            "time": df["transact_time"] // 1000,
+            "bid": df["price"],
+            "ask": df["price"],
+            "last": df["price"],
+            "volume": df["quantity"],
+            "time_msc": df["transact_time"],
+            "flags": 0,
+            "volume_real": df["quantity"],
+        }
     )
+
+    start = datetime.fromtimestamp(mt5_df.iloc[0]["time"]).strftime("%Y_%m_%d")
+
+    end = datetime.fromtimestamp(mt5_df.iloc[-1]["time"]).strftime("%Y_%m_%d")
+
+    symbol = "BINANCE"
+
+    file_name = f"{symbol}_{start}_to_{end}.parquet"
+
+    mt5_df.to_parquet(
+        rf"D:\TraderBot\LocalBackTester\TickData\Binance\{file_name}",
+        index=False,
+    )
+
+    logging.info(f"Stored {len(mt5_df)} ticks")
 
 
 def read_tick_data(path):

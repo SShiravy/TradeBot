@@ -1,3 +1,4 @@
+from LocalBackTester.methods import store_mt5_tick_data
 from custom_logger import CustomLogger
 import logging
 import asyncio
@@ -73,6 +74,8 @@ if __name__ == "__main__":
     # asyncio.run(start_fich_diver_backtest())
 
     # new_backtest()
+
+    # store_mt5_tick_data()
 
     asyncio.run(test_open_position())
     # test_handler_export_config()
