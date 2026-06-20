@@ -23,8 +23,8 @@ class SteppingHandlerForex(PositionHandler):
         stoploss_pip: int = 10,
         targets_ratio: list[float] = [1, 1.5, 2],
         targets_ratio_volumes: float | list[float] = 0.01,
-        targets_in_pip: list[float] = [10],
-        targets_in_pip_volumes: float | list[float] = 0.01,
+        targets_in_pip: list[float] = [],
+        targets_in_pip_volumes: float | list[float] = [],
         trail_stop: bool = True,
         long_trade=True,
         short_trade=True,
@@ -180,9 +180,6 @@ class SteppingHandlerForex(PositionHandler):
             )
             if res is False:
                 logger.info(f"Opening New Position Denied due to the: {constraint}")
-                logger.debug(
-                    f"open_pos: {self.open_positions=} | closed_pos: {self.closed_positions} | new_pos: {position}"
-                )
                 return None
 
         self.open_positions.append(position)

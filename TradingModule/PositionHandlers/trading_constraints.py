@@ -47,9 +47,7 @@ class SideConstraint(TradingConstraint):
                 same_side_counter += 1
             if same_side_counter >= self.n_pos_each_side:
                 return False
-        logger.debug(
-            f"{same_side_counter=} | {len(open_positions)=} | {open_positions}"
-        )
+        logger.debug(f"{same_side_counter=} | {len(open_positions)=}")
         return True
 
 
@@ -84,6 +82,8 @@ class LoseInRowConstraint(TradingConstraint):
             if passed_candle > self.n_bar:
                 continue
             if pos.side == new_position.side:
+                if pos.pnl >= 0:
+                    return True
                 lose_in_row_counter += 1
             else:
                 return True

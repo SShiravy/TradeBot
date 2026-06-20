@@ -88,7 +88,6 @@ class DiverBacktester:
                 candle.close,
             ]
             for pos in position_handler.open_positions.copy():
-                position_handler.handler(pos, ticks)
                 if pos.closed:
                     position_handler.closed_positions.append(pos)
                     position_handler.open_positions.remove(pos)
@@ -148,7 +147,7 @@ class DiverBacktester:
         # Statistical Indicators -----------------
         input("Enter for Continue ....")
         all_positions = position_handler.closed_positions
-        plot_name = f"{self.diver_config.chart.symbol}_{self.diver_config.chart.timeframe}_{len(chartdata)}"
+        plot_name = f"{self.diver_config.chart.symbol}_{self.diver_config.chart.timeframe}_{n_bar}"
         if self.statistical_indicators:
             for i, indicator in enumerate(self.statistical_indicators):
                 indicator.analyze(all_positions, self.diver_config)

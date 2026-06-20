@@ -30,7 +30,10 @@ from LocalBackTester.all_charts import (
     SOLUSDT_5m_test,
     BTCUSDT_5m_test,
 )
-from TradingModule.PositionHandlers.trading_constraints import SideConstraint
+from TradingModule.PositionHandlers.trading_constraints import (
+    LoseInRowConstraint,
+    SideConstraint,
+)
 
 
 local_agent = LocalAgent()
@@ -48,11 +51,14 @@ diver_forex_xau_1m_5000_test = ForexDiverTradeConfig(
         stoploss_pip=30,
         targets_ratio=[1, 2, 3],
         targets_ratio_volumes=[0.01, 0.01, 0.01],
+        targets_in_pip=[],
+        targets_in_pip_volumes=[],
         trail_stop=True,
         long_trade=False,
         short_trade=False,
         trading_constraints=[
-            # SideConstraint(n_pos_each_side=1, n_bar=30)
+            SideConstraint(n_pos_each_side=1, n_bar=30),
+            LoseInRowConstraint(),
         ],
     ),
     heikingashi_chartdata=True,
@@ -75,7 +81,9 @@ diver_forex_xau_1m_99000 = ForexDiverTradeConfig(
         trail_stop=True,
         long_trade=False,
         short_trade=False,
-        trading_constraints=[SideConstraint(n_pos_each_side=1, n_bar=30)],
+        trading_constraints=[
+            # SideConstraint(n_pos_each_side=1, n_bar=30)
+        ],
     ),
     heikingashi_chartdata=True,
     merge_two_chart_time=True,
