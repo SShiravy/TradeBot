@@ -1,6 +1,7 @@
 from Forex import ForexAgent, ForexDiverTradeConfig
 from ChartModule import Chart, TimeFrame
-from TradingModule.PositionHandlers.ratio_stepping import RatioSteppingForex
+from TradingModule.PositionHandlers.stepping_handler import SteppingHandlerForex
+from TradingModule.PositionHandlers.trading_constraints import SideConstraint
 from TradingModule.trader_bot import TraderBot
 from DivergenceStrategy.divergence import Divergence
 from custom_logger import CustomLogger
@@ -14,14 +15,17 @@ CustomLogger(
 one_m = ForexDiverTradeConfig(
     chart=Chart("XAUUSD!", TimeFrame.one_minute),
     second_chart=Chart("SOLUSD", TimeFrame.one_minute),
-    strategy=Divergence(2, 300, [], name="ForexDiver"),
+    strategy=Divergence(2, 100, [], name="ForexDiver"),
     bar_between_signals=2,
-    position_handler=RatioSteppingForex(
+    position_handler=SteppingHandlerForex(
         ForexAgent(),
         stoploss_pip=30,
         targets_ratio=[1, 2, 3],
-        initial_volume=[0.01, 0.01, 0.01],
+        targets_ratio_volumes=[0.01, 0.01, 0.01],
+        targets_in_pip=[15],
+        targets_in_pip_volumes=[0.01],
         trail_stop=True,
+        trading_constraints=[SideConstraint(n_pos_each_side=1, n_bar=30)],
     ),
     merge_two_chart_time=False,
     heikingashi_chartdata=True,
@@ -33,11 +37,11 @@ five_m = ForexDiverTradeConfig(
     second_chart=Chart("SOLUSD", TimeFrame.five_minutes),
     strategy=Divergence(2, 100, [], name="ForexDiver"),
     bar_between_signals=2,
-    position_handler=RatioSteppingForex(
+    position_handler=SteppingHandlerForex(
         ForexAgent(),
         stoploss_pip=50,
         targets_ratio=[1, 2, 3],
-        initial_volume=[0.01, 0.01, 0.01],
+        targets_ratio_volumes=[0.01, 0.01, 0.01],
         trail_stop=True,
         long_trade=False,
         short_trade=False,

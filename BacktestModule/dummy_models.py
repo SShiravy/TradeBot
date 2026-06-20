@@ -1,4 +1,3 @@
-from copy import deepcopy
 from ChartModule import ChartData, Chart
 from TradingModule.PositionHandlers.model import PositionHandler
 from TradingModule.models import ExchangeAgent, OrderSide, Position
@@ -28,7 +27,7 @@ class DummyAgent(ExchangeAgent):
 
     def get_chartdata(self, chart: Chart, n_bars=100) -> ChartData | None:
         if self.chartdata:
-            candles = deepcopy(self.chartdata[: self.index])
+            candles = self.chartdata[: self.index]
             data = ChartData(self.chartdata.chart, candles, self.chartdata.indicators)
             logger.debug(f"agent get chartdata: {len(data)=}")
             return data

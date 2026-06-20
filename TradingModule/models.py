@@ -84,7 +84,7 @@ class Position:
     stoploss: float
     takeprofit: float
     leverage: int = 1
-    generated_time: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
+    candle_time: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
     source: str = "Unknown"
     real_trade: bool = field(default=True)
     plot: Plot | None = field(default=None)
@@ -116,7 +116,7 @@ class Position:
 
     @property
     def start_time(self):
-        return self.open_time if self.open_time else self.generated_time
+        return self.open_time if self.open_time else self.candle_time
 
     @property
     def open_timestamp(self):
@@ -263,7 +263,7 @@ class Position:
             self.takeprofit,
             self.stoploss,
         )
-        if self._current_step_index == 1:
+        if not self.closed:
             start_of_step = end_of_line - self.chart.timeframe.time_delta * 10
         else:
             start_of_step = self.start_time
@@ -408,7 +408,7 @@ class PositionsReport:
         return report
 
     def calculate_max_win_lose_in_row(self, all_positions: list[Position]):
-        all_pos = copy(all_positions)
+        all_pos = all_positions.copy()
         all_pos.sort(
             key=lambda pos: pos.closed if pos.closed else datetime.now(tz=timezone.utc)
         )

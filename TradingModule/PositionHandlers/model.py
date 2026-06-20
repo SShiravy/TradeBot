@@ -5,7 +5,6 @@ from TradingModule.commands import TradeCommand
 from TradingModule import commands
 from abc import ABC, abstractmethod
 from datetime import timedelta
-from copy import copy
 import numpy as np
 import logging
 
@@ -55,7 +54,7 @@ class PositionHandler(ABC):
         plot: Plot | None = None,
         *args,
         **kwargs,
-    ) -> Position:
+    ) -> Position | None:
         real_trade = False
         if signal.side is MarketSide.BEARISH:
             side = OrderSide.SELL
@@ -142,7 +141,7 @@ class PositionHandler(ABC):
         return self.handler(position, ticks)
 
     def manage_positions(self):
-        all_pos = copy(self.open_positions)
+        all_pos = self.open_positions.copy()
         for pos in all_pos:
             if pos.closed:
                 self.closed_positions.append(pos)
@@ -150,7 +149,8 @@ class PositionHandler(ABC):
                 continue
             self.candles_check(pos)
 
-    def report(self) -> list[PositionsReport]:
+    def report(self, flush: bool = True) -> list[PositionsReport]:
         reports = PositionsReport.generate_reports(self.closed_positions)
-        self.closed_positions = []
+        if flush:
+            self.closed_positions = []
         return reports

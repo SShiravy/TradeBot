@@ -82,7 +82,7 @@ class Divergence(Strategy):
         direction = -1 if inverse else 1
 
         trendline.set(base_chartdata.candles[:-1])
-        all_lines = copy(trendline.values)  # type: list[Line]
+        all_lines = trendline.values  # type: list[Line]
         for base_chart_line in all_lines:
             start_candle_index = base_chartdata.index(base_chart_line.start_candle)
             end_candle_index = base_chartdata.index(base_chart_line.end_candle)
@@ -308,7 +308,9 @@ class DivergenceTradeConfig(TradeConfig):
         position = await self.position_handler.generate_position(
             signal, sl_base_price=entry_source, plot=plot
         )
-        return signal, position
+        if position:
+            return signal, position
+        return None
 
     async def task(self):
         base_chartdata, second_chartdata = self.get_chartdata()

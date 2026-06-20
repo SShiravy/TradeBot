@@ -1,13 +1,12 @@
 from FiboChochStrategy.fibochoch import FiboChochConfig, FiboChoch
 from Forex import ForexAgent
 from TradingModule.PositionHandlers import (
-    SimpleForex,
     SimpleCrypto,
 )
 from ChartModule.Indicators.fibonacci import FiboLevels
 from Coinex import CoinexAgent
 from ChartModule import Chart, TimeFrame
-from TradingModule.PositionHandlers.ratio_stepping import RatioSteppingForex
+from TradingModule.PositionHandlers.stepping_handler import SteppingHandlerForex
 from config import settings
 
 
@@ -67,11 +66,11 @@ forex_five_m = FiboChochConfig(
         short_pivot_left=15,
         short_pivot_right=3,
     ),
-    position_handler=RatioSteppingForex(
+    position_handler=SteppingHandlerForex(
         ForexAgent(),
         targets_ratio=[1],
         stoploss_pip=10,
-        initial_volume=[0.01],
+        targets_ratio_volumes=[0.01],
         long_trade=False,
         short_trade=False,
         trail_stop=True,

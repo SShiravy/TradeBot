@@ -55,11 +55,6 @@ class Pivot(IndicatorBaseModel):
                 n_candle_jump += self.left
         return all_pivots
 
-    # def update(self, candles: list[Candle], *args, **kwargs):
-    #     self.candles
-    #     self.values = self._calculate()
-    # TODO: Optimize calculation for new candles only
-
     def check_candle_is_pivot(
         self,
         candle_index: int,
