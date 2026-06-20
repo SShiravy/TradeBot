@@ -1,7 +1,6 @@
 from FiboChochStrategy.fibochoch import FiboChochConfig, FiboChoch
 from Forex import ForexAgent
 from TradingModule.PositionHandlers import (
-    SimpleForex,
     SimpleCrypto,
 )
 from ChartModule.Indicators.fibonacci import FiboLevels

@@ -1,9 +1,9 @@
 from datetime import timedelta
 from ChartModule.models import MarketSide, Signal
 from ChartModule.plot import Plot
+from TradingModule.PositionHandlers.model import PositionHandler
 from TradingModule.PositionHandlers.ratio_handlers import (
     SlTpRatioCrypto,
-    SlTpRatioForex,
 )
 from TradingModule.PositionHandlers.trading_constraints import TradingConstraint
 from TradingModule.models import ExchangeAgent, OrderSide, Position, Trigger
@@ -16,7 +16,7 @@ import logging
 logger = logging.getLogger("PositionHandler")
 
 
-class SteppingHandlerForex(SlTpRatioForex):
+class SteppingHandlerForex(PositionHandler):
     def __init__(
         self,
         exchange_agent: ExchangeAgent,
@@ -54,15 +54,10 @@ class SteppingHandlerForex(SlTpRatioForex):
                              {len(targets_in_pip_volumes)} != {len(targets_in_pip)}"
             )
 
-        super().__init__(
-            exchange_agent,
-            targets_ratio[-1],
-            sum(targets_ratio_volumes),
-            stoploss_pip,
-            long_trade=long_trade,
-            short_trade=short_trade,
-        )
+        initial_volume = sum(targets_ratio_volumes) + sum(targets_in_pip_volumes)
+        super().__init__(exchange_agent, initial_volume, 1, long_trade, short_trade)
 
+        self.stoploss_pip = stoploss_pip / 10
         self.targets_ratio = targets_ratio
         self.targets_ratio_volumes = targets_ratio_volumes
         self.trail_stop = trail_stop
@@ -127,6 +122,12 @@ class SteppingHandlerForex(SlTpRatioForex):
             await commands.OpenPosition(step_position, self.exchange_agent).execute()
             pos.entry_price = step_position.entry_price
 
+    def init_stoploss(self, entry_price: float, side: OrderSide) -> float:
+        return entry_price - side.factor() * self.stoploss_pip
+
+    def init_takeprofit(self, entry_price: float, side: OrderSide) -> float:
+        return 0.0
+
     async def generate_position(
         self,
         signal: Signal,
@@ -154,7 +155,10 @@ class SteppingHandlerForex(SlTpRatioForex):
         precision = signal.chart.precision
         sl = round(self.init_stoploss(sl_base_price, side), precision)
         sl_pip = abs(entry_price - sl)
-        tp = round(abs(entry_price + side.factor() * sl_pip * self.ratio), precision)
+        tp = round(
+            abs(entry_price + side.factor() * sl_pip * self.targets_ratio[-1]),
+            precision,
+        )
 
         position = Position(
             signal.chart,
@@ -393,7 +397,7 @@ class RatioSteppingCrypto(SlTpRatioCrypto):
         logger.info(f"New Position on {position.chart}")
         logger.debug(f"The New Position {position}")
 
-        self.set_steps(position)  # TODO: replace this line with new method
+        self.set_steps(position)
         if real_trade:
             await self.open_steps_position(position)
         await commands.OpenPosition(position, self.exchange_agent).execute()
@@ -401,7 +405,7 @@ class RatioSteppingCrypto(SlTpRatioCrypto):
 
     def modify_init_sl_tp(self, position: Position):
         position.confiremed = True
-        # TODO: what about modifing steps?
+        # update positions if needed
         logger.info(f"Position Updated on {position.chart}")
         pass
 
@@ -416,7 +420,8 @@ class RatioSteppingCrypto(SlTpRatioCrypto):
         step = position.current_step
         if step is None:
             logger.warning(f"checking position that its next step is None! {position=}")
-            step = position.previous_step
+            step = position.steps[-1]
+            position._current_step_index = len(position.steps) - 1
             # TODO: check above line!!!
         direction = position.side.factor()
         ticks = np.array(tick_prices) * direction

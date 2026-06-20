@@ -143,7 +143,7 @@ class FiboChoch(Strategy):
             model.end_pivot_candle = None
 
         if model.end_pivot_candle is None:
-            support_condition = True  # TODO: (self.all_checked_candles[top_index].side is MarketSide.BULLISH and self.all_checked_candles[top_index+1].side is MarketSide.BEARISH) or (self.all_checked_candles[top_index].side is MarketSide.BEARISH and self.all_checked_candles[top_index+1].side is MarketSide.BULLISH)
+            support_condition = True  # (self.all_checked_candles[top_index].side is MarketSide.BULLISH and self.all_checked_candles[top_index+1].side is MarketSide.BEARISH) or (self.all_checked_candles[top_index].side is MarketSide.BEARISH and self.all_checked_candles[top_index+1].side is MarketSide.BULLISH)
             if not support_condition:
                 return None
             for index, candle in enumerate(
@@ -213,7 +213,7 @@ class FiboChoch(Strategy):
             model.end_pivot_candle = None
 
         if model.end_pivot_candle is None:
-            support_condition = True  # TODO: Implement Here
+            support_condition = True  # # (self.all_checked_candles[top_index].side is MarketSide.BULLISH and self.all_checked_candles[top_index+1].side is MarketSide.BEARISH) or (self.all_checked_candles[top_index].side is MarketSide.BEARISH and self.all_checked_candles[top_index+1].side is MarketSide.BULLISH)
             if not support_condition:
                 return None
             for index, candle in enumerate(
@@ -390,4 +390,6 @@ class FiboChochConfig(TradeConfig):
             sl_base_price=signal.fibochoch_model.fibo.start_tick.price,
             plot=plot,
         )
+        if not position:
+            return None
         return signal, position

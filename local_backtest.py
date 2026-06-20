@@ -128,14 +128,12 @@ async def diver_position_local_backtest(
 
 if __name__ == "__main__":
     settings.METATRADER_TERMINAL_PATH = ""
-    from LocalBackTester.methods import *
-    from LocalBackTester.local_backtest_configs import *
+    from LocalBackTester.methods import *  # noqa: F403
+    from LocalBackTester.local_backtest_configs import *  # noqa: F403
     from LocalBackTester.StatisticalMethods import (
         WeekdayPnLHistogram,
         HourlyPnLHistogram,
         SessionPnLHistogram,
-        PipPnlDistribution,
-        PipAfterSLDistribution,
         RiskAnalysis,
     )
 
@@ -186,7 +184,3 @@ if __name__ == "__main__":
     stats = pstats.Stats(profiler)
     stats.sort_stats("cumtime")
     stats.print_stats(30)
-
-# TODO: search and replace candle.time.timestamp() with candle.timestamp
-# TODO: change find candle by timestamp mothod, for returning index of candle
-# TODO: change position model to store timestamp for open_time ...

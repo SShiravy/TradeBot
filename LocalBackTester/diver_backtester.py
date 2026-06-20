@@ -64,7 +64,7 @@ class DiverBacktester:
                 f"There is no related signals for the config: {self.diver_config}"
             )
 
-        def give_next_signal():
+        def give_next_signal(all_signals):
             for signal in all_signals:
                 entry_source = (
                     signal.base_line.end_candle.high
@@ -74,7 +74,7 @@ class DiverBacktester:
                 yield signal, entry_source
             yield None, None
 
-        signal_generator = give_next_signal()
+        signal_generator = give_next_signal(all_signals)
         signal, entry_source = next(signal_generator)
         chartdata, second_chartdata = self.diver_config.get_chartdata(n_bar)
 

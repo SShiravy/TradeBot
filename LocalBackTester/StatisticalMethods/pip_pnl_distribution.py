@@ -241,9 +241,13 @@ class PipAfterSLDistribution(BasePnLDistribution):
         levels = np.arange(int(all_pips.min()), int(all_pips.max()) + 1)
         long_profits = np.array(self.long_max_pip_list)
         short_profits = np.array(self.short_max_pip_list)
-        # TODO: make this one sigle for loop
-        long_counts = np.array([(long_profits >= level).sum() for level in levels])
-        short_counts = np.array([(short_profits >= level).sum() for level in levels])
+        long_counts = []
+        short_counts = []
+        for level in levels:
+            long_counts.append((long_profits >= level).sum())
+            short_counts.append((short_profits >= level).sum())
+        long_counts = np.array(long_counts)
+        short_counts = np.array(short_counts)
 
         return {"long": long_counts, "short": short_counts, "levels": levels}
 

@@ -82,7 +82,8 @@ class TradeConfig:
             self.strategy.draw(plot, signal, draw_indicators=True)
 
         position = await self.position_handler.generate_position(signal)
-
+        if not position:
+            return None
         return signal, position
 
     async def task(self) -> timedelta | tuple[timedelta, Signal, Position]:
@@ -170,10 +171,6 @@ class TradeConfig:
             plot.show()
 
         return all_signals, all_positions, plot, all_reports, commands_report
-
-    def save_as_json(self, name: str):
-        # TODO: merge all sub obj attr in a single dict
-        pass
 
     def load_from_json(self, path: str):
         pass

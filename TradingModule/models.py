@@ -84,7 +84,7 @@ class Position:
     stoploss: float
     takeprofit: float
     leverage: int = 1
-    generated_time: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
+    candle_time: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
     source: str = "Unknown"
     real_trade: bool = field(default=True)
     plot: Plot | None = field(default=None)
@@ -116,7 +116,7 @@ class Position:
 
     @property
     def start_time(self):
-        return self.open_time if self.open_time else self.generated_time
+        return self.open_time if self.open_time else self.candle_time
 
     @property
     def open_timestamp(self):

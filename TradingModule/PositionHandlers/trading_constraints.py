@@ -4,7 +4,6 @@ from abc import ABC, abstractmethod
 import logging
 
 logger = logging.getLogger("TradingConstraint")
-# TODO: add n_bar param in checks
 
 
 class TradingConstraint(ABC):
@@ -23,7 +22,7 @@ class TradingConstraint(ABC):
 
 
 class SideConstraint(TradingConstraint):
-    def __init__(self, n_pos_each_side: int = 1, n_bar: int = 10) -> None:
+    def __init__(self, n_pos_each_side: int = 1, n_bar: int = 30) -> None:
         super().__init__()
         self.n_pos_each_side = n_pos_each_side
         self.untill_n_bar = n_bar
@@ -39,6 +38,11 @@ class SideConstraint(TradingConstraint):
     ) -> bool:
         same_side_counter = 0
         for pos in open_positions:
+            passed_candle = (pos.candle_time - signal.candle.time).total_seconds() // (
+                signal.chart.timeframe.minutes * 60
+            )
+            if passed_candle > self.untill_n_bar:
+                continue
             if pos.side == new_position.side:
                 same_side_counter += 1
             if same_side_counter >= self.n_pos_each_side:
@@ -51,11 +55,12 @@ class SideConstraint(TradingConstraint):
 
 class LoseInRowConstraint(TradingConstraint):
     def __init__(
-        self, n_long_lose: int = 3, n_short_lose: int = 3, n_bar: int = 10
+        self, n_long_lose: int = 3, n_short_lose: int = 3, n_bar: int = 30
     ) -> None:
         super().__init__()
         self.n_long_lose = n_long_lose
         self.n_short_lose = n_short_lose
+        self.n_bar = n_bar
 
     def check(
         self,
@@ -73,6 +78,11 @@ class LoseInRowConstraint(TradingConstraint):
             else self.n_short_lose
         )
         for pos in closed_positions[::-1]:
+            passed_candle = (pos.candle_time - signal.candle.time).total_seconds() // (
+                signal.chart.timeframe.minutes * 60
+            )
+            if passed_candle > self.n_bar:
+                continue
             if pos.side == new_position.side:
                 lose_in_row_counter += 1
             else:

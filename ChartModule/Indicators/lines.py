@@ -21,7 +21,7 @@ class Line:
     def slope(self) -> float:
         slope = round(
             self.source(self.end_candle) - self.source(self.start_candle), 10
-        ) / (self.end_candle.time.timestamp() - self.start_candle.time.timestamp())
+        ) / (self.end_candle.timestamp - self.start_candle.timestamp)
         return slope
 
     def direction(self) -> MarketSide:
@@ -76,7 +76,7 @@ class TrendLine(IndicatorBaseModel):
 
         for candle in candles[end_index:start_index:-1]:
             source_list.append(candle_source(candle))
-            time_list.append(candle.time.timestamp())
+            time_list.append(candle.timestamp)
 
         expected_low = (
             np.array(time_list) - candles[start_index].time.timestamp()
@@ -114,14 +114,14 @@ class TrendLine(IndicatorBaseModel):
                 continue
 
             source_list.append(candle_source(candle))
-            time_list.append(candle.time.timestamp())
+            time_list.append(candle.timestamp)
             if len_candles - 1 - candle_index < self.min_step:
                 continue
 
             the_line = Line(self.source, candle, last_candle)
 
             expected_low = (
-                np.array(time_list) - candle.time.timestamp()
+                np.array(time_list) - candle.timestamp
             ) * the_line.slope + self.source(candle)
 
             if np.any((np.array(source_list) - expected_low) * cross_multiplier < 0):
