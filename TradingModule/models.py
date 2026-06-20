@@ -477,7 +477,8 @@ class PositionsReport:
         if self.triggered_steps:
             report_msg.append("Number of Triggered Steps:")
             for k, v in self.triggered_steps.items():
-                report_msg.append(f"  TP_{k + 1} : {v}")
+                count = v - self.triggered_steps.get(k + 1, 0)
+                report_msg.append(f"  TP_{k + 1} : {count}")
         if self.max_lose_in_a_row or self.max_win_in_a_row:
             report_msg.append(f"Max Win in a Row = {self.max_win_in_a_row}")
             report_msg.append(f"Max Lose in a Row = {self.max_lose_in_a_row}")

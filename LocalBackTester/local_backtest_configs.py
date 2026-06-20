@@ -78,11 +78,14 @@ diver_forex_xau_1m_99000 = ForexDiverTradeConfig(
         stoploss_pip=30,
         targets_ratio=[1, 2, 3],
         targets_ratio_volumes=[0.01, 0.01, 0.01],
+        targets_in_pip=[],
+        targets_in_pip_volumes=[],
         trail_stop=True,
         long_trade=False,
         short_trade=False,
         trading_constraints=[
-            # SideConstraint(n_pos_each_side=1, n_bar=30)
+            SideConstraint(n_pos_each_side=1, n_bar=30),
+            LoseInRowConstraint(n_long_lose=3, n_short_lose=3, n_bar=30),
         ],
     ),
     heikingashi_chartdata=True,

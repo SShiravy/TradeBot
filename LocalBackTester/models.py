@@ -37,7 +37,6 @@ class TickDataHandler:
         start_timestamp: int,
         end_timestamp: int,
     ) -> pd.DataFrame:
-        logger.info(f"getting ticks from {start_timestamp} to {end_timestamp}")
         left = np.searchsorted(
             self.timestamps,
             start_timestamp,
