@@ -17,6 +17,10 @@ class Settings(BaseSettings):
     COINEX_ACCESS_ID: str
     COINEX_SECRET_KEY: str
 
+    # Bitunix Exchange
+    BITUNIX_API_KEY: str
+    BITUNIX_API_SECRET_KEY: str
+
     # Mt5
     METATRADER_TERMINAL_PATH: str
 

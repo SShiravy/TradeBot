@@ -84,8 +84,8 @@ diver_forex_xau_1m_99000 = ForexDiverTradeConfig(
         long_trade=False,
         short_trade=False,
         trading_constraints=[
-            SideConstraint(n_pos_each_side=1, n_bar=30),
-            LoseInRowConstraint(n_long_lose=3, n_short_lose=3, n_bar=30),
+            SideConstraint(n_pos_each_side=1, n_bar=30, check_closed_positions=False),
+            LoseInRowConstraint(n_long_lose=1, n_short_lose=1, n_bar=30),
         ],
     ),
     heikingashi_chartdata=True,

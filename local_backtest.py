@@ -14,7 +14,7 @@ if __name__ == "__main__":
     from LocalBackTester.local_backtest_configs import *  # noqa: F403
     from LocalBackTester.StatisticalMethods import *  # noqa: F403
 
-    the_config = diver_solbtc_5m_17280_2024_month0203
+    the_config = diver_forex_xau_1m_99000
 
     create_db()
     import cProfile
@@ -25,7 +25,7 @@ if __name__ == "__main__":
 
     # plot_csv_kline(the_config.chart) # type: ignore
 
-    # asyncio.run(diver_signal_local_backtest(the_config, show_plot=True))
+    asyncio.run(diver_signal_local_backtest(the_config, show_plot=True))
 
     statistical_indicators = [
         WeekdayPnLHistogram(),
