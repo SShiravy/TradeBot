@@ -78,7 +78,7 @@ forex_diver_one_m = ForexDiverTradeConfig(
     position_handler=SteppingHandlerForex(
         ForexAgent(),
         targets_ratio=[1, 2, 3],
-        stoploss_pip=30,
+        stoploss_pip=15,
         targets_ratio_volumes=[0.01, 0.01, 0.01],
         targets_in_pip=[10],
         targets_in_pip_volumes=[0.01],

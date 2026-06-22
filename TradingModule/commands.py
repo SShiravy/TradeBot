@@ -352,6 +352,7 @@ class TrailStoplossbyStep(TradeCommand):
                         )
                         * self.position.side.factor()
                     )
+                    self.position.previous_step.price = self.position.entry_price
                 tp_positions = self.exchange.get_open_positions(
                     comment_filter=self.position.id
                 )
