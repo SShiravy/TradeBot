@@ -52,8 +52,8 @@ class SideConstraint(TradingConstraint):
             if pos.side == new_position.side:
                 same_side_counter += 1
             if same_side_counter >= self.n_pos_each_side:
-                logger.debug(
-                    f"{same_side_counter=} | {pos.side=} | {new_position.side=}"
+                logger.info(
+                    f"Side Constraint Filtered position: {same_side_counter=} | {pos.side=} | {new_position.side=} | {passed_candle}"
                 )
                 return False
 
@@ -68,8 +68,8 @@ class SideConstraint(TradingConstraint):
                 if passed_candle < self.untill_n_bar:
                     same_side_counter += 1
             if same_side_counter >= self.n_pos_each_side:
-                logger.debug(
-                    f"{same_side_counter=} | {pos.side=} | {new_position.side=}"
+                logger.info(
+                    f"Side Constraint Filtered position: {same_side_counter=} | {pos.side=} | {new_position.side=} | {passed_candle}"
                 )
                 return False
 
