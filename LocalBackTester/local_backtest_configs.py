@@ -4,7 +4,7 @@ from DivergenceStrategy.divergence import Divergence
 from Coinex.bot_config import CoinexDiverTradeConfig
 from TradingModule.PositionHandlers import (
     SteppingHandlerForex,
-    RatioSteppingCrypto,
+    SteppingHandlerCrypto,
 )
 from LocalBackTester.all_charts import (
     AVAXUSDT_5m_2024_month0203,
@@ -103,7 +103,7 @@ diver_solbtc_5m_17570 = CoinexDiverTradeConfig(
     second_chart=BTCUSDT_5m_2026_4_5,
     n_candle_check=100,
     strategy=Divergence(3, 500, [], name="CoinexDiver", inverse_diver_long=True),
-    position_handler=RatioSteppingCrypto(
+    position_handler=SteppingHandlerCrypto(
         local_agent,
         leverage=10,
         stoploss_percent=0.1,
@@ -124,7 +124,7 @@ diver_solbtc_5m_1000 = CoinexDiverTradeConfig(
     second_chart=BTCUSDT_5m_test,
     n_candle_check=100,
     strategy=Divergence(3, 500, [], name="CoinexDiver", inverse_diver_long=True),
-    position_handler=RatioSteppingCrypto(
+    position_handler=SteppingHandlerCrypto(
         local_agent,
         leverage=10,
         stoploss_percent=0.1,
@@ -145,7 +145,7 @@ diver_ftmbtc_5m_17280_2024_month0203 = CoinexDiverTradeConfig(
     second_chart=BTCUSDT_5m_2024_month0203,
     n_candle_check=100,
     strategy=Divergence(3, 300, [], name="CoinexDiver", inverse_diver_long=True),
-    position_handler=RatioSteppingCrypto(
+    position_handler=SteppingHandlerCrypto(
         local_agent,
         leverage=10,
         stoploss_percent=0.25,
@@ -167,7 +167,7 @@ diver_ftmbtc_5m_test = CoinexDiverTradeConfig(
     second_chart=BTCUSDT_5m_test_2024,
     n_candle_check=100,
     strategy=Divergence(3, 300, [], name="CoinexDiver", inverse_diver_long=True),
-    position_handler=RatioSteppingCrypto(
+    position_handler=SteppingHandlerCrypto(
         local_agent,
         leverage=10,
         stoploss_percent=0.1,
@@ -188,7 +188,7 @@ diver_avaxbtc_5m_17280_2024_month0203 = CoinexDiverTradeConfig(
     second_chart=BTCUSDT_5m_2024_month0203,
     n_candle_check=100,
     strategy=Divergence(3, 300, [], name="CoinexDiver", inverse_diver_long=True),
-    position_handler=RatioSteppingCrypto(
+    position_handler=SteppingHandlerCrypto(
         local_agent,
         leverage=10,
         stoploss_percent=0.25,
@@ -210,7 +210,7 @@ diver_avaxbtc_5m_test = CoinexDiverTradeConfig(
     second_chart=BTCUSDT_5m_test_2024,
     n_candle_check=100,
     strategy=Divergence(3, 300, [], name="CoinexDiver", inverse_diver_long=True),
-    position_handler=RatioSteppingCrypto(
+    position_handler=SteppingHandlerCrypto(
         local_agent,
         leverage=10,
         stoploss_percent=0.1,
@@ -231,7 +231,7 @@ diver_nearbtc_5m_17280_2024_month0203 = CoinexDiverTradeConfig(
     second_chart=BTCUSDT_5m_2024_month0203,
     n_candle_check=100,
     strategy=Divergence(3, 300, [], name="CoinexDiver", inverse_diver_long=True),
-    position_handler=RatioSteppingCrypto(
+    position_handler=SteppingHandlerCrypto(
         local_agent,
         leverage=10,
         stoploss_percent=0.25,
@@ -253,7 +253,7 @@ diver_nearbtc_5m_test = CoinexDiverTradeConfig(
     second_chart=BTCUSDT_5m_test_2024,
     n_candle_check=100,
     strategy=Divergence(3, 300, [], name="CoinexDiver", inverse_diver_long=True),
-    position_handler=RatioSteppingCrypto(
+    position_handler=SteppingHandlerCrypto(
         local_agent,
         leverage=10,
         stoploss_percent=0.1,
@@ -274,7 +274,7 @@ diver_pendlebtc_5m_17280_2024_month0203 = CoinexDiverTradeConfig(
     second_chart=BTCUSDT_5m_2024_month0203,
     n_candle_check=100,
     strategy=Divergence(3, 300, [], name="CoinexDiver", inverse_diver_long=True),
-    position_handler=RatioSteppingCrypto(
+    position_handler=SteppingHandlerCrypto(
         local_agent,
         leverage=10,
         stoploss_percent=0.25,
@@ -296,7 +296,7 @@ diver_pendlebtc_5m_test = CoinexDiverTradeConfig(
     second_chart=BTCUSDT_5m_test_2024,
     n_candle_check=100,
     strategy=Divergence(3, 300, [], name="CoinexDiver", inverse_diver_long=True),
-    position_handler=RatioSteppingCrypto(
+    position_handler=SteppingHandlerCrypto(
         local_agent,
         leverage=10,
         stoploss_percent=0.1,
@@ -317,7 +317,7 @@ diver_rndrbtc_5m_17280_2024_month0203 = CoinexDiverTradeConfig(
     second_chart=BTCUSDT_5m_2024_month0203,
     n_candle_check=100,
     strategy=Divergence(3, 300, [], name="CoinexDiver", inverse_diver_long=True),
-    position_handler=RatioSteppingCrypto(
+    position_handler=SteppingHandlerCrypto(
         local_agent,
         leverage=10,
         stoploss_percent=0.25,
@@ -339,7 +339,7 @@ diver_rndrbtc_5m_test = CoinexDiverTradeConfig(
     second_chart=BTCUSDT_5m_test_2024,
     n_candle_check=100,
     strategy=Divergence(3, 300, [], name="CoinexDiver", inverse_diver_long=True),
-    position_handler=RatioSteppingCrypto(
+    position_handler=SteppingHandlerCrypto(
         local_agent,
         leverage=10,
         stoploss_percent=0.1,
@@ -360,7 +360,7 @@ diver_solbtc_5m_17280_2024_month0203 = CoinexDiverTradeConfig(
     second_chart=BTCUSDT_5m_2024_month0203,
     n_candle_check=100,
     strategy=Divergence(3, 300, [], name="CoinexDiver", inverse_diver_long=True),
-    position_handler=RatioSteppingCrypto(
+    position_handler=SteppingHandlerCrypto(
         local_agent,
         leverage=10,
         stoploss_percent=0.25,
@@ -382,7 +382,7 @@ diver_solbtc_5m_test = CoinexDiverTradeConfig(
     second_chart=BTCUSDT_5m_test_2024,
     n_candle_check=100,
     strategy=Divergence(3, 300, [], name="CoinexDiver", inverse_diver_long=True),
-    position_handler=RatioSteppingCrypto(
+    position_handler=SteppingHandlerCrypto(
         local_agent,
         leverage=10,
         stoploss_percent=0.1,

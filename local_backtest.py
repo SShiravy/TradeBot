@@ -14,7 +14,7 @@ if __name__ == "__main__":
     from LocalBackTester.local_backtest_configs import *  # noqa: F403
     from LocalBackTester.StatisticalMethods import *  # noqa: F403
 
-    the_config = diver_avaxbtc_5m_test
+    the_config = diver_solbtc_5m_17280_2024_month0203
 
     create_db()
     import cProfile
@@ -31,15 +31,15 @@ if __name__ == "__main__":
         WeekdayPnLHistogram(),
         HourlyPnLHistogram(),
         SessionPnLHistogram(),
-        PipPnlDistribution(
-            candles_range=200,
-        ),
-        PipAfterSLDistribution(candles_range=200, tolerance_pip=30),
+        # PipPnlDistribution(
+        #     candles_range=200,
+        # ),
+        # PipAfterSLDistribution(candles_range=200, tolerance_pip=30),
         RiskAnalysis(),
     ]
 
     diver_backtester = DiverBacktester(
-        the_config, statistical_indicators, show_chartdata=True
+        the_config, statistical_indicators, show_chartdata=False
     )
     asyncio.run(
         diver_backtester.positions_backtest(use_database=False, show_plots=False)

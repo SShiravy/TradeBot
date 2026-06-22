@@ -340,8 +340,18 @@ class TrailStoplossbyStep(TradeCommand):
                 "trying to set new stoploss same as previous one, in TrailStopLosssbyStep"
             )
             return True
+        new_sl_price = new_sl.price
         if self.position.real_trade:
             if self.position.in_forex:
+                if self.position.previous_step.pip_trail_stop:
+                    new_sl_price = (
+                        new_sl_price
+                        - abs(
+                            self.position.previous_step.price
+                            - self.position.entry_price
+                        )
+                        * self.position.side.factor()
+                    )
                 tp_positions = self.exchange.get_open_positions(
                     comment_filter=self.position.id
                 )
@@ -351,14 +361,14 @@ class TrailStoplossbyStep(TradeCommand):
                     )
                     return False
                 for tp_pos in tp_positions:
-                    res = self.exchange.change_stoploss(tp_pos, new_sl.price)
+                    res = self.exchange.change_stoploss(tp_pos, new_sl_price)
                     logger.debug(
                         f"tp_pos (tp:{tp_pos.takeprofit}, sl:{tp_pos.stoploss}) | change sl res:{res}"
                     )
 
             else:
-                return self.exchange.change_stoploss(self.position, new_sl.price)
-        self.position.stoploss = new_sl.price
+                return self.exchange.change_stoploss(self.position, new_sl_price)
+        self.position.stoploss = new_sl_price
         self.position.last_update = time
         logging.debug(
             f"TrailStopStep: id={self.position.id}, real={self.position.real_trade}, {self.position.stoploss}"

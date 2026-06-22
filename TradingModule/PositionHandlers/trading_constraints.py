@@ -22,10 +22,16 @@ class TradingConstraint(ABC):
 
 
 class SideConstraint(TradingConstraint):
-    def __init__(self, n_pos_each_side: int = 1, n_bar: int = 30) -> None:
+    def __init__(
+        self,
+        n_pos_each_side: int = 1,
+        n_bar: int = 30,
+        check_closed_positions: bool = True,
+    ) -> None:
         super().__init__()
         self.n_pos_each_side = n_pos_each_side
         self.untill_n_bar = n_bar
+        self.check_closed_positions = check_closed_positions
 
     def check(
         self,
@@ -37,17 +43,36 @@ class SideConstraint(TradingConstraint):
         **kwargs,
     ) -> bool:
         same_side_counter = 0
-        for pos in open_positions:
+        for pos in open_positions[::-1]:
             passed_candle = (pos.candle_time - signal.candle.time).total_seconds() // (
                 signal.chart.timeframe.minutes * 60
             )
-            if passed_candle > self.untill_n_bar:
+            if passed_candle >= self.untill_n_bar:
                 continue
             if pos.side == new_position.side:
                 same_side_counter += 1
             if same_side_counter >= self.n_pos_each_side:
+                logger.debug(
+                    f"{same_side_counter=} | {pos.side=} | {new_position.side=}"
+                )
                 return False
-        logger.debug(f"{same_side_counter=} | {len(open_positions)=}")
+
+        if not self.check_closed_positions:
+            return True
+
+        for pos in closed_positions[::-1]:
+            passed_candle = (pos.candle_time - signal.candle.time).total_seconds() // (
+                signal.chart.timeframe.minutes * 60
+            )
+            if pos.side == new_position.side:
+                if passed_candle < self.untill_n_bar:
+                    same_side_counter += 1
+            if same_side_counter >= self.n_pos_each_side:
+                logger.debug(
+                    f"{same_side_counter=} | {pos.side=} | {new_position.side=}"
+                )
+                return False
+
         return True
 
 

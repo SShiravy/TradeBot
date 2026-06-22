@@ -145,7 +145,6 @@ class DiverBacktester:
         del all_signals, commands_report
 
         # Statistical Indicators -----------------
-        input("Enter for Continue ....")
         all_positions = position_handler.closed_positions
         plot_name = f"{self.diver_config.chart.symbol}_{self.diver_config.chart.timeframe}_{n_bar}"
         if self.statistical_indicators:

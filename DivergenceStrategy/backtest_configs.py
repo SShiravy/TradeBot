@@ -8,7 +8,7 @@ from TradingModule.PositionHandlers import (
     SlTpRatioCrypto,
     SlTpRatioForex,
     SteppingHandlerForex,
-    RatioSteppingCrypto,
+    SteppingHandlerCrypto,
 )
 from config import settings
 # Coinex ----------------------------------------------------------------
@@ -20,7 +20,7 @@ crypto_diver_five_m = CoinexDiverTradeConfig(
     chart=Chart("SOLUSDT", TimeFrame.five_minutes),
     second_chart=Chart("BTCUSDT", TimeFrame.five_minutes),
     strategy=Divergence(2, 500, [], name="CoinexDiver", inverse_diver_long=True),
-    position_handler=RatioSteppingCrypto(
+    position_handler=SteppingHandlerCrypto(
         coinex_agent,
         leverage=30,
         stoploss_percent=0.25,
@@ -80,7 +80,7 @@ forex_diver_one_m = ForexDiverTradeConfig(
         targets_ratio=[1, 2, 3],
         stoploss_pip=30,
         targets_ratio_volumes=[0.01, 0.01, 0.01],
-        targets_in_pip=[15],
+        targets_in_pip=[10],
         targets_in_pip_volumes=[0.01],
         long_trade=False,
         short_trade=False,
@@ -91,25 +91,26 @@ forex_diver_one_m = ForexDiverTradeConfig(
 )
 
 
-forex_diver_five_m = ForexDiverTradeConfig(
-    chart=Chart("XAUUSD!", TimeFrame.five_minutes),
-    second_chart=Chart("SOLUSD", TimeFrame.five_minutes),
-    strategy=Divergence(5, 50, [], name="ForexDiver"),
-    bar_between_signals=5,
-    position_handler=(
-        SteppingHandlerForex(
-            ForexAgent(),
-            targets_ratio_volumes=[0.01, 0.01, 0.01],
-            stoploss_pip=50,
-            targets_in_pip=[50, 100, 150],
-            long_trade=False,
-            short_trade=False,
-            trail_stop=True,
-        )
-    ),
-    merge_two_chart_time=True,
-    heikingashi_chartdata=True,
-)
+# forex_diver_five_m = ForexDiverTradeConfig(
+#     chart=Chart("XAUUSD!", TimeFrame.five_minutes),
+#     second_chart=Chart("SOLUSD", TimeFrame.five_minutes),
+#     strategy=Divergence(5, 50, [], name="ForexDiver"),
+#     bar_between_signals=5,
+#     position_handler=(
+#         SteppingHandlerForex(
+#             ForexAgent(),
+#             targets_ratio= [1,2,3]
+#             targets_ratio_volumes=[0.01, 0.01, 0.01],
+#             stoploss_pip=50,
+#             targets_in_pip=[50, 100, 150],
+#             long_trade=False,
+#             short_trade=False,
+#             trail_stop=True,
+#         )
+#     ),
+#     merge_two_chart_time=True,
+#     heikingashi_chartdata=True,
+# )
 
 # CVD ----
 

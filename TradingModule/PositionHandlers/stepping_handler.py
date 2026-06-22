@@ -49,7 +49,7 @@ class SteppingHandlerForex(PositionHandler):
 
         if len(targets_in_pip) != len(targets_in_pip_volumes):
             raise ValueError(
-                f"targets_volumes_lot param must be \
+                f"targets_volumes_lot param must be {targets_in_pip}\
                              float or list[float] with same size as targets_pip\
                              {len(targets_in_pip_volumes)} != {len(targets_in_pip)}"
             )
@@ -88,6 +88,7 @@ class SteppingHandlerForex(PositionHandler):
                         pos.chart.precision,
                     ),
                     volume=volume,
+                    pip_trail_stop=True,
                 )
             )
 
@@ -249,7 +250,7 @@ class SteppingHandlerForex(PositionHandler):
         return trigger_command
 
 
-class RatioSteppingCrypto(SlTpRatioCrypto):
+class SteppingHandlerCrypto(SlTpRatioCrypto):
     def __init__(
         self,
         exchange_agent: ExchangeAgent,

@@ -48,7 +48,7 @@ async def test_open_position():
 
     base_chartdata, second_chartdata = the_config.get_chartdata(100)
     diver_signal = the_config.strategy.generate_dummy_signal(
-        base_chartdata, second_chartdata, MarketSide.BULLISH
+        base_chartdata, second_chartdata, MarketSide.BEARISH
     )
     logging.info(f"dummy diver signal: {diver_signal}")
     pos = await the_config.position_handler.generate_position(diver_signal)

@@ -8,6 +8,7 @@ from custom_logger import CustomLogger
 import asyncio
 import logging
 
+
 CustomLogger(
     log_file=True, file_log_name="ForexDiverBot", consol_log_level=logging.DEBUG
 )
@@ -22,10 +23,12 @@ one_m = ForexDiverTradeConfig(
         stoploss_pip=30,
         targets_ratio=[1, 2, 3],
         targets_ratio_volumes=[0.01, 0.01, 0.01],
-        targets_in_pip=[15],
+        targets_in_pip=[20],
         targets_in_pip_volumes=[0.01],
         trail_stop=True,
-        trading_constraints=[SideConstraint(n_pos_each_side=1, n_bar=30)],
+        trading_constraints=[
+            SideConstraint(n_pos_each_side=1, n_bar=30, check_closed_positions=True)
+        ],
     ),
     merge_two_chart_time=False,
     heikingashi_chartdata=True,

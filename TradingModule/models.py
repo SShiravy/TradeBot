@@ -51,6 +51,7 @@ class OrderSide(Enum):
 class Trigger:
     price: float
     volume: float = field(default=0.0)
+    pip_trail_stop: bool = field(default=False)
     defined_time: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
     triggered_time: datetime | None = field(default=None)
     exchange_id: str = field(default="", init=False)
