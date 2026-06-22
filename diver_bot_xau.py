@@ -1,7 +1,10 @@
 from Forex import ForexAgent, ForexDiverTradeConfig
 from ChartModule import Chart, TimeFrame
 from TradingModule.PositionHandlers.stepping_handler import SteppingHandlerForex
-from TradingModule.PositionHandlers.trading_constraints import SideConstraint
+from TradingModule.PositionHandlers.trading_constraints import (
+    LoseInRowConstraint,
+    SideConstraint,
+)
 from TradingModule.trader_bot import TraderBot
 from DivergenceStrategy.divergence import Divergence
 from custom_logger import CustomLogger
@@ -27,7 +30,8 @@ one_m = ForexDiverTradeConfig(
         targets_in_pip_volumes=[0.01],
         trail_stop=True,
         trading_constraints=[
-            SideConstraint(n_pos_each_side=1, n_bar=30, check_closed_positions=True)
+            SideConstraint(n_pos_each_side=1, n_bar=30, check_closed_positions=False),
+            LoseInRowConstraint(n_long_lose=1, n_short_lose=1, n_bar=30),
         ],
     ),
     merge_two_chart_time=False,
@@ -35,23 +39,23 @@ one_m = ForexDiverTradeConfig(
 )
 
 
-five_m = ForexDiverTradeConfig(
-    chart=Chart("XAUUSD!", TimeFrame.five_minutes),
-    second_chart=Chart("SOLUSD", TimeFrame.five_minutes),
-    strategy=Divergence(2, 100, [], name="ForexDiver"),
-    bar_between_signals=2,
-    position_handler=SteppingHandlerForex(
-        ForexAgent(),
-        stoploss_pip=50,
-        targets_ratio=[1, 2, 3],
-        targets_ratio_volumes=[0.01, 0.01, 0.01],
-        trail_stop=True,
-        long_trade=False,
-        short_trade=False,
-    ),
-    merge_two_chart_time=True,
-    heikingashi_chartdata=True,
-)
+# five_m = ForexDiverTradeConfig(
+#     chart=Chart("XAUUSD!", TimeFrame.five_minutes),
+#     second_chart=Chart("SOLUSD", TimeFrame.five_minutes),
+#     strategy=Divergence(2, 100, [], name="ForexDiver"),
+#     bar_between_signals=2,
+#     position_handler=SteppingHandlerForex(
+#         ForexAgent(),
+#         stoploss_pip=50,
+#         targets_ratio=[1, 2, 3],
+#         targets_ratio_volumes=[0.01, 0.01, 0.01],
+#         trail_stop=True,
+#         long_trade=False,
+#         short_trade=False,
+#     ),
+#     merge_two_chart_time=True,
+#     heikingashi_chartdata=True,
+# )
 
 
 TraderBot("Gold Diver Bot", [one_m], report_time={"h": 20, "m": 0})

@@ -17,6 +17,12 @@ class TradingConstraint(ABC):
     ) -> bool:
         pass
 
+    def give_passed_candles(self, old_pos: Position, new_pos: Position):
+        passed_candle = (new_pos.candle_time - old_pos.candle_time).total_seconds() // (
+            new_pos.chart.timeframe.minutes * 60
+        )
+        return passed_candle
+
     def __str__(self) -> str:
         return self.__class__.__name__
 
@@ -44,9 +50,7 @@ class SideConstraint(TradingConstraint):
     ) -> bool:
         same_side_counter = 0
         for pos in open_positions[::-1]:
-            passed_candle = (pos.candle_time - signal.candle.time).total_seconds() // (
-                signal.chart.timeframe.minutes * 60
-            )
+            passed_candle = self.give_passed_candles(old_pos=pos, new_pos=new_position)
             if passed_candle >= self.untill_n_bar:
                 continue
             if pos.side == new_position.side:
@@ -61,12 +65,11 @@ class SideConstraint(TradingConstraint):
             return True
 
         for pos in closed_positions[::-1]:
-            passed_candle = (pos.candle_time - signal.candle.time).total_seconds() // (
-                signal.chart.timeframe.minutes * 60
-            )
+            passed_candle = self.give_passed_candles(old_pos=pos, new_pos=new_position)
+            if passed_candle > self.untill_n_bar:
+                continue
             if pos.side == new_position.side:
-                if passed_candle < self.untill_n_bar:
-                    same_side_counter += 1
+                same_side_counter += 1
             if same_side_counter >= self.n_pos_each_side:
                 logger.info(
                     f"Side Constraint Filtered position: {same_side_counter=} | {pos.side=} | {new_position.side=} | {passed_candle}"
@@ -101,17 +104,13 @@ class LoseInRowConstraint(TradingConstraint):
             else self.n_short_lose
         )
         for pos in closed_positions[::-1]:
-            passed_candle = (pos.candle_time - signal.candle.time).total_seconds() // (
-                signal.chart.timeframe.minutes * 60
-            )
+            passed_candle = self.give_passed_candles(old_pos=pos, new_pos=new_position)
             if passed_candle > self.n_bar:
                 continue
             if pos.side == new_position.side:
                 if pos.pnl >= 0:
                     return True
                 lose_in_row_counter += 1
-            else:
-                return True
             if lose_in_row_counter >= constraint:
                 return False
         return True
