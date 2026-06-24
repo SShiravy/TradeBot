@@ -53,16 +53,16 @@ class TrendLine(IndicatorBaseModel):
         self.max_step = max_step
         self.ignore_shadow_cross = ignore_shadow_cross
         self.support_conditions = support_conditions
-    
+
     def export_configs(self) -> dict:
         configs = super().export_configs()
         configs.update(
             {
-                "source":self.source,
-                "min_step":self.min_step,
-                "max_step":self.max_step,
-                "ignore_shadow_cross":self.ignore_shadow_cross,
-                "support_conditions":self.support_conditions
+                "source": self.source,
+                "min_step": self.min_step,
+                "max_step": self.max_step,
+                "ignore_shadow_cross": self.ignore_shadow_cross,
+                "support_conditions": self.support_conditions,
             }
         )
         return configs

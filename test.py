@@ -60,18 +60,20 @@ async def test_open_position():
         TraderBot(name="test opening pos", configs=[the_config]).manage()
     )
 
+
 def test_BitUnix():
     from config import settings
     from ChartModule.models import Chart, TimeFrame
     from ChartModule.plot import ChartPlot
     from BitUnix import BitUnixAgent
-    
 
-    agent = BitUnixAgent(settings.BITUNIX_API_KEY,settings.BITUNIX_API_SECRET_KEY)
+    agent = BitUnixAgent(settings.BITUNIX_API_KEY, settings.BITUNIX_API_SECRET_KEY)
     logging.debug(agent.bitunix_api.get_account())
-    logging.debug(agent.bitunix_api.get_kline("BTCUSDT","5m",limit=1))
-    chartdata = agent.get_chartdata(Chart("BTCUSDT",TimeFrame.five_minutes),n_bars=200)
-    ChartPlot(chartdata,200).show() # type: ignore
+    logging.debug(agent.bitunix_api.get_kline("BTCUSDT", "5m", limit=1))
+    chartdata = agent.get_chartdata(
+        Chart("BTCUSDT", TimeFrame.five_minutes), n_bars=200
+    )
+    ChartPlot(chartdata, 200).show()  # type: ignore
 
 
 def test_handler_export_config():

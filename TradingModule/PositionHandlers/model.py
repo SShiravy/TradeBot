@@ -1,6 +1,7 @@
 from ChartModule import Signal, MarketSide, Chart, TimeFrame
 from ChartModule.plot import Plot
 from TradingModule import Position, OrderSide, ExchangeAgent, PositionsReport
+from TradingModule.PositionHandlers.trading_constraints import TradingConstraint
 from TradingModule.commands import TradeCommand
 from TradingModule import commands
 from abc import ABC, abstractmethod
@@ -20,6 +21,7 @@ class PositionHandler(ABC):
         leverage: int = 1,
         long_trade: bool = True,
         short_trade: bool = True,
+        trading_constraints: list[TradingConstraint] = [],
     ) -> None:
         self.exchange_agent = exchange_agent
         self.initial_volume = initial_volume
@@ -28,6 +30,7 @@ class PositionHandler(ABC):
         self.closed_positions: list[Position] = []
         self.long_trade: bool = long_trade
         self.short_trade: bool = short_trade
+        self.trading_constraints = trading_constraints
 
     @abstractmethod
     def init_stoploss(self, entry_price: float, side: OrderSide) -> float:

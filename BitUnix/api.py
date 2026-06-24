@@ -10,26 +10,20 @@ import uuid
 
 logger = logging.getLogger("BitUnixAPI")
 
-class BitUnixAPI:
 
+class BitUnixAPI:
     base_url = "https://fapi.bitunix.com"
 
-    def __init__(self,api_key:str,secret_key:str) -> None:
+    def __init__(self, api_key: str, secret_key: str) -> None:
         self.__api_key = api_key
         self.__secret_key = secret_key
         self.session = requests.Session()
         # Set common request headers
-        self.session.headers.update({
-            "language": "en-US",
-            "Content-Type": "application/json"
-        })
+        self.session.headers.update(
+            {"language": "en-US", "Content-Type": "application/json"}
+        )
 
-    
-    def _sign_auth(
-        self,
-        query_params: str = "",
-        body: str = ""
-    ) -> Dict[str,str]:
+    def _sign_auth(self, query_params: str = "", body: str = "") -> Dict[str, str]:
         """
         Generate signature according to Bitunix OpenAPI doc
         Args:
@@ -41,54 +35,54 @@ class BitUnixAPI:
             str: Signature
         """
         # nonce: Random string
-        nonce = str(uuid.uuid4()).replace('-', '')
+        nonce = str(uuid.uuid4()).replace("-", "")
 
         timestamp = str(int(time.time() * 1000))
         digest_input = nonce + timestamp + self.__api_key + query_params + body
-        digest = hashlib.sha256(digest_input.encode('utf-8')).hexdigest()
+        digest = hashlib.sha256(digest_input.encode("utf-8")).hexdigest()
         sign_input = digest + self.__secret_key
-        sign = hashlib.sha256(sign_input.encode('utf-8')).hexdigest()
+        sign = hashlib.sha256(sign_input.encode("utf-8")).hexdigest()
 
         return {
             "api-key": self.__api_key,
             "sign": sign,
             "nonce": nonce,
-            "timestamp": timestamp
+            "timestamp": timestamp,
         }
-    
+
     @classmethod
-    def _sort_params(cls,params: Dict[str, str]) -> str:
+    def _sort_params(cls, params: Dict[str, str]) -> str:
         """
         Sort parameters and concatenate them
-        
+
         Args:
             params: Parameter dictionary
-            
+
         Returns:
             str: Sorted parameter string
         """
         if not params:
             return ""
         # Sort by key and concatenate directly
-        return ''.join(f"{k}{v}" for k, v in sorted(params.items())) 
+        return "".join(f"{k}{v}" for k, v in sorted(params.items()))
 
     def _handle_response(self, response: requests.Response) -> Dict[str, Any]:
         """
         Handle response
-        
+
         Args:
             response: Response object
-            
+
         Returns:
             Dict[str, Any]: Response data
-            
+
         Raises:
             Exception: When the response status code is not 200 or the business status code is not 0
         """
         logger.debug(f"{response=}")
         if response.status_code != 200:
             raise Exception(f"HTTP Error: {response.status_code}")
-        
+
         data = response.json()
         if data["code"] != 0:
             error = ErrorCode.get_by_code(data["code"])
@@ -96,14 +90,14 @@ class BitUnixAPI:
                 raise Exception(str(error))
             raise Exception(f"Unknown Error: {data['code']} - {data['msg']}")
         return data["data"]
-    
+
     def get_tickers(self, symbols: Optional[str] = None) -> Dict[str, Any]:
         """
         Get futures trading pair market data
-        
+
         Args:
             symbols: Futures trading pair, multiple separated by commas, e.g.: BTCUSDT,ETHUSDT
-            
+
         Returns:
             Dict[str, Any]: Market data
         """
@@ -111,23 +105,25 @@ class BitUnixAPI:
         params = {}
         if symbols:
             params["symbols"] = symbols
-            
+
         query_string = self._sort_params(params)
         headers = self._sign_auth(query_string)
-        
+
         response = self.session.get(url=url, params=params, headers=headers)
         return self._handle_response(response)
 
-    def get_kline(self, symbol: str,
-                 interval: str,
-                 limit: int = 100,
-                 start_time: Optional[int] = None, 
-                 end_time: Optional[int] = None, 
-                 type: str = "LAST_PRICE") -> list[Dict[str, Any]]:
-        
+    def get_kline(
+        self,
+        symbol: str,
+        interval: str,
+        limit: int = 100,
+        start_time: Optional[int] = None,
+        end_time: Optional[int] = None,
+        type: str = "LAST_PRICE",
+    ) -> list[Dict[str, Any]]:
         """
         Get K-line data
-        
+
         Args:
             symbol: Futures trading pair
             interval: K-line interval, e.g.: 1m, 5m, 15m, 30m, 1h, 4h, 1d
@@ -135,55 +131,58 @@ class BitUnixAPI:
             start_time: Start time (Unix timestamp, milliseconds format)
             end_time: End time (Unix timestamp, milliseconds format)
             type: K-line type, optional values: LAST_PRICE (latest price), MARK_PRICE (mark price), default: LAST_PRICE
-            
+
         Returns:
             Dict[str, Any]: K-line data
         """
         url = f"{self.base_url}/api/v1/futures/market/kline"
-        params = {
-            "symbol": symbol,
-            "interval": interval,
-            "limit": limit,
-            "type": type
-        }
-        
+        params = {"symbol": symbol, "interval": interval, "limit": limit, "type": type}
+
         if start_time is not None:
             params["startTime"] = start_time
         if end_time is not None:
             params["endTime"] = end_time
-            
+
         query_string = self._sort_params(params)
         headers = self._sign_auth(query_string)
         response = self.session.get(url, params=params, headers=headers)
-        return self._handle_response(response) # type: ignore
-    
+        return self._handle_response(response)  # type: ignore
+
     def get_account(self, margin_coin: str = "USDT") -> Dict[str, Any]:
         """
         Get account information
-        
+
         Args:
             margin_coin: Margin currency, default USDT
-            
+
         Returns:
             Dict[str, Any]: Account information
         """
         url = f"{self.base_url}/api/v1/futures/account"
-        params = {
-            "marginCoin": margin_coin
-        }
-        
+        params = {"marginCoin": margin_coin}
+
         query_string = self._sort_params(params)
         headers = self._sign_auth(query_string)
         response = self.session.get(url, params=params, headers=headers)
         return self._handle_response(response)
 
-
-    def place_order(self, symbol: str, side: str, order_type: str, qty: str, 
-                    price: Optional[str] = None, position_id: Optional[str] = None,
-                    trade_side: str = "OPEN", effect: str = "GTC", reduce_only: bool = False,
-                    client_id: Optional[str] = None, tp_price: Optional[str] = None,
-                    tp_stop_type: Optional[str] = None, tp_order_type: Optional[str] = None,
-                    tp_order_price: Optional[str] = None) -> Dict[str, Any]:
+    def place_order(
+        self,
+        symbol: str,
+        side: str,
+        order_type: str,
+        qty: str,
+        price: Optional[str] = None,
+        position_id: Optional[str] = None,
+        trade_side: str = "OPEN",
+        effect: str = "GTC",
+        reduce_only: bool = False,
+        client_id: Optional[str] = None,
+        tp_price: Optional[str] = None,
+        tp_stop_type: Optional[str] = None,
+        tp_order_type: Optional[str] = None,
+        tp_order_price: Optional[str] = None,
+    ) -> Dict[str, Any]:
         """
         Place order
         Args:
@@ -201,12 +200,12 @@ class BitUnixAPI:
             tp_stop_type: Take profit trigger type, MARK (mark price) or LAST (last price)
             tp_order_type: Take profit order type, LIMIT or MARKET
             tp_order_price: Take profit order price
-            
+
         Returns:
             Dict[str, Any]: Order information
         """
         url = f"{self.base_url}/api/v1/futures/trade/place_order"
-        
+
         data = {
             "symbol": symbol,
             "side": side,
@@ -214,9 +213,9 @@ class BitUnixAPI:
             "qty": qty,
             "tradeSide": trade_side,
             "effect": effect,
-            "reduceOnly": reduce_only
+            "reduceOnly": reduce_only,
         }
-        
+
         if price is not None:
             data["price"] = price
         if position_id is not None:
@@ -231,44 +230,43 @@ class BitUnixAPI:
             data["tpOrderType"] = tp_order_type
         if tp_order_price is not None:
             data["tpOrderPrice"] = tp_order_price
-            
+
         body = json.dumps(data)
         headers = self._sign_auth(body=body)
-        
+
         response = self.session.post(url, json=data, headers=headers)
         return self._handle_response(response)
-    
-    def cancel_orders(self, symbol: str, order_list: List[Dict[str, str]]) -> Dict[str, Any]:
+
+    def cancel_orders(
+        self, symbol: str, order_list: List[Dict[str, str]]
+    ) -> Dict[str, Any]:
         """
         Cancel multiple orders
-        
+
         Args:
             symbol: Trading pair
             order_list: List of orders, each containing orderId or clientId
-            
+
         Returns:
             Dict[str, Any]: Cancellation result
         """
         url = f"{self.base_url}/api/v1/futures/trade/cancel_orders"
-        
-        data = {
-            "symbol": symbol,
-            "orderList": order_list
-        }
-            
+
+        data = {"symbol": symbol, "orderList": order_list}
+
         body = json.dumps(data)
         headers = self._sign_auth(body=body)
-        
+
         response = self.session.post(url, json=data, headers=headers)
         return self._handle_response(response)
-    
+
     def get_history_orders(self, symbol: Optional[str] = None) -> Dict[str, Any]:
         """
         Get historical orders
-        
+
         Args:
             symbol: Trading pair, if not provided, get orders for all trading pairs
-            
+
         Returns:
             Dict[str, Any]: Historical order list
         """
@@ -276,20 +274,20 @@ class BitUnixAPI:
         params = {}
         if symbol:
             params["symbol"] = symbol
-            
+
         query_string = self._sort_params(params)
         headers = self._sign_auth(query_string)
-        
+
         response = self.session.get(url, params=params, headers=headers)
         return self._handle_response(response)
 
     def get_history_positions(self, symbol: Optional[str] = None) -> Dict[str, Any]:
         """
         Get historical position information
-        
+
         Args:
             symbol: Trading pair, if not provided, get all positions
-            
+
         Returns:
             Dict[str, Any]: Historical position information
         """
@@ -297,9 +295,9 @@ class BitUnixAPI:
         params = {}
         if symbol:
             params["symbol"] = symbol
-            
+
         query_string = self._sort_params(params)
         headers = self._sign_auth(query_string)
-        
+
         response = self.session.get(url, params=params, headers=headers)
         return self._handle_response(response)

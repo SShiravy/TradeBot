@@ -25,7 +25,7 @@ if __name__ == "__main__":
 
     # plot_csv_kline(the_config.chart) # type: ignore
 
-    asyncio.run(diver_signal_local_backtest(the_config, show_plot=False))
+    # asyncio.run(diver_signal_local_backtest(the_config, show_plot=False))
 
     statistical_indicators = [
         WeekdayPnLHistogram(),
@@ -38,12 +38,12 @@ if __name__ == "__main__":
         RiskAnalysis(),
     ]
 
-    # diver_backtester = DiverBacktester(
-    #     the_config, statistical_indicators, show_chartdata=False
-    # )
-    # asyncio.run(
-    #     diver_backtester.positions_backtest(use_database=False, show_plots=False)
-    # )
+    diver_backtester = DiverBacktester(
+        the_config, statistical_indicators, show_chartdata=False
+    )
+    asyncio.run(
+        diver_backtester.positions_backtest(use_database=False, show_plots=False)
+    )
 
     profiler.disable()
     stats = pstats.Stats(profiler)

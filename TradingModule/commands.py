@@ -344,10 +344,7 @@ class TrailStoplossbyStep(TradeCommand):
         if self.position.previous_step.pip_trail_stop:
             new_sl_price = (
                 new_sl_price
-                - abs(
-                    self.position.previous_step.price
-                    - self.position.entry_price
-                )
+                - abs(self.position.previous_step.price - self.position.entry_price)
                 * self.position.side.factor()
             )
             self.position.previous_step.price = self.position.entry_price

@@ -1,4 +1,4 @@
-from BacktestModule.dummy_models import DummyAgent, DummyPositionHanler
+from BacktestModule.dummy_models import DummyAgent
 from ChartModule.models import (
     Chart,
     IndicatorBaseModel,
@@ -259,7 +259,6 @@ class Divergence(Strategy):
         if draw_indicators and self.confirmation_indicators:
             for indicator in self.confirmation_indicators:
                 indicator.plot(plot.base_plot)
-            
 
 
 @dataclass(kw_only=True)
@@ -391,9 +390,9 @@ class DivergenceTradeConfig(TradeConfig):
             await commands.TradeCommand.execute_pending_commands(candle.time, False)
 
         plot = DoubleChartPlot(base_chartdata, second_chartdata, plot_n_candles=n_bar)
-        self.strategy.draw(plot, all_signals[0],draw_indicators=True) # type: ignore
+        self.strategy.draw(plot, all_signals[0], draw_indicators=True)  # type: ignore
         for signal in all_signals[1:]:
-            self.strategy.draw(plot, signal,draw_indicators=False) # type: ignore
+            self.strategy.draw(plot, signal, draw_indicators=False)  # type: ignore
         for pos in all_positions:
             if not pos.closed:
                 continue

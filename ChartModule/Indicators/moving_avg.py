@@ -23,12 +23,7 @@ class SMA(IndicatorBaseModel):
 
     def export_configs(self):
         configs = super().export_configs()
-        configs.update(
-            {
-            "n_bar": self.n_bar,
-            "source":self.source.name
-            }
-        )
+        configs.update({"n_bar": self.n_bar, "source": self.source.name})
         return configs
 
     def _calculate(self) -> dict:
@@ -47,7 +42,7 @@ class SMA(IndicatorBaseModel):
 
     def _forcast(self) -> MarketSide:
         last_candle = self.candles[-1]
-        sma = self.values.get(last_candle.time)
+        sma = self.values.get(last_candle.timestamp)
         if sma is None:
             return MarketSide.NEUTRAL
         if sma < last_candle.body_bottom:
@@ -63,36 +58,29 @@ class SMA(IndicatorBaseModel):
 class EMA(IndicatorBaseModel):
     """
     Calculate Exponential Moving Average (EMA) over n_bar
-    values: dict{time:ema}
+    values: dict{timestamp:ema}
     """
 
     def __init__(self, n_bar: int, source=IndicatorCandleSource.Close) -> None:
         super().__init__()
         self.n_bar = n_bar
         self.source = source
-    
+
     def export_configs(self):
         configs = super().export_configs()
-        configs.update(
-            {
-            "n_bar": self.n_bar,
-            "source":self.source.name
-            }
-        )
+        configs.update({"n_bar": self.n_bar, "source": self.source.name})
         return configs
 
     def _calculate(self) -> dict:
-        times = [c.time for c in self.candles]
         source_values = [self.source(c) for c in self.candles]
-        # Create DataFrame
-        df = pd.DataFrame({"source": source_values}, index=pd.to_datetime(times))
-        df["sma"] = df["source"].ewm(com=self.n_bar, adjust=False).mean()
-        # Return as dictionary {time: ema}
-        return df["sma"].dropna().to_dict()
+        ema_values = (
+            pd.Series(source_values).ewm(com=self.n_bar, adjust=False).mean().to_numpy()
+        )
+        return {candle.timestamp: ema for candle, ema in zip(self.candles, ema_values)}
 
     def _forcast(self) -> MarketSide:
         last_candle = self.candles[-1]
-        ema = self.values[last_candle.time]
+        ema = self.values[last_candle.timestamp]
         if ema < last_candle.body_bottom:
             return MarketSide.BULLISH
         elif ema > last_candle.body_top:
@@ -100,11 +88,25 @@ class EMA(IndicatorBaseModel):
         else:
             return MarketSide.NEUTRAL
 
-    def set(self, candles: list[Candle], *args, **kwargs) -> Any:
+    def update(self, candles: list[Candle], *args, **kwargs) -> Any:
+        if not self.last_checked_candle:
+            raise ValueError("update with None last_checked_candle!!")
+        if candles[-1].timestamp == self.last_checked_candle.timestamp:
+            return
+
+        alpha = 1 / (1 + self.n_bar)
+        old_len = len(self.candles)
         self.candles = candles
-        self.values = self._calculate(*args, **kwargs)
-        self.last_checked_candle = candles[-1]
-        return self.values
+
+        for candle in candles[old_len:]:
+            prev_ema = self.values[self.last_checked_candle.timestamp]
+
+            current_price = self.source(candle)
+
+            ema = alpha * current_price + (1 - alpha) * prev_ema
+
+            self.values[candle.timestamp] = ema
+            self.last_checked_candle = candle
 
     def plot(self, plot: ChartPlot):
         plot.linear_plot(self.values.keys(), self.values.values(), f"EMA{self.n_bar}")
@@ -120,15 +122,10 @@ class WMA(IndicatorBaseModel):
         super().__init__()
         self.n_bar = n_bar
         self.source = source
-    
+
     def export_configs(self):
         configs = super().export_configs()
-        configs.update(
-            {
-            "n_bar": self.n_bar,
-            "source":self.source.name
-            }
-        )
+        configs.update({"n_bar": self.n_bar, "source": self.source.name})
         return configs
 
     def _calculate(self) -> dict:
@@ -171,12 +168,6 @@ class WMA(IndicatorBaseModel):
             color="#FF5733",
         )
 
-    def set(self, candles: list[Candle], *args, **kwargs) -> Any:
-        self.candles = candles
-        self.values = self._calculate(*args, **kwargs)
-        self.last_checked_candle = candles[-1]
-        return self.values
-
 
 class HMA(IndicatorBaseModel):
     """
@@ -188,15 +179,10 @@ class HMA(IndicatorBaseModel):
         super().__init__()
         self.n_bar = n_bar
         self.source = source
-    
+
     def export_configs(self):
         configs = super().export_configs()
-        configs.update(
-            {
-            "n_bar": self.n_bar,
-            "source":self.source.name
-            }
-        )
+        configs.update({"n_bar": self.n_bar, "source": self.source.name})
         return configs
 
     def _calculate(self) -> dict:
@@ -266,9 +252,3 @@ class HMA(IndicatorBaseModel):
         plot.linear_plot(
             green_line_time, green_line_value, color="#0BAC00", thickness=3
         )
-
-    def set(self, candles: list[Candle], *args, **kwargs) -> Any:
-        self.candles = candles
-        self.values = self._calculate(*args, **kwargs)
-        self.last_checked_candle = candles[-1]
-        return self.values

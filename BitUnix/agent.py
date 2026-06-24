@@ -1,6 +1,5 @@
-from ChartModule import Chart, Candle, ChartData, TimeFrame
+from ChartModule import Chart, Candle, ChartData
 from TradingModule import ExchangeAgent, Position
-from TradingModule.commands import ChangeTakeProfit, TrailStoploss
 from BitUnix.api import BitUnixAPI
 from datetime import datetime, timezone
 import logging
@@ -8,15 +7,17 @@ import logging
 
 logger = logging.getLogger("BitUnixAgent")
 
+
 class BitUnixAgent(ExchangeAgent):
     def __init__(self, access_id: str, secret_key: str) -> None:
         self.bitunix_api = BitUnixAPI(access_id, secret_key)
         logger.info("Initialized")
 
-
     def get_chartdata(self, chart: Chart, n_bars=100) -> ChartData | None:
         try:
-            kline_res = self.bitunix_api.get_kline(chart.symbol, chart.timeframe.value, limit=n_bars)
+            kline_res = self.bitunix_api.get_kline(
+                chart.symbol, chart.timeframe.value, limit=n_bars
+            )
             if not kline_res:
                 raise ValueError(f"{kline_res=}")
         except Exception as e:

@@ -134,9 +134,9 @@ def load_diver_backtest(the_config: DivergenceTradeConfig):
     for indicator in all_indicators:
         indicator.set(chartdata.candles)
     plot = DoubleChartPlot(chartdata, second_chartdata, n_bar)
-    the_config.strategy.draw(plot, signals[0],True)
+    the_config.strategy.draw(plot, signals[0], True)
     for signal in signals[1:]:
-        the_config.strategy.draw(plot, signal,False)
+        the_config.strategy.draw(plot, signal, False)
     plot.show()
 
 

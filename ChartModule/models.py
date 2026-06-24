@@ -163,10 +163,10 @@ class IndicatorBaseModel(ABC):
         self.values: Any = None
         self.candles: list[Candle] = []
         self.last_checked_candle: Candle | None = None
-    
+
     @abstractmethod
-    def export_configs(self)->dict:
-        return {"name":self.__class__.__name__}
+    def export_configs(self) -> dict:
+        return {"name": self.__class__.__name__}
 
     @abstractmethod
     def _calculate(self, *args, **kwargs) -> Any:

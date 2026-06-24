@@ -599,5 +599,5 @@ class Strategy(ABC):
         return {
             "long_support_conditions": self.long_support_conditions.value,
             "short_support_conditions": self.short_support_conditions.value,
-            "indicators":indicators_configs
+            "indicators": indicators_configs,
         }

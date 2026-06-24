@@ -55,13 +55,19 @@ class SteppingHandlerForex(PositionHandler):
             )
 
         initial_volume = sum(targets_ratio_volumes) + sum(targets_in_pip_volumes)
-        super().__init__(exchange_agent, initial_volume, 1, long_trade, short_trade)
+        super().__init__(
+            exchange_agent,
+            initial_volume,
+            1,
+            long_trade,
+            short_trade,
+            trading_constraints,
+        )
 
         self.stoploss_pip = stoploss_pip / 10
         self.targets_ratio = targets_ratio
         self.targets_ratio_volumes = targets_ratio_volumes
         self.trail_stop = trail_stop
-        self.trading_constraints = trading_constraints
         self.targets_in_pip = targets_in_pip
         self.targets_in_pip_volumes = targets_in_pip_volumes
 
