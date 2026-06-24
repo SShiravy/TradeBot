@@ -341,18 +341,18 @@ class TrailStoplossbyStep(TradeCommand):
             )
             return True
         new_sl_price = new_sl.price
+        if self.position.previous_step.pip_trail_stop:
+            new_sl_price = (
+                new_sl_price
+                - abs(
+                    self.position.previous_step.price
+                    - self.position.entry_price
+                )
+                * self.position.side.factor()
+            )
+            self.position.previous_step.price = self.position.entry_price
         if self.position.real_trade:
             if self.position.in_forex:
-                if self.position.previous_step.pip_trail_stop:
-                    new_sl_price = (
-                        new_sl_price
-                        - abs(
-                            self.position.previous_step.price
-                            - self.position.entry_price
-                        )
-                        * self.position.side.factor()
-                    )
-                    self.position.previous_step.price = self.position.entry_price
                 tp_positions = self.exchange.get_open_positions(
                     comment_filter=self.position.id
                 )

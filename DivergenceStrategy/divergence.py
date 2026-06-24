@@ -259,6 +259,7 @@ class Divergence(Strategy):
         if draw_indicators and self.confirmation_indicators:
             for indicator in self.confirmation_indicators:
                 indicator.plot(plot.base_plot)
+            
 
 
 @dataclass(kw_only=True)
@@ -336,11 +337,8 @@ class DivergenceTradeConfig(TradeConfig):
         show_image=True,
         consider_positions=True,
     ):
-        if consider_positions:
-            position_handler = copy(self.position_handler)
-        else:
-            position_handler = DummyPositionHanler()
-            self.position_handler = position_handler
+        position_handler = copy(self.position_handler)
+        self.position_handler = position_handler
 
         agent = DummyAgent(self.agent, position_handler.open_positions)
         position_handler.exchange_agent = agent
@@ -393,8 +391,9 @@ class DivergenceTradeConfig(TradeConfig):
             await commands.TradeCommand.execute_pending_commands(candle.time, False)
 
         plot = DoubleChartPlot(base_chartdata, second_chartdata, plot_n_candles=n_bar)
-        for signal in all_signals:
-            self.strategy.draw(plot, signal)  # type: ignore
+        self.strategy.draw(plot, all_signals[0],draw_indicators=True) # type: ignore
+        for signal in all_signals[1:]:
+            self.strategy.draw(plot, signal,draw_indicators=False) # type: ignore
         for pos in all_positions:
             if not pos.closed:
                 continue
@@ -409,5 +408,4 @@ class DivergenceTradeConfig(TradeConfig):
         logger.info("\n" + str(overal_report))
         if show_image:
             plot.show()
-
         return all_signals, all_positions, plot, all_reports, commands_report

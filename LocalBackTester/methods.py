@@ -130,10 +130,13 @@ def load_diver_backtest(the_config: DivergenceTradeConfig):
     if signals is None:
         raise Exception(f"There is no related signals for the config: {the_config}")
     chartdata, second_chartdata = the_config.get_chartdata(n_bar)
-
+    all_indicators = the_config.strategy.confirmation_indicators
+    for indicator in all_indicators:
+        indicator.set(chartdata.candles)
     plot = DoubleChartPlot(chartdata, second_chartdata, n_bar)
-    for signal in signals:
-        the_config.strategy.draw(plot, signal)
+    the_config.strategy.draw(plot, signals[0],True)
+    for signal in signals[1:]:
+        the_config.strategy.draw(plot, signal,False)
     plot.show()
 
 
@@ -144,7 +147,8 @@ async def diver_signal_local_backtest(
 
     if diver_backtest:
         logging.info("Already in db. Loading previous backtest ....")
-        load_diver_backtest(the_config)
+        if show_plot:
+            load_diver_backtest(the_config)
         return
 
     res = await the_config.backtest(

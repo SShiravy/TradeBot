@@ -21,6 +21,16 @@ class SMA(IndicatorBaseModel):
         self.n_bar = n_bar
         self.source = source
 
+    def export_configs(self):
+        configs = super().export_configs()
+        configs.update(
+            {
+            "n_bar": self.n_bar,
+            "source":self.source.name
+            }
+        )
+        return configs
+
     def _calculate(self) -> dict:
         if len(self.candles) < self.n_bar:
             return {}
@@ -60,6 +70,16 @@ class EMA(IndicatorBaseModel):
         super().__init__()
         self.n_bar = n_bar
         self.source = source
+    
+    def export_configs(self):
+        configs = super().export_configs()
+        configs.update(
+            {
+            "n_bar": self.n_bar,
+            "source":self.source.name
+            }
+        )
+        return configs
 
     def _calculate(self) -> dict:
         times = [c.time for c in self.candles]
@@ -100,6 +120,16 @@ class WMA(IndicatorBaseModel):
         super().__init__()
         self.n_bar = n_bar
         self.source = source
+    
+    def export_configs(self):
+        configs = super().export_configs()
+        configs.update(
+            {
+            "n_bar": self.n_bar,
+            "source":self.source.name
+            }
+        )
+        return configs
 
     def _calculate(self) -> dict:
         if len(self.candles) < self.n_bar:
@@ -158,6 +188,16 @@ class HMA(IndicatorBaseModel):
         super().__init__()
         self.n_bar = n_bar
         self.source = source
+    
+    def export_configs(self):
+        configs = super().export_configs()
+        configs.update(
+            {
+            "n_bar": self.n_bar,
+            "source":self.source.name
+            }
+        )
+        return configs
 
     def _calculate(self) -> dict:
         if len(self.candles) < self.n_bar:

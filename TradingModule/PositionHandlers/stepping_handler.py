@@ -103,7 +103,6 @@ class SteppingHandlerForex(PositionHandler):
                     volume=volume,
                 )
             )
-        logger.debug(f"steps for position set to: {steps}")
         pos.steps = steps
         pos.takeprofit = pos.steps[-1].price
 
@@ -174,7 +173,6 @@ class SteppingHandlerForex(PositionHandler):
             real_trade=real_trade,
             plot=plot,
         )
-
         for constraint in self.trading_constraints:
             res = constraint.check(
                 signal, position, self.open_positions, self.closed_positions

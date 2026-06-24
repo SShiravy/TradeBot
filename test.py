@@ -60,6 +60,19 @@ async def test_open_position():
         TraderBot(name="test opening pos", configs=[the_config]).manage()
     )
 
+def test_BitUnix():
+    from config import settings
+    from ChartModule.models import Chart, TimeFrame
+    from ChartModule.plot import ChartPlot
+    from BitUnix import BitUnixAgent
+    
+
+    agent = BitUnixAgent(settings.BITUNIX_API_KEY,settings.BITUNIX_API_SECRET_KEY)
+    logging.debug(agent.bitunix_api.get_account())
+    logging.debug(agent.bitunix_api.get_kline("BTCUSDT","5m",limit=1))
+    chartdata = agent.get_chartdata(Chart("BTCUSDT",TimeFrame.five_minutes),n_bars=200)
+    ChartPlot(chartdata,200).show() # type: ignore
+
 
 def test_handler_export_config():
     from DivergenceStrategy.backtest_configs import forex_diver_one_m
@@ -77,5 +90,8 @@ if __name__ == "__main__":
 
     # store_mt5_tick_data()
 
-    asyncio.run(test_open_position())
+    # asyncio.run(test_open_position())
+
     # test_handler_export_config()
+
+    test_BitUnix()

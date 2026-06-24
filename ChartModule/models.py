@@ -28,6 +28,7 @@ class TimeFrame(Enum):
     eight_hours = "8h"
     twelve_hours = "12h"
     one_day = "1d"
+    three_day = "3d"
     one_week = "1w"
     one_month = "1M"
 
@@ -162,6 +163,10 @@ class IndicatorBaseModel(ABC):
         self.values: Any = None
         self.candles: list[Candle] = []
         self.last_checked_candle: Candle | None = None
+    
+    @abstractmethod
+    def export_configs(self)->dict:
+        return {"name":self.__class__.__name__}
 
     @abstractmethod
     def _calculate(self, *args, **kwargs) -> Any:

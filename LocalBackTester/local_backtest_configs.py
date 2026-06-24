@@ -1,3 +1,4 @@
+from ChartModule.Indicators.moving_avg import EMA
 from LocalBackTester.agent import LocalAgent
 from Forex.bot_config import ForexDiverTradeConfig
 from DivergenceStrategy.divergence import Divergence
@@ -44,21 +45,21 @@ local_agent = LocalAgent()
 diver_forex_xau_1m_5000_test = ForexDiverTradeConfig(
     chart=XAUUSD_1m_5000_test,
     second_chart=SOLUSD_1m_5000_test,
-    n_candle_check=500,
-    strategy=Divergence(3, 500, [], name="ForexDiver", inverse_diver_long=True),
+    n_candle_check=300,
+    strategy=Divergence(5, 100, [EMA(120)], name="ForexDiver"),
     position_handler=SteppingHandlerForex(
         local_agent,
         stoploss_pip=30,
         targets_ratio=[1, 2, 3],
         targets_ratio_volumes=[0.01, 0.01, 0.01],
-        targets_in_pip=[],
-        targets_in_pip_volumes=[],
+        targets_in_pip=[20],
+        targets_in_pip_volumes=[0.01],
         trail_stop=True,
         long_trade=False,
         short_trade=False,
         trading_constraints=[
-            SideConstraint(n_pos_each_side=1, n_bar=30),
-            LoseInRowConstraint(),
+            # SideConstraint(n_pos_each_side=1, n_bar=30, check_closed_positions=False),
+            # LoseInRowConstraint(n_long_lose=1, n_short_lose=1, n_bar=30),
         ],
     ),
     heikingashi_chartdata=True,
@@ -71,15 +72,15 @@ diver_forex_xau_1m_5000_test.agent = local_agent
 diver_forex_xau_1m_99000 = ForexDiverTradeConfig(
     chart=XAUUSD_1m_99000,
     second_chart=SOLUSD_1m_99000,
-    n_candle_check=500,
-    strategy=Divergence(3, 500, [], name="ForexDiver", inverse_diver_long=True),
+    n_candle_check=300,
+    strategy=Divergence(5, 100, [EMA(10)], name="ForexDiver"),
     position_handler=SteppingHandlerForex(
         local_agent,
         stoploss_pip=30,
         targets_ratio=[1, 2, 3],
         targets_ratio_volumes=[0.01, 0.01, 0.01],
-        targets_in_pip=[],
-        targets_in_pip_volumes=[],
+        targets_in_pip=[20],
+        targets_in_pip_volumes=[0.01],
         trail_stop=True,
         long_trade=False,
         short_trade=False,
