@@ -31,10 +31,10 @@ if __name__ == "__main__":
         WeekdayPnLHistogram(),
         HourlyPnLHistogram(),
         SessionPnLHistogram(),
-        # PipPnlDistribution(
-        #     candles_range=200,
-        # ),
-        # PipAfterSLDistribution(candles_range=200, tolerance_pip=30),
+        PipPnlDistribution(
+            candles_range=200,
+        ),
+        PipAfterSLDistribution(candles_range=200, tolerance_pip=30),
         RiskAnalysis(),
     ]
 

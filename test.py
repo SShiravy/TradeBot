@@ -1,4 +1,4 @@
-from LocalBackTester.methods import store_mt5_tick_data
+from LocalBackTester.methods import store_forex_data
 from custom_logger import CustomLogger
 import logging
 import asyncio
@@ -61,19 +61,45 @@ async def test_open_position():
     )
 
 
-def test_BitUnix():
+async def test_BitUnix_open_position():
+    from TradingModule.trader_bot import TraderBot
     from config import settings
-    from ChartModule.models import Chart, TimeFrame
-    from ChartModule.plot import ChartPlot
+    from TradingModule.reporter import TelegramReporter
+    from ChartModule.models import MarketSide
+    from DivergenceStrategy.backtest_configs import (
+        crypto_diver_five_m_sol,
+        crypto_diver_five_m_near,
+    )
     from BitUnix import BitUnixAgent
 
     agent = BitUnixAgent(settings.BITUNIX_API_KEY, settings.BITUNIX_API_SECRET_KEY)
+
+    # from ChartModule.models import Chart, TimeFrame
+    # from ChartModule.plot import ChartPlot
+    # logging.debug(agent.bitunix_api.get_kline("BTCUSDT", "5m", limit=1))
+    # chartdata = agent.get_chartdata(
+    #     Chart("BTCUSDT", TimeFrame.five_minutes), n_bars=200
+    # )
+    # ChartPlot(chartdata, 200).show()  # type: ignore
+
     logging.debug(agent.bitunix_api.get_account())
-    logging.debug(agent.bitunix_api.get_kline("BTCUSDT", "5m", limit=1))
-    chartdata = agent.get_chartdata(
-        Chart("BTCUSDT", TimeFrame.five_minutes), n_bars=200
+
+    TelegramReporter().disable_reporting()
+    the_config = crypto_diver_five_m_near
+    the_config.position_handler.short_trade = True
+    the_config.position_handler.long_trade = True
+
+    base_chartdata, second_chartdata = the_config.get_chartdata(10)
+    diver_signal = the_config.strategy.generate_dummy_signal(
+        base_chartdata, second_chartdata, MarketSide.BULLISH
     )
-    ChartPlot(chartdata, 200).show()  # type: ignore
+    logging.info(f"dummy diver signal: {diver_signal}")
+    pos = await the_config.position_handler.generate_position(diver_signal)
+    if not pos:
+        raise ValueError(f"{pos=}")
+    await asyncio.gather(
+        TraderBot(name="test opening pos", configs=[the_config]).manage()
+    )
 
 
 def test_handler_export_config():
@@ -91,9 +117,11 @@ if __name__ == "__main__":
     # new_backtest()
 
     # store_mt5_tick_data()
+    # chart = CsvChart("XAUUSD!")
+    # store_forex_data()
 
     # asyncio.run(test_open_position())
 
     # test_handler_export_config()
 
-    test_BitUnix()
+    asyncio.run(test_BitUnix_open_position())

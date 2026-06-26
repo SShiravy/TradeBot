@@ -518,7 +518,7 @@ class ExchangeAgent(ABC):
     def open_position(self, position: Position) -> float | None:
         """
         return executed price if successful otherwise None
-        it should to return position id to executed order price
+        it should change position_exchange_id
         """
         pass
 

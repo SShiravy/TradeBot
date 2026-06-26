@@ -79,7 +79,7 @@ class BitUnixAPI:
         Raises:
             Exception: When the response status code is not 200 or the business status code is not 0
         """
-        logger.debug(f"{response=}")
+        logger.debug(f"{response.json()=}")
         if response.status_code != 200:
             raise Exception(f"HTTP Error: {response.status_code}")
 
@@ -182,6 +182,10 @@ class BitUnixAPI:
         tp_stop_type: Optional[str] = None,
         tp_order_type: Optional[str] = None,
         tp_order_price: Optional[str] = None,
+        sl_price: Optional[str] = None,
+        sl_stop_type: Optional[str] = None,
+        sl_order_type: Optional[str] = None,
+        sl_order_price: Optional[str] = None,
     ) -> Dict[str, Any]:
         """
         Place order
@@ -200,6 +204,7 @@ class BitUnixAPI:
             tp_stop_type: Take profit trigger type, MARK (mark price) or LAST (last price)
             tp_order_type: Take profit order type, LIMIT or MARKET
             tp_order_price: Take profit order price
+            same for sl...
 
         Returns:
             Dict[str, Any]: Order information
@@ -230,6 +235,14 @@ class BitUnixAPI:
             data["tpOrderType"] = tp_order_type
         if tp_order_price is not None:
             data["tpOrderPrice"] = tp_order_price
+        if sl_price is not None:
+            data["slPrice"] = sl_price
+        if sl_stop_type is not None:
+            data["slStopType"] = sl_stop_type
+        if sl_order_type is not None:
+            data["slOrderType"] = sl_order_type
+        if sl_order_price is not None:
+            data["slOrderPrice"] = sl_order_price
 
         body = json.dumps(data)
         headers = self._sign_auth(body=body)
@@ -253,6 +266,154 @@ class BitUnixAPI:
         url = f"{self.base_url}/api/v1/futures/trade/cancel_orders"
 
         data = {"symbol": symbol, "orderList": order_list}
+
+        body = json.dumps(data)
+        headers = self._sign_auth(body=body)
+
+        response = self.session.post(url, json=data, headers=headers)
+        return self._handle_response(response)
+
+    def change_leverage(
+        self, symbol: str, leverage: int, margin_coin: str = "USDT"
+    ) -> Dict[str, Any]:
+        """
+        change leverage
+            Dict[str, Any]: change leverage result
+        """
+
+        url = f"{self.base_url}/api/v1/futures/account/change_leverage"
+
+        data = {"symbol": symbol, "leverage": leverage, "marginCoin": margin_coin}
+
+        body = json.dumps(data)
+        headers = self._sign_auth(body=body)
+
+        response = self.session.post(url, json=data, headers=headers)
+        return self._handle_response(response)
+
+    def get_pending_positions(
+        self,
+        symbol: str,
+    ) -> Dict[str, Any]:
+        """
+        get pending positions
+            Dict[str, Any]: change leverage result
+        """
+
+        url = f"{self.base_url}/api/v1/futures/position/get_pending_positions"
+
+        data = {"symbol": symbol}
+
+        body = json.dumps(data)
+        headers = self._sign_auth(body=body)
+
+        response = self.session.get(url, json=data, headers=headers)
+        return self._handle_response(response)
+
+    def place_tp_sl_order(
+        self,
+        symbol: str,
+        position_id: str,
+        tp_qty: Optional[str] = None,
+        sl_qty: Optional[str] = None,
+        tp_price: Optional[str] = None,
+        tp_stop_type: Optional[str] = None,
+        tp_order_type: Optional[str] = None,
+        tp_order_price: Optional[str] = None,
+        sl_price: Optional[str] = None,
+        sl_stop_type: Optional[str] = None,
+        sl_order_type: Optional[str] = None,
+        sl_order_price: Optional[str] = None,
+    ) -> Dict[str, Any]:
+        """
+        Place tp_sl
+        Args:
+            symbol: Trading pair
+            position_id: Position ID
+            tp_qty: Quantity
+            sl_qty: Quantity
+            tp_price: Take profit price
+            tp_stop_type: Take profit trigger type, MARK (mark price) or LAST (last price)
+            tp_order_type: Take profit order type, LIMIT or MARKET
+            tp_order_price: Take profit order
+            same for sl ...
+
+        Returns:
+            Dict[str, Any]: Order information
+        """
+        url = f"{self.base_url}/api/v1/futures/tpsl/place_order"
+
+        data = {
+            "symbol": symbol,
+            "positionId": symbol,
+        }
+        if tp_qty is not None:
+            data["tpQty"] = tp_qty
+        if sl_qty is not None:
+            data["slQty"] = sl_qty
+        if position_id is not None:
+            data["positionId"] = position_id
+        if tp_price is not None:
+            data["tpPrice"] = tp_price
+        if tp_stop_type is not None:
+            data["tpStopType"] = tp_stop_type
+        if tp_order_type is not None:
+            data["tpOrderType"] = tp_order_type
+        if tp_order_price is not None:
+            data["tpOrderPrice"] = tp_order_price
+        if sl_price is not None:
+            data["slPrice"] = sl_price
+        if sl_stop_type is not None:
+            data["slStopType"] = sl_stop_type
+        if sl_order_type is not None:
+            data["slOrderType"] = sl_order_type
+        if sl_order_price is not None:
+            data["slOrderPrice"] = sl_order_price
+
+        body = json.dumps(data)
+        headers = self._sign_auth(body=body)
+
+        response = self.session.post(url, json=data, headers=headers)
+        return self._handle_response(response)
+
+    def change_position_tp_sl_order(
+        self,
+        symbol: str,
+        position_id: str,
+        tp_price: Optional[str] = None,
+        tp_stop_type: Optional[str] = None,
+        sl_price: Optional[str] = None,
+        sl_stop_type: Optional[str] = None,
+    ) -> Dict[str, Any]:
+        """
+        Change Position main sl tp (whole positions volume)
+        Args:
+            symbol: Trading pair
+            position_id: Position ID
+            tp_price: Take profit price
+            tp_stop_type: Take profit trigger type, MARK (mark price) or LAST (last price)
+            same for sl ...
+
+        Returns:
+            Dict[str, Any]: Order information
+        """
+        url = f"{self.base_url}/api/v1/futures/tpsl/position/modify_order"
+
+        data = {
+            "symbol": symbol,
+            "positionId": symbol,
+        }
+
+        if position_id is not None:
+            data["positionId"] = position_id
+        if tp_price is not None:
+            data["tpPrice"] = tp_price
+        if tp_stop_type is not None:
+            data["tpStopType"] = tp_stop_type
+        if sl_price is not None:
+            data["slPrice"] = sl_price
+        if sl_stop_type is not None:
+            data["slStopType"] = sl_stop_type
 
         body = json.dumps(data)
         headers = self._sign_auth(body=body)

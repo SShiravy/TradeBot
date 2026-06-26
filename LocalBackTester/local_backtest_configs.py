@@ -25,6 +25,7 @@ from LocalBackTester.all_charts import (
     XAUUSD_1m_5000_test,
     SOLUSD_1m_5000_test,
     XAUUSD_1m_99000,
+    BTCUSD_1m_99000,
     SOLUSD_1m_99000,
     SOLUSDT_5m_2026_4_5,
     BTCUSDT_5m_2026_4_5,
@@ -71,16 +72,16 @@ diver_forex_xau_1m_5000_test.agent = local_agent
 
 diver_forex_xau_1m_99000 = ForexDiverTradeConfig(
     chart=XAUUSD_1m_99000,
-    second_chart=SOLUSD_1m_99000,
+    second_chart=BTCUSD_1m_99000,
     n_candle_check=300,
-    strategy=Divergence(5, 100, [EMA(31)], name="ForexDiver"),
+    strategy=Divergence(5, 100, [], name="ForexDiver"),
     position_handler=SteppingHandlerForex(
         local_agent,
         stoploss_pip=30,
         targets_ratio=[1, 2, 3],
         targets_ratio_volumes=[0.01, 0.01, 0.01],
-        targets_in_pip=[],
-        targets_in_pip_volumes=[],
+        targets_in_pip=[20],
+        targets_in_pip_volumes=[0.01],
         trail_stop=True,
         long_trade=False,
         short_trade=False,

@@ -1,71 +1,59 @@
-from Coinex import CoinexAgent, CoinexDiverTradeConfig
 from ChartModule import Chart, TimeFrame
 from DivergenceStrategy.divergence import Divergence
 from ChartModule.Indicators import EMA
 from Forex import ForexAgent, CvdDiverTradeConfig, ForexDiverTradeConfig
+from BitUnix import BitUnixAgent, BitUnixDiverTradeConfig
 from TradingModule.PositionHandlers import (
     RiskFreeForex,
-    SlTpRatioCrypto,
     SlTpRatioForex,
     SteppingHandlerForex,
     SteppingHandlerCrypto,
 )
 from config import settings
-# Coinex ----------------------------------------------------------------
+
+# Crypto ----------------------------------------------------------------
 
 
-coinex_agent = CoinexAgent(settings.COINEX_ACCESS_ID, settings.COINEX_SECRET_KEY)
+# coinex_agent = CoinexAgent(settings.COINEX_ACCESS_ID, settings.COINEX_SECRET_KEY)
+bitunix_agent = BitUnixAgent(settings.BITUNIX_API_KEY, settings.BITUNIX_API_SECRET_KEY)
 
-crypto_diver_five_m = CoinexDiverTradeConfig(
+crypto_diver_five_m_sol = BitUnixDiverTradeConfig(
     chart=Chart("SOLUSDT", TimeFrame.five_minutes),
     second_chart=Chart("BTCUSDT", TimeFrame.five_minutes),
     strategy=Divergence(2, 500, [], name="CoinexDiver", inverse_diver_long=True),
     position_handler=SteppingHandlerCrypto(
-        coinex_agent,
+        bitunix_agent,
         leverage=30,
-        stoploss_percent=0.25,
-        initial_volume=1,
+        stoploss_percent=0.7,
+        targets_ratio=[1, 2, 3],
+        initial_volume=0.1,
         long_trade=False,
         short_trade=False,
         trail_stop=True,
     ),
-    agent=coinex_agent,
+    agent=bitunix_agent,
     heikingashi_chartdata=True,
 )
 
-# one_h_diver = CoinexDiverTradeConfig(
-#     chart=Chart("SOLUSDT", TimeFrame.one_hour),
-#     second_chart=Chart("BTCUSDT", TimeFrame.one_hour),
-#     strategy=Divergence(5, 500, name="CoinexDiver", inverse_diver_long=True),
-#     position_handler=SteppingCrypto(
-#         coinex_agent,
-#         stoploss_percent=5,
-#         initial_volume=10,
-#         leverage=10,
-#         long_trade=False,
-#         short_trade=False,
-#     ),
-#     agent=coinex_agent,
-#     heikingashi_chartdata=True,
-# )
 
-
-coinex_4h_diver = CoinexDiverTradeConfig(
-    chart=Chart("SOLUSDT", TimeFrame.four_hours),
-    second_chart=Chart("BTCUSDT", TimeFrame.four_hours),
-    strategy=Divergence(3, 100, [], name="CoinexDiver", inverse_diver_long=False),
-    position_handler=SlTpRatioCrypto(
-        coinex_agent,
-        ratio=1,
-        stoploss_percent=2,
-        initial_volume=10,
-        leverage=10,
+crypto_diver_five_m_near = BitUnixDiverTradeConfig(
+    chart=Chart("NEARUSDT", TimeFrame.five_minutes),
+    second_chart=Chart("BTCUSDT", TimeFrame.five_minutes),
+    strategy=Divergence(3, 100, [], name="CoinexDiver", inverse_diver_long=True),
+    position_handler=SteppingHandlerCrypto(
+        bitunix_agent,
+        leverage=30,
+        stoploss_percent=0.7,
+        targets_ratio=[1, 2, 3],
+        initial_volume=4,
         long_trade=False,
         short_trade=False,
+        trail_stop=True,
     ),
-    agent=coinex_agent,
+    agent=bitunix_agent,
     heikingashi_chartdata=True,
 )
+
 
 # FOREX ----------------------------------------------------------------
 

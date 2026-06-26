@@ -268,7 +268,7 @@ class SteppingHandlerCrypto(SlTpRatioCrypto):
         trading_constraints: list[TradingConstraint] = [],
     ) -> None:
         if isinstance(initial_volume, float | int):
-            # make it list with same size as targets_pip if it's not
+            # make it list with same size as targets_ratio if it's not
             initial_volume = [float(initial_volume)] * len(targets_ratio)
 
         if len(targets_ratio) != len(initial_volume):
@@ -324,20 +324,6 @@ class SteppingHandlerCrypto(SlTpRatioCrypto):
         pos.steps = steps
 
     async def open_steps_position(self, pos: Position):
-        # for step in pos.steps[1:]:  # first step is entry
-        #     step_position = Position(
-        #         pos.chart,
-        #         pos.side,
-        #         pos.entry_price,
-        #         step.volume,
-        #         stoploss=pos.stoploss,
-        #         takeprofit=step.price,
-        #         leverage=pos.leverage,
-        #         source=f"{pos.id}",
-        #         real_trade=True,
-        #     )
-        #     await commands.OpenPosition(step_position, self.exchange_agent).execute()
-        #     pos.entry_price = step_position.entry_price
         pass
 
     async def generate_position(
@@ -366,10 +352,10 @@ class SteppingHandlerCrypto(SlTpRatioCrypto):
 
         precision = signal.chart.precision
         sl = round(self.init_stoploss(sl_base_price, side), precision)
-        sl_percent = abs(entry_price - sl) / entry_price
-        tp = round(
-            abs(sl_percent * self.ratio + side.factor()) * entry_price, precision
-        )
+        # sl_percent = abs(entry_price - sl) / entry_price
+        # tp = round(
+        #     abs(sl_percent * self.ratio + side.factor()) * entry_price, precision
+        # )
 
         position = Position(
             signal.chart,
@@ -377,7 +363,7 @@ class SteppingHandlerCrypto(SlTpRatioCrypto):
             entry_price,
             self.initial_volume,
             sl,
-            tp,
+            0,
             self.leverage,
             signal.candle.time + timedelta(seconds=2),
             signal.source,
@@ -401,15 +387,13 @@ class SteppingHandlerCrypto(SlTpRatioCrypto):
 
         self.set_steps(position)
         if real_trade:
-            await self.open_steps_position(position)
-        await commands.OpenPosition(position, self.exchange_agent).execute()
+            await commands.OpenPosition(position, self.exchange_agent).execute()
         return position
 
     def modify_init_sl_tp(self, position: Position):
         position.confiremed = True
         # update positions if needed
         logger.info(f"Position Updated on {position.chart}")
-        pass
 
     def handler(
         self, position: Position, tick_prices: list[float]
