@@ -2,6 +2,7 @@ from BitUnix.agent import BitUnixAgent
 from BitUnix.bot_configs import BitUnixDiverTradeConfig
 from ChartModule import Chart, TimeFrame
 from TradingModule.PositionHandlers.stepping_handler import SteppingHandlerCrypto
+from TradingModule.reporter import TelegramReporter
 from TradingModule.trader_bot import TraderBot
 from DivergenceStrategy.divergence import Divergence
 from custom_logger import CustomLogger
@@ -45,6 +46,7 @@ diver_five_m_near = BitUnixDiverTradeConfig(
     heikingashi_chartdata=True,
 )
 
+TelegramReporter().main_channel = settings.TELEGRAM_CRYPTO_CHANNEL_ID
 TraderBot("BitUnix Diver Bot", [diver_five_m_sol], report_time={"h": 20, "m": 1})
 
 

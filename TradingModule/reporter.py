@@ -13,7 +13,7 @@ class TelegramReporter:
         if not hasattr(cls, "_instance"):
             cls._instance = object.__new__(cls)
             cls.bot = Bot(settings.TELEGRAM_BOT_TOKEN)
-            cls._public_channel = settings.TELEGRAM_CHANNEL_ID
+            cls.main_channel = settings.TELEGRAM_CHANNEL_ID
             cls._log_channel = settings.TELEGRAM_REPORT_CHANNEL
             cls._reporting = True
         return cls._instance
@@ -91,7 +91,7 @@ class TelegramReporter:
             img_path = position.plot.save_image(position.source + str(position.chart))
 
         msg = "\n\n".join(msg_list)
-        res = await self.send_msg(self._public_channel, msg, img_path)
+        res = await self.send_msg(self.main_channel, msg, img_path)
         position.msg_id = res.message_id if res else 0
 
     async def position_closed(self, position: Position, filled_price=None):
@@ -121,7 +121,7 @@ class TelegramReporter:
             f"⌛ Duration = {duration}",
         ]
         msg = "\n\n".join(msg_list)
-        await self.send_msg(self._public_channel, msg, reply_id=position.msg_id)
+        await self.send_msg(self.main_channel, msg, reply_id=position.msg_id)
 
     async def trailing_sl(self, position: Position):
         trail_type_msg = (
@@ -137,10 +137,10 @@ class TelegramReporter:
         ]
         msg = "\n\n".join(msg_list)
 
-        await self.send_msg(self._public_channel, msg, reply_id=position.msg_id)
+        await self.send_msg(self.main_channel, msg, reply_id=position.msg_id)
 
     async def public_report(self, msg: str):
-        await self.send_msg(self._public_channel, msg)
+        await self.send_msg(self.main_channel, msg)
 
     async def triggered_step(self, position: Position):
         if position.closed:
@@ -171,4 +171,4 @@ class TelegramReporter:
             f"⌛ Duration = {duration}",
         ]
         msg = "\n\n".join(msg_list)
-        await self.send_msg(self._public_channel, msg, reply_id=position.msg_id)
+        await self.send_msg(self.main_channel, msg, reply_id=position.msg_id)
