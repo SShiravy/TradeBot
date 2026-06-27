@@ -401,6 +401,7 @@ class SteppingHandlerCrypto(SlTpRatioCrypto):
         if not position.confiremed:
             self.modify_init_sl_tp(position)
         if position.confiremed and not position.sended:
+            position.takeprofit = position.steps[-1].price
             commands.SendPositionSignal(position, self.exchange_agent)
 
         step = position.current_step
