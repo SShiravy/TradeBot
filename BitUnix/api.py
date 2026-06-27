@@ -79,16 +79,15 @@ class BitUnixAPI:
         Raises:
             Exception: When the response status code is not 200 or the business status code is not 0
         """
-        logger.debug(f"{response.json()=}")
         if response.status_code != 200:
-            raise Exception(f"HTTP Error: {response.status_code}")
+            raise Exception(f"HTTP Error: {response.json()=}")
 
         data = response.json()
         if data["code"] != 0:
             error = ErrorCode.get_by_code(data["code"])
             if error:
                 raise Exception(str(error))
-            raise Exception(f"Unknown Error: {data['code']} - {data['msg']}")
+            raise Exception(f"Unknown Error: {response.json()=}")
         return data["data"]
 
     def get_tickers(self, symbols: Optional[str] = None) -> Dict[str, Any]:
