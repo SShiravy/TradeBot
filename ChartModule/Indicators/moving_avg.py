@@ -94,7 +94,7 @@ class EMA(IndicatorBaseModel):
         if candles[-1].timestamp == self.last_checked_candle.timestamp:
             return
 
-        alpha = 1 / (1 + self.n_bar)
+        alpha = 2 / (1 + self.n_bar)
         old_len = len(self.candles)
         self.candles = candles
 

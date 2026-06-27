@@ -450,7 +450,7 @@ class PositionsReport:
 
     def calculate_duration(self):
         duration = timedelta(
-            seconds=self.last_time.timestamp() - self.first_time.timestamp()
+            seconds=int(self.last_time.timestamp()) - int(self.first_time.timestamp())
         )
         return duration
 
@@ -479,7 +479,9 @@ class PositionsReport:
             report_msg.append("Number of Triggered Steps:")
             for k, v in self.triggered_steps.items():
                 count = v - self.triggered_steps.get(k + 1, 0)
-                report_msg.append(f"  TP_{k + 1} : {count}")
+                report_msg.append(
+                    f"  TP_{k + 1} : {count} | {round(v / self.total_positions * 100, 2)}%"
+                )
         if self.max_lose_in_a_row or self.max_win_in_a_row:
             report_msg.append(f"Max Win in a Row = {self.max_win_in_a_row}")
             report_msg.append(f"Max Lose in a Row = {self.max_lose_in_a_row}")

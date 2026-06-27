@@ -26,6 +26,7 @@ class SteppingHandlerForex(PositionHandler):
         targets_in_pip: list[float] = [],
         targets_in_pip_volumes: float | list[float] = [],
         trail_stop: bool = True,
+        pip_trail_stop_under_entry: bool = False,
         long_trade=True,
         short_trade=True,
         trading_constraints: list[TradingConstraint] = [],
@@ -71,6 +72,8 @@ class SteppingHandlerForex(PositionHandler):
         self.targets_in_pip = targets_in_pip
         self.targets_in_pip_volumes = targets_in_pip_volumes
 
+        self.pip_trail_stop_under_entry = pip_trail_stop_under_entry
+
     def export_config(self) -> dict:
         conf_dict = super().export_config()
         conf_dict.pop("riskfree_trigger_ratio")
@@ -94,7 +97,7 @@ class SteppingHandlerForex(PositionHandler):
                         pos.chart.precision,
                     ),
                     volume=volume,
-                    pip_trail_stop=True,
+                    pip_trail_stop=self.pip_trail_stop_under_entry,
                 )
             )
 
