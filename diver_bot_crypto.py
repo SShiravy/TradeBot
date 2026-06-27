@@ -50,7 +50,7 @@ diver_five_m_near = BitUnixDiverTradeConfig(
 )
 
 TelegramReporter().main_channel = settings.TELEGRAM_CRYPTO_CHANNEL_ID
-TraderBot("BitUnix Diver Bot", [diver_five_m_sol], report_time={"h": 20, "m": 1})
+TraderBot("BitUnix Diver Bot", [diver_five_m_sol,diver_five_m_near], report_time={"h": 20, "m": 1})
 
 
 if __name__ == "__main__":
