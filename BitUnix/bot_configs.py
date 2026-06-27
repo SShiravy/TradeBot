@@ -15,7 +15,7 @@ class BitUnixDiverTradeConfig(DivergenceTradeConfig):
     def give_delay(self, last_candle: Candle, jump=False) -> timedelta:
         delay = (
             self.chart.timeframe.time_delta * 2
-        )  # just because bitunix do not give the current not closed candle
+        )  # *2 , because bitunix does'nt give the current not closed candle
         if jump:
             delay *= self.bar_between_signals
         next_timestamp = int(
@@ -53,3 +53,12 @@ class BitUnixDiverTradeConfig(DivergenceTradeConfig):
             base_chartdata = base_chartdata.give_heikingashi_chartdata()
             second_chartdata = second_chartdata.give_heikingashi_chartdata()
         return base_chartdata, second_chartdata
+
+    async def task(self):
+        # bitunix does'nt give the current candle
+        base_chartdata, second_chartdata = self.get_chartdata()
+        res = await self.find_signal(base_chartdata, second_chartdata)
+        if res is None:
+            return self.give_delay(base_chartdata[-1])
+        signal, position = res
+        return self.give_delay(base_chartdata[-1], jump=True), signal, position
