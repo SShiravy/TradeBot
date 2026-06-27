@@ -77,7 +77,7 @@ class TelegramReporter:
             msg_list.append(f"🎯 TP =  {position.takeprofit}")
 
         msg_list.append(f"⛔️ SL = {position.stoploss}")
-        msg_list.append(f"💰 Volume: {position.volume}")
+        msg_list.append(f"💰 Volume: {round(position.volume, 10)}")
 
         if position.leverage not in [1, 0]:
             msg_list.append(f"⚡Leverage: {position.leverage}")

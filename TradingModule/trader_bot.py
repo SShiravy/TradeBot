@@ -47,15 +47,16 @@ class TradeConfig:
         delay = self.chart.timeframe.time_delta
         if jump:
             delay *= self.bar_between_signals
-
+        next_timestamp = int(
+            round(last_candle.time.astimezone(tz=timezone.utc).timestamp())
+            + delay.total_seconds()
+        )
+        now_timestamp = round(datetime.now(tz=timezone.utc).timestamp())
+        sleep_time_based_on_timestamp = next_timestamp - now_timestamp
         logging.debug(
-            f"delay + lastcandl.time: {delay + last_candle.time} | {datetime.now(timezone.utc)} | {last_candle.time=}"
+            f"{next_timestamp=} | {last_candle.time.astimezone(tz=timezone.utc).timestamp()} | {now_timestamp} | {sleep_time_based_on_timestamp=}"
         )
-        return (
-            (delay + last_candle.time)
-            - datetime.now(timezone.utc)
-            + timedelta(seconds=1)
-        )
+        return timedelta(seconds=sleep_time_based_on_timestamp + 1)
 
     def get_chartdata(self, n_bar: int | None = None) -> ChartData:
         chartdata = self.agent.get_chartdata(

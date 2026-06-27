@@ -8,8 +8,11 @@ from DivergenceStrategy.divergence import Divergence
 from custom_logger import CustomLogger
 from config import settings
 import asyncio
+import logging
 
-CustomLogger(log_file=True, file_log_name="CryptoDiverBot")
+CustomLogger(
+    log_file=True, file_log_name="CryptoDiverBot", consol_log_level=logging.DEBUG
+)
 
 bitunix_agent = BitUnixAgent(settings.BITUNIX_API_KEY, settings.BITUNIX_API_SECRET_KEY)
 
