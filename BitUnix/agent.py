@@ -102,10 +102,9 @@ class BitUnixAgent(ExchangeAgent):
                 )
                 logger.debug(f"{step_res=}")
 
-        # TODO: return order entry price
         # TODO: check tp sl and modify it
 
-        return poisition_info["avgOpenPrice"]
+        return float(poisition_info["avgOpenPrice"])
 
     def change_stoploss(self, position: Position, price) -> bool:
         res = self.bitunix_api.change_position_tp_sl_order(
