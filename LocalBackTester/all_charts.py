@@ -218,3 +218,34 @@ BTCUSD_5m_50000 = CsvChart(
     csv_path=r"D:\TraderBot\LocalBackTester\KlinesCSV\Opofincance\opo_BTCUSD_5m_50000.csv",
     csv_source=KlineSource.OPOFINANCE_META,
 )
+
+SOLUSD_3m_99000 = CsvChart(
+    "SOLUSD",
+    TimeFrame.three_minutes,
+    csv_path=r"D:\TraderBot\LocalBackTester\KlinesCSV\Opofincance\opo_SOLUSD_3m_99000.csv",
+    csv_source=KlineSource.OPOFINANCE_META,
+)
+
+XAUUSD_3m_99000 = CsvChart(
+    "XAUUSD",
+    TimeFrame.three_minutes,
+    csv_path=r"D:\TraderBot\LocalBackTester\KlinesCSV\Opofincance\opo_XAUUSD_3m_99000.csv",
+    csv_source=KlineSource.OPOFINANCE_META,
+    ticks_path = r"D:\TraderBot\LocalBackTester\TickData\Opofinance\XAUUSD!_2025_12_01_to_2026_06_27.parquet",
+)
+
+
+XAUUSD_1m_99000_28_6 = CsvChart(
+    "XAUUSD",
+    TimeFrame.one_minute,
+    csv_path=r"D:\TraderBot\LocalBackTester\KlinesCSV\Opofincance\opo_XAUUSD_1m_99000_28_6.csv",
+    csv_source=KlineSource.OPOFINANCE_META,
+    ticks_path=r"D:\TraderBot\LocalBackTester\TickData\Opofinance\XAUUSD!_2025_12_01_to_2026_06_27.parquet",
+)
+
+USDJPY_1m_99000_28_6 = CsvChart(
+    "USDJPY",
+    TimeFrame.one_minute,
+    csv_path=r"D:\TraderBot\LocalBackTester\KlinesCSV\Opofincance\opo_USDJPY_1m_99000_28_6.csv",
+    csv_source=KlineSource.OPOFINANCE_META,
+)

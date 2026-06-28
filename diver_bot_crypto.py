@@ -33,26 +33,26 @@ diver_five_m_sol = BitUnixDiverTradeConfig(
 )
 
 
-diver_five_m_near = BitUnixDiverTradeConfig(
-    chart=Chart("NEARUSDT", TimeFrame.five_minutes),
-    second_chart=Chart("BTCUSDT", TimeFrame.five_minutes),
-    strategy=Divergence(3, 100, [], name="BitUnixNearDiver", inverse_diver_long=True),
-    position_handler=SteppingHandlerCrypto(
-        bitunix_agent,
-        leverage=30,
-        stoploss_percent=0.7,
-        targets_ratio=[1, 2, 3],
-        initial_volume=5,
-        trail_stop=True,
-    ),
-    agent=bitunix_agent,
-    heikingashi_chartdata=True,
-)
+# diver_five_m_near = BitUnixDiverTradeConfig(
+#     chart=Chart("NEARUSDT", TimeFrame.five_minutes),
+#     second_chart=Chart("BTCUSDT", TimeFrame.five_minutes),
+#     strategy=Divergence(3, 100, [], name="BitUnixNearDiver", inverse_diver_long=True),
+#     position_handler=SteppingHandlerCrypto(
+#         bitunix_agent,
+#         leverage=30,
+#         stoploss_percent=0.7,
+#         targets_ratio=[1, 2, 3],
+#         initial_volume=5,
+#         trail_stop=True,
+#     ),
+#     agent=bitunix_agent,
+#     heikingashi_chartdata=True,
+# )
 
 TelegramReporter().main_channel = settings.TELEGRAM_CRYPTO_CHANNEL_ID
 TraderBot(
     "BitUnix Diver Bot",
-    [diver_five_m_sol, diver_five_m_near],
+    [diver_five_m_sol],
     report_time={"h": 20, "m": 1},
 )
 

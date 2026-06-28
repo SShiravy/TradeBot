@@ -29,9 +29,10 @@ one_m = ForexDiverTradeConfig(
         targets_in_pip=[20],
         targets_in_pip_volumes=[0.01],
         trail_stop=True,
+        pip_trail_stop_under_entry=False,
         trading_constraints=[
-            SideConstraint(n_pos_each_side=1, n_bar=30, check_closed_positions=False),
-            LoseInRowConstraint(n_long_lose=1, n_short_lose=1, n_bar=30),
+            # SideConstraint(n_pos_each_side=1, n_bar=30, check_closed_positions=False),
+            # LoseInRowConstraint(n_long_lose=1, n_short_lose=1, n_bar=30),
         ],
     ),
     merge_two_chart_time=False,

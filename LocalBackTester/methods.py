@@ -46,11 +46,12 @@ def store_mt5_tick_data():
     from datetime import datetime
 
     mt5.initialize()
-    symbol = "BTCUSD"
+    symbol = "XAUUSD!"
 
     ticks = mt5.copy_ticks_range(
-        symbol, datetime(2026, 6, 18), datetime.now(), mt5.COPY_TICKS_ALL
+        symbol, datetime(2025, 12, 1), datetime.now(), mt5.COPY_TICKS_ALL
     )
+    logging.debug(ticks)
 
     df = pd.DataFrame(ticks)
 

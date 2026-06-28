@@ -1,6 +1,5 @@
 from ChartModule.models import Candle
 from Forex.agent import ForexAgent
-from ChartModule.Indicators import CVD
 from ChartModule import Chart, ChartData
 from TradingModule import ExchangeAgent
 from DivergenceStrategy.divergence import Divergence, DivergenceTradeConfig
@@ -84,28 +83,28 @@ class ForexDiverTradeConfig(DivergenceTradeConfig):
         return await super().task()
 
 
-@dataclass(kw_only=True)
-class CvdDiverTradeConfig(DivergenceTradeConfig):
-    second_chart: Chart = field(init=False)
-    agent: ExchangeAgent = field(default=ForexAgent())
-    strategy: Divergence  # type: ignore[override]
+# @dataclass(kw_only=True)
+# class CvdDiverTradeConfig(DivergenceTradeConfig):
+#     second_chart: Chart = field(init=False)
+#     agent: ExchangeAgent = field(default=ForexAgent())
+#     strategy: Divergence  # type: ignore[override]
 
-    def get_chartdata(self, n_bar: int | None = None) -> tuple[ChartData, ChartData]:  # type: ignore[override]
-        base_chartdata = self.agent.get_chartdata(
-            self.chart, n_bar if n_bar else self.n_candle_check
-        )
+#     def get_chartdata(self, n_bar: int | None = None) -> tuple[ChartData, ChartData]:  # type: ignore[override]
+#         base_chartdata = self.agent.get_chartdata(
+#             self.chart, n_bar if n_bar else self.n_candle_check
+#         )
 
-        if base_chartdata is None:
-            raise ValueError(f"chart data is None from {self.agent.__class__.__name__}")
+#         if base_chartdata is None:
+#             raise ValueError(f"chart data is None from {self.agent.__class__.__name__}")
 
-        second_chartdata = CVD(self.chart).set(base_chartdata.candles)
-        if self.heikingashi_chartdata:
-            base_chartdata = base_chartdata.give_heikingashi_chartdata()
+#         second_chartdata = CVD(self.chart).set(base_chartdata.candles)
+#         if self.heikingashi_chartdata:
+#             base_chartdata = base_chartdata.give_heikingashi_chartdata()
 
-        return base_chartdata, second_chartdata
+#         return base_chartdata, second_chartdata
 
-    async def task(self):
-        wait_time = ForexAgent().check_market_open(self.chart)
-        if wait_time:
-            return timedelta(seconds=wait_time)
-        return await super().task()
+#     async def task(self):
+#         wait_time = ForexAgent().check_market_open(self.chart)
+#         if wait_time:
+#             return timedelta(seconds=wait_time)
+#         return await super().task()

@@ -1,4 +1,3 @@
-from LocalBackTester.methods import store_forex_data
 from custom_logger import CustomLogger
 import logging
 import asyncio
@@ -108,6 +107,22 @@ def test_handler_export_config():
     logging.info(forex_diver_one_m.position_handler.export_config())
 
 
+def store_mt5_data():
+    from LocalBackTester.models import CsvChart
+    from ChartModule.models import TimeFrame
+    from LocalBackTester.methods import store_forex_data, plot_csv_kline, store_mt5_tick_data
+
+    # store_mt5_tick_data()
+
+    chart = CsvChart("XAUUSD!",timeframe=TimeFrame.one_minute,
+                     csv_path="opo_XAUUSD_1m_99000_28_6.csv")
+    store_forex_data(chart,99000)
+    plot_csv_kline(chart)
+    pass
+
+
+
+
 if __name__ == "__main__":
     # asyncio.run(start_diver_crypto_backtest_pack())
     # asyncio.run(start_diver_backtest())
@@ -116,12 +131,13 @@ if __name__ == "__main__":
 
     # new_backtest()
 
-    # store_mt5_tick_data()
-    # chart = CsvChart("XAUUSD!")
-    # store_forex_data()
+    # store_mt5_data()
 
     # asyncio.run(test_open_position())
 
     # test_handler_export_config()
 
-    asyncio.run(test_BitUnix_open_position())
+    # asyncio.run(test_BitUnix_open_position())
+
+    from datetime import datetime
+    print(datetime.fromtimestamp(1782604800))

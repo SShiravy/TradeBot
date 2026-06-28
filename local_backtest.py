@@ -14,7 +14,7 @@ if __name__ == "__main__":
     from LocalBackTester.local_backtest_configs import *  # noqa: F403
     from LocalBackTester.StatisticalMethods import *  # noqa: F403
 
-    the_config = diver_forex_xau_1m_99000
+    the_config = diver_forex_xau_jpy_1m_99000_28_6
 
     create_db()
     import cProfile
@@ -25,25 +25,25 @@ if __name__ == "__main__":
 
     # plot_csv_kline(the_config.chart) # type: ignore
 
-    # asyncio.run(diver_signal_local_backtest(the_config, show_plot=False))
+    asyncio.run(diver_signal_local_backtest(the_config, show_plot=False))
 
-    statistical_indicators = [
-        WeekdayPnLHistogram(),
-        HourlyPnLHistogram(),
-        SessionPnLHistogram(),
-        PipPnlDistribution(
-            candles_range=200,
-        ),
-        PipAfterSLDistribution(candles_range=200, tolerance_pip=30),
-        RiskAnalysis(),
-    ]
+    # statistical_indicators = [
+    #     WeekdayPnLHistogram(),
+    #     HourlyPnLHistogram(),
+    #     SessionPnLHistogram(),
+    #     PipPnlDistribution(
+    #         candles_range=200,
+    #     ),
+    #     PipAfterSLDistribution(candles_range=200, tolerance_pip=30),
+    #     RiskAnalysis(),
+    # ]
 
-    diver_backtester = DiverBacktester(
-        the_config, statistical_indicators, show_chartdata=False
-    )
-    asyncio.run(
-        diver_backtester.positions_backtest(use_database=False, show_plots=False)
-    )
+    # diver_backtester = DiverBacktester(
+    #     the_config, statistical_indicators, show_chartdata=False
+    # )
+    # asyncio.run(
+    #     diver_backtester.positions_backtest(use_database=False, show_plots=False)
+    # )
 
     profiler.disable()
     stats = pstats.Stats(profiler)
