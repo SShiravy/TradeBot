@@ -110,17 +110,40 @@ def test_handler_export_config():
 def store_mt5_data():
     from LocalBackTester.models import CsvChart
     from ChartModule.models import TimeFrame
-    from LocalBackTester.methods import store_forex_data, plot_csv_kline, store_mt5_tick_data
+    from LocalBackTester.methods import (
+        store_forex_data,
+        plot_csv_kline,
+        store_mt5_tick_data,
+    )
 
     # store_mt5_tick_data()
 
-    chart = CsvChart("XAUUSD!",timeframe=TimeFrame.one_minute,
-                     csv_path="opo_XAUUSD_1m_99000_28_6.csv")
-    store_forex_data(chart,99000)
+    chart = CsvChart(
+        "XAUUSD!",
+        timeframe=TimeFrame.one_minute,
+        csv_path="opo_XAUUSD_1m_99000_28_6.csv",
+    )
+    store_forex_data(chart, 99000)
     plot_csv_kline(chart)
     pass
 
 
+def test_rsi():
+    from ChartModule.Indicators.rsi import RSI
+    from ChartModule.models import Chart, TimeFrame
+    from ChartModule.plot import ChartWithOscillatorPlot
+    from Forex.agent import ForexAgent
+
+    chart = Chart("XAUUSD!", TimeFrame.one_minute)
+    chart_data = ForexAgent().get_chartdata(chart, 200)
+    if chart_data is None:
+        raise ValueError
+
+    rsi = RSI()
+    rsi.set(candles=chart_data.candles)
+    plot = ChartWithOscillatorPlot(chart_data, rsi.data, 200, label="RSI")
+    rsi.plot(plot, plot.oscillator_ax)
+    plot.show()
 
 
 if __name__ == "__main__":
@@ -139,5 +162,7 @@ if __name__ == "__main__":
 
     # asyncio.run(test_BitUnix_open_position())
 
-    from datetime import datetime
-    print(datetime.fromtimestamp(1782604800))
+    test_rsi()
+
+    # from datetime import datetime
+    # print(datetime.fromtimestamp(1782604800))

@@ -1,4 +1,5 @@
-from ChartModule.models import IndicatorBaseModel, TickPrice, MarketSide
+from ChartModule.models import TickPrice, MarketSide
+from ChartModule.Indicators.models import IndicatorBaseModel
 from ChartModule.plot import ChartPlot
 from datetime import datetime
 from enum import Enum
@@ -53,7 +54,7 @@ class FibonacciRetracement(IndicatorBaseModel):
 
         self.ratios = np.array([level.value for level in fibonacci_levels])
 
-        self.values = self._calculate()
+        self.data = self._calculate()
 
     def _calculate(self):
         diff = self.start_tick.price - self.end_tick.price
@@ -83,7 +84,7 @@ class FibonacciRetracement(IndicatorBaseModel):
     def plot(self, plot: ChartPlot, end_time: datetime | None = None):
         end_time = end_time if end_time else self.end_tick.time
         for level in self.fibonacci_levels:
-            end_price = self.values[self.fibonacci_levels.index(level)]
+            end_price = self.data[self.fibonacci_levels.index(level)]
             plot.draw_line(
                 self.start_tick.time,
                 end_price,

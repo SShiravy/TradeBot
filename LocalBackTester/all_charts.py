@@ -231,7 +231,7 @@ XAUUSD_3m_99000 = CsvChart(
     TimeFrame.three_minutes,
     csv_path=r"D:\TraderBot\LocalBackTester\KlinesCSV\Opofincance\opo_XAUUSD_3m_99000.csv",
     csv_source=KlineSource.OPOFINANCE_META,
-    ticks_path = r"D:\TraderBot\LocalBackTester\TickData\Opofinance\XAUUSD!_2025_12_01_to_2026_06_27.parquet",
+    ticks_path=r"D:\TraderBot\LocalBackTester\TickData\Opofinance\XAUUSD!_2025_12_01_to_2026_06_27.parquet",
 )
 
 

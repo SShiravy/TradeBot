@@ -1,4 +1,4 @@
-from ChartModule.models import IndicatorCandleSource, MarketSide
+from ChartModule.models import CandlesSource, MarketSide
 from DivergenceStrategy.divergence import DivergenceTradeConfig, DivergenceSignal
 from ChartModule.Indicators import Line
 from sqlmodel import Session, select
@@ -72,16 +72,16 @@ def fetch_diver_siganls(
 
         if signal.side == "Bullish":
             line_candlesource = (
-                IndicatorCandleSource.Bottom
+                CandlesSource.Bottom
                 if diver_tradeconfig.strategy.body_candle
-                else IndicatorCandleSource.Low
+                else CandlesSource.Low
             )
 
         else:  # signal.side == "Bearish"
             line_candlesource = (
-                IndicatorCandleSource.Top
+                CandlesSource.Top
                 if diver_tradeconfig.strategy.body_candle
-                else IndicatorCandleSource.High
+                else CandlesSource.High
             )
 
         diver_signal = DivergenceSignal(

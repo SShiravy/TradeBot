@@ -10,7 +10,7 @@ from ChartModule.models import (
 from ChartModule.Indicators import (
     FibonacciRetracement,
     FiboLevels,
-    SupportConditions,
+    SupportCandleConditions,
 )
 from ChartModule.plot import ChartPlot
 from TradingModule.trader_bot import TradeConfig
@@ -46,8 +46,8 @@ class FiboChoch(Strategy):
     def __init__(
         self,
         name="FiboChoch",
-        long_support_conditions: SupportConditions = SupportConditions.GREEN_RED,
-        short_support_conditions: SupportConditions = SupportConditions.RED_GREEN,
+        long_support_conditions: SupportCandleConditions = SupportCandleConditions.GREEN_RED,
+        short_support_conditions: SupportCandleConditions = SupportCandleConditions.RED_GREEN,
         confirmation_indicators: list[IndicatorBaseModel] = [],
         long_fibo_level: FiboLevels = FiboLevels.LEVEL_5,
         short_fibo_level: FiboLevels = FiboLevels.LEVEL_5,

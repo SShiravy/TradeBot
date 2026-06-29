@@ -34,7 +34,7 @@ from LocalBackTester.all_charts import (
     BTCUSDT_5m_test,
     SOLUSD_3m_99000,
     XAUUSD_1m_99000_28_6,
-    XAUUSD_3m_99000
+    XAUUSD_3m_99000,
 )
 from TradingModule.PositionHandlers.trading_constraints import (
     LoseInRowConstraint,
@@ -82,7 +82,7 @@ diver_forex_xau_1m_99000 = ForexDiverTradeConfig(
     strategy=Divergence(5, 100, [], name="ForexDiver", inverse_diver_long=True),
     position_handler=SteppingHandlerForex(
         local_agent,
-        stoploss_pip=30,
+        stoploss_pip=10,
         targets_ratio=[1, 2, 3],
         targets_ratio_volumes=[0.01, 0.01, 0.01],
         targets_in_pip=[20],
@@ -92,8 +92,8 @@ diver_forex_xau_1m_99000 = ForexDiverTradeConfig(
         short_trade=False,
         pip_trail_stop_under_entry=False,
         trading_constraints=[
-            SideConstraint(n_pos_each_side=1, n_bar=30, check_closed_positions=False),
-            LoseInRowConstraint(n_long_lose=1, n_short_lose=1, n_bar=30),
+            # SideConstraint(n_pos_each_side=1, n_bar=30, check_closed_positions=False),
+            # LoseInRowConstraint(n_long_lose=1, n_short_lose=1, n_bar=30),
         ],
     ),
     heikingashi_chartdata=True,
@@ -101,7 +101,6 @@ diver_forex_xau_1m_99000 = ForexDiverTradeConfig(
     send_signal=False,
 )
 diver_forex_xau_1m_99000.agent = local_agent
-
 
 
 diver_forex_xau_3m_99000 = ForexDiverTradeConfig(
@@ -132,12 +131,11 @@ diver_forex_xau_3m_99000 = ForexDiverTradeConfig(
 diver_forex_xau_3m_99000.agent = local_agent
 
 
-
 diver_forex_xau_jpy_1m_99000_28_6 = ForexDiverTradeConfig(
     chart=XAUUSD_1m_99000_28_6,
     second_chart=USDJPY_1m_99000_28_6,
     n_candle_check=300,
-    strategy=Divergence(5, 100, [], name="ForexDiver", inverse_diver_long=True),
+    strategy=Divergence(5, 100, [], name="ForexDiver", inverse_diver_long=False),
     position_handler=SteppingHandlerForex(
         local_agent,
         stoploss_pip=30,
@@ -150,8 +148,8 @@ diver_forex_xau_jpy_1m_99000_28_6 = ForexDiverTradeConfig(
         short_trade=False,
         pip_trail_stop_under_entry=False,
         trading_constraints=[
-            # SideConstraint(n_pos_each_side=1, n_bar=30, check_closed_positions=False),
-            # LoseInRowConstraint(n_long_lose=1, n_short_lose=1, n_bar=30),
+            SideConstraint(n_pos_each_side=1, n_bar=30, check_closed_positions=False),
+            LoseInRowConstraint(n_long_lose=1, n_short_lose=1, n_bar=30),
         ],
     ),
     heikingashi_chartdata=True,

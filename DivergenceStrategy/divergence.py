@@ -1,16 +1,20 @@
 from BacktestModule.dummy_models import DummyAgent
 from ChartModule.models import (
     Chart,
-    IndicatorBaseModel,
     Signal,
     ChartData,
     MarketSide,
-    IndicatorCandleSource,
+    CandlesSource,
 )
-from ChartModule.Indicators import TrendLine, Line, SupportConditions
+from ChartModule.Indicators import (
+    IndicatorBaseModel,
+    TrendLine,
+    Line,
+    SupportCandleConditions,
+)
 from ChartModule.plot import DoubleChartPlot
 from TradingModule.trader_bot import TradeConfig, commands, Position
-from TradingModule.models import PositionsReport, Strategy
+from TradingModule.models import Strategy
 from dataclasses import dataclass, field
 from typing import Literal
 from copy import copy
@@ -32,8 +36,8 @@ class Divergence(Strategy):
         min_step: int,
         max_step: int,
         confirmation_indicators: list[IndicatorBaseModel] = [],
-        long_support_conditions=SupportConditions.RED_GREEN,
-        short_support_conditions=SupportConditions.GREEN_RED,
+        long_support_conditions=SupportCandleConditions.RED_GREEN,
+        short_support_conditions=SupportCandleConditions.GREEN_RED,
         name="Divergence",
         inverse_diver_long: bool = False,
         inverse_diver_short: bool = False,
@@ -82,7 +86,7 @@ class Divergence(Strategy):
         direction = -1 if inverse else 1
 
         trendline.set(base_chartdata.candles[:-1])
-        all_lines = trendline.values  # type: list[Line]
+        all_lines = trendline.data  # type: list[Line]
         for base_chart_line in all_lines:
             start_candle_index = base_chartdata.index(base_chart_line.start_candle)
             end_candle_index = base_chartdata.index(base_chart_line.end_candle)
@@ -110,9 +114,7 @@ class Divergence(Strategy):
             return None
         res = self.find_divergence(
             TrendLine(
-                IndicatorCandleSource.Bottom
-                if self.body_candle
-                else IndicatorCandleSource.Low,
+                CandlesSource.Bottom if self.body_candle else CandlesSource.Low,
                 self.min_step,
                 self.max_step,
                 support_conditions=self.long_support_conditions,
@@ -142,9 +144,7 @@ class Divergence(Strategy):
             return None
         res = self.find_divergence(
             TrendLine(
-                IndicatorCandleSource.Top
-                if self.body_candle
-                else IndicatorCandleSource.High,
+                CandlesSource.Top if self.body_candle else CandlesSource.High,
                 self.min_step,
                 self.max_step,
                 support_conditions=self.short_support_conditions,
@@ -210,15 +210,11 @@ class Divergence(Strategy):
     ):
         if side == MarketSide.BULLISH:
             line_candlesource = (
-                IndicatorCandleSource.Bottom
-                if self.body_candle
-                else IndicatorCandleSource.Low
+                CandlesSource.Bottom if self.body_candle else CandlesSource.Low
             )
         else:  # side == MarketSide.BEARISH
             line_candlesource = (
-                IndicatorCandleSource.Top
-                if self.body_candle
-                else IndicatorCandleSource.High
+                CandlesSource.Top if self.body_candle else CandlesSource.High
             )
 
         signal = DivergenceSignal(
@@ -352,13 +348,10 @@ class DivergenceTradeConfig(TradeConfig):
         jump = 0
         base_chartdata, second_chartdata = self.get_chartdata(n_bar)
         for i in range(len_sub_data, len(base_chartdata) - 2):
-            base_sub_data = ChartData(
-                base_chartdata.chart, base_chartdata[:i], base_chartdata.indicators
-            )
+            base_sub_data = ChartData(base_chartdata.chart, base_chartdata[:i])
             seocnd_sub_data = ChartData(
                 second_chartdata.chart,
                 second_chartdata[:i],
-                second_chartdata.indicators,
             )
 
             candle = base_chartdata[i]
@@ -389,22 +382,22 @@ class DivergenceTradeConfig(TradeConfig):
                 all_positions.append(position)
             await commands.TradeCommand.execute_pending_commands(candle.time, False)
 
-        plot = DoubleChartPlot(base_chartdata, second_chartdata, plot_n_candles=n_bar)
-        self.strategy.draw(plot, all_signals[0], draw_indicators=True)  # type: ignore
-        for signal in all_signals[1:]:
-            self.strategy.draw(plot, signal, draw_indicators=False)  # type: ignore
-        for pos in all_positions:
-            if not pos.closed:
-                continue
-            pos.plot = plot
-            pos.draw()
-        commands_report = commands.TradeCommand.close_records()
-        all_reports = position_handler.report()
-        logger.info("Result:\n\n" + commands_report)
-        for poses_report in all_reports:
-            logger.info("\n" + str(poses_report))
-        overal_report = PositionsReport.give_overall_report(copy(all_reports))
-        logger.info("\n" + str(overal_report))
-        if show_image:
-            plot.show()
-        return all_signals, all_positions, plot, all_reports, commands_report
+        # plot = DoubleChartPlot(base_chartdata, second_chartdata, plot_n_candles=n_bar)
+        # self.strategy.draw(plot, all_signals[0], draw_indicators=True)  # type: ignore
+        # for signal in all_signals[1:]:
+        #     self.strategy.draw(plot, signal, draw_indicators=False)  # type: ignore
+        # for pos in all_positions:
+        #     if not pos.closed:
+        #         continue
+        #     pos.plot = plot
+        #     pos.draw()
+        # commands_report = commands.TradeCommand.close_records()
+        # all_reports = position_handler.report()
+        # logger.info("Result:\n\n" + commands_report)
+        # for poses_report in all_reports:
+        #     logger.info("\n" + str(poses_report))
+        # overal_report = PositionsReport.give_overall_report(copy(all_reports))
+        # logger.info("\n" + str(overal_report))
+        # if show_image:
+        #     plot.show()
+        return all_signals, all_positions, None, None, None

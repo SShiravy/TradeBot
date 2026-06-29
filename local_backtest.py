@@ -27,23 +27,23 @@ if __name__ == "__main__":
 
     asyncio.run(diver_signal_local_backtest(the_config, show_plot=False))
 
-    # statistical_indicators = [
-    #     WeekdayPnLHistogram(),
-    #     HourlyPnLHistogram(),
-    #     SessionPnLHistogram(),
-    #     PipPnlDistribution(
-    #         candles_range=200,
-    #     ),
-    #     PipAfterSLDistribution(candles_range=200, tolerance_pip=30),
-    #     RiskAnalysis(),
-    # ]
+    statistical_indicators = [
+        WeekdayPnLHistogram(),
+        HourlyPnLHistogram(),
+        SessionPnLHistogram(),
+        PipPnlDistribution(
+            candles_range=200,
+        ),
+        PipAfterSLDistribution(candles_range=200, tolerance_pip=30),
+        RiskAnalysis(),
+    ]
 
-    # diver_backtester = DiverBacktester(
-    #     the_config, statistical_indicators, show_chartdata=False
-    # )
-    # asyncio.run(
-    #     diver_backtester.positions_backtest(use_database=False, show_plots=False)
-    # )
+    diver_backtester = DiverBacktester(
+        the_config, statistical_indicators, show_chartdata=False
+    )
+    asyncio.run(
+        diver_backtester.positions_backtest(use_database=False, show_plots=False)
+    )
 
     profiler.disable()
     stats = pstats.Stats(profiler)

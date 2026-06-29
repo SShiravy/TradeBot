@@ -1,7 +1,6 @@
 from dataclasses import dataclass, asdict, field
-from abc import ABC, abstractmethod
 from datetime import datetime, timedelta
-from typing import Any, Literal
+from typing import Literal
 from enum import Enum
 import pandas as pd
 import numpy as np
@@ -64,18 +63,39 @@ class TimeFrame(Enum):
 
 
 class MarketSide(Enum):
-    BULLISH = "Bullish"
     BEARISH = "Bearish"
     NEUTRAL = "Neutral"
+    BULLISH = "Bullish"
 
     @property
     def number(self):
-        match self:
-            case MarketSide.BEARISH:
-                return -1
-            case MarketSide.BULLISH:
-                return 1
-        return 0
+        return {
+            MarketSide.BEARISH: -1,
+            MarketSide.BULLISH: 1,
+            MarketSide.BEARISH: 0,
+        }[self]
+
+    def __add__(self, other: "MarketSide") -> "MarketSide":
+        if not isinstance(other, MarketSide):
+            return NotImplemented
+
+        total = self.number + other.number
+
+        if total > 0:
+            return MarketSide.BULLISH
+        elif total < 0:
+            return MarketSide.BEARISH
+        else:
+            return MarketSide.NEUTRAL
+
+    def __radd__(self, other):
+        if other == 0:
+            return self
+        return self.__add__(other)
+
+    @property
+    def score(self):
+        return self.number
 
 
 @dataclass(slots=True, frozen=True)
@@ -130,6 +150,33 @@ class Candle:
         return f"{asdict(self)}"
 
 
+class CandlesSource(Enum):
+    High = "high"
+    Low = "low"
+    Top = "top"
+    Bottom = "bottom"
+    Close = "close"
+    Open = "open"
+    Volume = "volume"
+
+    def __call__(self, candle: Candle) -> float:
+        match self:
+            case CandlesSource.High:
+                return candle.high
+            case CandlesSource.Low:
+                return candle.low
+            case CandlesSource.Top:
+                return candle.body_top
+            case CandlesSource.Bottom:
+                return candle.body_bottom
+            case CandlesSource.Close:
+                return candle.close
+            case CandlesSource.Open:
+                return candle.open
+            case CandlesSource.Volume:
+                return candle.volume
+
+
 @dataclass(slots=True)
 class Chart:
     symbol: str
@@ -158,87 +205,10 @@ class Signal:
         return f"{self.chart} {self.side} at {self.candle.time} from {self.source}"
 
 
-class IndicatorBaseModel(ABC):
-    def __init__(self) -> None:
-        self.values: Any = None
-        self.candles: list[Candle] = []
-        self.last_checked_candle: Candle | None = None
-
-    @abstractmethod
-    def export_configs(self) -> dict:
-        return {"name": self.__class__.__name__}
-
-    @abstractmethod
-    def _calculate(self, *args, **kwargs) -> Any:
-        pass
-
-    @abstractmethod
-    def _forcast(self, *args, **kwargs) -> MarketSide:
-        pass
-
-    @abstractmethod
-    def plot(self, plot, *args, **kwargs) -> Any:
-        pass
-
-    def forcast(self, *args, **kwargs) -> MarketSide:
-        if self.values is None:
-            return MarketSide.NEUTRAL
-        else:
-            return self._forcast(*args, **kwargs)
-
-    def update(self, candles: list[Candle], *args, **kwargs) -> Any:
-        self.candles = candles
-        new_values = self._calculate(*args, **kwargs)
-        last_value = self.values[-1]
-        if new_values and new_values[-1] != last_value and last_value in new_values:
-            new_values = new_values[new_values.index(last_value) :]
-
-        self.values += new_values
-        self.last_checked_candle = candles[-1]
-        return new_values
-
-    def set(self, candles: list[Candle], *args, **kwargs) -> Any:
-        if not self.values:
-            self.candles = candles
-            self.values = self._calculate(*args, **kwargs)
-            self.last_checked_candle = candles[-1]
-        else:
-            self.update(candles, *args, **kwargs)
-        return self.values
-
-
-class IndicatorCandleSource(Enum):
-    High = "high"
-    Low = "low"
-    Top = "top"
-    Bottom = "bottom"
-    Close = "close"
-    Open = "open"
-    Volume = "volume"
-
-    def __call__(self, candle: Candle) -> float:
-        match self:
-            case IndicatorCandleSource.High:
-                return candle.high
-            case IndicatorCandleSource.Low:
-                return candle.low
-            case IndicatorCandleSource.Top:
-                return candle.body_top
-            case IndicatorCandleSource.Bottom:
-                return candle.body_bottom
-            case IndicatorCandleSource.Close:
-                return candle.close
-            case IndicatorCandleSource.Open:
-                return candle.open
-            case IndicatorCandleSource.Volume:
-                return candle.volume
-
-
 @dataclass(slots=True)
 class ChartData:
     chart: Chart
     candles: list[Candle] = field(default_factory=list)
-    indicators: list[IndicatorBaseModel] = field(default_factory=list)
 
     def __len__(self):
         return len(self.candles)
@@ -250,7 +220,7 @@ class ChartData:
         return self.candles[index]
 
     def __str__(self):
-        return f"{self.chart} with {len(self.candles)} candles & {len(self.indicators)} Idicator"
+        return f"{self.chart} with {len(self.candles)} candles"
 
     def index(self, value: Candle):
         left = 0
@@ -326,9 +296,7 @@ class ChartData:
         return ha_candles
 
     def give_heikingashi_chartdata(self):
-        return ChartData(
-            self.chart, self.heikinashi_candles(self.candles), self.indicators
-        )
+        return ChartData(self.chart, self.heikinashi_candles(self.candles))
 
     def generate_dataframe(self) -> pd.DataFrame:
         open_list = []

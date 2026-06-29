@@ -5,10 +5,9 @@ from ChartModule.models import (
     ChartData,
     MarketSide,
     Candle,
-    IndicatorBaseModel,
     Signal,
 )
-from ChartModule.Indicators import SupportConditions
+from ChartModule.Indicators import IndicatorBaseModel, SupportCandleConditions
 from ChartModule.plot import Plot
 from dataclasses import asdict, dataclass, field
 from datetime import datetime
@@ -555,8 +554,8 @@ class Strategy(ABC):
     def __init__(
         self,
         name: str,
-        long_support_conditions: SupportConditions,
-        short_support_conditions: SupportConditions,
+        long_support_conditions: SupportCandleConditions,
+        short_support_conditions: SupportCandleConditions,
         confirmation_indicators: list[IndicatorBaseModel] = [],
     ) -> None:
         self.name = name

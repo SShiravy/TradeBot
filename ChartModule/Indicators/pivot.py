@@ -1,11 +1,10 @@
 from ChartModule.models import (
-    IndicatorBaseModel,
     MarketSide,
     Candle,
-    IndicatorCandleSource,
+    CandlesSource,
 )
 from ChartModule.plot import ChartPlot
-from ChartModule.Indicators.models import SupportConditions
+from ChartModule.Indicators.models import IndicatorBaseModel, SupportCandleConditions
 import numpy as np
 
 
@@ -17,11 +16,11 @@ class Pivot(IndicatorBaseModel):
 
     def __init__(
         self,
-        source: IndicatorCandleSource,
+        source: CandlesSource,
         left: int = 3,
         right: int = 3,
         down_pivot=True,
-        support_conditions: SupportConditions = SupportConditions.RAW,
+        support_conditions: SupportCandleConditions = SupportCandleConditions.RAW,
     ) -> None:
         super().__init__()
         self.source = source
@@ -61,7 +60,7 @@ class Pivot(IndicatorBaseModel):
         candles: list[Candle],
     ) -> bool:
         self.update(candles)
-        if self.candles[candle_index] in self.values:
+        if self.candles[candle_index] in self.data:
             return True
         return False
 
@@ -70,18 +69,18 @@ class Pivot(IndicatorBaseModel):
 
     def plot(self, plot: ChartPlot, all=False):
         if all:
-            for candle in self.values:
+            for candle in self.data:
                 plot.mark_candle(candle, self.source)
         else:
-            plot.mark_candle(self.values[-1], self.source)
+            plot.mark_candle(self.data[-1], self.source)
 
     @property
     def major_pivot(self) -> Candle:
         if self._biggest_pivot:
             return self._biggest_pivot
         factor = -1 if self.down_pivot else 1
-        self._biggest_pivot = self.values[0]
-        for pivot in self.values[1:]:
+        self._biggest_pivot = self.data[0]
+        for pivot in self.data[1:]:
             if (self.source(pivot) - self.source(self._biggest_pivot)) * factor > 0:
                 self._biggest_pivot = pivot
         return self._biggest_pivot

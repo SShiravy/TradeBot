@@ -1,4 +1,5 @@
-from ChartModule.models import Candle, ChartData, Chart, MarketSide, IndicatorBaseModel
+from ChartModule.models import Candle, ChartData, Chart, MarketSide
+from ChartModule.Indicators.models import IndicatorBaseModel
 from ChartModule.plot import ChartPlot, DoubleChartPlot
 from copy import copy as shallow_copy
 

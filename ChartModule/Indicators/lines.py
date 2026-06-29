@@ -1,17 +1,12 @@
-from ChartModule.models import (
-    Candle,
-    MarketSide,
-    IndicatorBaseModel,
-    IndicatorCandleSource,
-)
-from ChartModule.Indicators.models import SupportConditions
+from ChartModule.models import Candle, MarketSide, CandlesSource
+from ChartModule.Indicators.models import IndicatorBaseModel, SupportCandleConditions
 from ChartModule.plot import ChartPlot
 import numpy as np
 
 
 class Line:
     def __init__(
-        self, source: IndicatorCandleSource, start_candle: Candle, end_candle: Candle
+        self, source: CandlesSource, start_candle: Candle, end_candle: Candle
     ) -> None:
         self.source = source
         self.start_candle = start_candle
@@ -41,11 +36,11 @@ class Line:
 class TrendLine(IndicatorBaseModel):
     def __init__(
         self,
-        source: IndicatorCandleSource,
+        source: CandlesSource,
         min_step: int,
         max_step: int,
         ignore_shadow_cross=True,
-        support_conditions=SupportConditions.RAW,
+        support_conditions=SupportCandleConditions.RAW,
     ) -> None:
         super().__init__()
         self.source = source
@@ -78,14 +73,14 @@ class TrendLine(IndicatorBaseModel):
         the_line = Line(self.source, start_candle, candles[end_index])
 
         candle_source = self.source
-        if self.source in [IndicatorCandleSource.Low, IndicatorCandleSource.Bottom]:
+        if self.source in [CandlesSource.Low, CandlesSource.Bottom]:
             cross_multiplier = 1
             if self.ignore_shadow_cross:
-                candle_source = IndicatorCandleSource.Bottom
+                candle_source = CandlesSource.Bottom
         else:
             cross_multiplier = -1
             if self.ignore_shadow_cross:
-                candle_source = IndicatorCandleSource.Top
+                candle_source = CandlesSource.Top
 
         for candle in candles[end_index:start_index:-1]:
             source_list.append(candle_source(candle))
@@ -108,14 +103,14 @@ class TrendLine(IndicatorBaseModel):
         time_list = []
 
         candle_source = self.source
-        if self.source in [IndicatorCandleSource.Low, IndicatorCandleSource.Bottom]:
+        if self.source in [CandlesSource.Low, CandlesSource.Bottom]:
             cross_multiplier = 1
             if self.ignore_shadow_cross:
-                candle_source = IndicatorCandleSource.Bottom
+                candle_source = CandlesSource.Bottom
         else:
             cross_multiplier = -1
             if self.ignore_shadow_cross:
-                candle_source = IndicatorCandleSource.Top
+                candle_source = CandlesSource.Top
 
         start = len(self.candles) - 1
         stop = max(-1, len(self.candles) - self.max_step - 1)
@@ -145,9 +140,9 @@ class TrendLine(IndicatorBaseModel):
         return lines
 
     def _forcast(self) -> MarketSide:
-        return self.values[-1].direction
+        return self.data[-1].direction
 
     def plot(self, plot: ChartPlot):
         plot.draw_straight_line(
-            self.values[-1].start_candle, self.values[-1].end_candle, self.source
+            self.data[-1].start_candle, self.data[-1].end_candle, self.source
         )

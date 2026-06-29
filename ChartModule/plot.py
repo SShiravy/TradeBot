@@ -1,4 +1,4 @@
-from ChartModule import ChartData, Candle, Signal, MarketSide, IndicatorCandleSource
+from ChartModule import ChartData, Candle, Signal, MarketSide, CandlesSource
 from datetime import datetime, timezone
 from typing import TypeAlias, Any
 from abc import ABC, abstractmethod
@@ -92,22 +92,22 @@ class ChartPlot(BaseChartPlot):
 
         return image_path_name
 
-    def draw_line(self, x1, y1, x2, y2, color="#cb00e2", width=1):
+    def draw_line(self, x1, y1, x2, y2, color="#cb00e2", width=1, ax=None):
         fplt.add_line(
             (x1, y1),
             (x2, y2),
             color=color,
             width=width,
             interactive=False,
-            ax=self.ax,
+            ax=self.ax if not ax else ax,
         )
 
     def draw_straight_line(
-        self, start_candle: Candle, end_candle: Candle, source: IndicatorCandleSource
+        self, start_candle: Candle, end_candle: Candle, source: CandlesSource, ax=None
     ):
         color = (
             "#e20000"
-            if source in [IndicatorCandleSource.Top, IndicatorCandleSource.High]
+            if source in [CandlesSource.Top, CandlesSource.High]
             else "#e2c800"
         )
 
@@ -117,7 +117,7 @@ class ChartPlot(BaseChartPlot):
             color=color,
             width=2,
             interactive=False,
-            ax=self.ax,
+            ax=self.ax if not ax else ax,
         )
 
     def draw_horizontal_line(
@@ -126,6 +126,7 @@ class ChartPlot(BaseChartPlot):
         end_time: datetime,
         price: float,
         color: str = "#8b0072ff",
+        ax=None,
     ):
         fplt.add_line(
             (start_time, price),
@@ -133,7 +134,7 @@ class ChartPlot(BaseChartPlot):
             color=color,
             style="--",
             width=5,
-            ax=self.ax,
+            ax=self.ax if not ax else ax,
         )
 
     def draw_sl_tp_lines(
@@ -142,7 +143,7 @@ class ChartPlot(BaseChartPlot):
         self.draw_horizontal_line(start_time, end_time, tp_price, "#09ff00b5")
         self.draw_horizontal_line(start_time, end_time, sl_price, "#ff0000d5")
 
-    def mark_signal(self, signal: Signal):
+    def mark_signal(self, signal: Signal, ax=None):
         if signal.side is MarketSide.BULLISH:
             fplt.plot(
                 signal.candle.time,
@@ -150,7 +151,7 @@ class ChartPlot(BaseChartPlot):
                 style="^",
                 color="#1DBD1D",
                 width=3,
-                ax=self.ax,
+                ax=self.ax if not ax else ax,
                 # legend=signal.source + "_Signal",
             )
         else:
@@ -160,23 +161,24 @@ class ChartPlot(BaseChartPlot):
                 style="v",
                 color="#BD1D1D",
                 width=3,
-                ax=self.ax,
+                ax=self.ax if not ax else ax,
                 # legend=signal.source + "_Signal",
             )
 
     def mark_candle(
         self,
         candle: Candle,
-        source=IndicatorCandleSource.Open,
+        source=CandlesSource.Open,
         legend: str | None = None,
         color: str | None = None,
+        ax=None,
     ):
         color = (
             color
             if color
             else (
                 "#e20000"
-                if source in [IndicatorCandleSource.Top, IndicatorCandleSource.High]
+                if source in [CandlesSource.Top, CandlesSource.High]
                 else "#e2c800"
             )
         )
@@ -186,14 +188,29 @@ class ChartPlot(BaseChartPlot):
             style="o",
             color=color,
             width=1,
-            ax=self.ax,
+            legend=legend,
+            ax=self.ax if not ax else ax,
             # legend=legend,
         )
 
     def linear_plot(
-        self, x, y, legend: str | None = None, color: str = "#410087", thickness=2
+        self,
+        x,
+        y,
+        legend: str | None = None,
+        color: str = "#410087",
+        thickness=2,
+        ax=None,
     ):
-        fplt.plot(x, y, style="-", ax=self.ax, color=color, width=thickness)
+        fplt.plot(
+            x,
+            y,
+            style="-",
+            ax=self.ax if not ax else ax,
+            color=color,
+            legend=legend,
+            width=thickness,
+        )
 
 
 class DoubleChartPlot(BaseChartPlot):
@@ -216,6 +233,51 @@ class DoubleChartPlot(BaseChartPlot):
 
         self.second_plot.ax = ax2
         self.second_plot.plot()
+
+    @property
+    def chart_plot(self):
+        return self.base_plot
+
+    def give_chartdata(self) -> ChartData:
+        return self.base_plot.chartdata
+
+    def show(self):
+        self.base_plot.show()
+
+    def save_image(self, name=None, path="Images/") -> str:
+        return self.base_plot.save_image(name, path)
+
+
+class ChartWithOscillatorPlot(ChartPlot):
+    def __init__(
+        self,
+        base_chartdata: ChartData,
+        oscillator_data: dict[int, float],
+        plot_n_candles: int = 100,
+        label: str = "Oscillator",
+        color: str = "#002576",
+    ) -> None:
+        self.base_plot = ChartPlot(base_chartdata, plot_n_candles=plot_n_candles)
+        self.oscillator_data = oscillator_data
+        self.plot_n_candles = plot_n_candles
+
+        ax1, ax2 = fplt.create_plot(
+            f"TimeFrame: {base_chartdata.chart.timeframe.value}", rows=2
+        )
+        self._ax = ax1
+
+        self.base_plot.ax = ax1
+        self.base_plot.plot()
+
+        fplt.plot(
+            oscillator_data.keys(),
+            oscillator_data.values(),
+            ax=ax2,
+            legend=label,
+            color=color,
+            width=1,
+        )
+        self.oscillator_ax = ax2
 
     @property
     def chart_plot(self):

@@ -2,10 +2,10 @@ import math
 from typing import Any
 from ChartModule.models import (
     Candle,
-    IndicatorBaseModel,
     MarketSide,
-    IndicatorCandleSource,
+    CandlesSource,
 )
+from ChartModule.Indicators.models import IndicatorBaseModel
 from ChartModule.plot import ChartPlot
 import pandas as pd
 
@@ -16,7 +16,7 @@ class SMA(IndicatorBaseModel):
     values: dict{time:sma}
     """
 
-    def __init__(self, n_bar: int, source=IndicatorCandleSource.Close) -> None:
+    def __init__(self, n_bar: int, source=CandlesSource.Close) -> None:
         super().__init__()
         self.n_bar = n_bar
         self.source = source
@@ -42,7 +42,7 @@ class SMA(IndicatorBaseModel):
 
     def _forcast(self) -> MarketSide:
         last_candle = self.candles[-1]
-        sma = self.values.get(last_candle.timestamp)
+        sma = self.data.get(last_candle.timestamp)
         if sma is None:
             return MarketSide.NEUTRAL
         if sma < last_candle.body_bottom:
@@ -52,7 +52,7 @@ class SMA(IndicatorBaseModel):
         return MarketSide.NEUTRAL
 
     def plot(self, plot: ChartPlot):
-        plot.linear_plot(self.values.keys(), self.values.values(), f"SMA{self.n_bar}")
+        plot.linear_plot(self.data.keys(), self.data.values(), f"SMA{self.n_bar}")
 
 
 class EMA(IndicatorBaseModel):
@@ -61,7 +61,7 @@ class EMA(IndicatorBaseModel):
     values: dict{timestamp:ema}
     """
 
-    def __init__(self, n_bar: int, source=IndicatorCandleSource.Close) -> None:
+    def __init__(self, n_bar: int, source=CandlesSource.Close) -> None:
         super().__init__()
         self.n_bar = n_bar
         self.source = source
@@ -80,7 +80,7 @@ class EMA(IndicatorBaseModel):
 
     def _forcast(self) -> MarketSide:
         last_candle = self.candles[-1]
-        ema = self.values[last_candle.timestamp]
+        ema = self.data[last_candle.timestamp]
         if ema < last_candle.body_bottom:
             return MarketSide.BULLISH
         elif ema > last_candle.body_top:
@@ -99,17 +99,17 @@ class EMA(IndicatorBaseModel):
         self.candles = candles
 
         for candle in candles[old_len:]:
-            prev_ema = self.values[self.last_checked_candle.timestamp]
+            prev_ema = self.data[self.last_checked_candle.timestamp]
 
             current_price = self.source(candle)
 
             ema = alpha * current_price + (1 - alpha) * prev_ema
 
-            self.values[candle.timestamp] = ema
+            self.data[candle.timestamp] = ema
             self.last_checked_candle = candle
 
     def plot(self, plot: ChartPlot):
-        plot.linear_plot(self.values.keys(), self.values.values(), f"EMA{self.n_bar}")
+        plot.linear_plot(self.data.keys(), self.data.values(), f"EMA{self.n_bar}")
 
 
 class WMA(IndicatorBaseModel):
@@ -118,7 +118,7 @@ class WMA(IndicatorBaseModel):
     values: dict{time:wma}
     """
 
-    def __init__(self, n_bar: int, source=IndicatorCandleSource.Close) -> None:
+    def __init__(self, n_bar: int, source=CandlesSource.Close) -> None:
         super().__init__()
         self.n_bar = n_bar
         self.source = source
@@ -151,7 +151,7 @@ class WMA(IndicatorBaseModel):
 
     def _forcast(self) -> MarketSide:
         last_candle = self.candles[-1]
-        wma = self.values.get(last_candle.time)
+        wma = self.data.get(last_candle.time)
         if wma is None:
             return MarketSide.NEUTRAL
         if wma < last_candle.body_bottom:
@@ -162,8 +162,8 @@ class WMA(IndicatorBaseModel):
 
     def plot(self, plot: ChartPlot):
         plot.linear_plot(
-            self.values.keys(),
-            self.values.values(),
+            self.data.keys(),
+            self.data.values(),
             f"WMA{self.n_bar}",
             color="#FF5733",
         )
@@ -175,7 +175,7 @@ class HMA(IndicatorBaseModel):
     values: dict{time:hma}
     """
 
-    def __init__(self, n_bar: int, source=IndicatorCandleSource.Close) -> None:
+    def __init__(self, n_bar: int, source=CandlesSource.Close) -> None:
         super().__init__()
         self.n_bar = n_bar
         self.source = source
@@ -227,8 +227,8 @@ class HMA(IndicatorBaseModel):
         last = self.candles[-1]
         last2 = self.candles[-2]
 
-        last_hma = self.values.get(last.time)
-        last2_hma = self.values.get(last2.time)
+        last_hma = self.data.get(last.time)
+        last2_hma = self.data.get(last2.time)
         if last_hma > last2_hma:
             return MarketSide.BULLISH
         else:
@@ -239,7 +239,7 @@ class HMA(IndicatorBaseModel):
         green_line_value = []
 
         last_value = None
-        for time, value in self.values.items():
+        for time, value in self.data.items():
             if last_value:
                 if value > last_value:
                     green_line_time.append(time)
@@ -247,7 +247,7 @@ class HMA(IndicatorBaseModel):
             last_value = value
 
         plot.linear_plot(
-            self.values.keys(), self.values.values(), color="#F10000", thickness=3
+            self.data.keys(), self.data.values(), color="#F10000", thickness=3
         )
         plot.linear_plot(
             green_line_time, green_line_value, color="#0BAC00", thickness=3

@@ -1,4 +1,5 @@
-from ChartModule.models import IndicatorBaseModel, MarketSide
+from ChartModule.models import MarketSide
+from ChartModule.Indicators.models import IndicatorBaseModel
 import finplot as fplt
 
 
@@ -27,7 +28,7 @@ class MovingColor(IndicatorBaseModel):
         return values
 
     def _forcast(self) -> MarketSide:
-        last_value = self.values[-1]
+        last_value = self.data[-1]
         if last_value > 0:
             return MarketSide.BULLISH
         if last_value > 0:
@@ -35,8 +36,8 @@ class MovingColor(IndicatorBaseModel):
         return MarketSide.NEUTRAL
 
     def plot(self, plot=None):
-        times = list(self.values.keys())
-        values = list(self.values.values())
+        times = list(self.data.keys())
+        values = list(self.data.values())
         fplt.plot(times, values, style="-", ax=plot, color="#F8C600")
         fplt.add_line(
             (times[0], 0),
@@ -73,7 +74,7 @@ class MovingCandleLength(IndicatorBaseModel):
         return values
 
     def _forcast(self) -> MarketSide:
-        last_value = self.values[-1]
+        last_value = self.data[-1]
         if last_value > 0:
             return MarketSide.BULLISH
         if last_value > 0:
@@ -81,8 +82,8 @@ class MovingCandleLength(IndicatorBaseModel):
         return MarketSide.NEUTRAL
 
     def plot(self, plot=None):
-        times = list(self.values.keys())
-        values = list(self.values.values())
+        times = list(self.data.keys())
+        values = list(self.data.values())
         fplt.plot(times, values, style="-", ax=plot, color="#E63D00")
         fplt.add_line(
             (times[0], 0),
