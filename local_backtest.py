@@ -14,7 +14,7 @@ if __name__ == "__main__":
     from LocalBackTester.local_backtest_configs import *  # noqa: F403
     from LocalBackTester.StatisticalMethods import *  # noqa: F403
 
-    the_config = diver_forex_xau_jpy_1m_99000_28_6
+    the_config = diver_forex_xau_1m_99000
 
     create_db()
     import cProfile

@@ -1,3 +1,5 @@
+from typing import Any
+
 from ChartModule.models import Candle, MarketSide, CandlesSource
 from ChartModule.Indicators.models import IndicatorBaseModel, SupportCandleConditions
 from ChartModule.plot import ChartPlot
@@ -146,3 +148,6 @@ class TrendLine(IndicatorBaseModel):
         plot.draw_straight_line(
             self.data[-1].start_candle, self.data[-1].end_candle, self.source
         )
+
+    def update(self, candles: list[Candle], *args, **kwargs) -> Any:
+        pass

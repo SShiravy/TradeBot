@@ -64,7 +64,6 @@ class ForexDiverTradeConfig(DivergenceTradeConfig):
         return base_chartdata, second_chartdata
 
     def give_delay(self, last_candle: Candle, jump=False) -> timedelta:
-        # TODO: move this approach to TradeConfig too. (when its confirmed)
         delay = self.chart.timeframe.time_delta
         if jump:
             delay *= self.bar_between_signals

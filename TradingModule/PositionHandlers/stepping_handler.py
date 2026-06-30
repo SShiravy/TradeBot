@@ -134,8 +134,15 @@ class SteppingHandlerForex(PositionHandler):
     def init_stoploss(self, entry_price: float, side: OrderSide) -> float:
         return entry_price - side.factor() * self.stoploss_pip
 
-    def init_takeprofit(self, entry_price: float, side: OrderSide) -> float:
-        return 0.0
+    def init_takeprofit(
+        self, entry_price: float, side: OrderSide, stoploss: float
+    ) -> float:
+        if self.targets_ratio:
+            sl_pip = abs(entry_price - stoploss)
+            tp = abs(entry_price + side.factor() * sl_pip * self.targets_ratio[-1])
+        else:
+            tp = abs(entry_price + self.targets_in_pip[-1] / 10 * side.factor())
+        return tp
 
     async def generate_position(
         self,
@@ -163,11 +170,7 @@ class SteppingHandlerForex(PositionHandler):
 
         precision = signal.chart.precision
         sl = round(self.init_stoploss(sl_base_price, side), precision)
-        sl_pip = abs(entry_price - sl)
-        tp = round(
-            abs(entry_price + side.factor() * sl_pip * self.targets_ratio[-1]),
-            precision,
-        )
+        tp = round(self.init_takeprofit(entry_price, side, sl), precision)
 
         position = Position(
             signal.chart,

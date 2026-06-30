@@ -37,7 +37,9 @@ class PositionHandler(ABC):
         pass
 
     @abstractmethod
-    def init_takeprofit(self, entry_price: float, side: OrderSide) -> float:
+    def init_takeprofit(
+        self, entry_price: float, side: OrderSide, *args, **kwargs
+    ) -> float:
         pass
 
     @abstractmethod

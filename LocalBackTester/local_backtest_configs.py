@@ -51,7 +51,7 @@ diver_forex_xau_1m_5000_test = ForexDiverTradeConfig(
     chart=XAUUSD_1m_5000_test,
     second_chart=SOLUSD_1m_5000_test,
     n_candle_check=300,
-    strategy=Divergence(5, 100, [], name="ForexDiver"),
+    strategy=Divergence(5, 200, [], name="ForexDiver"),
     position_handler=SteppingHandlerForex(
         local_agent,
         stoploss_pip=30,
@@ -83,8 +83,8 @@ diver_forex_xau_1m_99000 = ForexDiverTradeConfig(
     position_handler=SteppingHandlerForex(
         local_agent,
         stoploss_pip=10,
-        targets_ratio=[1, 2, 3],
-        targets_ratio_volumes=[0.01, 0.01, 0.01],
+        targets_ratio=[],
+        targets_ratio_volumes=[],
         targets_in_pip=[20],
         targets_in_pip_volumes=[0.01],
         trail_stop=True,
