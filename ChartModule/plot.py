@@ -165,6 +165,26 @@ class ChartPlot(BaseChartPlot):
                 # legend=signal.source + "_Signal",
             )
 
+    def mark_price(self, time, price: float, side: MarketSide, ax=None):
+        if side is MarketSide.BULLISH:
+            fplt.plot(
+                time,
+                price,
+                style="^",
+                color="#1DBD1D",
+                width=3,
+                ax=self.ax if not ax else ax,
+            )
+        else:
+            fplt.plot(
+                time,
+                price,
+                style="v",
+                color="#BD1D1D",
+                width=3,
+                ax=self.ax if not ax else ax,
+            )
+
     def mark_candle(
         self,
         candle: Candle,

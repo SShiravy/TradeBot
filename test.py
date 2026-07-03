@@ -32,6 +32,29 @@ async def start_fich_diver_backtest():
     await forex_one_m.backtest(1000)
 
 
+def test_choch_queue():
+    from ChartModule.models import Chart, TimeFrame
+    from ChartModule.plot import ChartPlot
+    from ChochQueueStrategy import ChochQueueFilter
+    from Forex.agent import ForexAgent
+
+    chart = Chart("XAUUSD", TimeFrame.one_minute)
+    chart_data = ForexAgent().get_chartdata(chart, 500)
+    if chart_data is None:
+        raise ValueError
+
+    choch = ChochQueueFilter(pivot_length=5, retrace_fib=0.8, use_fibo_filter=True)
+    choch.check_signal(chart_data)
+
+    validated_models = [model for model in choch.queue if model.validated]
+    logging.info(f"validated choch models: {validated_models}")
+
+
+    plot = ChartPlot(chart_data, 500)
+    choch.draw_all(plot)
+    plot.show() 
+
+
 async def test_open_position():
     from TradingModule.trader_bot import TraderBot
     from TradingModule.reporter import TelegramReporter
@@ -119,7 +142,7 @@ def store_mt5_data():
     # store_mt5_tick_data()
 
     chart = CsvChart(
-        "XAUUSD!",
+        "XAUUSD",
         timeframe=TimeFrame.one_minute,
         csv_path="opo_XAUUSD_1m_99000_28_6.csv",
     )
@@ -134,7 +157,7 @@ def test_rsi():
     from ChartModule.plot import ChartWithOscillatorPlot
     from Forex.agent import ForexAgent
 
-    chart = Chart("XAUUSD!", TimeFrame.one_minute)
+    chart = Chart("XAUUSD", TimeFrame.one_minute)
     chart_data = ForexAgent().get_chartdata(chart, 200)
     if chart_data is None:
         raise ValueError
@@ -152,6 +175,8 @@ if __name__ == "__main__":
     # asyncio.run(start_fibochoch_backtest())
     # asyncio.run(start_fich_diver_backtest())
 
+    test_choch_queue()
+
     # new_backtest()
 
     # store_mt5_data()
@@ -162,7 +187,7 @@ if __name__ == "__main__":
 
     # asyncio.run(test_BitUnix_open_position())
 
-    test_rsi()
+    # test_rsi()
 
     # from datetime import datetime
     # print(datetime.fromtimestamp(1782604800))
