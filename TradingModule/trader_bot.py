@@ -69,8 +69,8 @@ class TradeConfig:
         return chartdata
 
     async def find_signal(
-        self, chartdata: ChartData, *args, **kwargs
-    ) -> None | tuple[Signal, Position]:
+        self, chartdata: ChartData, consider_position: bool = True, *args, **kwargs
+    ) -> None | tuple[Signal, Position] | Signal:
         signal = self.strategy.check_signal(
             chartdata, self.long_signal, self.short_signal
         )
@@ -81,7 +81,8 @@ class TradeConfig:
         if self.send_signal:
             plot = ChartPlot(chartdata)
             self.strategy.draw(plot, signal, draw_indicators=True)
-
+        if not consider_position:
+            return signal
         position = await self.position_handler.generate_position(signal)
         if not position:
             return None
@@ -89,10 +90,10 @@ class TradeConfig:
 
     async def task(self) -> timedelta | tuple[timedelta, Signal, Position]:
         chartdata = self.get_chartdata()
-        res = await self.find_signal(chartdata)
+        res = await self.find_signal(chartdata, consider_position=True)
         if res is None:
             return self.give_delay(chartdata[-1])
-        signal, position = res
+        signal, position = res  # type: ignore
         return self.give_delay(chartdata[-1], jump=True), signal, position
 
     async def backtest(

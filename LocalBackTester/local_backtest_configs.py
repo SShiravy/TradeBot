@@ -51,7 +51,7 @@ diver_forex_xau_1m_5000_test = ForexDiverTradeConfig(
     chart=XAUUSD_1m_5000_test,
     second_chart=SOLUSD_1m_5000_test,
     n_candle_check=300,
-    strategy=Divergence(5, 200, [], name="ForexDiver"),
+    strategy=Divergence(3, 500, [], name="ForexDiver", inverse_diver_long=True),
     position_handler=SteppingHandlerForex(
         local_agent,
         stoploss_pip=30,

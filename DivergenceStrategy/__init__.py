@@ -3,5 +3,17 @@ from DivergenceStrategy.divergence import (
     Divergence,
     DivergenceTradeConfig,
 )
+from DivergenceStrategy.oscillator_divergence import (
+    OscillatorDivergence,
+    OscillatorDiverConfig,
+    OscillatorDiverSignal,
+)
 
-__all__ = ["DivergenceSignal", "Divergence", "DivergenceTradeConfig"]
+__all__ = [
+    "DivergenceSignal",
+    "Divergence",
+    "DivergenceTradeConfig",
+    "OscillatorDivergence",
+    "OscillatorDiverConfig",
+    "OscillatorDiverSignal",
+]

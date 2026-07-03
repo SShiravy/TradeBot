@@ -20,18 +20,6 @@ async def start_diver_crypto_backtest_pack():
     await start_diver_crypto_backtest_pack(send_report=True)
 
 
-async def start_fibochoch_backtest():
-    from FiboChochStrategy.backtest_configs import forex_five_m
-
-    await forex_five_m.backtest(2000, consider_positions=False)
-
-
-async def start_fich_diver_backtest():
-    from FiboChochDiverStrategy.backtest_configs import forex_one_m
-
-    await forex_one_m.backtest(1000)
-
-
 async def test_open_position():
     from TradingModule.trader_bot import TraderBot
     from TradingModule.reporter import TelegramReporter
@@ -113,7 +101,7 @@ def store_mt5_data():
     from LocalBackTester.methods import (
         store_forex_data,
         plot_csv_kline,
-        store_mt5_tick_data,
+        # store_mt5_tick_data,
     )
 
     # store_mt5_tick_data()
@@ -134,19 +122,30 @@ def test_rsi():
     from ChartModule.plot import ChartWithOscillatorPlot
     from Forex.agent import ForexAgent
 
-    chart = Chart("XAUUSD!", TimeFrame.one_minute)
-    chart_data = ForexAgent().get_chartdata(chart, 200)
+    chart = Chart("XAUUSD!", TimeFrame.fifteen_minutes)
+    chart_data = ForexAgent().get_chartdata(chart, 2000)
     if chart_data is None:
         raise ValueError
 
     rsi = RSI()
     rsi.set(candles=chart_data.candles)
-    plot = ChartWithOscillatorPlot(chart_data, rsi.data, 200, label="RSI")
+    plot = ChartWithOscillatorPlot(chart_data, rsi.data, 3000, label="RSI")
     rsi.plot(plot, plot.oscillator_ax)
     plot.show()
 
 
+async def test_oscillator_diver():
+    from DivergenceStrategy.backtest_configs import forex_rsi_diver_five_m
+
+    await forex_rsi_diver_five_m.backtest(1000)
+
+
 if __name__ == "__main__":
+    import cProfile
+    import pstats
+
+    profiler = cProfile.Profile()
+    profiler.enable()
     # asyncio.run(start_diver_crypto_backtest_pack())
     # asyncio.run(start_diver_backtest())
     # asyncio.run(start_fibochoch_backtest())
@@ -162,7 +161,14 @@ if __name__ == "__main__":
 
     # asyncio.run(test_BitUnix_open_position())
 
-    test_rsi()
+    # test_rsi()
+
+    asyncio.run(test_oscillator_diver())
 
     # from datetime import datetime
-    # print(datetime.fromtimestamp(1782604800))
+    # print(datetime.fromtimestamp(1782313800))
+
+    profiler.disable()
+    stats = pstats.Stats(profiler)
+    stats.sort_stats("cumtime")
+    stats.print_stats(30)

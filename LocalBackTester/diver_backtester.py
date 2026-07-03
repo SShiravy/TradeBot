@@ -67,9 +67,9 @@ class DiverBacktester:
         def give_next_signal(all_signals):
             for signal in all_signals:
                 entry_source = (
-                    signal.base_line.end_candle.high
+                    signal.main_chart_line.end_candle.high
                     if signal.side is MarketSide.BEARISH
-                    else signal.base_line.end_candle.low
+                    else signal.main_chart_line.end_candle.low
                 )
                 yield signal, entry_source
             yield None, None

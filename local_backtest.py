@@ -14,7 +14,7 @@ if __name__ == "__main__":
     from LocalBackTester.local_backtest_configs import *  # noqa: F403
     from LocalBackTester.StatisticalMethods import *  # noqa: F403
 
-    the_config = diver_forex_xau_1m_99000
+    the_config = diver_forex_xau_1m_5000_test
 
     create_db()
     import cProfile
@@ -39,7 +39,7 @@ if __name__ == "__main__":
     ]
 
     diver_backtester = DiverBacktester(
-        the_config, statistical_indicators, show_chartdata=False
+        the_config, statistical_indicators, show_chartdata=True
     )
     asyncio.run(
         diver_backtester.positions_backtest(use_database=False, show_plots=False)

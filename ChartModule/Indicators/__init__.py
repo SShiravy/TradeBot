@@ -5,6 +5,7 @@ from ChartModule.Indicators.moving_avg import SMA, EMA, WMA, HMA
 from ChartModule.Indicators.models import IndicatorBaseModel, SupportCandleConditions
 from ChartModule.Indicators.moving_color import MovingColor, MovingCandleLength
 from ChartModule.Indicators.fibonacci import FibonacciRetracement, FiboLevels
+from ChartModule.Indicators.rsi import RSI
 
 __all__ = [
     "IndicatorBaseModel",
@@ -14,6 +15,7 @@ __all__ = [
     "CVD",
     "SMA",
     "EMA",
+    "RSI",
     "SupportCandleConditions",
     "MovingColor",
     "MovingCandleLength",

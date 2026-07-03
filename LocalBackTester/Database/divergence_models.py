@@ -25,10 +25,10 @@ class DiverSignalRow(SQLModel, table=True):
     def generate_datapoint(cls, diver_signal: DivergenceSignal, source_id: int):
         datapoint = DiverSignalRow(
             signal_timestamp=diver_signal.candle.timestamp,
-            baseline_start_timestamp=diver_signal.base_line.start_candle.timestamp,
-            baseline_end_timestamp=diver_signal.base_line.end_candle.timestamp,
-            secondline_start_timestamp=diver_signal.second_line.start_candle.timestamp,
-            secondline_end_timestamp=diver_signal.second_line.end_candle.timestamp,
+            baseline_start_timestamp=diver_signal.main_chart_line.start_candle.timestamp,
+            baseline_end_timestamp=diver_signal.main_chart_line.end_candle.timestamp,
+            secondline_start_timestamp=diver_signal.other_chart_line.start_candle.timestamp,
+            secondline_end_timestamp=diver_signal.other_chart_line.end_candle.timestamp,
             side=diver_signal.side.value,
             source=source_id,
         )

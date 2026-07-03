@@ -26,8 +26,8 @@ logger = logging.getLogger("Divergence")
 
 @dataclass(slots=True, frozen=True)
 class DivergenceSignal(Signal):
-    base_line: Line
-    second_line: Line
+    main_chart_line: Line
+    other_chart_line: Line
 
 
 class Divergence(Strategy):
@@ -41,8 +41,8 @@ class Divergence(Strategy):
         name="Divergence",
         inverse_diver_long: bool = False,
         inverse_diver_short: bool = False,
-        long_second_line_validation: bool = True,
-        short_second_line_validation: bool = True,
+        long_other_chart_line_validation: bool = True,
+        short_other_chart_line_validation: bool = True,
         body_candle: bool = False,
     ) -> None:
         super().__init__(
@@ -55,8 +55,8 @@ class Divergence(Strategy):
         self.max_step = max_step
         self.inverse_diver_long = inverse_diver_long
         self.inverse_diver_short = inverse_diver_short
-        self.long_second_line_validation = long_second_line_validation
-        self.short_second_line_validation = short_second_line_validation
+        self.long_other_chart_line_validation = long_other_chart_line_validation
+        self.short_other_chart_line_validation = short_other_chart_line_validation
         self.body_candle = body_candle
 
     def export_config(self):
@@ -67,8 +67,8 @@ class Divergence(Strategy):
                 "max_step": self.max_step,
                 "inverse_diver_long": self.inverse_diver_long,
                 "inverse_diver_short": self.inverse_diver_short,
-                "long_second_line_validation": self.long_second_line_validation,
-                "short_second_line_validation": self.short_second_line_validation,
+                "long_other_chart_line_validation": self.long_other_chart_line_validation,
+                "short_other_chart_line_validation": self.short_other_chart_line_validation,
                 "body_candle": self.body_candle,
             }
         )
@@ -81,7 +81,7 @@ class Divergence(Strategy):
         base_chartdata: ChartData,
         second_chartdata: ChartData,
         inverse: bool = False,
-        second_line_validation: bool = True,
+        other_chart_line_validation: bool = True,
     ) -> tuple[Line, Line] | None:
         direction = -1 if inverse else 1
 
@@ -90,7 +90,7 @@ class Divergence(Strategy):
         for base_chart_line in all_lines:
             start_candle_index = base_chartdata.index(base_chart_line.start_candle)
             end_candle_index = base_chartdata.index(base_chart_line.end_candle)
-            if second_line_validation:
+            if other_chart_line_validation:
                 second_chart_line = trendline.valid_trendline(
                     second_chartdata.candles, start_candle_index, end_candle_index
                 )
@@ -122,18 +122,18 @@ class Divergence(Strategy):
             base_chartdata,
             second_chartdata,
             self.inverse_diver_long,
-            self.long_second_line_validation,
+            self.long_other_chart_line_validation,
         )
         if res is None:
             return None
-        base_line, second_line = res
+        main_chart_line, other_chart_line = res
         signal = DivergenceSignal(
             base_chartdata.chart,
             base_chartdata[-1],
             MarketSide.BULLISH,
             self.name,
-            base_line,
-            second_line,
+            main_chart_line,
+            other_chart_line,
         )
         return signal
 
@@ -152,18 +152,18 @@ class Divergence(Strategy):
             base_chartdata,
             second_chartdata,
             not self.inverse_diver_short,
-            self.short_second_line_validation,
+            self.short_other_chart_line_validation,
         )
         if res is None:
             return None
-        base_line, second_line = res
+        main_chart_line, other_chart_line = res
         signal = DivergenceSignal(
             base_chartdata.chart,
             base_chartdata[-1],
             MarketSide.BEARISH,
             self.name,
-            base_line,
-            second_line,
+            main_chart_line,
+            other_chart_line,
         )
         return signal
 
@@ -222,12 +222,12 @@ class Divergence(Strategy):
             base_chartdata.candles[-1],
             side,
             "dummy_signal",
-            base_line=Line(
+            main_chart_line=Line(
                 line_candlesource,
                 base_chartdata.candles[-5],
                 base_chartdata.candles[-2],
             ),
-            second_line=Line(
+            other_chart_line=Line(
                 line_candlesource,
                 second_chartdata.candles[-5],
                 second_chartdata.candles[-2],
@@ -243,14 +243,14 @@ class Divergence(Strategy):
     ):
         plot.base_plot.mark_signal(signal)
         plot.base_plot.draw_straight_line(
-            signal.base_line.start_candle,
-            signal.base_line.end_candle,
-            signal.base_line.source,
+            signal.main_chart_line.start_candle,
+            signal.main_chart_line.end_candle,
+            signal.main_chart_line.source,
         )
         plot.second_plot.draw_straight_line(
-            signal.second_line.start_candle,
-            signal.second_line.end_candle,
-            signal.second_line.source,
+            signal.other_chart_line.start_candle,
+            signal.other_chart_line.end_candle,
+            signal.other_chart_line.source,
         )
         if draw_indicators and self.confirmation_indicators:
             for indicator in self.confirmation_indicators:
@@ -293,9 +293,9 @@ class DivergenceTradeConfig(TradeConfig):
             return None
 
         entry_source = (
-            signal.base_line.end_candle.high
+            signal.main_chart_line.end_candle.high
             if signal.side is MarketSide.BEARISH
-            else signal.base_line.end_candle.low
+            else signal.main_chart_line.end_candle.low
         )
         plot = None
         if self.send_signal:

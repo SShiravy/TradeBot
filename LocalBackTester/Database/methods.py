@@ -89,7 +89,7 @@ def fetch_diver_siganls(
             candle=signal_candle,
             side=MarketSide(signal.side),  # type: ignore
             source=str(signal.source),
-            base_line=Line(
+            main_chart_line=Line(
                 source=line_candlesource,
                 start_candle=base_chartdata.find_candle_by_time(
                     signal.baseline_start_timestamp  # type: ignore
@@ -98,7 +98,7 @@ def fetch_diver_siganls(
                     signal.baseline_end_timestamp
                 ),  # type: ignore
             ),
-            second_line=Line(
+            other_chart_line=Line(
                 source=line_candlesource,
                 start_candle=second_chartdata.find_candle_by_time(
                     signal.secondline_start_timestamp  # type: ignore
