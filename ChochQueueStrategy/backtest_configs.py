@@ -13,7 +13,7 @@ choch_queue_xau_one_m = ChochQueueTradeConfig(
         pivot_length=50,
         retrace_fib=0.5,
         use_wick=True,
-        use_fibo_filter=True,  # False -> confirm signal on the CHoCH break itself
+        use_fibo_filter=True,
         name="ChochQueue",
     ),
     bar_between_signals=2,

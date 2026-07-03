@@ -20,22 +20,6 @@ logger = logging.getLogger("ChochQueue")
 
 @dataclass(slots=True)
 class ChochModel:
-    """
-    one CHoCH break under investigation (a single item of the pine-script queue arrays)
-
-    side          : BULLISH -> c_type=1 | BEARISH -> c_type=-1
-    break_candle  : candle where the pivot got broken (c_bar)
-    break_level   : the pivot price that got broken (c_level)
-    pivot_candle  : the pivot candle that got broken (c_pivot_bar)
-    anchor        : fixed leg point, the opposite pivot price right before the break (c_anchor)
-                    for BULLISH  = کف pivot قبلی (ثابت = کف لگ)
-                    for BEARISH  = سقف pivot قبلی (ثابت = سقف لگ)
-    extreme       : running max/min of the leg since the break bar (c_extreme)
-                    for BULLISH  = running max high (آپدیت میشه = سقف لگ)
-                    for BEARISH  = running min low  (آپدیت میشه = کف لگ)
-    touch_candle  : the candle that confirmed/validated this CHoCH (retracement
-                    touch when the fibo filter is on, same as break_candle when it's off)
-    """
 
     side: MarketSide
     break_candle: Candle
@@ -96,7 +80,6 @@ class ChochQueueFilter(Strategy):
         self.cur_group_type: MarketSide = MarketSide.NEUTRAL
         self.queue: list[ChochModel] = []
 
-        # only used to avoid re-firing the same signal on every call
         self.last_reported_time: datetime | None = None
 
     def export_config(self):
@@ -277,7 +260,7 @@ class ChochQueueFilter(Strategy):
                     self.cur_group_type = new_type
                     break
 
-            return  # only one validation per bar, mirrors pine's validated_this_bar
+            return  # only one validation per bar
 
     # ─── MAIN SIMULATION ─────────────────────────────────────────────────
 
@@ -324,8 +307,8 @@ class ChochQueueFilter(Strategy):
                     ChochModel(
                         side=MarketSide.BULLISH,
                         break_candle=candle,
-                        break_level=last_ph_price,  # type: ignore[arg-type]
-                        pivot_candle=last_ph_candle,  # type: ignore[arg-type]
+                        break_level=last_ph_price,
+                        pivot_candle=last_ph_candle,
                         anchor=last_pl_price,
                     )
                 )
@@ -340,8 +323,8 @@ class ChochQueueFilter(Strategy):
                     ChochModel(
                         side=MarketSide.BEARISH,
                         break_candle=candle,
-                        break_level=last_pl_price,  # type: ignore[arg-type]
-                        pivot_candle=last_pl_candle,  # type: ignore[arg-type]
+                        break_level=last_pl_price,
+                        pivot_candle=last_pl_candle,
                         anchor=last_ph_price,
                     )
                 )
