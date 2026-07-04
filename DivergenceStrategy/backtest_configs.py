@@ -1,6 +1,6 @@
 from ChartModule import Chart, TimeFrame
 from ChartModule.Indicators.rsi import RSI
-from DivergenceStrategy.divergence import Divergence
+from DivergenceStrategy import Divergence
 from ChartModule.Indicators import EMA
 from DivergenceStrategy.oscillator_divergence import (
     OscillatorDiverConfig,

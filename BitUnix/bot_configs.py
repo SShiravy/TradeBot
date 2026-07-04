@@ -1,6 +1,6 @@
 from BitUnix import BitUnixAgent
 from ChartModule import Chart, ChartData, Candle
-from DivergenceStrategy.divergence import Divergence, TwoChartDiverTradeConfig
+from DivergenceStrategy import Divergence, TwoChartDiverTradeConfig
 from datetime import datetime, timezone, timedelta
 from dataclasses import dataclass
 import logging
@@ -60,5 +60,5 @@ class BitUnixDiverTradeConfig(TwoChartDiverTradeConfig):
         res = await self.find_signal(base_chartdata, second_chartdata)
         if res is None:
             return self.give_delay(base_chartdata[-1])
-        signal, position = res
+        signal, position = res # type: ignore
         return self.give_delay(base_chartdata[-1], jump=True), signal, position
