@@ -1,7 +1,7 @@
-from DivergenceStrategy.divergence import (
+from DivergenceStrategy.two_chart_divergence import (
     DivergenceSignal,
     Divergence,
-    DivergenceTradeConfig,
+    TwoChartDiverTradeConfig,
 )
 from DivergenceStrategy.oscillator_divergence import (
     OscillatorDivergence,
@@ -16,7 +16,7 @@ from DivergenceStrategy.oscillator_double_divergence import (
 __all__ = [
     "DivergenceSignal",
     "Divergence",
-    "DivergenceTradeConfig",
+    "TwoChartDiverTradeConfig",
     "OscillatorDivergence",
     "OscillatorDiverConfig",
     "OscillatorDiverSignal",

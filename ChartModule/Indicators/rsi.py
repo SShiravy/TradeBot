@@ -90,6 +90,7 @@ class RSI(IndicatorBaseModel):
             self.candles = candles
             self.data = self._calculate(*args, **kwargs)
             self.last_checked_candle = candles[-1]
+            # TODO: move this approach to base model
             return
         start_index = self.find_new_candle_index(candles)
 

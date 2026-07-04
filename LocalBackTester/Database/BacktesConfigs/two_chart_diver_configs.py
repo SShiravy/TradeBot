@@ -1,7 +1,7 @@
 from ChartModule.Indicators.moving_avg import EMA
 from LocalBackTester.agent import LocalAgent
 from Forex.bot_config import ForexDiverTradeConfig
-from DivergenceStrategy.divergence import Divergence
+from DivergenceStrategy import Divergence
 from Coinex.bot_config import CoinexDiverTradeConfig
 from TradingModule.PositionHandlers import (
     SteppingHandlerForex,
@@ -50,8 +50,8 @@ local_agent = LocalAgent()
 diver_forex_xau_1m_5000_test = ForexDiverTradeConfig(
     chart=XAUUSD_1m_5000_test,
     second_chart=SOLUSD_1m_5000_test,
-    n_candle_check=300,
-    strategy=Divergence(3, 500, [], name="ForexDiver", inverse_diver_long=True),
+    n_candle_check=100,
+    strategy=Divergence(7, 250, [], name="ForexDiver", inverse_diver_long=True),
     position_handler=SteppingHandlerForex(
         local_agent,
         stoploss_pip=30,

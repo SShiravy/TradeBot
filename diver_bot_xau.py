@@ -6,7 +6,7 @@ from TradingModule.PositionHandlers.trading_constraints import (
     SideConstraint,
 )
 from TradingModule.trader_bot import TraderBot
-from DivergenceStrategy.divergence import Divergence
+from DivergenceStrategy import Divergence
 from custom_logger import CustomLogger
 import asyncio
 import logging

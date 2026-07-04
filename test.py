@@ -137,7 +137,13 @@ def test_rsi():
 async def test_oscillator_diver():
     from DivergenceStrategy.backtest_configs import forex_rsi_double_diver_five_m
 
-    await forex_rsi_double_diver_five_m.backtest(1000)
+    await forex_rsi_double_diver_five_m.backtest(3000)
+
+
+async def test_two_chart_diver():
+    from DivergenceStrategy.backtest_configs import forex_diver_one_m
+
+    await forex_diver_one_m.backtest(3000)
 
 
 if __name__ == "__main__":
@@ -163,7 +169,8 @@ if __name__ == "__main__":
 
     # test_rsi()
 
-    asyncio.run(test_oscillator_diver())
+    # asyncio.run(test_oscillator_diver())
+    asyncio.run(test_two_chart_diver())
 
     # from datetime import datetime
     # print(datetime.fromtimestamp(1782313800))

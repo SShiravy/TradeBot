@@ -1,13 +1,13 @@
 from BitUnix import BitUnixAgent
 from ChartModule import Chart, ChartData, Candle
-from DivergenceStrategy.divergence import Divergence, DivergenceTradeConfig
+from DivergenceStrategy.divergence import Divergence, TwoChartDiverTradeConfig
 from datetime import datetime, timezone, timedelta
 from dataclasses import dataclass
 import logging
 
 
 @dataclass(kw_only=True)
-class BitUnixDiverTradeConfig(DivergenceTradeConfig):
+class BitUnixDiverTradeConfig(TwoChartDiverTradeConfig):
     second_chart: Chart
     agent: BitUnixAgent  # type: ignore[override]
     strategy: Divergence  # type: ignore[override]

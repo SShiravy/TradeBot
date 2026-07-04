@@ -304,15 +304,10 @@ class OscillatorDiverConfig(TradeConfig):
         )
         if signal is None:
             return None
+        logger.info(f"Oscillator Divergence Signal:{signal}")
+        if not consider_position:
+            return signal
 
-        logger.info(f"OscillatorDiver Signal:{signal}")
-
-        entry_source = (
-            signal.main_chart_line.end_candle.high
-            if signal.side is MarketSide.BEARISH
-            else signal.main_chart_line.end_candle.low
-        )
-        # TODO: change entry source to agent.get_current_tick
         plot = None
         if self.send_signal:
             plot = ChartWithOscillatorPlot(
@@ -321,8 +316,12 @@ class OscillatorDiverConfig(TradeConfig):
             self.strategy.draw(plot, signal, draw_indicators=True)
             self.strategy.oscillator_indicator.plot(plot, plot.oscillator_ax)
 
-        if not consider_position:
-            return signal
+        entry_source = (
+            signal.main_chart_line.end_candle.high
+            if signal.side is MarketSide.BEARISH
+            else signal.main_chart_line.end_candle.low
+        )  # TODO: change entry source to agent.get_current_tick
+
         position = await self.position_handler.generate_position(
             signal, sl_base_price=entry_source, plot=plot
         )

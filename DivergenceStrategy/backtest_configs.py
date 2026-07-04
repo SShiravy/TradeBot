@@ -127,7 +127,7 @@ forex_rsi_double_diver_five_m = OscillatorDoubleDiverConfig(
             trail_stop=True,
         )
     ),
-    heikingashi_chartdata=True,
+    heikingashi_chartdata=False,
 )
 # CVD ----
 
