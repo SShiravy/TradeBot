@@ -8,6 +8,10 @@ from DivergenceStrategy.oscillator_divergence import (
     OscillatorDiverConfig,
     OscillatorDiverSignal,
 )
+from DivergenceStrategy.oscillator_double_divergence import (
+    OscillatorDoubleDiverConfig,
+    OscillatorDoubleDiverSignal,
+)
 
 __all__ = [
     "DivergenceSignal",
@@ -16,4 +20,6 @@ __all__ = [
     "OscillatorDivergence",
     "OscillatorDiverConfig",
     "OscillatorDiverSignal",
+    "OscillatorDoubleDiverConfig",
+    "OscillatorDoubleDiverSignal",
 ]

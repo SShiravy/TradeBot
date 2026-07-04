@@ -86,7 +86,11 @@ class RSI(IndicatorBaseModel):
     def update(self, candles, *args, **kwargs):
         if self.last_checked_candle is None:
             raise ValueError("last_checked_candle is None")
-
+        if candles[-1].timestamp < self.last_checked_candle.timestamp:
+            self.candles = candles
+            self.data = self._calculate(*args, **kwargs)
+            self.last_checked_candle = candles[-1]
+            return
         start_index = self.find_new_candle_index(candles)
 
         if start_index >= len(candles):

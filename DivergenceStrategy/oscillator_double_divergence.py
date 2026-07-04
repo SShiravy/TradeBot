@@ -1,0 +1,179 @@
+from ChartModule.models import (
+    Signal,
+    ChartData,
+    MarketSide,
+)
+from ChartModule.Indicators import (
+    Line,
+)
+from ChartModule.plot import ChartWithOscillatorPlot
+from DivergenceStrategy.oscillator_divergence import (
+    OscillatorDiverSignal,
+    OscillatorDivergence,
+)
+from TradingModule.trader_bot import TradeConfig, Position
+from dataclasses import dataclass
+from copy import copy
+import logging
+
+
+logger = logging.getLogger("DoubleDivergence")
+
+
+@dataclass(slots=True, frozen=True)
+class OscillatorDoubleDiverSignal(Signal):
+    main_chart_line: Line
+    main_chart_second_line: Line
+    other_chart_line_prices: tuple[float, float]
+    other_chart_second_line_prices: tuple[float, float]
+
+    @classmethod
+    def generate_signal(
+        cls, first_signal: OscillatorDiverSignal, second_signal: OscillatorDiverSignal
+    ):
+        return cls(
+            first_signal.chart,
+            first_signal.candle,
+            first_signal.side,
+            first_signal.source,
+            first_signal.main_chart_line,
+            second_signal.main_chart_line,
+            first_signal.other_chart_line_prices,
+            second_signal.other_chart_line_prices,
+        )
+
+    @property
+    def first_signal(self):
+        return OscillatorDiverSignal(
+            self.chart,
+            self.candle,
+            self.side,
+            self.source,
+            self.main_chart_line,
+            self.other_chart_line_prices,
+        )
+
+    @property
+    def second_signal(self):
+        return OscillatorDiverSignal(
+            self.chart,
+            self.main_chart_second_line.end_candle,
+            self.side,
+            self.source,
+            self.main_chart_second_line,
+            self.other_chart_second_line_prices,
+        )
+
+
+@dataclass(kw_only=True)
+class OscillatorDoubleDiverConfig(TradeConfig):
+    strategy: OscillatorDivergence  # type: ignore[override]
+
+    async def find_signal(
+        self, chartdata: ChartData, consider_position: bool = True
+    ) -> (
+        None
+        | tuple[OscillatorDoubleDiverSignal, Position]
+        | OscillatorDoubleDiverSignal
+    ):
+        first_signal = self.strategy.check_signal(
+            chartdata, self.long_signal, self.short_signal
+        )
+        if first_signal is None:
+            return None
+        left_index = chartdata.candles.index(first_signal.main_chart_line.start_candle)
+        second_sub_chart = copy(chartdata)
+        second_sub_chart.candles = chartdata.candles[: left_index + 1]
+        second_signal = self.strategy.check_signal(
+            second_sub_chart, self.long_signal, self.short_signal
+        )
+        if second_signal is None or second_signal.side != first_signal.side:
+            return None
+        double_diver_signal = OscillatorDoubleDiverSignal.generate_signal(
+            first_signal, second_signal
+        )
+        logger.info(f"OscillatorDiver Signal:{double_diver_signal}")
+        entry_source = (
+            first_signal.main_chart_line.end_candle.high
+            if first_signal.side is MarketSide.BEARISH
+            else first_signal.main_chart_line.end_candle.low
+        )
+        # TODO: change entry source to agent.get_current_tick
+        plot = None
+        if self.send_signal:
+            plot = ChartWithOscillatorPlot(
+                chartdata, self.strategy.oscillator_indicator.data
+            )
+            self.strategy.draw(plot, first_signal, draw_indicators=True)
+            self.strategy.draw(
+                plot, second_signal, draw_indicators=False, mark_signal=False
+            )
+            self.strategy.oscillator_indicator.plot(plot, plot.oscillator_ax)
+
+        if not consider_position:
+            return double_diver_signal
+        position = await self.position_handler.generate_position(
+            double_diver_signal, sl_base_price=entry_source, plot=plot
+        )
+        if not position:
+            return None
+        return double_diver_signal, position
+
+    async def task(self):
+        chart_data = self.get_chartdata()
+
+        # TODO: add a param for removing last candle or not (current candle)
+        sub_chart_data = copy(chart_data)
+        sub_chart_data.candles = sub_chart_data.candles[:-1]
+
+        res = await self.find_signal(sub_chart_data, consider_position=True)
+        if res is None:
+            return self.give_delay(chart_data[-1])
+
+        signal, position = res  # type: ignore
+
+        return self.give_delay(chart_data[-1], jump=True), signal, position
+
+    async def backtest(  # type: ignore
+        self,
+        n_bar=500,
+        len_sub_data=100,
+        show_image=True,
+    ):
+        self.send_signal = False
+        all_signals: list[OscillatorDoubleDiverSignal] = []
+
+        jump = 0
+        chartdata = self.get_chartdata(n_bar)
+        for i in range(len_sub_data, len(chartdata) - 2):
+            sub_chart_data = ChartData(chartdata.chart, chartdata[:i])
+
+            if jump > 0:
+                jump -= 1
+                continue
+            signal = await self.find_signal(sub_chart_data, consider_position=False)
+            if signal is None:
+                continue
+            jump = self.bar_between_signals
+            all_signals.append(signal)  # type: ignore
+
+        plot = ChartWithOscillatorPlot(
+            chartdata, self.strategy.oscillator_indicator.data, len(chartdata)
+        )
+        self.strategy.oscillator_indicator.plot(plot, plot.oscillator_ax)
+        if not all_signals:
+            if show_image:
+                plot.show()
+            return [], plot
+        self.strategy.draw(plot, all_signals[0].first_signal, draw_indicators=True)  # type: ignore
+        self.strategy.draw(
+            plot, all_signals[0].second_signal, draw_indicators=False, mark_signal=False
+        )  # type: ignore
+        for signal in all_signals[1:]:
+            self.strategy.draw(plot, signal.first_signal, draw_indicators=False)  # type: ignore
+            self.strategy.draw(
+                plot, signal.second_signal, draw_indicators=False, mark_signal=False
+            )  # type: ignore
+        if show_image:
+            plot.show()
+        return all_signals, plot

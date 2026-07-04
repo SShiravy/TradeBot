@@ -6,6 +6,7 @@ from DivergenceStrategy.oscillator_divergence import (
     OscillatorDiverConfig,
     OscillatorDivergence,
 )
+from DivergenceStrategy.oscillator_double_divergence import OscillatorDoubleDiverConfig
 from Forex import ForexAgent, ForexDiverTradeConfig
 from BitUnix import BitUnixAgent, BitUnixDiverTradeConfig
 from TradingModule.PositionHandlers import (
@@ -106,6 +107,28 @@ forex_rsi_diver_five_m = OscillatorDiverConfig(
     heikingashi_chartdata=True,
 )
 
+
+forex_rsi_double_diver_five_m = OscillatorDoubleDiverConfig(
+    chart=Chart("XAUUSD!", TimeFrame.five_minutes),
+    agent=ForexAgent(),
+    strategy=OscillatorDivergence(
+        RSI(), 3, 100, [], name="ForexOscillatorDiver", inverse_diver_long=False
+    ),
+    bar_between_signals=2,
+    position_handler=(
+        SteppingHandlerForex(
+            ForexAgent(),
+            targets_ratio=[1, 2, 3],
+            targets_ratio_volumes=[0.01, 0.01, 0.01],
+            stoploss_pip=50,
+            targets_in_pip=[],
+            long_trade=False,
+            short_trade=False,
+            trail_stop=True,
+        )
+    ),
+    heikingashi_chartdata=True,
+)
 # CVD ----
 
 

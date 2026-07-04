@@ -135,9 +135,9 @@ def test_rsi():
 
 
 async def test_oscillator_diver():
-    from DivergenceStrategy.backtest_configs import forex_rsi_diver_five_m
+    from DivergenceStrategy.backtest_configs import forex_rsi_double_diver_five_m
 
-    await forex_rsi_diver_five_m.backtest(1000)
+    await forex_rsi_double_diver_five_m.backtest(1000)
 
 
 if __name__ == "__main__":
