@@ -76,13 +76,18 @@ class OscillatorDivergence(Strategy):
         return conf_dict
 
     def find_divergence(
-        self,
-        chartdata: ChartData,
-        oscillator_data: dict,
+        self, chartdata: ChartData, oscillator_data: dict, shift_candle: bool = True
     ):
-        oscillator_list = list(oscillator_data.values())
+        if shift_candle:
+            oscillator_list = list(oscillator_data.values())[:-1]
+            last_index = len(chartdata.candles) - 2
+
+        else:
+            oscillator_list = list(oscillator_data.values())
+            last_index = len(chartdata.candles) - 1
+
+        signal_candle = chartdata.candles[-1]
         oscillator_array = np.array(oscillator_list)
-        last_index = len(chartdata.candles) - 1
         last_candle = chartdata.candles[last_index]
         long_diver_factor = -1 if self.inverse_diver_long else 1
         short_diver_factor = 1 if self.inverse_diver_short else -1
@@ -109,11 +114,22 @@ class OscillatorDivergence(Strategy):
 
         long_signal = None
         short_signal = None
+        long_support_condition_last = self.long_support_conditions.check(
+            chartdata.candles
+        )
+        short_support_condition_last = self.short_support_conditions.check(
+            chartdata.candles
+        )
 
         for candle_index in range(start, stop, -1):
             candle = chartdata.candles[candle_index]
 
-            # long_support_condition_result  = self.long_support_conditions.check(chartdata.candles[: candle_index + 2])
+            long_support_condition_start = self.long_support_conditions.check(
+                chartdata.candles[: candle_index + 2]
+            )
+            short_support_condition_start = self.short_support_conditions.check(
+                chartdata.candles[: candle_index + 2]
+            )
 
             long_start_value = long_candle_source(candle)
             short_start_value = short_candle_source(candle)
@@ -136,8 +152,11 @@ class OscillatorDivergence(Strategy):
             short_line_values = short_start_value + line_indices * short_slope
 
             # Long Condition ----
-            if long_signal is None and np.all(
-                (long_source_values[-count:] - long_line_values) >= 0
+            if (
+                long_support_condition_last
+                and long_support_condition_start
+                and long_signal is None
+                and np.all((long_source_values[-count:] - long_line_values) >= 0)
             ):
                 oscillator_start_value = oscillator_list[-count]
                 oscillator_slope = (
@@ -158,15 +177,18 @@ class OscillatorDivergence(Strategy):
                         main_chart_line = Line(long_candle_source, candle, last_candle)
                         long_signal = OscillatorDiverSignal(
                             chartdata.chart,
-                            last_candle,
+                            signal_candle,
                             MarketSide.BULLISH,
                             self.name,
                             main_chart_line,
                             (oscillator_start_value, oscillator_last_value),
                         )
             # Short Condition ----
-            if short_signal is None and np.all(
-                (short_source_values[-count:] - short_line_values) <= 0
+            if (
+                short_support_condition_last
+                and short_support_condition_start
+                and short_signal is None
+                and np.all((short_source_values[-count:] - short_line_values) <= 0)
             ):
                 oscillator_start_value = oscillator_list[-count]
                 oscillator_slope = (
@@ -187,7 +209,7 @@ class OscillatorDivergence(Strategy):
                         main_chart_line = Line(short_candle_source, candle, last_candle)
                         short_signal = OscillatorDiverSignal(
                             chartdata.chart,
-                            last_candle,
+                            signal_candle,
                             MarketSide.BEARISH,
                             self.name,
                             main_chart_line,
@@ -201,6 +223,7 @@ class OscillatorDivergence(Strategy):
         chartdata: ChartData,
         check_long: bool = True,
         check_short: bool = True,
+        shift_candle: bool = True,
     ) -> OscillatorDiverSignal | None:
         long_signal = None
         short_signal = None
@@ -209,7 +232,7 @@ class OscillatorDivergence(Strategy):
         self.oscillator_indicator.set(chartdata.candles)
 
         long_signal, short_signal = self.find_divergence(
-            chartdata, self.oscillator_indicator.data
+            chartdata, self.oscillator_indicator.data, shift_candle
         )
 
         if long_signal and short_signal:

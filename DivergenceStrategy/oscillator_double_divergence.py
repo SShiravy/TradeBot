@@ -83,9 +83,9 @@ class OscillatorDoubleDiverConfig(TradeConfig):
             return None
         left_index = chartdata.candles.index(first_signal.main_chart_line.start_candle)
         second_sub_chart = copy(chartdata)
-        second_sub_chart.candles = chartdata.candles[: left_index + 1]
+        second_sub_chart.candles = chartdata.candles[: left_index + 2]
         second_signal = self.strategy.check_signal(
-            second_sub_chart, self.long_signal, self.short_signal
+            second_sub_chart, self.long_signal, self.short_signal, shift_candle=True
         )
         if second_signal is None or second_signal.side != first_signal.side:
             return None

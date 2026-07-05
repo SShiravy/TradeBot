@@ -60,5 +60,5 @@ class BitUnixDiverTradeConfig(TwoChartDiverTradeConfig):
         res = await self.find_signal(base_chartdata, second_chartdata)
         if res is None:
             return self.give_delay(base_chartdata[-1])
-        signal, position = res # type: ignore
+        signal, position = res  # type: ignore
         return self.give_delay(base_chartdata[-1], jump=True), signal, position

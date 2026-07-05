@@ -1,4 +1,5 @@
 from ChartModule import Chart, TimeFrame
+from ChartModule.Indicators.models import SupportCandleConditions
 from ChartModule.Indicators.rsi import RSI
 from DivergenceStrategy import Divergence
 from ChartModule.Indicators import EMA
@@ -89,7 +90,14 @@ forex_rsi_diver_five_m = OscillatorDiverConfig(
     chart=Chart("XAUUSD!", TimeFrame.five_minutes),
     agent=ForexAgent(),
     strategy=OscillatorDivergence(
-        RSI(), 3, 100, [], name="ForexOscillatorDiver", inverse_diver_long=False
+        RSI(),
+        3,
+        100,
+        [],
+        name="ForexOscillatorDiver",
+        long_support_conditions=SupportCandleConditions.LOWER_LOW,
+        short_support_conditions=SupportCandleConditions.HIGHER_HIGH,
+        inverse_diver_long=False,
     ),
     bar_between_signals=2,
     position_handler=(
@@ -104,7 +112,7 @@ forex_rsi_diver_five_m = OscillatorDiverConfig(
             trail_stop=True,
         )
     ),
-    heikingashi_chartdata=True,
+    heikingashi_chartdata=False,
 )
 
 
@@ -112,7 +120,15 @@ forex_rsi_double_diver_five_m = OscillatorDoubleDiverConfig(
     chart=Chart("XAUUSD!", TimeFrame.five_minutes),
     agent=ForexAgent(),
     strategy=OscillatorDivergence(
-        RSI(), 3, 100, [], name="ForexOscillatorDiver", inverse_diver_long=False
+        RSI(),
+        3,
+        200,
+        [],
+        name="ForexOscillatorDiver",
+        long_support_conditions=SupportCandleConditions.RED_GREEN,
+        short_support_conditions=SupportCandleConditions.GREEN_RED,
+        body_candle=False,
+        inverse_diver_long=False,
     ),
     bar_between_signals=2,
     position_handler=(
