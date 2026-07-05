@@ -193,6 +193,7 @@ class TraderBot:
         name: str = "",
         configs: list[TradeConfig] = [],
         report_time: dict = {"h": 23, "m": 50},
+        commands_report: bool = True,
     ):
         if not hasattr(cls, "_instance"):
             cls._instance = object.__new__(cls)
@@ -200,6 +201,7 @@ class TraderBot:
             cls.configs = configs
             cls.report_time = report_time
             cls._start_time = datetime.now(tz=timezone.utc).replace(microsecond=0)
+            cls._commands_report = commands_report
         return cls._instance
 
     async def manage(self):
@@ -207,7 +209,9 @@ class TraderBot:
             try:
                 for config in self.configs:
                     config.position_handler.manage_positions()
-                await commands.TradeCommand.execute_pending_commands()
+                await commands.TradeCommand.execute_pending_commands(
+                    report=self._commands_report
+                )
                 await asyncio.sleep(2)
             except Exception as e:
                 logging.exception(f"Manage Failed: {e}")

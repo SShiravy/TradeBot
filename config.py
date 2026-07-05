@@ -24,6 +24,7 @@ class Settings(BaseSettings):
 
     # Mt5
     METATRADER_TERMINAL_PATH: str
+    SECOND_METATRADER_TERMINAL_PATH: str
 
     # LocalBacktest DB
     LOCAL_BACKTEST_DB_NAME: str

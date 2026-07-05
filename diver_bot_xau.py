@@ -40,25 +40,6 @@ one_m = ForexDiverTradeConfig(
 )
 
 
-# five_m = ForexDiverTradeConfig(
-#     chart=Chart("XAUUSD!", TimeFrame.five_minutes),
-#     second_chart=Chart("SOLUSD", TimeFrame.five_minutes),
-#     strategy=Divergence(2, 100, [], name="ForexDiver"),
-#     bar_between_signals=2,
-#     position_handler=SteppingHandlerForex(
-#         ForexAgent(),
-#         stoploss_pip=50,
-#         targets_ratio=[1, 2, 3],
-#         targets_ratio_volumes=[0.01, 0.01, 0.01],
-#         trail_stop=True,
-#         long_trade=False,
-#         short_trade=False,
-#     ),
-#     merge_two_chart_time=True,
-#     heikingashi_chartdata=True,
-# )
-
-
 TraderBot("Gold Diver Bot", [one_m], report_time={"h": 20, "m": 0})
 
 

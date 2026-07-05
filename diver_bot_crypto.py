@@ -4,7 +4,7 @@ from ChartModule import Chart, TimeFrame
 from TradingModule.PositionHandlers.stepping_handler import SteppingHandlerCrypto
 from TradingModule.reporter import TelegramReporter
 from TradingModule.trader_bot import TraderBot
-from DivergenceStrategy.divergence import Divergence
+from DivergenceStrategy import Divergence
 from custom_logger import CustomLogger
 from config import settings
 import asyncio
@@ -53,7 +53,7 @@ TelegramReporter().main_channel = settings.TELEGRAM_CRYPTO_CHANNEL_ID
 TraderBot(
     "BitUnix Diver Bot",
     [diver_five_m_sol],
-    report_time={"h": 20, "m": 1},
+    report_time={"h": 20, "m": 15},
 )
 
 

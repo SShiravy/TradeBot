@@ -31,12 +31,10 @@ class MarketState(Enum):
 
 
 class ForexAgent(ExchangeAgent):
-    def __new__(cls):
+    def __new__(cls, mt5_terminal_path: str = settings.METATRADER_TERMINAL_PATH):
         if not hasattr(cls, "_instance"):
             cls._instance = object.__new__(cls)
-            if settings.METATRADER_TERMINAL_PATH and not mt5.initialize(
-                settings.METATRADER_TERMINAL_PATH
-            ):
+            if not mt5.initialize(mt5_terminal_path):
                 raise RuntimeError("MT5 initialize failed")
             logger.info("Initialized")
             cls.last_checked_timestamp: None | int = None
