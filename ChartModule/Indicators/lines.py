@@ -13,13 +13,20 @@ class Line:
         self.source = source
         self.start_candle = start_candle
         self.end_candle = end_candle
+        self._slope: float | None = None
 
     @property
     def slope(self) -> float:
+        if self._slope:
+            return self._slope
         slope = round(
             self.source(self.end_candle) - self.source(self.start_candle), 10
         ) / (self.end_candle.timestamp - self.start_candle.timestamp)
         return slope
+
+    @slope.setter
+    def slope(self, value: float):
+        self._slope = value
 
     def direction(self) -> MarketSide:
         if not self.start_candle or not self.end_candle:

@@ -1,4 +1,7 @@
+from datetime import timedelta
+
 from ChartModule.models import (
+    Candle,
     Signal,
     ChartData,
     MarketSide,
@@ -11,6 +14,7 @@ from DivergenceStrategy.oscillator_divergence import (
     OscillatorDiverSignal,
     OscillatorDivergence,
 )
+from Forex.agent import ForexAgent
 from TradingModule.trader_bot import TradeConfig, Position
 from dataclasses import dataclass
 from copy import copy
@@ -68,6 +72,20 @@ class OscillatorDoubleDiverSignal(Signal):
 @dataclass(kw_only=True)
 class OscillatorDoubleDiverConfig(TradeConfig):
     strategy: OscillatorDivergence  # type: ignore[override]
+    same_line_source: bool = True
+
+    def give_delay(self, last_candle: Candle, jump=False) -> timedelta:
+        # TODO: fix here for all agents not only forex
+        delay = self.chart.timeframe.time_delta
+        if jump:
+            delay *= self.bar_between_signals
+        last_candle_time = ForexAgent().get_chartdata(self.chart, n_bars=1).candles[0]  # type: ignore
+        next_timestamp = int(round(last_candle_time.timestamp) + delay.total_seconds())
+        sleep_time_based_on_timestamp = (
+            next_timestamp - ForexAgent().give_current_timestamp(self.chart)
+        )
+
+        return timedelta(seconds=sleep_time_based_on_timestamp + 1)
 
     async def find_signal(
         self, chartdata: ChartData, consider_position: bool = True
@@ -88,6 +106,12 @@ class OscillatorDoubleDiverConfig(TradeConfig):
             second_sub_chart, self.long_signal, self.short_signal, shift_candle=True
         )
         if second_signal is None or second_signal.side != first_signal.side:
+            return None
+        if (
+            self.same_line_source
+            and first_signal.main_chart_line.source
+            != second_signal.main_chart_line.source
+        ):
             return None
         double_diver_signal = OscillatorDoubleDiverSignal.generate_signal(
             first_signal, second_signal

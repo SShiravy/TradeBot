@@ -1,4 +1,5 @@
 from ChartModule.models import (
+    Candle,
     Signal,
     ChartData,
     MarketSide,
@@ -43,6 +44,7 @@ class OscillatorDivergence(Strategy):
         long_other_chart_line_validation: bool = True,
         short_other_chart_line_validation: bool = True,
         body_candle: bool = False,
+        ignore_shadow_cross: bool = False,
     ) -> None:
         super().__init__(
             name,
@@ -58,6 +60,7 @@ class OscillatorDivergence(Strategy):
         self.long_other_chart_line_validation = long_other_chart_line_validation
         self.short_other_chart_line_validation = short_other_chart_line_validation
         self.body_candle = body_candle
+        self.ignore_shadow_cross = ignore_shadow_cross
 
     def export_config(self):
         conf_dict = super().export_config()
@@ -74,6 +77,51 @@ class OscillatorDivergence(Strategy):
             }
         )
         return conf_dict
+
+    def validate_line(
+        self,
+        candles_body_values,
+        line_body_values,
+        candles_shadow_values,
+        line_shadow_values,
+        start_candle: Candle,
+        end_candle: Candle,
+        direction: Literal[1, -1],
+        shadow_slope: float,
+        body_slope: float,
+    ):
+        shadow_line = None
+        body_line = None
+        if self.ignore_shadow_cross:
+            shadow_line = np.all(
+                (candles_body_values - line_shadow_values) * direction >= 0
+            )
+        else:
+            shadow_line = np.all(
+                (candles_shadow_values - line_shadow_values) * direction >= 0
+            )
+        if shadow_line:
+            line = Line(
+                CandlesSource.Low if direction == 1 else CandlesSource.High,
+                start_candle,
+                end_candle,
+            )
+            line.slope = shadow_slope
+            return line
+
+        if self.body_candle:
+            body_line = np.all(
+                (candles_body_values - line_body_values) * direction >= 0
+            )
+        if body_line:
+            line = Line(
+                CandlesSource.Bottom if direction == 1 else CandlesSource.Top,
+                start_candle,
+                end_candle,
+            )
+            line.slope = body_slope
+            return line
+        return None
 
     def find_divergence(
         self, chartdata: ChartData, oscillator_data: dict, shift_candle: bool = True
@@ -92,20 +140,18 @@ class OscillatorDivergence(Strategy):
         long_diver_factor = -1 if self.inverse_diver_long else 1
         short_diver_factor = 1 if self.inverse_diver_short else -1
 
-        if self.body_candle:
-            long_candle_source = CandlesSource.Bottom
-            short_candle_source = CandlesSource.Top
-        else:
-            long_candle_source = CandlesSource.Low
-            short_candle_source = CandlesSource.High
+        last_candle_bottom = last_candle.body_bottom
+        last_candle_top = last_candle.body_top
+        last_candle_low = last_candle.low
+        last_candle_high = last_candle.high
 
-        long_last_value = long_candle_source(last_candle)
-        short_last_value = short_candle_source(last_candle)
         oscillator_last_value = oscillator_list[-1]
 
         indices = np.arange(self.max_step + 1, dtype=np.float64)
-        long_source_values = np.empty(self.max_step + 1, dtype=np.float64)
-        short_source_values = np.empty(self.max_step + 1, dtype=np.float64)
+        candles_bottom_values = np.empty(self.max_step + 1, dtype=np.float64)
+        candles_top_values = np.empty(self.max_step + 1, dtype=np.float64)
+        candles_low_values = np.empty(self.max_step + 1, dtype=np.float64)
+        candles_high_values = np.empty(self.max_step + 1, dtype=np.float64)
 
         count = 0
 
@@ -131,12 +177,16 @@ class OscillatorDivergence(Strategy):
                 chartdata.candles[: candle_index + 2]
             )
 
-            long_start_value = long_candle_source(candle)
-            short_start_value = short_candle_source(candle)
-            count += 1
+            start_candle_bottom = candle.body_bottom
+            start_candle_top = candle.body_top
+            start_candle_low = candle.low
+            start_candle_high = candle.high
 
-            long_source_values[-count] = long_start_value
-            short_source_values[-count] = short_start_value
+            count += 1
+            candles_bottom_values[-count] = start_candle_bottom
+            candles_top_values[-count] = start_candle_top
+            candles_low_values[-count] = start_candle_low
+            candles_high_values[-count] = start_candle_high
 
             step = last_index - candle_index
 
@@ -144,27 +194,43 @@ class OscillatorDivergence(Strategy):
                 continue
             line_indices = indices[-count:] - indices[-count]
 
-            long_slope = (long_last_value - long_start_value) / step
-            short_slope = (short_last_value - short_start_value) / step
+            bottom_slope = (last_candle_bottom - start_candle_bottom) / step
+            short_slope_top = (last_candle_top - start_candle_top) / step
+            low_slope = (last_candle_low - start_candle_low) / step
+            short_slope_high = (last_candle_high - start_candle_high) / step
 
-            long_line_values = long_start_value + line_indices * long_slope
-
-            short_line_values = short_start_value + line_indices * short_slope
+            bottom_line = start_candle_bottom + line_indices * bottom_slope
+            top_line = start_candle_top + line_indices * short_slope_top
+            low_line = start_candle_low + line_indices * low_slope
+            high_line = start_candle_high + line_indices * short_slope_high
 
             # Long Condition ----
-            if (
+            long_base_condition = (
                 long_support_condition_last
                 and long_support_condition_start
                 and long_signal is None
-                and np.all((long_source_values[-count:] - long_line_values) >= 0)
-            ):
+            )
+            main_line = None
+            if long_base_condition:
+                main_line = self.validate_line(
+                    candles_bottom_values[-count:],
+                    bottom_line,
+                    candles_low_values[-count:],
+                    low_line,
+                    candle,
+                    last_candle,
+                    1,
+                    bottom_slope,
+                    low_slope,
+                )
+            if main_line:
                 oscillator_start_value = oscillator_list[-count]
                 oscillator_slope = (
                     oscillator_last_value - oscillator_start_value
                 ) / step
                 if (
                     oscillator_slope * long_diver_factor > 0
-                    and long_slope * long_diver_factor < 0
+                    and main_line.slope * long_diver_factor < 0
                 ):
                     oscillator_line_values = (
                         oscillator_start_value + line_indices * oscillator_slope
@@ -174,29 +240,41 @@ class OscillatorDivergence(Strategy):
                     if not self.long_other_chart_line_validation or np.all(
                         (current_oscillator_values - oscillator_line_values) >= 0
                     ):
-                        main_chart_line = Line(long_candle_source, candle, last_candle)
                         long_signal = OscillatorDiverSignal(
                             chartdata.chart,
                             signal_candle,
                             MarketSide.BULLISH,
                             self.name,
-                            main_chart_line,
+                            main_line,
                             (oscillator_start_value, oscillator_last_value),
                         )
             # Short Condition ----
-            if (
+            short_base_condition = (
                 short_support_condition_last
                 and short_support_condition_start
                 and short_signal is None
-                and np.all((short_source_values[-count:] - short_line_values) <= 0)
-            ):
+            )
+            main_line = None
+            if short_base_condition:
+                main_line = self.validate_line(
+                    candles_top_values[-count:],
+                    top_line,
+                    candles_high_values[-count:],
+                    high_line,
+                    candle,
+                    last_candle,
+                    -1,
+                    bottom_slope,
+                    low_slope,
+                )
+            if main_line:
                 oscillator_start_value = oscillator_list[-count]
                 oscillator_slope = (
                     oscillator_last_value - oscillator_start_value
                 ) / step
                 if (
                     oscillator_slope * short_diver_factor > 0
-                    and short_slope * short_diver_factor < 0
+                    and main_line.slope * short_diver_factor < 0
                 ):
                     oscillator_line_values = (
                         oscillator_start_value + line_indices * oscillator_slope
@@ -206,16 +284,14 @@ class OscillatorDivergence(Strategy):
                     if not self.short_other_chart_line_validation or np.all(
                         (current_oscillator_values - oscillator_line_values) <= 0
                     ):
-                        main_chart_line = Line(short_candle_source, candle, last_candle)
                         short_signal = OscillatorDiverSignal(
                             chartdata.chart,
                             signal_candle,
                             MarketSide.BEARISH,
                             self.name,
-                            main_chart_line,
+                            main_line,
                             (oscillator_start_value, oscillator_last_value),
                         )
-
         return long_signal, short_signal
 
     def check_signal(

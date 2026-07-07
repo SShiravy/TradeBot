@@ -127,10 +127,12 @@ forex_rsi_double_diver_five_m = OscillatorDoubleDiverConfig(
         name="ForexOscillatorDiver",
         long_support_conditions=SupportCandleConditions.RED_GREEN,
         short_support_conditions=SupportCandleConditions.GREEN_RED,
-        body_candle=False,
+        body_candle=True,
+        ignore_shadow_cross=True,
         inverse_diver_long=False,
     ),
     bar_between_signals=2,
+    same_line_source=False,
     position_handler=(
         SteppingHandlerForex(
             ForexAgent(),
@@ -143,7 +145,7 @@ forex_rsi_double_diver_five_m = OscillatorDoubleDiverConfig(
             trail_stop=True,
         )
     ),
-    heikingashi_chartdata=False,
+    heikingashi_chartdata=True,
 )
 # CVD ----
 
