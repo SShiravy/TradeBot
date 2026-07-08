@@ -125,6 +125,7 @@ class OscillatorDoubleDiverConfig(TradeConfig):
         # TODO: change entry source to agent.get_current_tick
         plot = None
         if self.send_signal:
+            self.strategy.oscillator_indicator.set(candles=chartdata.candles)
             plot = ChartWithOscillatorPlot(
                 chartdata, self.strategy.oscillator_indicator.data
             )
