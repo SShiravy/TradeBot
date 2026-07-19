@@ -35,7 +35,7 @@ class PositionHandler(ABC):
         self.send_report = send_report
 
     @abstractmethod
-    def init_stoploss(self, entry_price: float, side: OrderSide) -> float:
+    def init_stoploss(self, entry_price: float, side: OrderSide, chart: Chart) -> float:
         pass
 
     @abstractmethod
@@ -74,15 +74,13 @@ class PositionHandler(ABC):
         if entry_price is None:
             entry_price = signal.candle.close
 
-        precision = signal.chart.precision
-
         position = Position(
             signal.chart,
             side,
             entry_price,
             self.initial_volume,
-            round(self.init_stoploss(entry_price, side), precision),
-            round(self.init_takeprofit(entry_price, side), precision),
+            self.init_stoploss(entry_price, side, signal.chart),
+            self.init_takeprofit(entry_price, side, signal.chart),
             self.leverage,
             signal.candle.time + timedelta(seconds=2),
             signal.source,
@@ -99,7 +97,7 @@ class PositionHandler(ABC):
         return position
 
     def modify_init_sl_tp(self, position: Position):
-        sl = self.init_stoploss(position.entry_price, position.side)
+        sl = self.init_stoploss(position.entry_price, position.side, position.chart)
         if sl != position.stoploss:
             position.stoploss = sl
             commands.TrailStoploss(position, self.exchange_agent, sl, report=False)

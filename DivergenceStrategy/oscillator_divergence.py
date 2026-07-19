@@ -409,6 +409,7 @@ class OscillatorDiverConfig(TradeConfig):
 
         plot = None
         if self.send_signal:
+            self.strategy.oscillator_indicator.set(candles=chartdata.candles)
             plot = ChartWithOscillatorPlot(
                 chartdata, self.strategy.oscillator_indicator.data
             )

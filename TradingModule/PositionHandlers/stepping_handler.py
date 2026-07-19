@@ -1,5 +1,5 @@
 from datetime import timedelta
-from ChartModule.models import MarketSide, Signal
+from ChartModule.models import Chart, MarketSide, Signal
 from ChartModule.plot import Plot
 from TradingModule.PositionHandlers.model import PositionHandler
 from TradingModule.PositionHandlers.ratio_handlers import (
@@ -67,7 +67,7 @@ class SteppingHandlerForex(PositionHandler):
             send_report=send_report,
         )
 
-        self.stoploss_pip = stoploss_pip / 10
+        self.stoploss_pip = stoploss_pip
         self.targets_ratio = targets_ratio
         self.targets_ratio_volumes = targets_ratio_volumes
         self.trail_stop = trail_stop
@@ -95,7 +95,10 @@ class SteppingHandlerForex(PositionHandler):
             steps.append(
                 Trigger(
                     price=round(
-                        abs(pos.entry_price + pos.side.factor() * pip / 10),
+                        abs(
+                            pos.entry_price
+                            + pos.side.factor() * pip * pos.chart.pip_factor
+                        ),
                         pos.chart.precision,
                     ),
                     volume=volume,
@@ -135,18 +138,23 @@ class SteppingHandlerForex(PositionHandler):
             ).execute()
             pos.entry_price = step_position.entry_price
 
-    def init_stoploss(self, entry_price: float, side: OrderSide) -> float:
-        return entry_price - side.factor() * self.stoploss_pip
+    def init_stoploss(self, entry_price: float, side: OrderSide, chart: Chart) -> float:
+        return round(
+            entry_price - side.factor() * self.stoploss_pip * chart.pip_factor,
+            chart.precision,
+        )
 
     def init_takeprofit(
-        self, entry_price: float, side: OrderSide, stoploss: float
+        self, entry_price: float, side: OrderSide, stoploss: float, chart: Chart
     ) -> float:
         if self.targets_ratio:
             sl_pip = abs(entry_price - stoploss)
             tp = abs(entry_price + side.factor() * sl_pip * self.targets_ratio[-1])
         else:
-            tp = abs(entry_price + self.targets_in_pip[-1] / 10 * side.factor())
-        return tp
+            tp = abs(
+                entry_price + self.targets_in_pip[-1] * chart.pip_factor * side.factor()
+            )
+        return round(tp, chart.precision)
 
     async def generate_position(
         self,
@@ -172,9 +180,8 @@ class SteppingHandlerForex(PositionHandler):
         if sl_base_price is None:
             sl_base_price = entry_price
 
-        precision = signal.chart.precision
-        sl = round(self.init_stoploss(sl_base_price, side), precision)
-        tp = round(self.init_takeprofit(entry_price, side, sl), precision)
+        sl = self.init_stoploss(sl_base_price, side, signal.chart)
+        tp = self.init_takeprofit(entry_price, side, sl, signal.chart)
 
         position = Position(
             signal.chart,

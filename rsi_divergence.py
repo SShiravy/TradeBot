@@ -20,7 +20,7 @@ CustomLogger(
 )
 
 xau_double_diver_five_m = OscillatorDoubleDiverConfig(
-    chart=Chart("XAUUSD!", TimeFrame.five_minutes),
+    chart=Chart("XAUUSD!", TimeFrame.five_minutes, precision=2, pip_factor=0.1),
     agent=ForexAgent(),
     strategy=OscillatorDivergence(
         RSI(),
@@ -53,40 +53,7 @@ xau_double_diver_five_m = OscillatorDoubleDiverConfig(
 )
 
 audcad_double_diver_five_m = OscillatorDoubleDiverConfig(
-    chart=Chart("AUDCAD!", TimeFrame.five_minutes),
-    agent=ForexAgent(),
-    strategy=OscillatorDivergence(
-        RSI(),
-        3,
-        200,
-        [],
-        name="RSI_Double_Diver",
-        long_support_conditions=SupportCandleConditions.RED_GREEN,
-        short_support_conditions=SupportCandleConditions.GREEN_RED,
-        body_candle=True,
-        ignore_shadow_cross=True,
-        inverse_diver_long=False,
-    ),
-    bar_between_signals=2,
-    same_line_source=True,
-    position_handler=(
-        SteppingHandlerForex(
-            ForexAgent(),
-            targets_ratio=[],
-            targets_ratio_volumes=[],
-            stoploss_pip=30,
-            targets_in_pip=[20],
-            targets_in_pip_volumes=[0.01],
-            long_trade=False,
-            short_trade=False,
-            trail_stop=True,
-        )
-    ),
-    heikingashi_chartdata=False,
-)
-
-audcad_double_diver_five_m = OscillatorDoubleDiverConfig(
-    chart=Chart("AUDCAD!", TimeFrame.five_minutes),
+    chart=Chart("AUDCAD!", TimeFrame.five_minutes, precision=5, pip_factor=0.0001),
     agent=ForexAgent(),
     strategy=OscillatorDivergence(
         RSI(),
@@ -119,7 +86,7 @@ audcad_double_diver_five_m = OscillatorDoubleDiverConfig(
 )
 
 usdjpy_double_diver_five_m = OscillatorDoubleDiverConfig(
-    chart=Chart("USDJPY!", TimeFrame.five_minutes),
+    chart=Chart("USDJPY!", TimeFrame.five_minutes, precision=3, pip_factor=0.01),
     agent=ForexAgent(),
     strategy=OscillatorDivergence(
         RSI(),
@@ -151,7 +118,7 @@ usdjpy_double_diver_five_m = OscillatorDoubleDiverConfig(
     heikingashi_chartdata=False,
 )
 eurgbp_double_diver_five_m = OscillatorDoubleDiverConfig(
-    chart=Chart("EURGBP!", TimeFrame.five_minutes),
+    chart=Chart("EURGBP!", TimeFrame.five_minutes, precision=5, pip_factor=0.0001),
     agent=ForexAgent(),
     strategy=OscillatorDivergence(
         RSI(),

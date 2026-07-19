@@ -182,6 +182,7 @@ class Chart:
     symbol: str
     timeframe: TimeFrame
     precision: int = field(default=3)
+    pip_factor: float = field(default=1)
 
     def __str__(self) -> str:
         return f"{self.symbol} {self.timeframe}"

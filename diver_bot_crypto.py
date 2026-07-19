@@ -17,7 +17,7 @@ CustomLogger(
 bitunix_agent = BitUnixAgent(settings.BITUNIX_API_KEY, settings.BITUNIX_API_SECRET_KEY)
 
 diver_five_m_sol = BitUnixDiverTradeConfig(
-    chart=Chart("SOLUSDT", TimeFrame.five_minutes),
+    chart=Chart("SOLUSDT", TimeFrame.five_minutes, precision=2, pip_factor=0.1),
     second_chart=Chart("BTCUSDT", TimeFrame.five_minutes),
     strategy=Divergence(3, 100, [], name="BitUnixSolDiver", inverse_diver_long=True),
     position_handler=SteppingHandlerCrypto(
