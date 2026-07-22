@@ -195,14 +195,14 @@ class OscillatorDivergence(Strategy):
             line_indices = indices[-count:] - indices[-count]
 
             bottom_slope = (last_candle_bottom - start_candle_bottom) / step
-            short_slope_top = (last_candle_top - start_candle_top) / step
+            top_slope = (last_candle_top - start_candle_top) / step
             low_slope = (last_candle_low - start_candle_low) / step
-            short_slope_high = (last_candle_high - start_candle_high) / step
+            high_slope = (last_candle_high - start_candle_high) / step
 
             bottom_line = start_candle_bottom + line_indices * bottom_slope
-            top_line = start_candle_top + line_indices * short_slope_top
+            top_line = start_candle_top + line_indices * top_slope
             low_line = start_candle_low + line_indices * low_slope
-            high_line = start_candle_high + line_indices * short_slope_high
+            high_line = start_candle_high + line_indices * high_slope
 
             # Long Condition ----
             long_base_condition = (
@@ -220,8 +220,8 @@ class OscillatorDivergence(Strategy):
                     candle,
                     last_candle,
                     1,
-                    bottom_slope,
                     low_slope,
+                    bottom_slope,
                 )
             if main_line:
                 oscillator_start_value = oscillator_list[-count]
@@ -264,8 +264,8 @@ class OscillatorDivergence(Strategy):
                     candle,
                     last_candle,
                     -1,
-                    bottom_slope,
-                    low_slope,
+                    high_slope,
+                    top_slope,
                 )
             if main_line:
                 oscillator_start_value = oscillator_list[-count]
