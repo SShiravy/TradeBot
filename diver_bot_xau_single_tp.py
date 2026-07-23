@@ -29,7 +29,7 @@ one_m = ForexDiverTradeConfig(
     bar_between_signals=2,
     position_handler=SteppingHandlerForex(
         ForexAgent(),
-        stoploss_pip=30,
+        stoploss_pip=5,
         targets_ratio=[],
         targets_ratio_volumes=[],
         targets_in_pip=[20],
@@ -41,6 +41,8 @@ one_m = ForexDiverTradeConfig(
             # LoseInRowConstraint(n_long_lose=1, n_short_lose=1, n_bar=30),
         ],
         send_report=False,
+        long_trade=False,
+        short_trade=False,
     ),
     merge_two_chart_time=False,
     heikingashi_chartdata=True,

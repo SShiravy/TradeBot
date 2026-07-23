@@ -148,12 +148,25 @@ class TradeCommand(ABC):
 
 
 class OpenPosition(TradeCommand):
+    def __init__(
+        self,
+        position: Position,
+        exchange: ExchangeAgent,
+        n_attempts: int = 2,
+        report=True,
+        trigger: Trigger | None = None,
+    ):
+        super().__init__(position, exchange, n_attempts, report)
+        self.trigger = trigger
+
     def command(self, time):
         if self.position.real_trade:
             entry_price = self.exchange.open_position(self.position)
             if entry_price:
                 self.position.entry_price = entry_price
                 self.position.open_time = time
+                if self.trigger:
+                    self.trigger.exchange_id = self.position.exchange_id
             else:
                 return False
         return True

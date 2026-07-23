@@ -1,6 +1,6 @@
 from ChartModule import Chart, Candle, ChartData, TimeFrame
 from TradingModule.models import ExchangeAgent, Position, OrderSide
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from config import settings
 from enum import Enum
 import mt5_wrapper as mt5
@@ -177,6 +177,7 @@ class ForexAgent(ExchangeAgent):
         if not result or not result.request_id:
             logging.error(f"Opening position failed: {position}\n{mt5.last_error()=}")
             return None
+        logger.debug(f"opening position {result=}")
         position.exchange_id = str(result.order)
         position.spread = round(result.ask - result.bid, position.chart.precision)
         logging.info(f"Position Opened: {position}\n{result=}")
@@ -292,6 +293,30 @@ class ForexAgent(ExchangeAgent):
             filtered_poses.append(self.mt5_trade_to_position(pos))
             logger.debug(f"mt5 filtered open pos: {open_poses}")
         return filtered_poses
+
+    def check_position_closed(
+        self,
+        position_ticket: int | None = None,
+        comment_filter: str = "",
+    ) -> float | None:
+        if not position_ticket and not comment_filter:
+            logging.error("No Ticket nor comment_filter is given")
+            return None
+        position = mt5.positions_get(ticket=position_ticket)
+        if position:
+            return None
+        to_time = datetime.now(timezone.utc)
+        from_time = to_time - timedelta(days=3)
+        deals = mt5.history_deals_get(from_time, to_time, ticket=position_ticket)
+        if not deals:
+            raise ValueError(
+                f"Position isn't open but no deals found for ticket {position_ticket}"
+            )
+        profit = sum(d.profit + d.commission + d.swap for d in deals)
+        logger.debug(
+            f"Deals found for closed position {position_ticket}: {deals} \n{profit=}"
+        )
+        return profit
 
 
 def forex_timeframe_mapper(timeframe: TimeFrame):

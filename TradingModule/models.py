@@ -549,6 +549,10 @@ class ExchangeAgent(ABC):
         """
         pass
 
+    @abstractmethod
+    def check_position_closed(self, *args, **kwargs) -> float | None:
+        pass
+
 
 class Strategy(ABC):
     def __init__(
