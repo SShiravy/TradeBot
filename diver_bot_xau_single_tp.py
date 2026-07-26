@@ -21,7 +21,7 @@ CustomLogger(
     consol_log_level=logging.DEBUG,
 )
 one_m = ForexDiverTradeConfig(
-    chart=Chart("XAUUSD", TimeFrame.one_minute),
+    chart=Chart("XAUUSD", TimeFrame.one_minute, precision=2, pip_factor=0.1),
     second_chart=Chart("SOLUSD", TimeFrame.one_minute),
     strategy=Divergence(
         5, 100, [], name="ForexDiver(Single TP)", inverse_diver_long=True

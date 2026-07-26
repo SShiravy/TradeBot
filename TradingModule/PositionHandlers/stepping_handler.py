@@ -241,7 +241,9 @@ class SteppingHandlerForex(PositionHandler):
 
         logger.info(f"Position Updated on {position.chart}")
 
-    def tick_prices_handler(self, position: Position, step:Trigger, tick_prices: list[float]):
+    def tick_prices_handler(
+        self, position: Position, step: Trigger, tick_prices: list[float]
+    ):
         step = position.current_step
         if step is None:
             logger.warning(f"checking position that its next step is None! {position=}")
@@ -278,34 +280,37 @@ class SteppingHandlerForex(PositionHandler):
         return trigger_command
 
     def agent_handler(self, position: Position, step: Trigger):
-        res = self.exchange_agent.check_position_closed(position_ticket=step.exchange_id)
-        command = None
-        if res is None:
-            return res
-        
-        if res <= 0:
+        pnl_res = self.exchange_agent.check_position_closed(
+            position_ticket=step.exchange_id
+        )
+        if pnl_res is None:
+            return None
+
+        if pnl_res <= 0:
             command = commands.StopLoss(
-                position, self.exchange_agent, report=self.send_report
+                position, self.exchange_agent, report=self.send_report, pnl=pnl_res
             )
 
         else:
             logger.info(
-            f"Step hit for position {position.id} on {position.chart} with price {step.price} and volume {step.volume}"
+                f"Step hit for position {position.id} on {position.chart} with price {step.price} and volume {step.volume}"
             )
             command = commands.TriggerStep(
-            position=position,
-            exchange=self.exchange_agent,
-            trigger=step,
-            report=self.send_report,
+                position=position,
+                exchange=self.exchange_agent,
+                trigger=step,
+                report=self.send_report,
+                pnl=pnl_res,
             )
             if self.trail_stop:
                 trailstop = commands.TrailStoplossbyStep(
-                    position=position, exchange=self.exchange_agent, report=self.send_report
+                    position=position,
+                    exchange=self.exchange_agent,
+                    report=self.send_report,
                 )
                 trailstop.bounded_command = command
 
         return command
-
 
     def handler(
         self, position: Position, tick_prices: list[float]
@@ -316,7 +321,7 @@ class SteppingHandlerForex(PositionHandler):
             commands.SendPositionSignal(
                 position, self.exchange_agent, report=self.send_report
             )
-        
+
         step = position.current_step
         if step is None:
             logger.warning(f"checking position that its next step is None! {position=}")
@@ -325,8 +330,8 @@ class SteppingHandlerForex(PositionHandler):
 
         if self.check_with_agent:
             return self.agent_handler(position, step)
-            
-        return self.tick_prices_handler(position,step,tick_prices)
+
+        return self.tick_prices_handler(position, step, tick_prices)
 
 
 class SteppingHandlerCrypto(SlTpRatioCrypto):

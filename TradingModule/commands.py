@@ -286,12 +286,23 @@ class ClosePosition(TradeCommand):
 
 
 class StopLoss(TradeCommand):
+    def __init__(
+        self,
+        position: Position,
+        exchange: ExchangeAgent,
+        n_attempts: int = 2,
+        report=True,
+        pnl: float | None = None,
+    ):
+        super().__init__(position, exchange, n_attempts, report)
+        self.pnl = pnl
+
     async def execution_report(self):
         await TelegramReporter().position_closed(self.position)
 
     def command(self, time) -> bool:
         self.position.closed = time
-        self.position.update_pnl(self.position.stoploss)
+        self.position.update_pnl(self.position.stoploss, pnl=self.pnl)
         return True
 
 
@@ -314,16 +325,18 @@ class TriggerStep(TradeCommand):
         n_attempts: int = 2,
         exec_price=None,
         report=True,
+        pnl: float | None = None,
     ):
         super().__init__(position, exchange, n_attempts, report)
         self.exec_price = exec_price
         self.trigger = trigger
+        self.pnl = pnl
 
     async def execution_report(self):
         await TelegramReporter().triggered_step(self.position)
 
     def command(self, time) -> bool:
-        self.position.update_pnl(self.trigger.price, self.trigger.volume)
+        self.position.update_pnl(self.trigger.price, self.trigger.volume, self.pnl)
         self.position.go_next_step(time)
         return True
 
