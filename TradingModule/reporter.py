@@ -77,7 +77,7 @@ class TelegramReporter:
             msg_list.append(f"🎯 TP =  {position.takeprofit}")
 
         msg_list.append(f"⛔️ SL = {position.stoploss}")
-        msg_list.append(f"💰 Volume: {round(position.volume, 10)}")
+        msg_list.append(f"💰 Volume: {round(position.volume, 4)}")
 
         if position.leverage not in [1, 0]:
             msg_list.append(f"⚡Leverage: {position.leverage}")
@@ -117,7 +117,7 @@ class TelegramReporter:
             position.source,
             f"📊 {position.chart}",
             f"💲 Close Price = {close_price}",
-            f"💵 PNL = {round(position.pnl, 2)}",
+            f"💵 PNL = {round(position.pnl, position.chart.precision)}",
             f"⌛ Duration = {duration}",
         ]
         msg = "\n\n".join(msg_list)
@@ -167,7 +167,7 @@ class TelegramReporter:
             f"📊 {position.chart}",
             f"💲 Triggered Price = {trigger.price}",
             f"💰 Volume: {trigger.volume}",
-            f"💵 PNL = {round(position.pnl, 2)}",
+            f"💵 PNL = {round(position.pnl, position.chart.precision)}",
             f"⌛ Duration = {duration}",
         ]
         msg = "\n\n".join(msg_list)
