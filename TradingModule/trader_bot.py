@@ -220,6 +220,9 @@ class TraderBot:
     async def trade_task(self, config: TradeConfig):
         logging.info(f"Task with config:{str(config)} initilized")
         error_number = 0
+        if not config.agent.prepare_chart(config.chart):
+            logging.error(f"Failed to check chart for config: {config}")
+            return
         while True:
             try:
                 res = await config.task()

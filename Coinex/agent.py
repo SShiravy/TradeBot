@@ -14,7 +14,7 @@ class CoinexAgent(ExchangeAgent):
         self.coinex_api = CoinexFuturesAPI(access_id, secret_key)
         logger.info("Initialized")
 
-    def check_chart(self, chart: Chart) -> bool:
+    def prepare_chart(self, chart: Chart) -> bool:
         info = self.coinex_api.get_market_info(chart.symbol)
         if not info:
             return False

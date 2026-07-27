@@ -212,7 +212,10 @@ class Position:
             self.pnl += (
                 pnl
                 if pnl
-                else (executed_price - self.entry_price) * direction * volume * 100
+                else (executed_price - self.entry_price)
+                * direction
+                * volume
+                * self.chart.contract_size
             )
             self.pnl_in_pip += (executed_price - self.entry_price) * direction * 10
         else:
@@ -501,7 +504,7 @@ class PositionsReport:
 
 class ExchangeAgent(ABC):
     @abstractmethod
-    def check_chart(self, chart: Chart) -> bool:
+    def prepare_chart(self, chart: Chart) -> bool:
         """
         check symbol exist or not and
         change chart.precision

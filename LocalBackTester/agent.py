@@ -8,7 +8,7 @@ import pandas as pd
 
 
 class LocalAgent(ExchangeAgent):
-    def check_chart(self, chart: CsvChart) -> bool:  # type: ignore[Override]
+    def prepare_chart(self, chart: CsvChart) -> bool:  # type: ignore[Override]
         """
         check symbol exist or not and
         change chart.precision
@@ -18,7 +18,7 @@ class LocalAgent(ExchangeAgent):
     def get_chartdata(  # type: ignore[Override]
         self, chart: CsvChart, n_bars: int = 0
     ) -> ChartData | None:
-        if not self.check_chart(chart):
+        if not self.prepare_chart(chart):
             raise FileNotFoundError(
                 f"CSV Chart: {chart} file not found in path: {chart.csv_path}"
             )

@@ -51,8 +51,8 @@ class BitUnixAgent(ExchangeAgent):
         chartdata = ChartData(chart, all_candles_list)
         return chartdata
 
-    def check_chart(self, chart: Chart) -> bool:
-        return super().check_chart(chart)
+    def prepare_chart(self, chart: Chart) -> bool:
+        return super().prepare_chart(chart)
 
     def get_candles_since(self, chart: Chart, time: datetime):
         return super().get_candles_since(chart, time)
@@ -126,4 +126,7 @@ class BitUnixAgent(ExchangeAgent):
         pass
 
     def get_open_positions(self, chart: Chart, *args, **kwargs):
+        pass
+
+    def check_position_closed(self):
         pass

@@ -41,21 +41,19 @@ class ForexAgent(ExchangeAgent):
             cls.market_state: MarketState = MarketState.CHECK_LATER
         return cls._instance
 
-    def check_chart(self, chart: Chart) -> bool:
+    def prepare_chart(self, chart: Chart) -> bool:
         symbol_info = mt5.symbol_info(chart.symbol)
         if symbol_info is None:
             raise RuntimeError(f"Failed to get symbol info for {chart.symbol}")
-
-        chart.precision = len(str(symbol_info.point).split(".")[1])
+        chart.pip_factor = symbol_info.point * 10
+        chart.precision = symbol_info.digits
+        chart.contract_size = symbol_info.trade_contract_size
+        logger.debug(f"{chart=}")
         return True
 
-    def prepare_chart(self, chart: Chart) -> bool:
+    def select_chart(self, chart: Chart) -> bool:
         if not mt5.symbol_select(chart.symbol, True):
             raise ValueError(f"Failed to select symbol {chart.symbol}")
-
-        symbol_info = mt5.symbol_info(chart.symbol)
-        if symbol_info is None:
-            raise RuntimeError(f"Failed to get symbol info for {chart.symbol}")
         return True
 
     @classmethod
@@ -105,7 +103,7 @@ class ForexAgent(ExchangeAgent):
         return self.market_state.wait_seconds()
 
     def get_chartdata(self, chart: Chart, n_bars: int = 100) -> ChartData | None:
-        if not self.prepare_chart(chart):
+        if not self.select_chart(chart):
             return None
         ohlcv_res = mt5.copy_rates_from_pos(
             chart.symbol, forex_timeframe_mapper(chart.timeframe), 0, n_bars
@@ -142,7 +140,7 @@ class ForexAgent(ExchangeAgent):
         return super().get_candles_since(chart, time)
 
     def open_position(self, position: Position) -> float | None:
-        if not self.prepare_chart(position.chart):
+        if not self.select_chart(position.chart):
             return None
 
         tick = mt5.symbol_info_tick(position.chart.symbol)
