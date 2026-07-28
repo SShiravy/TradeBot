@@ -6,13 +6,7 @@ from dataclasses import dataclass
 
 @dataclass(slots=True, frozen=True)
 class PivotPoint:
-    """
-    A single confirmed ZigZag pivot.
-
-    index: bar index of the pivot itself (the extreme candle)
-    confirmed_index: bar index at which the pivot got confirmed
-                      (i.e. when price reversed by `deviation`)
-    """
+    
 
     index: int
     candle: Candle
@@ -28,10 +22,6 @@ class PivotPoint:
 class ZigZagPivot(IndicatorBaseModel):
     """
     ZigZag Pivot Detector (Depth / Deviation / Backstep)
-
-    Confirms an alternating sequence of swing highs/lows once price reverses
-    away from the running extreme by at least `deviation` price units, no
-    sooner than `backstep`/`depth` bars after the running extreme.
 
     values: list[PivotPoint]
     """

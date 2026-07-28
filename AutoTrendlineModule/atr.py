@@ -5,12 +5,7 @@ from typing import Any
 
 
 class ATR(IndicatorBaseModel):
-    """
-    Average True Range (Wilder Smoothing)
-
-    values: dict[timestamp, atr]
-    """
-
+    
     def __init__(self, n_bar: int = 14) -> None:
         super().__init__()
         self.data: dict[int, float]

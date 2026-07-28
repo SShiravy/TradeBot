@@ -6,17 +6,6 @@ from dataclasses import dataclass
 
 @dataclass(slots=True, frozen=True)
 class PivotPoint:
-    """
-    A single swing pivot (confirmed or live/tentative).
-
-    index: bar index of the pivot itself (the extreme candle)
-    confirmed_index: bar index at which the pivot got confirmed
-                      (i.e. once `depth` candles passed without a new,
-                      more extreme value). For a live/unconfirmed pivot
-                      this is simply the most recent processed bar index.
-    confirmed: False for the currently-running, not-yet-locked-in extreme
-               (mirrors the repainting z2 point of the original ZigZag).
-    """
 
     index: int
     candle: Candle
@@ -35,14 +24,6 @@ class SwingPivots(IndicatorBaseModel):
     """
     Causal, repainting swing pivot detector (Depth / Backstep).
 
-    Mirrors the behaviour of the MT4-style ZigZag: the running high/low is
-    tracked bar by bar (this is the *live*, repainting point, exposed via
-    `live_pivots`) and only *confirmed* once `depth` bars pass without a
-    new, more extreme value replacing it. Highs and lows strictly
-    alternate, exactly like a real ZigZag. `backstep` then drops the
-    weaker of two same-type confirmed pivots that ended up closer than
-    `backstep` bars apart.
-
     values: list[PivotPoint]           (confirmed pivots only)
     live_pivots: list[PivotPoint]      (0-2 currently running, unconfirmed)
     """
@@ -60,10 +41,7 @@ class SwingPivots(IndicatorBaseModel):
         return configs
 
     def _apply_backstep(self, pivots: list[PivotPoint], is_high: bool) -> list[PivotPoint]:
-        """
-        Drop the weaker of two same-type pivots that are closer than
-        `backstep` bars apart, keeping only the stronger extreme.
-        """
+        
         if self.backstep <= 0 or not pivots:
             return pivots
 

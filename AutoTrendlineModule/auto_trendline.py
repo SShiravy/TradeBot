@@ -13,13 +13,7 @@ logger = logging.getLogger("AutoTrendlines")
 
 @dataclass(slots=True)
 class TrendlineModel:
-    """
-    A single auto-detected trendline (candidate/active/archived).
-
-    direction: BULLISH -> support line anchored on Lows (rising)
-               BEARISH -> resistance line anchored on Highs (falling)
-    """
-
+    
     direction: MarketSide
     source: CandlesSource
     base_index: int
@@ -56,21 +50,7 @@ class TrendlineModel:
 class AutoTrendlines(IndicatorBaseModel):
     """
     Auto Trendlines (ATR Adaptive)
-
-    Ported from the "Auto Trendlines (ATR Adaptive)" Pine Script indicator.
-
-    Confirmed ZigZag pivots are used as trendline anchors/touches. A candidate
-    line between two same-side pivots (Low-Low for support, High-High for
-    resistance) is accepted only if it is not violated by any pivot in
-    between (ATR break tolerance) and is touched at least `min_touches` times
-    (ATR touch tolerance). Accepted candidates are merged into the most
-    recent active line of the same direction when their slope is similar,
-    otherwise a new line is started (pruning the weakest one if the
-    per-direction limit is reached). Every bar, active lines are extended,
-    checked for a new touch, and archived when price closes through them or
-    when they go untouched for `stale_bars` bars. Near duplicate active
-    lines are periodically merged.
-
+    
     values: list[TrendlineModel]
     """
 
@@ -279,7 +259,7 @@ class AutoTrendlines(IndicatorBaseModel):
             )
 
     def _merge_similar_lines(self, current_candle: Candle, similar_tolerance: float):
-        """mirrors f_mergeSimilarLines: drops (at most) one duplicate per call"""
+        
         active = [line for line in self._lines if not line.broken]
         for i in range(len(active)):
             line_i = active[i]
@@ -383,10 +363,7 @@ class AutoTrendlines(IndicatorBaseModel):
     # ─── MAIN CALCULATION ────────────────────────────
 
     def _bar_seconds(self) -> float:
-        """
-        Seconds represented by one candle, so a price/second slope can be
-        projected across `merge_projection_bars` *bars* (not seconds).
-        """
+        
         timeframe = self.candles[0].timeframe
         if isinstance(timeframe, TimeFrame):
             return timeframe.minutes * 60

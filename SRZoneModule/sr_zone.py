@@ -14,18 +14,6 @@ logger = logging.getLogger("SRZones")
 
 @dataclass(slots=True)
 class ZoneModel:
-    """
-    A single auto-detected support/resistance zone (candidate/active/archived).
-
-    is_support: True  -> built from swing Lows (support, sits below price)
-                False -> built from swing Highs (resistance, sits above price)
-
-    Field names mirror the Pine reference's `Zone` UDT 1:1 (center, width,
-    sum_price, member_count, touch_count, break_count, consec_break,
-    was_in_band, max_touch_gap, raw_score, score_pct) so the two can be
-    read side by side. `invalidated_index` is Pine's `invalidBar` — None
-    while still valid, exactly like Pine's `na`.
-    """
 
     is_support: bool
     center: float
@@ -72,80 +60,8 @@ class ZoneModel:
 
 class SRZones(IndicatorBaseModel):
     """
-    Support & Resistance Zone Engine (ATR Adaptive)  --  faithful port of the
-    "S/R Zone Engine [ZigZag Pivots]" (v2, FIXED) Pine Script indicator.
-
-    Structured like AutoTrendlineModule.auto_trendline.AutoTrendlines on
-    purpose (same pivot source: SwingPivots -- causal, no Deviation input,
-    same as this project's AutoTrendlines; same ATR source: ATR), but every
-    knob and every rule from the Pine version is reproduced, not just the
-    shape:
-
-      - Pivot Detection: `depth`/`backstep`; `max_candidates` bounds an
-        internal pivot log the same way `i_maxCandidates` bounds Pine's
-        `g_candidates`/`g_zoneUsedBar` arrays (Python doesn't need the
-        dedup array Pine used -- SwingPivots hands each pivot exactly once
-        -- so this only bounds the log kept for parity/debugging).
-      - Adaptive Radius: `atr_len` + `atr_median_lookback` -> a ROLLING
-        MEDIAN of ATR (not raw ATR), then `radius_factor` scales it and
-        `min_radius_mult`/`max_radius_mult` clamp it -> `base_radius`.
-        This is Pine's `medianATR` / `baseRadius` exactly; the earlier
-        version of this port skipped the median + clamp entirely.
-      - Clustering: `merge_nearby`, `merge_interval_bars` (Pine hardcodes
-        this at 300 via `bar_index % 300 == 0`; exposed here instead of
-        hardcoded, per completeness).
-      - Zone Width: `width_mult` and the `0.1*medianATR .. 2*base_radius`
-        clamp Pine applies both when extending a zone AND when seeding a
-        new one via `fallback_width_factor` (was missing entirely before).
-      - Zone Score: `max_zone_touches`, `max_zone_breaks`, `zone_break_bars`
-        are THREE SEPARATE Pine inputs, not one. A zone survives up to
-        `max_zone_breaks - 1` break events (each needing `zone_break_bars`
-        consecutive closes outside it) before it's actually invalidated --
-        the earlier version invalidated on the very first break, collapsing
-        all three into one knob. Score itself is Pine's exact two-factor
-        formula (touch count + age vs. median pivot spacing), rank-
-        percentiled across all zones (`raw_score` / `score_pct`), computed
-        once at the end -- not the simplified `touches*100+age` linear
-        stand-in used before.
-      - Touch Spacing: `min_bars_between_touches`/`max_bars_between_touches`
-        gate BOTH new-pivot touches (`f_updateZones`) and per-bar break/
-        band-entry touches (`f_checkZoneBreaks`) -- same gate, same field
-        (`zone.last_touch_index`), exactly like the Pine version's headline
-        fix ("touchCount was being incremented from two independent paths").
-      - Merge: Pine always merges the OLDER zone <- newer zone (array order,
-        i<j), in a full pass that can chain multiple merges into the same
-        target within one call, and marks the loser `invalidBar` (kept, not
-        deleted) rather than removing it. The earlier version merged
-        "whichever has more touches" and permanently `list.remove()`'d the
-        loser after at most one merge per call -- both fixed here.
-      - Pivot matching (`f_updateZones`): Pine takes the FIRST same-side
-        zone within radius in array (= chronological) order, not the
-        nearest one, and -- if a matched zone gets invalidated by the max-
-        gap rule -- keeps scanning for another candidate before giving up
-        and seeding a new zone. The earlier version picked nearest-by-
-        distance and gave up immediately on a gap violation. Fixed here.
-      - Display: `plot()` now reproduces Pine's per-refresh selection block
-        -- filter by `min_score_percentile`, rank by
-        `score_pct * (1 + proximity_boost * exp(-|close-center|/medianATR))`,
-        keep the top `max_zones_display`, draw ALL of them (valid or
-        invalid -- Pine never hides invalid zones, it just renders them more
-        transparent with an "[INVALID]" tag), colored by `support_color`/
-        `resist_color`. Two Pine-only pieces have no real equivalent here
-        and are called out rather than silently dropped:
-          * `f_safeBar` clamps box coordinates because Pine's renderer
-            rejects bar_index more than ~10000 bars from the current bar.
-            finplot draws on real timestamps, not bar-index offsets, so
-            there is no such limit and nothing to clamp.
-          * Pine's `label.new` draws free-floating text; `ChartPlot` has no
-            equivalent primitive (only line/candle/signal markers), so the
-            top-3 "info labels" (`i_showLabels`) are emitted via
-            `logger.info` instead of drawn on the chart.
-
-    Repaint: `SwingPivots.live_pivots` (the still-forming, unconfirmed
-    extreme) is exposed as-is and previewed in `plot(show_live=...)` against
-    the nearest same-side zone -- display only, it never mutates a
-    `ZoneModel`, exactly like Pine's live tip never touches touchCount/score.
-
+    Support & Resistance Zone Engine (ATR Adaptive)
+    
     values: list[ZoneModel]
     """
 
@@ -254,13 +170,7 @@ class SRZones(IndicatorBaseModel):
         return new_zone
 
     def _merge_overlapping_zones(self, bar_index: int):
-        """
-        Mirrors Pine's f_mergeZonesNew exactly: a full pass, older zone
-        (lower array index) always absorbs newer overlapping same-side
-        zones, can chain multiple merges into the same target within one
-        call, and the loser is marked invalidated (kept for history/prune)
-        rather than removed outright.
-        """
+        
         if not self.merge_nearby:
             return
         n = len(self._zones)
@@ -292,7 +202,7 @@ class SRZones(IndicatorBaseModel):
                 zj.invalidated_index = bar_index
 
     def _prune_zones(self, bar_index: int):
-        """mirrors f_pruneZones: drop zones invalidated more than `prune_after_bars` ago"""
+        
         self._zones = [
             z
             for z in self._zones
@@ -302,13 +212,7 @@ class SRZones(IndicatorBaseModel):
     # --- PIVOT PROCESSING ------------------------------
 
     def _process_new_pivot(self, pivot: PivotPoint, base_radius: float, median_atr: float):
-        """
-        Mirrors f_updateZones exactly: scan zones in (chronological) array
-        order, take the FIRST same-side zone within `base_radius` -- not the
-        nearest one. If that zone fails the max-gap rule it gets invalidated
-        on the spot and the scan CONTINUES to the next candidate, rather
-        than immediately giving up and seeding a new zone.
-        """
+        
         is_support = not pivot.is_high
         matched = False
 
@@ -394,7 +298,7 @@ class SRZones(IndicatorBaseModel):
     # --- SCORING ---------------------------------------
 
     def _compute_scores(self, bar_index: int, med_pivot_spacing: float):
-        """mirrors f_computeZoneScore: touches + age (vs. median pivot spacing), sqrt-blended"""
+        
         for zone in self._zones:
             age_bars = bar_index - zone.base_index
             age_comp = 1 - math.exp(-age_bars / max(1.0, med_pivot_spacing))
@@ -402,7 +306,7 @@ class SRZones(IndicatorBaseModel):
             zone.raw_score = (touch_comp**0.5) * (max(age_comp, 0.001) ** 0.5)
 
     def _percentile_filter(self):
-        """mirrors f_percentileFilterZones: rank-percentile raw_score across all zones"""
+        
         scores = [z.raw_score for z in self._zones]
         n = len(scores)
         for zone in self._zones:
@@ -515,28 +419,7 @@ class SRZones(IndicatorBaseModel):
         show_labels: bool = True,
         show_live: bool = True,
     ):
-        """
-        Mirrors Pine's PER-REFRESH display block: filter by
-        `min_score_percentile`, rank by
-        score_pct * (1 + proximity_boost * exp(-|close-center|/medianATR)),
-        keep the top `max_zones_display` (pass `None` for no cap -- shows
-        every zone in `self.data`, which was never capped to begin with;
-        only this display step was). Invalid zones are NOT hidden --
-        Pine never hides them either, it just renders them more transparent
-        with an "[INVALID]" tag; here that distinction is approximated by
-        logging (see class docstring for why: no text-label primitive).
 
-        Pine extends a still-valid zone's box 25 bars into blank future
-        space (`bar_index + 25`) because its renderer can draw past the
-        last actual bar. finplot cannot -- `fplt.add_line` resolves a time
-        to an x-position via the ALREADY-PLOTTED candle series, so a
-        timestamp past `self.candles[-1].time` has nothing to resolve to
-        and raises `IndexError` deep inside finplot. Every other line-
-        drawing indicator in this project (e.g. AutoTrendlines, whose
-        `end_candle` is always a real candle, never extrapolated) avoids
-        this the same way: still-valid zones are drawn out to the real
-        last candle's time, not a synthetic future one.
-        """
         if not self.candles:
             return
 
