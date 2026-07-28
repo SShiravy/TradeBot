@@ -168,13 +168,107 @@ def test_choch_queue():
     plot.show()
 
 
+def test_auto_trendlines():
+    from ChartModule.models import Chart, TimeFrame
+    from ChartModule.plot import ChartPlot
+    from AutoTrendlineModule import AutoTrendlines
+    from Forex.agent import ForexAgent
+
+    chart = Chart("XAUUSD", TimeFrame.one_minute)
+    chart_data = ForexAgent().get_chartdata(chart, 1000)
+    if chart_data is None:
+        raise ValueError
+
+    auto_trendlines = AutoTrendlines(
+        depth=25,
+        backstep=2,
+        atr_len=14,
+        touch_mult=0.5,
+        break_mult=0.4,
+        min_touches=2,
+        min_line_bars=15,
+        max_span_bars=150,
+        stale_bars=50,
+        max_total_lines=300,
+        max_active_per_dir=50,
+        merge_projection_bars=50,
+        display_only_aligned=False,
+    )
+    auto_trendlines.set(chart_data.candles)
+
+    active_lines = [line for line in auto_trendlines.data if not line.broken]
+    logging.info(f"total lines: {len(auto_trendlines.data)}, active: {len(active_lines)}")
+    for line in auto_trendlines.data:
+        logging.info(line)
+
+    plot = ChartPlot(chart_data, len(chart_data.candles))
+    plot.plot()
+    auto_trendlines.plot(plot)
+    plot.show()
+
+
+def test_sr_zones():
+    from ChartModule.models import Chart, TimeFrame
+    from ChartModule.plot import ChartPlot
+    from SRZoneModule import SRZones
+    from Forex.agent import ForexAgent
+
+    chart = Chart("XAUUSD", TimeFrame.one_minute)
+    chart_data = ForexAgent().get_chartdata(chart, 1000)
+    if chart_data is None:
+        raise ValueError
+
+    sr_zones = SRZones(
+        depth=20,
+        backstep=2,
+        max_candidates=150,
+        atr_len=14,
+        atr_median_lookback=21,
+        radius_factor=1.0,
+        min_radius_mult=0.25,
+        max_radius_mult=3.0,
+        merge_nearby=True,
+        merge_interval_bars=300,
+        width_mult=1.0,
+        fallback_width_factor=0.35,
+        max_zone_touches=5,
+        max_zone_breaks=1,
+        zone_break_bars=2,
+        min_bars_between_touches=3,
+        max_bars_between_touches=200,
+        prune_after_bars=4500,
+    )
+    sr_zones.set(chart_data.candles)
+
+    active_zones = [zone for zone in sr_zones.data if not zone.broken]
+    logging.info(f"total zones: {len(sr_zones.data)}, active: {len(active_zones)}")
+    for zone in sr_zones.data:
+        logging.info(zone)
+
+    plot = ChartPlot(chart_data, len(chart_data.candles))
+    plot.plot()
+    sr_zones.plot(
+        plot,
+        min_score_percentile=0,
+        max_zones_display=None,
+        proximity_boost=0.3,
+        show_labels=True,
+        show_live=True,
+    )
+    plot.show()
+
+
 if __name__ == "__main__":
     # asyncio.run(start_diver_crypto_backtest_pack())
     # asyncio.run(start_diver_backtest())
     # asyncio.run(start_fibochoch_backtest())
     # asyncio.run(start_fich_diver_backtest())
 
-    test_choch_queue()
+    # test_choch_queue()
+
+    # test_auto_trendlines()
+
+    test_sr_zones()
 
     # new_backtest()
 
