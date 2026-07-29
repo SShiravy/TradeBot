@@ -15,6 +15,7 @@ from DivergenceStrategy.oscillator_divergence import (
     OscillatorDivergence,
 )
 from Forex.agent import ForexAgent
+from TradingModule.reporter import TelegramReporter
 from TradingModule.trader_bot import TradeConfig, Position
 from dataclasses import dataclass
 from copy import copy
@@ -88,7 +89,7 @@ class OscillatorDoubleDiverConfig(TradeConfig):
         return timedelta(seconds=sleep_time_based_on_timestamp + 1)
 
     async def find_signal(
-        self, chartdata: ChartData, consider_position: bool = True
+        self, chartdata: ChartData
     ) -> (
         None
         | tuple[OscillatorDoubleDiverSignal, Position]
@@ -117,11 +118,6 @@ class OscillatorDoubleDiverConfig(TradeConfig):
             first_signal, second_signal
         )
         logger.info(f"OscillatorDiver Signal:{double_diver_signal}")
-        entry_source = (
-            first_signal.main_chart_line.end_candle.high
-            if first_signal.side is MarketSide.BEARISH
-            else first_signal.main_chart_line.end_candle.low
-        )
         # TODO: change entry source to agent.get_current_tick
         plot = None
         if self.send_signal:
@@ -135,8 +131,16 @@ class OscillatorDoubleDiverConfig(TradeConfig):
             )
             self.strategy.oscillator_indicator.plot(plot, plot.oscillator_ax)
 
-        if not consider_position:
+        if not self.consider_position:
+            if self.send_signal:
+                await TelegramReporter().new_signal(double_diver_signal, plot)
             return double_diver_signal
+
+        entry_source = (
+            first_signal.main_chart_line.end_candle.high
+            if first_signal.side is MarketSide.BEARISH
+            else first_signal.main_chart_line.end_candle.low
+        )
         position = await self.position_handler.generate_position(
             double_diver_signal, sl_base_price=entry_source, plot=plot
         )
@@ -150,14 +154,16 @@ class OscillatorDoubleDiverConfig(TradeConfig):
         # TODO: add a param for removing last candle or not (current candle)
         sub_chart_data = copy(chart_data)
         sub_chart_data.candles = sub_chart_data.candles[:-1]
-
-        res = await self.find_signal(sub_chart_data, consider_position=True)
+        chartdata = self.get_chartdata()
+        res = await self.find_signal(chartdata)
         if res is None:
-            return self.give_delay(chart_data[-1])
-
-        signal, position = res  # type: ignore
-
-        return self.give_delay(chart_data[-1], jump=True), signal, position
+            return self.give_delay(chartdata[-1])
+        if isinstance(res, tuple):
+            signal, position = res
+        else:
+            signal = res
+            position = None
+        return self.give_delay(chartdata[-1], jump=True), signal, position
 
     async def backtest(  # type: ignore
         self,
@@ -167,7 +173,8 @@ class OscillatorDoubleDiverConfig(TradeConfig):
     ):
         self.send_signal = False
         all_signals: list[OscillatorDoubleDiverSignal] = []
-
+        default_consider_positions = self.consider_position
+        self.consider_position = False
         jump = 0
         chartdata = self.get_chartdata(n_bar)
         for i in range(len_sub_data, len(chartdata) - 2):
@@ -176,7 +183,7 @@ class OscillatorDoubleDiverConfig(TradeConfig):
             if jump > 0:
                 jump -= 1
                 continue
-            signal = await self.find_signal(sub_chart_data, consider_position=False)
+            signal = await self.find_signal(sub_chart_data)
             if signal is None:
                 continue
             jump = self.bar_between_signals
@@ -201,4 +208,5 @@ class OscillatorDoubleDiverConfig(TradeConfig):
             )  # type: ignore
         if show_image:
             plot.show()
+        self.consider_position = default_consider_positions
         return all_signals, plot

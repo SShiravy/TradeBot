@@ -1,3 +1,4 @@
+from ChartModule.models import MarketSide, Signal
 from TradingModule import Position, OrderSide
 from config import settings
 from datetime import datetime, timedelta, timezone
@@ -172,3 +173,16 @@ class TelegramReporter:
         ]
         msg = "\n\n".join(msg_list)
         await self.send_msg(self.main_channel, msg, reply_id=position.msg_id)
+
+    async def new_signal(self, signal: Signal, plot):
+        msg_list = [
+            signal.source,
+            f"📊 {signal.chart}",
+            "🟢 Bullish" if signal.side is MarketSide.BULLISH else "🔴 Bearish",
+        ]
+
+        img_path = None
+        if plot:
+            img_path = plot.save_image(signal.source + str(signal.chart))
+        msg = "\n\n".join(msg_list)
+        await self.send_msg(self.main_channel, msg, img_path)

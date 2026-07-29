@@ -36,6 +36,8 @@ class TradeConfig:
     _n_losed_long: int = field(default=0, init=False)
     _n_losed_short: int = field(default=0, init=False)
 
+    consider_position: bool = field(default=True)
+
     def export_config(self) -> dict:
         return {
             "chart": self.chart.export_config(),
@@ -69,7 +71,7 @@ class TradeConfig:
         return chartdata
 
     async def find_signal(
-        self, chartdata: ChartData, consider_position: bool = True, *args, **kwargs
+        self, chartdata: ChartData, *args, **kwargs
     ) -> None | tuple[Signal, Position] | Signal:
         signal = self.strategy.check_signal(
             chartdata, self.long_signal, self.short_signal
@@ -81,19 +83,25 @@ class TradeConfig:
         if self.send_signal:
             plot = ChartPlot(chartdata)
             self.strategy.draw(plot, signal, draw_indicators=True)
-        if not consider_position:
+        if not self.consider_position:
+            if self.send_signal:
+                await TelegramReporter().new_signal(signal, plot)
             return signal
         position = await self.position_handler.generate_position(signal)
         if not position:
             return None
         return signal, position
 
-    async def task(self) -> timedelta | tuple[timedelta, Signal, Position]:
+    async def task(self) -> timedelta | tuple[timedelta, Signal, Position | None]:
         chartdata = self.get_chartdata()
-        res = await self.find_signal(chartdata, consider_position=True)
+        res = await self.find_signal(chartdata)
         if res is None:
             return self.give_delay(chartdata[-1])
-        signal, position = res  # type: ignore
+        if isinstance(res, tuple):
+            signal, position = res
+        else:
+            signal = res
+            position = None
         return self.give_delay(chartdata[-1], jump=True), signal, position
 
     async def backtest(
@@ -101,13 +109,12 @@ class TradeConfig:
         n_bar=500,
         show_image=True,
         len_sub_data=100,
-        consider_positions=True,
         *args,
         **kwargs,
     ):
         logger = logging.getLogger(f"{self.__class__.__name__} Backtest")
 
-        if consider_positions:
+        if self.consider_position:
             position_handler = copy(self.position_handler)
         else:
             position_handler = DummyPositionHanler()
@@ -134,7 +141,7 @@ class TradeConfig:
         all_signals: list[Signal] = []
 
         while agent.index < len(agent.chartdata.candles) - 1:  # type: ignore
-            if consider_positions:
+            if self.consider_position:
                 position_handler.manage_positions()
                 await commands.TradeCommand.execute_pending_commands(
                     time=agent.get_chartdata(self.chart)[-1].time,  # type: ignore
@@ -145,8 +152,8 @@ class TradeConfig:
                 candle_delay = 1
             else:
                 all_signals.append(res[1])
-                if consider_positions:
-                    all_positions.append(res[2])
+                if self.consider_position:
+                    all_positions.append(res[2])  # type: ignore
                 candle_delay = self.bar_between_signals + 1
             agent.index += candle_delay
 

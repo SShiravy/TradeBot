@@ -52,6 +52,7 @@ class PositionHandler(ABC):
             "leverage": self.leverage,
             "long_trade": self.long_trade,
             "short_trade": self.short_trade,
+            "constraints": [c.export_config() for c in self.trading_constraints],
         }
 
     async def generate_position(

@@ -11,6 +11,7 @@ from ChartModule.Indicators import (
     SupportCandleConditions,
 )
 from ChartModule.plot import ChartWithOscillatorPlot
+from TradingModule.reporter import TelegramReporter
 from TradingModule.trader_bot import TradeConfig, Position
 from TradingModule.models import Strategy
 from dataclasses import dataclass
@@ -396,7 +397,7 @@ class OscillatorDiverConfig(TradeConfig):
     strategy: OscillatorDivergence  # type: ignore[override]
 
     async def find_signal(
-        self, chartdata: ChartData, consider_position: bool = True
+        self, chartdata: ChartData
     ) -> None | tuple[OscillatorDiverSignal, Position] | OscillatorDiverSignal:
         signal = self.strategy.check_signal(
             chartdata, self.long_signal, self.short_signal
@@ -404,8 +405,6 @@ class OscillatorDiverConfig(TradeConfig):
         if signal is None:
             return None
         logger.info(f"Oscillator Divergence Signal:{signal}")
-        if not consider_position:
-            return signal
 
         plot = None
         if self.send_signal:
@@ -415,6 +414,11 @@ class OscillatorDiverConfig(TradeConfig):
             )
             self.strategy.draw(plot, signal, draw_indicators=True)
             self.strategy.oscillator_indicator.plot(plot, plot.oscillator_ax)
+
+        if not self.consider_position:
+            if self.send_signal:
+                await TelegramReporter().new_signal(signal, plot)
+            return signal
 
         entry_source = (
             signal.main_chart_line.end_candle.high
@@ -436,12 +440,14 @@ class OscillatorDiverConfig(TradeConfig):
         sub_chart_data = copy(chart_data)
         sub_chart_data.candles = sub_chart_data.candles[:-1]
 
-        res = await self.find_signal(sub_chart_data, consider_position=True)
+        res = await self.find_signal(sub_chart_data)
         if res is None:
             return self.give_delay(chart_data[-1])
-
-        signal, position = res  # type: ignore
-
+        if isinstance(res, tuple):
+            signal, position = res
+        else:
+            signal = res
+            position = None
         return self.give_delay(chart_data[-1], jump=True), signal, position
 
     async def backtest(  # type: ignore
@@ -461,7 +467,7 @@ class OscillatorDiverConfig(TradeConfig):
             if jump > 0:
                 jump -= 1
                 continue
-            signal = await self.find_signal(sub_chart_data, consider_position=False)
+            signal = await self.find_signal(sub_chart_data)
             if signal is None:
                 continue
             jump = self.bar_between_signals

@@ -12,6 +12,7 @@ from ChartModule.Indicators import (
     SupportCandleConditions,
 )
 from ChartModule.plot import DoubleChartPlot
+from TradingModule.reporter import TelegramReporter
 from TradingModule.trader_bot import TradeConfig, Position
 from TradingModule.models import Strategy
 from dataclasses import dataclass, field
@@ -284,7 +285,6 @@ class TwoChartDiverTradeConfig(TradeConfig):
         self,
         chartdata: ChartData,
         second_chartdata: ChartData,
-        consider_position: bool = True,
     ) -> None | tuple[DivergenceSignal, Position] | DivergenceSignal:
         signal = self.strategy.check_signal(
             chartdata, second_chartdata, self.long_signal, self.short_signal
@@ -292,13 +292,16 @@ class TwoChartDiverTradeConfig(TradeConfig):
         if signal is None:
             return None
         logger.info(f"Two Chart Divergence Signal:{signal}")
-        if not consider_position:
-            return signal
 
         plot = None
         if self.send_signal:
             plot = DoubleChartPlot(chartdata, second_chartdata)
             self.strategy.draw(plot, signal, draw_indicators=True)
+
+        if not self.consider_position:
+            if self.send_signal:
+                await TelegramReporter().new_signal(signal, plot)
+            return signal
 
         entry_source = (
             signal.main_chart_line.end_candle.high
@@ -322,12 +325,14 @@ class TwoChartDiverTradeConfig(TradeConfig):
         second_data = copy(second_chartdata)
         second_data.candles = second_data[:-1]
 
-        res = await self.find_signal(base_data, second_data, consider_position=True)
+        res = await self.find_signal(base_data, second_data)
         if res is None:
             return self.give_delay(base_chartdata[-1])
-
-        signal, position = res  # type: ignore
-
+        if isinstance(res, tuple):
+            signal, position = res
+        else:
+            signal = res
+            position = None
         return self.give_delay(base_chartdata[-1], jump=True), signal, position
 
     async def backtest(  # type: ignore
@@ -352,9 +357,7 @@ class TwoChartDiverTradeConfig(TradeConfig):
             if jump > 0:
                 jump -= 1
                 continue
-            signal = await self.find_signal(
-                base_sub_data, seocnd_sub_data, consider_position=False
-            )
+            signal = await self.find_signal(base_sub_data, seocnd_sub_data)
             if signal is None:
                 continue
             jump = self.bar_between_signals
