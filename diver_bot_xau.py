@@ -42,6 +42,7 @@ one_m = ForexDiverTradeConfig(
 
 dxy_1m = ForexDiverTradeConfig(
     chart=Chart("XAUUSD!", TimeFrame.one_minute),
+    consider_position=False,
     second_chart=Chart("DXY!", TimeFrame.one_minute),
     strategy=Divergence(5, 100, [], name="DXY_divergence"),
     bar_between_signals=2,
