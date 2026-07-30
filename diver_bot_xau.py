@@ -18,7 +18,7 @@ CustomLogger(
 
 one_m = ForexDiverTradeConfig(
     chart=Chart("XAUUSD!", TimeFrame.one_minute),
-    second_chart=Chart("SOLUSD", TimeFrame.one_minute),
+    second_chart=Chart("USDJPY!", TimeFrame.one_minute),
     strategy=Divergence(5, 100, [], name="ForexDiver", inverse_diver_long=True),
     bar_between_signals=2,
     position_handler=SteppingHandlerForex(
@@ -34,7 +34,7 @@ one_m = ForexDiverTradeConfig(
             # SideConstraint(n_pos_each_side=1, n_bar=30, check_closed_positions=False),
             # LoseInRowConstraint(n_long_lose=1, n_short_lose=1, n_bar=30),
         ],
-        check_with_agent=True,
+        check_with_agent=False,
     ),
     merge_two_chart_time=False,
     heikingashi_chartdata=True,
