@@ -20,12 +20,13 @@ logger = logging.getLogger("ChochQueue")
 
 @dataclass(slots=True)
 class ChochModel:
-
+    
     side: MarketSide
     break_candle: Candle
     break_level: float
     pivot_candle: Candle
     anchor: float | None
+    is_choch: bool
 
     extreme: float = field(init=False)
     active: bool = field(default=True, init=False)
@@ -37,8 +38,9 @@ class ChochModel:
         self.extreme = float("-inf") if self.side is MarketSide.BULLISH else float("inf")
 
     def __str__(self) -> str:
+        kind = "CHoCH" if self.is_choch else "BOS"
         return (
-            f"{self.side}|{self.break_candle.time}"
+            f"{kind}|{self.side}|{self.break_candle.time}"
             f"|active={self.active}|validated={self.validated}"
         )
 
@@ -50,7 +52,7 @@ class ChochSignal(Signal):
 
 
 class ChochQueueFilter(Strategy):
-
+    
     def __init__(
         self,
         pivot_length: int = 50,
@@ -78,8 +80,14 @@ class ChochQueueFilter(Strategy):
         self.chart: Chart
 
         self.cur_group_type: MarketSide = MarketSide.NEUTRAL
+        self.cur_group_count: int = 0
+        # direction of the last *confirmed* signal, used to tell a genuine
+        # CHoCH (direction reversal) apart from a BOS (same-direction
+        # continuation)
+        self.last_confirmed: MarketSide = MarketSide.NEUTRAL
         self.queue: list[ChochModel] = []
 
+        # only used to avoid re-firing the same signal on every call
         self.last_reported_time: datetime | None = None
 
     def export_config(self):
@@ -95,10 +103,10 @@ class ChochQueueFilter(Strategy):
         )
         return conf_dict
 
-    # ─── PIVOT DETECTION ─────────────────────────────────
+    # ─── PIVOT + MISSED LEVEL DETECTION ─────────────────────────────────
 
     def _find_pivots_and_missed(self, candles: list[Candle]) -> list[dict]:
-
+        
         n = len(candles)
         highs = [c.high for c in candles]
         lows = [c.low for c in candles]
@@ -179,11 +187,6 @@ class ChochQueueFilter(Strategy):
             if model.side is side:
                 model.active = False
 
-    def _deactivate_from(self, start_index: int, side: MarketSide):
-        for model in self.queue[start_index:]:
-            if model.side is side:
-                model.active = False
-
     # ─── EXTREME UPDATE & VALIDATION ────────────────────────────────────
 
     def _update_extremes(self, candle: Candle):
@@ -236,7 +239,6 @@ class ChochQueueFilter(Strategy):
                     retrace_level = leg_top - (leg_top - leg_bot) * (1 - self.retrace_fib)
                     is_validated = break_high >= retrace_level
             else:
-                # fibonacci filter is off -> the CHoCH break itself confirms the signal
                 retrace_level = model.break_level
                 is_validated = True
 
@@ -247,18 +249,23 @@ class ChochQueueFilter(Strategy):
 
             model.validated = True
             model.touch_candle = candle
-            self._deactivate_from(group_start, self.cur_group_type)
+            self.last_confirmed = model.side
+            self._deactivate_all(self.cur_group_type)
 
             new_type = (
                 MarketSide.BEARISH
                 if model.side is MarketSide.BULLISH
                 else MarketSide.BULLISH
             )
-            self.cur_group_type = MarketSide.NEUTRAL
+            found_prev = False
             for previous_model in reversed(self.queue):
                 if previous_model.side is new_type and previous_model.active:
                     self.cur_group_type = new_type
+                    found_prev = True
                     break
+            if not found_prev:
+                self.cur_group_type = MarketSide.NEUTRAL
+                self.cur_group_count = 0
 
             return  # only one validation per bar
 
@@ -272,6 +279,8 @@ class ChochQueueFilter(Strategy):
 
         self.queue = []
         self.cur_group_type = MarketSide.NEUTRAL
+        self.cur_group_count = 0
+        self.last_confirmed = MarketSide.NEUTRAL
         last_ph_price: float | None = None
         last_ph_candle: Candle | None = None
         last_pl_price: float | None = None
@@ -302,7 +311,14 @@ class ChochQueueFilter(Strategy):
             if choch_bull_raw:
                 if self.cur_group_type is MarketSide.BEARISH:
                     self._deactivate_all(MarketSide.BEARISH)
+                    self.cur_group_count = 0
+                # a genuine CHoCH only if the last *confirmed* signal wasn't
+                # already bullish - otherwise this is just a BOS (continuation)
+                is_choch = self.last_confirmed is not MarketSide.BULLISH
+                if self.cur_group_type is not MarketSide.BULLISH:
+                    self.cur_group_count = 0
                 self.cur_group_type = MarketSide.BULLISH
+                self.cur_group_count += 1
                 self._push_model(
                     ChochModel(
                         side=MarketSide.BULLISH,
@@ -310,6 +326,7 @@ class ChochQueueFilter(Strategy):
                         break_level=last_ph_price,
                         pivot_candle=last_ph_candle,
                         anchor=last_pl_price,
+                        is_choch=is_choch,
                     )
                 )
                 last_ph_price = None
@@ -318,7 +335,12 @@ class ChochQueueFilter(Strategy):
             if choch_bear_raw:
                 if self.cur_group_type is MarketSide.BULLISH:
                     self._deactivate_all(MarketSide.BULLISH)
+                    self.cur_group_count = 0
+                is_choch = self.last_confirmed is not MarketSide.BEARISH
+                if self.cur_group_type is not MarketSide.BEARISH:
+                    self.cur_group_count = 0
                 self.cur_group_type = MarketSide.BEARISH
+                self.cur_group_count += 1
                 self._push_model(
                     ChochModel(
                         side=MarketSide.BEARISH,
@@ -326,6 +348,7 @@ class ChochQueueFilter(Strategy):
                         break_level=last_pl_price,
                         pivot_candle=last_pl_candle,
                         anchor=last_ph_price,
+                        is_choch=is_choch,
                     )
                 )
                 last_pl_price = None
@@ -366,7 +389,7 @@ class ChochQueueFilter(Strategy):
 
         self.last_reported_time = newest_validated.touch_candle.time  # type: ignore[union-attr]
         signal = ChochSignal(
-            self.chart, newest_validated.touch_candle, newest_validated.side, newest_validated  # type: ignore[arg-type]
+            self.chart, newest_validated.touch_candle, newest_validated.side, newest_validated
         )
 
         if signal.side is MarketSide.BULLISH and not check_long:
@@ -382,7 +405,7 @@ class ChochQueueFilter(Strategy):
             logger.debug(f"indicators rejected the signal: {signal}")
             return None
 
-        logger.info(f"Signal:{signal}")
+        logger.info(f"Signal: {signal} | {signal.choch_model}")
         return signal
 
     def report(self, *args, **kwargs) -> str:
@@ -391,17 +414,27 @@ class ChochQueueFilter(Strategy):
     # ─── DRAWING ────────────────────────────────────────────────────────
 
     def _draw_model(self, plot: ChartPlot, model: ChochModel):
-        color = "#26a69a" if model.side is MarketSide.BULLISH else "#ef5350"
+        
+        base = "26a69a" if model.side is MarketSide.BULLISH else "ef5350"
+        color = f"#{base}" if model.is_choch else f"#{base}70"  # ~44% opacity for BOS
+        width = 2 if model.is_choch else 1
 
-        # the CHoCH break line is always drawn, with or without the fibo filter
+        # the break line is always drawn, with or without the fibo filter
         plot.draw_line(
             model.pivot_candle.time,
             model.break_level,
             model.break_candle.time,
             model.break_level,
             color=color,
-            width=2,
+            width=width,
         )
+
+        # a small marker on the pivot that got broken - same bold/faded
+        # convention as the line, so CHoCH pivots stand out from BOS ones
+        pivot_source = (
+            CandlesSource.High if model.side is MarketSide.BULLISH else CandlesSource.Low
+        )
+        plot.mark_candle(model.pivot_candle, source=pivot_source, color=color)
 
         # the retracement line + touch arrow are only meaningful when the
         # fibo filter is on (otherwise the break itself is the signal)
@@ -455,7 +488,7 @@ class ChochQueueFilter(Strategy):
 
 
 class ChochQueueTradeConfig(TradeConfig):
-    strategy: ChochQueueFilter  # type: ignore[override]
+    strategy: ChochQueueFilter
 
     async def find_signal(
         self, chartdata: ChartData, *args, **kwargs

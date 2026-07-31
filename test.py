@@ -160,7 +160,13 @@ def test_choch_queue():
     choch.check_signal(chart_data)
 
     validated_models = [model for model in choch.queue if model.validated]
-    logging.info(f"validated choch models: {validated_models}")
+    logging.info(f"found {len(validated_models)} validated signals:")
+    for model in validated_models:
+        tag = "CHoCH" if model.is_choch else "BOS"
+        logging.info(
+            f"  [{tag}] {model.side} | break_level={model.break_level} "
+            f"| break_time={model.break_candle.time} | touch_time={model.touch_candle.time if model.touch_candle else None}"
+        )
 
     plot = ChartPlot(chart_data, len(chart_data.candles))
     plot.plot()
@@ -264,11 +270,11 @@ if __name__ == "__main__":
     # asyncio.run(start_fibochoch_backtest())
     # asyncio.run(start_fich_diver_backtest())
 
-    # test_choch_queue()
+    test_choch_queue()
 
     # test_auto_trendlines()
 
-    test_sr_zones()
+    # test_sr_zones()
 
     # new_backtest()
 
