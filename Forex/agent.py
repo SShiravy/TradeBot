@@ -1,6 +1,6 @@
 from ChartModule import Chart, Candle, ChartData, TimeFrame
 from TradingModule.models import ExchangeAgent, Position, OrderSide
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from config import settings
 from enum import Enum
 import mt5_wrapper as mt5
@@ -31,33 +31,29 @@ class MarketState(Enum):
 
 
 class ForexAgent(ExchangeAgent):
-    def __new__(cls):
+    def __new__(cls, mt5_terminal_path: str = settings.METATRADER_TERMINAL_PATH):
         if not hasattr(cls, "_instance"):
             cls._instance = object.__new__(cls)
-            if settings.METATRADER_TERMINAL_PATH and not mt5.initialize(
-                settings.METATRADER_TERMINAL_PATH
-            ):
+            if not mt5.initialize(mt5_terminal_path):
                 raise RuntimeError("MT5 initialize failed")
             logger.info("Initialized")
             cls.last_checked_timestamp: None | int = None
             cls.market_state: MarketState = MarketState.CHECK_LATER
         return cls._instance
 
-    def check_chart(self, chart: Chart) -> bool:
+    def prepare_chart(self, chart: Chart) -> bool:
         symbol_info = mt5.symbol_info(chart.symbol)
         if symbol_info is None:
             raise RuntimeError(f"Failed to get symbol info for {chart.symbol}")
-
-        chart.precision = len(str(symbol_info.point).split(".")[1])
+        chart.pip_factor = symbol_info.point * 10
+        chart.precision = symbol_info.digits
+        chart.contract_size = symbol_info.trade_contract_size
+        logger.debug(f"{chart=}")
         return True
 
-    def prepare_chart(self, chart: Chart) -> bool:
+    def select_chart(self, chart: Chart) -> bool:
         if not mt5.symbol_select(chart.symbol, True):
             raise ValueError(f"Failed to select symbol {chart.symbol}")
-
-        symbol_info = mt5.symbol_info(chart.symbol)
-        if symbol_info is None:
-            raise RuntimeError(f"Failed to get symbol info for {chart.symbol}")
         return True
 
     @classmethod
@@ -107,7 +103,7 @@ class ForexAgent(ExchangeAgent):
         return self.market_state.wait_seconds()
 
     def get_chartdata(self, chart: Chart, n_bars: int = 100) -> ChartData | None:
-        if not self.prepare_chart(chart):
+        if not self.select_chart(chart):
             return None
         ohlcv_res = mt5.copy_rates_from_pos(
             chart.symbol, forex_timeframe_mapper(chart.timeframe), 0, n_bars
@@ -144,7 +140,7 @@ class ForexAgent(ExchangeAgent):
         return super().get_candles_since(chart, time)
 
     def open_position(self, position: Position) -> float | None:
-        if not self.prepare_chart(position.chart):
+        if not self.select_chart(position.chart):
             return None
 
         tick = mt5.symbol_info_tick(position.chart.symbol)
@@ -179,6 +175,7 @@ class ForexAgent(ExchangeAgent):
         if not result or not result.request_id:
             logging.error(f"Opening position failed: {position}\n{mt5.last_error()=}")
             return None
+        logger.debug(f"opening position {result=}")
         position.exchange_id = str(result.order)
         position.spread = round(result.ask - result.bid, position.chart.precision)
         logging.info(f"Position Opened: {position}\n{result=}")
@@ -294,6 +291,30 @@ class ForexAgent(ExchangeAgent):
             filtered_poses.append(self.mt5_trade_to_position(pos))
             logger.debug(f"mt5 filtered open pos: {open_poses}")
         return filtered_poses
+
+    def check_position_closed(
+        self,
+        position_ticket: int | None = None,
+        comment_filter: str = "",
+    ) -> float | None:
+        if not position_ticket and not comment_filter:
+            logging.error("No Ticket nor comment_filter is given")
+            return None
+        position = mt5.positions_get(ticket=position_ticket)
+        if position:
+            return None
+        to_time = datetime.now(timezone.utc)
+        from_time = to_time - timedelta(days=3)
+        deals = mt5.history_deals_get(from_time, to_time, ticket=position_ticket)
+        if not deals:
+            raise ValueError(
+                f"Position isn't open but no deals found for ticket {position_ticket}"
+            )
+        profit = sum(d.profit + d.commission + d.swap for d in deals)
+        logger.debug(
+            f"Deals found for closed position {position_ticket}: {deals} \n{profit=}"
+        )
+        return profit
 
 
 def forex_timeframe_mapper(timeframe: TimeFrame):

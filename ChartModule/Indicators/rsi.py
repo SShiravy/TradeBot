@@ -53,7 +53,7 @@ class RSI(IndicatorBaseModel):
         gains = np.maximum(deltas, 0)
         losses = np.maximum(-deltas, 0)
 
-        values = {}
+        values = {timestamp: 50.0 for timestamp in timestamps[: self.n_bar + 1]}
 
         # Initial Wilder averages
         self.avg_gain = gains[: self.n_bar].mean()
@@ -66,7 +66,7 @@ class RSI(IndicatorBaseModel):
             values[timestamps[self.n_bar]] = 100 - 100 / (1 + rs)
 
         # Continue incrementally
-        for i in range(self.n_bar, len(gains)):
+        for i in range(self.n_bar + 1, len(gains)):
             self.avg_gain = (self.avg_gain * (self.n_bar - 1) + gains[i]) / self.n_bar
 
             self.avg_loss = (self.avg_loss * (self.n_bar - 1) + losses[i]) / self.n_bar
@@ -86,7 +86,12 @@ class RSI(IndicatorBaseModel):
     def update(self, candles, *args, **kwargs):
         if self.last_checked_candle is None:
             raise ValueError("last_checked_candle is None")
-
+        if candles[-1].timestamp < self.last_checked_candle.timestamp:
+            self.candles = candles
+            self.data = self._calculate(*args, **kwargs)
+            self.last_checked_candle = candles[-1]
+            # TODO: move this approach to base model
+            return
         start_index = self.find_new_candle_index(candles)
 
         if start_index >= len(candles):

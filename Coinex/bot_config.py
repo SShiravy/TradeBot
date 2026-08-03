@@ -1,11 +1,11 @@
 from Coinex import CoinexAgent
 from ChartModule import Chart, ChartData
-from DivergenceStrategy.divergence import Divergence, DivergenceTradeConfig
+from DivergenceStrategy import Divergence, TwoChartDiverTradeConfig
 from dataclasses import dataclass
 
 
 @dataclass(kw_only=True)
-class CoinexDiverTradeConfig(DivergenceTradeConfig):
+class CoinexDiverTradeConfig(TwoChartDiverTradeConfig):
     second_chart: Chart
     agent: CoinexAgent  # type: ignore[override]
     strategy: Divergence  # type: ignore[override]

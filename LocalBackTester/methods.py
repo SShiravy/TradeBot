@@ -1,6 +1,6 @@
 from Forex.agent import forex_timeframe_mapper
-from DivergenceStrategy.divergence import DivergenceTradeConfig
-from LocalBackTester.Database.methods import fetch_diver_siganls
+from DivergenceStrategy import TwoChartDiverTradeConfig
+from LocalBackTester.Database.methods import fetch_two_chart_diver_siganls
 from ChartModule.plot import DoubleChartPlot
 from LocalBackTester.agent import LocalAgent
 from LocalBackTester.models import CsvChart
@@ -125,9 +125,9 @@ def test_tick_data():
     logging.info(tick_handler.get_ticks_from_timstamp_range(1769543520, 1769543940))
 
 
-def load_diver_backtest(the_config: DivergenceTradeConfig):
+def load_diver_backtest(the_config: TwoChartDiverTradeConfig):
     n_bar = the_config.chart.total_bars_number  # type: ignore
-    signals = fetch_diver_siganls(the_config)
+    signals = fetch_two_chart_diver_siganls(the_config)
     if signals is None:
         raise Exception(f"There is no related signals for the config: {the_config}")
     chartdata, second_chartdata = the_config.get_chartdata(n_bar)
@@ -142,7 +142,7 @@ def load_diver_backtest(the_config: DivergenceTradeConfig):
 
 
 async def diver_signal_local_backtest(
-    the_config: DivergenceTradeConfig, show_plot=True
+    the_config: TwoChartDiverTradeConfig, show_plot=True
 ):
     diver_backtest = fetch_diver_backtest(the_config)
 
@@ -155,7 +155,6 @@ async def diver_signal_local_backtest(
     res = await the_config.backtest(
         n_bar=the_config.chart.total_bars_number,  # type: ignore
         len_sub_data=the_config.n_candle_check,
-        consider_positions=False,
         show_image=show_plot,
     )
 

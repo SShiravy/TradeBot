@@ -181,10 +181,12 @@ class CandlesSource(Enum):
 class Chart:
     symbol: str
     timeframe: TimeFrame
-    precision: int = field(default=3)
+    precision: int = field(default=3, init=False)
+    pip_factor: float = field(default=1, init=False)
+    contract_size: float | int = field(default=100000, init=False)
 
     def __str__(self) -> str:
-        return f"{self.symbol} {self.timeframe}"
+        return f"{self.symbol} {self.timeframe.value}"
 
     def export_config(self) -> dict:
         return {

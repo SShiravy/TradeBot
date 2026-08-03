@@ -103,17 +103,24 @@ class ChartPlot(BaseChartPlot):
         )
 
     def draw_straight_line(
-        self, start_candle: Candle, end_candle: Candle, source: CandlesSource, ax=None
+        self,
+        start_candle: Candle,
+        end_candle: Candle,
+        source: CandlesSource,
+        ax=None,
+        prices: tuple[float, float] | None = None,
     ):
         color = (
             "#e20000"
             if source in [CandlesSource.Top, CandlesSource.High]
             else "#e2c800"
         )
-
+        price1, price2 = (
+            prices if prices else (source(start_candle), source(end_candle))
+        )
         fplt.add_line(
-            (start_candle.time, source(start_candle)),
-            (end_candle.time, source(end_candle)),
+            (start_candle.time, price1),
+            (end_candle.time, price2),
             color=color,
             width=2,
             interactive=False,

@@ -1,7 +1,14 @@
 from ChartModule import Chart, TimeFrame
-from DivergenceStrategy.divergence import Divergence
+from ChartModule.Indicators.models import SupportCandleConditions
+from ChartModule.Indicators.rsi import RSI
+from DivergenceStrategy import Divergence
 from ChartModule.Indicators import EMA
-from Forex import ForexAgent, CvdDiverTradeConfig, ForexDiverTradeConfig
+from DivergenceStrategy.oscillator_divergence import (
+    OscillatorDiverConfig,
+    OscillatorDivergence,
+)
+from DivergenceStrategy.oscillator_double_divergence import OscillatorDoubleDiverConfig
+from Forex import ForexAgent, ForexDiverTradeConfig
 from BitUnix import BitUnixAgent, BitUnixDiverTradeConfig
 from TradingModule.PositionHandlers import (
     RiskFreeForex,
@@ -79,65 +86,83 @@ forex_diver_one_m = ForexDiverTradeConfig(
 )
 
 
-# forex_diver_five_m = ForexDiverTradeConfig(
-#     chart=Chart("XAUUSD!", TimeFrame.five_minutes),
-#     second_chart=Chart("SOLUSD", TimeFrame.five_minutes),
-#     strategy=Divergence(5, 50, [], name="ForexDiver"),
-#     bar_between_signals=5,
-#     position_handler=(
-#         SteppingHandlerForex(
-#             ForexAgent(),
-#             targets_ratio= [1,2,3]
-#             targets_ratio_volumes=[0.01, 0.01, 0.01],
-#             stoploss_pip=50,
-#             targets_in_pip=[50, 100, 150],
-#             long_trade=False,
-#             short_trade=False,
-#             trail_stop=True,
-#         )
-#     ),
-#     merge_two_chart_time=True,
-#     heikingashi_chartdata=True,
-# )
-
-# CVD ----
-
-diver_one_cvd = Divergence(
-    7,
-    100,
-    [EMA(30)],
-    name="ForexCVD",
-    long_second_line_validation=False,
-    short_second_line_validation=False,
-)
-
-cvd_diver_one_m_cvd = CvdDiverTradeConfig(
-    chart=Chart("XAUUSD!", TimeFrame.one_minute),
-    bar_between_signals=5,
-    strategy=diver_one_cvd,
-    position_handler=SlTpRatioForex(
-        ForexAgent(),
-        2,
-        stoploss_pip=20,
-        long_trade=False,
-        short_trade=False,
+forex_rsi_diver_five_m = OscillatorDiverConfig(
+    chart=Chart("XAUUSD!", TimeFrame.five_minutes),
+    agent=ForexAgent(),
+    strategy=OscillatorDivergence(
+        RSI(),
+        3,
+        100,
+        [],
+        name="ForexOscillatorDiver",
+        long_support_conditions=SupportCandleConditions.LOWER_LOW,
+        short_support_conditions=SupportCandleConditions.HIGHER_HIGH,
+        inverse_diver_long=False,
+    ),
+    bar_between_signals=2,
+    position_handler=(
+        SteppingHandlerForex(
+            ForexAgent(),
+            targets_ratio=[1, 2, 3],
+            targets_ratio_volumes=[0.01, 0.01, 0.01],
+            stoploss_pip=50,
+            targets_in_pip=[],
+            long_trade=False,
+            short_trade=False,
+            trail_stop=True,
+        )
     ),
     heikingashi_chartdata=False,
 )
 
-diver_five_cvd = Divergence(
-    5,
-    50,
-    [],
-    name="ForexCVD",
-    long_second_line_validation=False,
-    short_second_line_validation=False,
-)
-cvd_diver_five_m_cvd = CvdDiverTradeConfig(
+
+forex_rsi_double_diver_five_m = OscillatorDoubleDiverConfig(
     chart=Chart("XAUUSD!", TimeFrame.five_minutes),
-    bar_between_signals=5,
-    strategy=diver_five_cvd,
-    position_handler=RiskFreeForex(
-        ForexAgent(), stoploss_pip=70, takeprofit_pip=70, riskfree_trigger_pip=35
+    agent=ForexAgent(),
+    strategy=OscillatorDivergence(
+        RSI(),
+        3,
+        200,
+        [],
+        name="ForexOscillatorDiver",
+        long_support_conditions=SupportCandleConditions.RED_GREEN,
+        short_support_conditions=SupportCandleConditions.GREEN_RED,
+        body_candle=True,
+        ignore_shadow_cross=True,
+        inverse_diver_long=False,
     ),
+    bar_between_signals=2,
+    same_line_source=False,
+    position_handler=(
+        SteppingHandlerForex(
+            ForexAgent(),
+            targets_ratio=[1, 2, 3],
+            targets_ratio_volumes=[0.01, 0.01, 0.01],
+            stoploss_pip=50,
+            targets_in_pip=[],
+            long_trade=False,
+            short_trade=False,
+            trail_stop=True,
+        )
+    ),
+    heikingashi_chartdata=True,
 )
+# CVD ----
+
+
+# diver_five_cvd = Divergence(
+#     5,
+#     50,
+#     [],
+#     name="ForexCVD",
+#     long_other_chart_line_validation=False,
+#     short_other_chart_line_validation=False,
+# )
+# cvd_diver_five_m_cvd = CvdDiverTradeConfig(
+#     chart=Chart("XAUUSD!", TimeFrame.five_minutes),
+#     bar_between_signals=5,
+#     strategy=diver_five_cvd,
+#     position_handler=RiskFreeForex(
+#         ForexAgent(), stoploss_pip=70, takeprofit_pip=70, riskfree_trigger_pip=35
+#     ),
+# )

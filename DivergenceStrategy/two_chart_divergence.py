@@ -1,4 +1,3 @@
-from BacktestModule.dummy_models import DummyAgent
 from ChartModule.models import (
     Chart,
     Signal,
@@ -13,7 +12,8 @@ from ChartModule.Indicators import (
     SupportCandleConditions,
 )
 from ChartModule.plot import DoubleChartPlot
-from TradingModule.trader_bot import TradeConfig, commands, Position
+from TradingModule.reporter import TelegramReporter
+from TradingModule.trader_bot import TradeConfig, Position
 from TradingModule.models import Strategy
 from dataclasses import dataclass, field
 from typing import Literal
@@ -26,8 +26,8 @@ logger = logging.getLogger("Divergence")
 
 @dataclass(slots=True, frozen=True)
 class DivergenceSignal(Signal):
-    base_line: Line
-    second_line: Line
+    main_chart_line: Line
+    other_chart_line: Line
 
 
 class Divergence(Strategy):
@@ -41,8 +41,8 @@ class Divergence(Strategy):
         name="Divergence",
         inverse_diver_long: bool = False,
         inverse_diver_short: bool = False,
-        long_second_line_validation: bool = True,
-        short_second_line_validation: bool = True,
+        long_other_chart_line_validation: bool = True,
+        short_other_chart_line_validation: bool = True,
         body_candle: bool = False,
     ) -> None:
         super().__init__(
@@ -55,8 +55,8 @@ class Divergence(Strategy):
         self.max_step = max_step
         self.inverse_diver_long = inverse_diver_long
         self.inverse_diver_short = inverse_diver_short
-        self.long_second_line_validation = long_second_line_validation
-        self.short_second_line_validation = short_second_line_validation
+        self.long_other_chart_line_validation = long_other_chart_line_validation
+        self.short_other_chart_line_validation = short_other_chart_line_validation
         self.body_candle = body_candle
 
     def export_config(self):
@@ -67,8 +67,8 @@ class Divergence(Strategy):
                 "max_step": self.max_step,
                 "inverse_diver_long": self.inverse_diver_long,
                 "inverse_diver_short": self.inverse_diver_short,
-                "long_second_line_validation": self.long_second_line_validation,
-                "short_second_line_validation": self.short_second_line_validation,
+                "long_other_chart_line_validation": self.long_other_chart_line_validation,
+                "short_other_chart_line_validation": self.short_other_chart_line_validation,
                 "body_candle": self.body_candle,
             }
         )
@@ -81,7 +81,7 @@ class Divergence(Strategy):
         base_chartdata: ChartData,
         second_chartdata: ChartData,
         inverse: bool = False,
-        second_line_validation: bool = True,
+        other_chart_line_validation: bool = True,
     ) -> tuple[Line, Line] | None:
         direction = -1 if inverse else 1
 
@@ -90,7 +90,7 @@ class Divergence(Strategy):
         for base_chart_line in all_lines:
             start_candle_index = base_chartdata.index(base_chart_line.start_candle)
             end_candle_index = base_chartdata.index(base_chart_line.end_candle)
-            if second_line_validation:
+            if other_chart_line_validation:
                 second_chart_line = trendline.valid_trendline(
                     second_chartdata.candles, start_candle_index, end_candle_index
                 )
@@ -122,18 +122,18 @@ class Divergence(Strategy):
             base_chartdata,
             second_chartdata,
             self.inverse_diver_long,
-            self.long_second_line_validation,
+            self.long_other_chart_line_validation,
         )
         if res is None:
             return None
-        base_line, second_line = res
+        main_chart_line, other_chart_line = res
         signal = DivergenceSignal(
             base_chartdata.chart,
             base_chartdata[-1],
             MarketSide.BULLISH,
             self.name,
-            base_line,
-            second_line,
+            main_chart_line,
+            other_chart_line,
         )
         return signal
 
@@ -152,18 +152,18 @@ class Divergence(Strategy):
             base_chartdata,
             second_chartdata,
             not self.inverse_diver_short,
-            self.short_second_line_validation,
+            self.short_other_chart_line_validation,
         )
         if res is None:
             return None
-        base_line, second_line = res
+        main_chart_line, other_chart_line = res
         signal = DivergenceSignal(
             base_chartdata.chart,
             base_chartdata[-1],
             MarketSide.BEARISH,
             self.name,
-            base_line,
-            second_line,
+            main_chart_line,
+            other_chart_line,
         )
         return signal
 
@@ -190,11 +190,9 @@ class Divergence(Strategy):
             return None
 
         if short_signal:
-            logger.info(f"Short Signal:{short_signal}")
             return short_signal
 
         if long_signal:
-            logger.info(f"Long Signal:{long_signal}")
             return long_signal
 
         return None
@@ -222,12 +220,12 @@ class Divergence(Strategy):
             base_chartdata.candles[-1],
             side,
             "dummy_signal",
-            base_line=Line(
+            main_chart_line=Line(
                 line_candlesource,
                 base_chartdata.candles[-5],
                 base_chartdata.candles[-2],
             ),
-            second_line=Line(
+            other_chart_line=Line(
                 line_candlesource,
                 second_chartdata.candles[-5],
                 second_chartdata.candles[-2],
@@ -243,14 +241,14 @@ class Divergence(Strategy):
     ):
         plot.base_plot.mark_signal(signal)
         plot.base_plot.draw_straight_line(
-            signal.base_line.start_candle,
-            signal.base_line.end_candle,
-            signal.base_line.source,
+            signal.main_chart_line.start_candle,
+            signal.main_chart_line.end_candle,
+            signal.main_chart_line.source,
         )
         plot.second_plot.draw_straight_line(
-            signal.second_line.start_candle,
-            signal.second_line.end_candle,
-            signal.second_line.source,
+            signal.other_chart_line.start_candle,
+            signal.other_chart_line.end_candle,
+            signal.other_chart_line.source,
         )
         if draw_indicators and self.confirmation_indicators:
             for indicator in self.confirmation_indicators:
@@ -258,7 +256,7 @@ class Divergence(Strategy):
 
 
 @dataclass(kw_only=True)
-class DivergenceTradeConfig(TradeConfig):
+class TwoChartDiverTradeConfig(TradeConfig):
     second_chart: Chart
     strategy: Divergence  # type: ignore[override]
     merge_two_chart_time: bool = field(default=True)
@@ -284,23 +282,33 @@ class DivergenceTradeConfig(TradeConfig):
         return base_chartdata, second_chartdata
 
     async def find_signal(
-        self, chartdata: ChartData, second_chartdata: ChartData, *args, **kwargs
-    ) -> None | tuple[DivergenceSignal, Position]:
+        self,
+        chartdata: ChartData,
+        second_chartdata: ChartData,
+    ) -> None | tuple[DivergenceSignal, Position] | DivergenceSignal:
         signal = self.strategy.check_signal(
             chartdata, second_chartdata, self.long_signal, self.short_signal
         )
         if signal is None:
             return None
+        logger.info(f"Two Chart Divergence Signal:{signal}")
 
-        entry_source = (
-            signal.base_line.end_candle.high
-            if signal.side is MarketSide.BEARISH
-            else signal.base_line.end_candle.low
-        )
         plot = None
         if self.send_signal:
             plot = DoubleChartPlot(chartdata, second_chartdata)
             self.strategy.draw(plot, signal, draw_indicators=True)
+
+        if not self.consider_position:
+            if self.send_signal:
+                await TelegramReporter().new_signal(signal, plot)
+            return signal
+
+        entry_source = (
+            signal.main_chart_line.end_candle.high
+            if signal.side is MarketSide.BEARISH
+            else signal.main_chart_line.end_candle.low
+        )
+
         position = await self.position_handler.generate_position(
             signal, sl_base_price=entry_source, plot=plot
         )
@@ -320,9 +328,11 @@ class DivergenceTradeConfig(TradeConfig):
         res = await self.find_signal(base_data, second_data)
         if res is None:
             return self.give_delay(base_chartdata[-1])
-
-        signal, position = res
-
+        if isinstance(res, tuple):
+            signal, position = res
+        else:
+            signal = res
+            position = None
         return self.give_delay(base_chartdata[-1], jump=True), signal, position
 
     async def backtest(  # type: ignore
@@ -330,19 +340,9 @@ class DivergenceTradeConfig(TradeConfig):
         n_bar=500,
         len_sub_data=100,
         show_image=True,
-        consider_positions=True,
     ):
-        position_handler = copy(self.position_handler)
-        self.position_handler = position_handler
-
-        agent = DummyAgent(self.agent, position_handler.open_positions)
-        position_handler.exchange_agent = agent
-        position_handler.long_trade = False
-        position_handler.short_trade = False
-        self.agent = agent
         self.send_signal = False
 
-        all_positions: list[Position] = []
         all_signals: list[Signal | DivergenceSignal] = []
 
         jump = 0
@@ -354,50 +354,24 @@ class DivergenceTradeConfig(TradeConfig):
                 second_chartdata[:i],
             )
 
-            candle = base_chartdata[i]
-            agent.current_price = candle.open
-
-            if consider_positions:
-                all_pos = copy(position_handler.open_positions)
-                for pos in all_pos:
-                    if pos.closed:
-                        position_handler.closed_positions.append(pos)
-                        position_handler.open_positions.remove(pos)
-                        continue
-                    position_handler.handler(
-                        pos, [candle.open, candle.low, candle.high, candle.close]
-                    )
-            await commands.TradeCommand.execute_pending_commands(candle.time, False)
-
             if jump > 0:
                 jump -= 1
                 continue
-            res = await self.find_signal(base_sub_data, seocnd_sub_data)
-            if res is None:
+            signal = await self.find_signal(base_sub_data, seocnd_sub_data)
+            if signal is None:
                 continue
             jump = self.bar_between_signals
-            signal, position = res
-            all_signals.append(signal)
-            if consider_positions:
-                all_positions.append(position)
-            await commands.TradeCommand.execute_pending_commands(candle.time, False)
+            all_signals.append(signal)  # type: ignore
 
-        # plot = DoubleChartPlot(base_chartdata, second_chartdata, plot_n_candles=n_bar)
-        # self.strategy.draw(plot, all_signals[0], draw_indicators=True)  # type: ignore
-        # for signal in all_signals[1:]:
-        #     self.strategy.draw(plot, signal, draw_indicators=False)  # type: ignore
-        # for pos in all_positions:
-        #     if not pos.closed:
-        #         continue
-        #     pos.plot = plot
-        #     pos.draw()
-        # commands_report = commands.TradeCommand.close_records()
-        # all_reports = position_handler.report()
-        # logger.info("Result:\n\n" + commands_report)
-        # for poses_report in all_reports:
-        #     logger.info("\n" + str(poses_report))
-        # overal_report = PositionsReport.give_overall_report(copy(all_reports))
-        # logger.info("\n" + str(overal_report))
-        # if show_image:
-        #     plot.show()
-        return all_signals, all_positions, None, None, None
+        plot = DoubleChartPlot(base_chartdata, second_chartdata, plot_n_candles=n_bar)
+        if not all_signals:
+            if show_image:
+                plot.show()
+            return [], plot
+
+        self.strategy.draw(plot, all_signals[0], draw_indicators=True)  # type: ignore
+        for signal in all_signals[1:]:
+            self.strategy.draw(plot, signal, draw_indicators=False)  # type: ignore
+        if show_image:
+            plot.show()
+        return all_signals, plot

@@ -23,6 +23,12 @@ class TradingConstraint(ABC):
         )
         return passed_candle
 
+    def export_config(self) -> dict:
+        return {
+            "class": self.__class__.__name__,
+            **self.__dict__,
+        }
+
     def __str__(self) -> str:
         return self.__class__.__name__
 

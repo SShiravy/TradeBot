@@ -13,13 +13,20 @@ class Line:
         self.source = source
         self.start_candle = start_candle
         self.end_candle = end_candle
+        self._slope: float | None = None
 
     @property
     def slope(self) -> float:
+        if self._slope:
+            return self._slope
         slope = round(
             self.source(self.end_candle) - self.source(self.start_candle), 10
         ) / (self.end_candle.timestamp - self.start_candle.timestamp)
         return slope
+
+    @slope.setter
+    def slope(self, value: float):
+        self._slope = value
 
     def direction(self) -> MarketSide:
         if not self.start_candle or not self.end_candle:
@@ -99,13 +106,12 @@ class TrendLine(IndicatorBaseModel):
 
     def _calculate(self) -> list[Line]:
         lines = []
-        last_candle = self.candles[-1]
-        len_candles = len(self.candles)
-        source_list = []
-        time_list = []
+        last_index = len(self.candles) - 1
+        last_candle = self.candles[last_index]
 
         candle_source = self.source
-        if self.source in [CandlesSource.Low, CandlesSource.Bottom]:
+
+        if self.source in (CandlesSource.Low, CandlesSource.Bottom):
             cross_multiplier = 1
             if self.ignore_shadow_cross:
                 candle_source = CandlesSource.Bottom
@@ -114,30 +120,40 @@ class TrendLine(IndicatorBaseModel):
             if self.ignore_shadow_cross:
                 candle_source = CandlesSource.Top
 
-        start = len(self.candles) - 1
-        stop = max(-1, len(self.candles) - self.max_step - 1)
+        last_value = self.source(last_candle)
+
+        indices = np.arange(self.max_step + 1, dtype=np.float64)
+        source_values = np.empty(self.max_step + 1, dtype=np.float64)
+
+        count = 0
+
+        start = last_index
+        stop = max(-1, last_index - self.max_step)
+
         for candle_index in range(start, stop, -1):
             candle = self.candles[candle_index]
-            if len_candles - candle_index > self.max_step:
-                break
+
             if not self.support_conditions.check(self.candles[: candle_index + 2]):
                 continue
 
-            source_list.append(candle_source(candle))
-            time_list.append(candle.timestamp)
-            if len_candles - 1 - candle_index < self.min_step:
+            start_value = candle_source(candle)
+
+            source_values[count] = start_value
+            count += 1
+
+            step = last_index - candle_index
+
+            if step < self.min_step:
                 continue
 
-            the_line = Line(self.source, candle, last_candle)
+            slope = (last_value - start_value) / step
 
-            expected_low = (
-                np.array(time_list) - candle.timestamp
-            ) * the_line.slope + self.source(candle)
+            line_values = start_value + indices[:count] * slope
 
-            if np.any((np.array(source_list) - expected_low) * cross_multiplier < 0):
-                # invalid (line crossed candles)
+            if np.any((source_values[:count] - line_values) * cross_multiplier < 0):
                 continue
-            lines.append(the_line)
+
+            lines.append(Line(self.source, candle, last_candle))
 
         return lines
 

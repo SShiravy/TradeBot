@@ -6,10 +6,7 @@ engine = create_engine(settings.LOCAL_BACKTEST_DB_NAME)
 
 
 def create_db():
-    from LocalBackTester.Database.divergence_models import (
-        DiverBacktestRow,
-        DiverSignalRow,
-    )
+    import DivergenceStrategy.divergence_db_models
     from LocalBackTester.Database.backtest_models import PositionsResult
 
     SQLModel.metadata.create_all(engine)

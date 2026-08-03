@@ -1,12 +1,23 @@
+from typing import TypeAlias
+
 from ChartModule.models import CandlesSource, MarketSide
-from DivergenceStrategy.divergence import DivergenceTradeConfig, DivergenceSignal
+from DivergenceStrategy import TwoChartDiverTradeConfig, DivergenceSignal
 from ChartModule.Indicators import Line
 from sqlmodel import Session, select
-from LocalBackTester.Database.divergence_models import DiverBacktestRow, DiverSignalRow
+from DivergenceStrategy.divergence_db_models import (
+    DiverBacktestRow,
+    DiverSignalRow,
+    OscillatorDiverBacktestRow,
+    OscillatorDiverSignalRow,
+    OscillatorDoubleDiverSignalRow,
+)
+from DivergenceStrategy.oscillator_divergence import OscillatorDiverConfig
+from DivergenceStrategy.oscillator_double_divergence import OscillatorDoubleDiverConfig
 from LocalBackTester.Database.backtest_models import PositionsResult
 from LocalBackTester.Database.create_db import engine
 import logging
 
+from LocalBackTester.Database.hashing import give_config_hash
 from TradingModule.PositionHandlers.model import PositionHandler
 
 
@@ -15,21 +26,35 @@ logger = logging.getLogger("DB Methods")
 # Diver Config ----------
 
 
+DiverConfig: TypeAlias = (
+    TwoChartDiverTradeConfig | OscillatorDiverConfig | OscillatorDoubleDiverConfig
+)
+
+
+def give_diver_config_table(diver_tradeconfig: DiverConfig):
+    if isinstance(diver_tradeconfig, TwoChartDiverTradeConfig):
+        return DiverBacktestRow
+    else:
+        return OscillatorDiverBacktestRow
+
+
 def fetch_diver_backtest(
-    diver_tradeconfig: DivergenceTradeConfig,
-) -> DiverBacktestRow | None:
+    diver_tradeconfig: DiverConfig,
+) -> DiverBacktestRow | OscillatorDiverBacktestRow | None:
     """Fetch diver_tradeconfig from db with same hash. return backtest row or None"""
-    hash = DiverBacktestRow.give_config_hash(diver_tradeconfig)
+    hash = give_config_hash(diver_tradeconfig)
+    table = give_diver_config_table(diver_tradeconfig)
     with Session(engine) as session:
-        statement = select(DiverBacktestRow).where(DiverBacktestRow.config_hash == hash)
+        statement = select(table).where(table.config_hash == hash)
         result = session.exec(statement).first()
     return result
 
 
-def store_diver_backtest(diver_tradeconfig: DivergenceTradeConfig):
+def store_diver_backtest(diver_tradeconfig: DiverConfig):
     if fetch_diver_backtest(diver_tradeconfig):
         raise Exception("Same config already exists in db...")
-    datapoint = DiverBacktestRow.generate_datapoint(diver_tradeconfig)
+    table = give_diver_config_table(diver_tradeconfig)
+    datapoint = table.generate_datapoint(diver_tradeconfig)  # type: ignore
     with Session(engine) as session:
         session.add(datapoint)
         session.commit()
@@ -40,21 +65,35 @@ def store_diver_backtest(diver_tradeconfig: DivergenceTradeConfig):
 
 # Diver Signal ----------
 
+DiverSignal = (
+    DivergenceSignal | OscillatorDiverSignalRow | OscillatorDoubleDiverSignalRow
+)
 
-def fetch_diver_signal_models(diver_tradeconfig: DivergenceTradeConfig):
+
+def give_diver_signal_table(diver_tradeconfig: DiverConfig):
+    if isinstance(diver_tradeconfig, TwoChartDiverTradeConfig):
+        return DiverSignalRow
+    if isinstance(diver_tradeconfig, OscillatorDiverConfig):
+        return OscillatorDiverSignalRow
+    if isinstance(diver_tradeconfig, OscillatorDoubleDiverConfig):
+        return OscillatorDoubleDiverSignalRow
+
+
+def fetch_diver_signal_models(diver_tradeconfig: DiverConfig):
     """Fetch signals related to a diver_tradeconfig in db with same hash return signals or None"""
     result = fetch_diver_backtest(diver_tradeconfig)
     if result is None:
         logger.info("No backtest related to this tradeconfig in db")
         return None
+    table = give_diver_signal_table(diver_tradeconfig)
     with Session(engine) as session:
-        statement = select(DiverSignalRow).where(DiverSignalRow.source == result.id)
+        statement = select(table).where(table.source == result.id)
         result = session.exec(statement).all()
     return result
 
 
-def fetch_diver_siganls(
-    diver_tradeconfig: DivergenceTradeConfig,
+def fetch_two_chart_diver_siganls(
+    diver_tradeconfig: TwoChartDiverTradeConfig,
 ) -> list[DivergenceSignal] | None:
     signal_models = fetch_diver_signal_models(diver_tradeconfig)
     if signal_models is None:
@@ -89,33 +128,99 @@ def fetch_diver_siganls(
             candle=signal_candle,
             side=MarketSide(signal.side),  # type: ignore
             source=str(signal.source),
-            base_line=Line(
+            main_chart_line=Line(
                 source=line_candlesource,
                 start_candle=base_chartdata.find_candle_by_time(
                     signal.baseline_start_timestamp  # type: ignore
                 ),
                 end_candle=base_chartdata.find_candle_by_time(
-                    signal.baseline_end_timestamp
-                ),  # type: ignore
+                    signal.baseline_end_timestamp  # type: ignore
+                ),
             ),
-            second_line=Line(
+            other_chart_line=Line(
                 source=line_candlesource,
                 start_candle=second_chartdata.find_candle_by_time(
                     signal.secondline_start_timestamp  # type: ignore
                 ),
                 end_candle=second_chartdata.find_candle_by_time(
-                    signal.secondline_end_timestamp
-                ),  # type: ignore
+                    signal.secondline_end_timestamp  # type: ignore
+                ),
             ),
         )
         all_diver_signals.append(diver_signal)
     return all_diver_signals
 
 
-def store_diver_signal(diver_signals: list[DivergenceSignal], source_id):
+# TODO: complete here
+def fetch_oscillator_diver_siganls(
+    diver_tradeconfig: OscillatorDiverConfig,
+) -> list[DivergenceSignal] | None:
+    signal_models = fetch_diver_signal_models(diver_tradeconfig)
+    if signal_models is None:
+        logger.info("No diver signal_model related to this tradeconfig in db")
+        return None
+
+    all_diver_signals = []
+    n_bar = diver_tradeconfig.chart.total_bars_number  # type:ignore
+    base_chartdata = diver_tradeconfig.get_chartdata(n_bar=n_bar)  # type: ignore
+    for signal in signal_models:
+        signal_candle = base_chartdata.find_candle_by_time(signal.signal_timestamp)
+        if signal_candle is None:
+            logger.error(f"No candle for signal: {signal}")
+            continue
+
+        if signal.side == "Bullish":
+            line_candlesource = (
+                CandlesSource.Bottom
+                if diver_tradeconfig.strategy.body_candle
+                else CandlesSource.Low
+            )
+
+        else:  # signal.side == "Bearish"
+            line_candlesource = (
+                CandlesSource.Top
+                if diver_tradeconfig.strategy.body_candle
+                else CandlesSource.High
+            )
+
+        diver_signal = DivergenceSignal(
+            chart=diver_tradeconfig.chart,
+            candle=signal_candle,
+            side=MarketSide(signal.side),  # type: ignore
+            source=str(signal.source),
+            main_chart_line=Line(
+                source=line_candlesource,
+                start_candle=base_chartdata.find_candle_by_time(
+                    signal.baseline_start_timestamp  # type: ignore
+                ),
+                end_candle=base_chartdata.find_candle_by_time(
+                    signal.baseline_end_timestamp  # type: ignore
+                ),
+            ),
+            other_chart_line=Line(
+                source=line_candlesource,
+                start_candle=base_chartdata.find_candle_by_time(
+                    signal.secondline_start_timestamp  # type: ignore
+                ),
+                end_candle=base_chartdata.find_candle_by_time(
+                    signal.secondline_end_timestamp  # type: ignore
+                ),
+            ),
+        )
+        all_diver_signals.append(diver_signal)
+    return all_diver_signals
+
+
+def store_diver_signal(diver_signals: list[DiverSignal], source_id):
+    if isinstance(diver_signals[0], DivergenceSignal):
+        table = DiverSignalRow
+    elif isinstance(diver_signals[0], OscillatorDiverSignalRow):
+        table = OscillatorDiverSignalRow
+    else:
+        table = OscillatorDoubleDiverSignalRow
     with Session(engine) as session:
         for diver_signal in diver_signals:
-            datapoint = DiverSignalRow.generate_datapoint(diver_signal, source_id)
+            datapoint = table.generate_datapoint(diver_signal, source_id)  # type: ignore
             session.add(datapoint)
         session.commit()
 

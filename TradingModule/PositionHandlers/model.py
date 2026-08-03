@@ -22,6 +22,7 @@ class PositionHandler(ABC):
         long_trade: bool = True,
         short_trade: bool = True,
         trading_constraints: list[TradingConstraint] = [],
+        send_report: bool = True,
     ) -> None:
         self.exchange_agent = exchange_agent
         self.initial_volume = initial_volume
@@ -31,9 +32,10 @@ class PositionHandler(ABC):
         self.long_trade: bool = long_trade
         self.short_trade: bool = short_trade
         self.trading_constraints = trading_constraints
+        self.send_report = send_report
 
     @abstractmethod
-    def init_stoploss(self, entry_price: float, side: OrderSide) -> float:
+    def init_stoploss(self, entry_price: float, side: OrderSide, chart: Chart) -> float:
         pass
 
     @abstractmethod
@@ -50,6 +52,7 @@ class PositionHandler(ABC):
             "leverage": self.leverage,
             "long_trade": self.long_trade,
             "short_trade": self.short_trade,
+            "constraints": [c.export_config() for c in self.trading_constraints],
         }
 
     async def generate_position(
@@ -72,15 +75,13 @@ class PositionHandler(ABC):
         if entry_price is None:
             entry_price = signal.candle.close
 
-        precision = signal.chart.precision
-
         position = Position(
             signal.chart,
             side,
             entry_price,
             self.initial_volume,
-            round(self.init_stoploss(entry_price, side), precision),
-            round(self.init_takeprofit(entry_price, side), precision),
+            self.init_stoploss(entry_price, side, signal.chart),
+            self.init_takeprofit(entry_price, side, signal.chart),
             self.leverage,
             signal.candle.time + timedelta(seconds=2),
             signal.source,
@@ -97,7 +98,7 @@ class PositionHandler(ABC):
         return position
 
     def modify_init_sl_tp(self, position: Position):
-        sl = self.init_stoploss(position.entry_price, position.side)
+        sl = self.init_stoploss(position.entry_price, position.side, position.chart)
         if sl != position.stoploss:
             position.stoploss = sl
             commands.TrailStoploss(position, self.exchange_agent, sl, report=False)
@@ -114,7 +115,9 @@ class PositionHandler(ABC):
         if not position.confiremed:
             self.modify_init_sl_tp(position)
         if position.confiremed and not position.sended:
-            commands.SendPositionSignal(position, self.exchange_agent)
+            commands.SendPositionSignal(
+                position, self.exchange_agent, report=self.send_report
+            )
         direction = position.side.factor()
         ticks = np.array(tick_prices) * direction
         sl = position.stoploss * direction
@@ -124,9 +127,13 @@ class PositionHandler(ABC):
             return None
         idx = np.argmax(cross)
         if ticks[idx] <= sl:
-            return commands.StopLoss(position, self.exchange_agent)
+            return commands.StopLoss(
+                position, self.exchange_agent, report=self.send_report
+            )
         else:
-            return commands.TakeProfit(position, self.exchange_agent)
+            return commands.TakeProfit(
+                position, self.exchange_agent, report=self.send_report
+            )
 
     def candles_check(self, position: Position) -> TradeCommand | None:
         ticks = []

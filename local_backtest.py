@@ -1,5 +1,5 @@
 from LocalBackTester.Database.create_db import create_db
-from LocalBackTester.diver_backtester import DiverBacktester
+from DivergenceStrategy.diver_backtester import TwoChartDiverBacktester
 from custom_logger import CustomLogger
 from config import settings
 import asyncio
@@ -11,10 +11,10 @@ CustomLogger(True, consol_log_level=logging.DEBUG)
 if __name__ == "__main__":
     settings.METATRADER_TERMINAL_PATH = ""
     from LocalBackTester.methods import *  # noqa: F403
-    from LocalBackTester.local_backtest_configs import *  # noqa: F403
+    from LocalBackTester.Database.BacktesConfigs.two_chart_diver_configs import *  # noqa: F403
     from LocalBackTester.StatisticalMethods import *  # noqa: F403
 
-    the_config = diver_forex_xau_1m_99000
+    the_config = diver_forex_xau_1m_5000_test
 
     create_db()
     import cProfile
@@ -38,8 +38,8 @@ if __name__ == "__main__":
         RiskAnalysis(),
     ]
 
-    diver_backtester = DiverBacktester(
-        the_config, statistical_indicators, show_chartdata=False
+    diver_backtester = TwoChartDiverBacktester(
+        the_config, statistical_indicators, show_chartdata=True
     )
     asyncio.run(
         diver_backtester.positions_backtest(use_database=False, show_plots=False)

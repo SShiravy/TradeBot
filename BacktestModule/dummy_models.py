@@ -22,13 +22,13 @@ class DummyAgent(ExchangeAgent):
         self.index = start_index
         self.chartdata = chartdata
 
-    def check_chart(self, chart: Chart) -> bool:
-        return self.real_agent.check_chart(chart)
+    def prepare_chart(self, chart: Chart) -> bool:
+        return self.real_agent.prepare_chart(chart)
 
     def get_chartdata(self, chart: Chart, n_bars=100) -> ChartData | None:
         if self.chartdata:
             candles = self.chartdata[: self.index]
-            data = ChartData(self.chartdata.chart, candles, self.chartdata.indicators)
+            data = ChartData(self.chartdata.chart, candles)
             logger.debug(f"agent get chartdata: {len(data)=}")
             return data
         return self.real_agent.get_chartdata(chart, n_bars)
@@ -56,6 +56,9 @@ class DummyAgent(ExchangeAgent):
         logger.info(f"close position on {self.current_price}")
         return self.current_price
 
+    def check_position_closed(self) -> bool:
+        return True
+
 
 class DummyPositionHanler(PositionHandler):
     def __init__(self) -> None:
@@ -65,7 +68,7 @@ class DummyPositionHanler(PositionHandler):
     async def generate_position(self, signal, *args, **kwargs) -> Position:
         return None  # type:ignore
 
-    def init_stoploss(self, entry_price: float, side: OrderSide) -> float:
+    def init_stoploss(self, entry_price: float, side: OrderSide, chart: Chart) -> float:
         return 0.0
 
     def init_takeprofit(self, entry_price: float, side: OrderSide) -> float:

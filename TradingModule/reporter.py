@@ -1,3 +1,4 @@
+from ChartModule.models import MarketSide, Signal
 from TradingModule import Position, OrderSide
 from config import settings
 from datetime import datetime, timedelta, timezone
@@ -77,7 +78,7 @@ class TelegramReporter:
             msg_list.append(f"🎯 TP =  {position.takeprofit}")
 
         msg_list.append(f"⛔️ SL = {position.stoploss}")
-        msg_list.append(f"💰 Volume: {round(position.volume, 10)}")
+        msg_list.append(f"💰 Volume: {round(position.volume, 4)}")
 
         if position.leverage not in [1, 0]:
             msg_list.append(f"⚡Leverage: {position.leverage}")
@@ -117,7 +118,7 @@ class TelegramReporter:
             position.source,
             f"📊 {position.chart}",
             f"💲 Close Price = {close_price}",
-            f"💵 PNL = {round(position.pnl, 2)}",
+            f"💵 PNL = {round(position.pnl, position.chart.precision)}",
             f"⌛ Duration = {duration}",
         ]
         msg = "\n\n".join(msg_list)
@@ -167,8 +168,21 @@ class TelegramReporter:
             f"📊 {position.chart}",
             f"💲 Triggered Price = {trigger.price}",
             f"💰 Volume: {trigger.volume}",
-            f"💵 PNL = {round(position.pnl, 2)}",
+            f"💵 PNL = {round(position.pnl, position.chart.precision)}",
             f"⌛ Duration = {duration}",
         ]
         msg = "\n\n".join(msg_list)
         await self.send_msg(self.main_channel, msg, reply_id=position.msg_id)
+
+    async def new_signal(self, signal: Signal, plot):
+        msg_list = [
+            signal.source,
+            f"📊 {signal.chart}",
+            "🟢 Bullish" if signal.side is MarketSide.BULLISH else "🔴 Bearish",
+        ]
+
+        img_path = None
+        if plot:
+            img_path = plot.save_image(signal.source + str(signal.chart))
+        msg = "\n\n".join(msg_list)
+        await self.send_msg(self.main_channel, msg, img_path)
