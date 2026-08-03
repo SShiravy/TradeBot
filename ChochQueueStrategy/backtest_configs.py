@@ -8,12 +8,13 @@ from config import settings
 # Forex ----------------------------------------------------------------
 
 choch_queue_xau_one_m = ChochQueueTradeConfig(
-    chart=Chart("XAUUSD!", TimeFrame.one_minute),
+    chart=Chart("XAUUSD", TimeFrame.one_minute),
     strategy=ChochQueueFilter(
         pivot_length=50,
+        backstep=2,
         retrace_fib=0.5,
         use_wick=True,
-        use_fibo_filter=True,
+        use_fibo_filter=True,  # False -> confirm signal on the CHoCH break itself
         name="ChochQueue",
     ),
     bar_between_signals=2,
@@ -38,6 +39,7 @@ choch_queue_five_m_sol = ChochQueueTradeConfig(
     chart=Chart("SOLUSDT", TimeFrame.five_minutes),
     strategy=ChochQueueFilter(
         pivot_length=30,
+        backstep=2,
         retrace_fib=0.5,
         use_wick=True,
         use_fibo_filter=True,
