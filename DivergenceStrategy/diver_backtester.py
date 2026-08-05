@@ -1,4 +1,7 @@
+from datetime import datetime
+
 from DivergenceStrategy.oscillator_divergence import OscillatorDiverConfig
+from LocalBackTester.models import CsvChart, TickData
 from TradingModule import commands
 from LocalBackTester.Database.methods import (
     fetch_oscillator_diver_siganls,
@@ -6,9 +9,9 @@ from LocalBackTester.Database.methods import (
 )
 from LocalBackTester.Database.methods import fetch_two_chart_diver_siganls
 from ChartModule.plot import ChartWithOscillatorPlot, DoubleChartPlot
-from ChartModule.models import ChartData, MarketSide
+from ChartModule.models import Candle, ChartData, MarketSide
 from TradingModule.PositionHandlers.model import PositionHandler
-from TradingModule.models import PositionsReport
+from TradingModule.models import OrderSide, PositionsReport
 from LocalBackTester.Database.methods import (
     fetch_positions_result,
     fetch_diver_backtest,
@@ -49,6 +52,31 @@ class TwoChartDiverBacktester:
         plot.show()
         del plot
 
+    def handle_positions(self,candle:Candle,position_handler:PositionHandler):
+        if isinstance(self.diver_config.chart,CsvChart):
+            tickdata = self.diver_config.chart.tick_handler.get_ticks_for_candle(candle,self.diver_config.chart)
+            for pos in position_handler.open_positions.copy():
+                if pos.closed:
+                    position_handler.closed_positions.append(pos)
+                    position_handler.open_positions.remove(pos)
+                    continue
+                ticks = tickdata.bids if pos.side is OrderSide.BUY else tickdata.asks
+                position_handler.handler(pos, ticks)
+            self.diver_config.chart.tick_handler.trim(start_timestamp=tickdata[-1].timestamp)
+        else:
+            ticks = [
+                        candle.open,
+                        candle.low,
+                        candle.high,
+                        candle.close,
+                    ]
+            for pos in position_handler.open_positions.copy():
+                if pos.closed:
+                    position_handler.closed_positions.append(pos)
+                    position_handler.open_positions.remove(pos)
+                    continue
+                position_handler.handler(pos, ticks)
+
     async def positions_backtest(self, use_database=True, show_plots=True):
         position_handler = self.diver_config.position_handler
         n_bar = self.diver_config.chart.total_bars_number  # type: ignore
@@ -76,28 +104,12 @@ class TwoChartDiverBacktester:
                     else signal.main_chart_line.end_candle.low
                 )
                 yield signal, entry_source
-            yield None, None
 
         signal_generator = give_next_signal(all_signals)
-        signal, entry_source = next(signal_generator)
+        signal, entry_source = next(signal_generator, (None, None))
         chartdata, second_chartdata = self.diver_config.get_chartdata(n_bar)
-
-        for i, candle in enumerate(chartdata.candles):
-            # TODO: tickdata
-
-            ticks = [
-                candle.open,
-                candle.low,
-                candle.high,
-                candle.close,
-            ]
-            for pos in position_handler.open_positions.copy():
-                if pos.closed:
-                    position_handler.closed_positions.append(pos)
-                    position_handler.open_positions.remove(pos)
-                    continue
-                position_handler.handler(pos, ticks)
-
+        for i, candle in enumerate(chartdata.candles):            
+            self.handle_positions(candle,position_handler)
             await commands.TradeCommand.execute_pending_commands(
                 candle.time, report=False
             )
@@ -114,15 +126,24 @@ class TwoChartDiverBacktester:
                 )
             # candle == signal.candle
             pos_candle = chartdata.candles[i + 1]
+            if isinstance(self.diver_config.chart,CsvChart):
+                tickdata = self.diver_config.chart.tick_handler.get_ticks_from_timstamp_range(pos_candle.timestamp,pos_candle.timestamp+5)
+                tick = tickdata[1]
+                entry_price = tick.ask if signal.side is MarketSide.BULLISH else tick.bid
+                pos_open_time = datetime.fromtimestamp(tick.timestamp)
+            else:
+                entry_price = pos_candle.open
+                pos_open_time = pos_candle.time
+
             position = await position_handler.generate_position(
                 signal,
-                entry_price=pos_candle.open,
+                entry_price=entry_price,
                 sl_base_price=entry_source,
             )
-            signal, entry_source = next(signal_generator)
+            signal, entry_source = next(signal_generator, (None, None))
             if not position:
                 continue
-            position.open_time = pos_candle.time
+            position.open_time = pos_open_time
 
         # Plot chartdata -----------
         if self.show_chartdata:

@@ -76,3 +76,6 @@ class LocalAgent(ExchangeAgent):
         return executed price if successful otherwise None
         """
         pass
+
+    def check_position_closed(self):
+        pass
