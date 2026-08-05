@@ -136,7 +136,7 @@ def test_rsi():
 def test_choch_queue():
     from ChartModule.models import Chart, TimeFrame
     from ChartModule.plot import ChartPlot
-    from ChochQueueStrategy import ChochQueueFilter
+    from ChochQueueStrategy.choch_queue import ChochQueueFilter
     from Forex.agent import ForexAgent
 
     chart = Chart("XAUUSD", TimeFrame.one_minute)
@@ -261,9 +261,9 @@ if __name__ == "__main__":
     # asyncio.run(start_fibochoch_backtest())
     # asyncio.run(start_fich_diver_backtest())
 
-    test_choch_queue()
+    # test_choch_queue()
 
-    # test_auto_trendlines()
+    test_auto_trendlines()
 
     # test_sr_zones()
 
