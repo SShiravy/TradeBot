@@ -1,5 +1,5 @@
 from Forex.agent import ForexAgent
-from Forex.bot_config import ForexDiverTradeConfig
+from Forex.bot_config import ForexDiverTradeConfig, ForexChochQueueTradeConfig
 
 
-__all__ = ["ForexAgent", "ForexDiverTradeConfig"]
+__all__ = ["ForexAgent", "ForexDiverTradeConfig", "ForexChochQueueTradeConfig"]

@@ -1,13 +1,13 @@
 from ChartModule import Chart, TimeFrame
-from ChochQueueStrategy.choch_queue import ChochQueueFilter, ChochQueueTradeConfig
-from Forex import ForexAgent
-from BitUnix import BitUnixAgent
+from ChochQueueStrategy.choch_queue import ChochQueueFilter
+from Forex import ForexAgent, ForexChochQueueTradeConfig
+from BitUnix import BitUnixAgent, BitUnixChochQueueTradeConfig
 from TradingModule.PositionHandlers import SteppingHandlerForex, SteppingHandlerCrypto
 from config import settings
 
 # Forex ----------------------------------------------------------------
 
-choch_queue_xau_one_m = ChochQueueTradeConfig(
+choch_queue_xau_one_m = ForexChochQueueTradeConfig(
     chart=Chart("XAUUSD", TimeFrame.one_minute),
     strategy=ChochQueueFilter(
         pivot_length=50,
@@ -35,7 +35,7 @@ choch_queue_xau_one_m = ChochQueueTradeConfig(
 
 bitunix_agent = BitUnixAgent(settings.BITUNIX_API_KEY, settings.BITUNIX_API_SECRET_KEY)
 
-choch_queue_five_m_sol = ChochQueueTradeConfig(
+choch_queue_five_m_sol = BitUnixChochQueueTradeConfig(
     chart=Chart("SOLUSDT", TimeFrame.five_minutes),
     strategy=ChochQueueFilter(
         pivot_length=30,

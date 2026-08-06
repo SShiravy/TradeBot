@@ -1,13 +1,14 @@
 from BitUnix import BitUnixAgent
 from ChartModule import Chart, ChartData, Candle
-from DivergenceStrategy import Divergence, TwoChartDiverTradeConfig
+from DivergenceStrategy.divergence import Divergence, DivergenceTradeConfig
+from ChochQueueStrategy.choch_queue import ChochQueueFilter, ChochQueueTradeConfig
 from datetime import datetime, timezone, timedelta
 from dataclasses import dataclass
 import logging
 
 
 @dataclass(kw_only=True)
-class BitUnixDiverTradeConfig(TwoChartDiverTradeConfig):
+class BitUnixDiverTradeConfig(DivergenceTradeConfig):
     second_chart: Chart
     agent: BitUnixAgent  # type: ignore[override]
     strategy: Divergence  # type: ignore[override]
@@ -60,5 +61,28 @@ class BitUnixDiverTradeConfig(TwoChartDiverTradeConfig):
         res = await self.find_signal(base_chartdata, second_chartdata)
         if res is None:
             return self.give_delay(base_chartdata[-1])
-        signal, position = res  # type: ignore
+        signal, position = res
         return self.give_delay(base_chartdata[-1], jump=True), signal, position
+
+
+@dataclass(kw_only=True)
+class BitUnixChochQueueTradeConfig(ChochQueueTradeConfig):
+    agent: BitUnixAgent  # type: ignore[override]
+    strategy: ChochQueueFilter  # type: ignore[override]
+
+    def give_delay(self, last_candle: Candle, jump=False) -> timedelta:
+        delay = (
+            self.chart.timeframe.time_delta * 2
+        )  # bitunix does'nt give the current not closed candle
+        if jump:
+            delay *= self.bar_between_signals
+        next_timestamp = int(
+            round(last_candle.time.astimezone(tz=timezone.utc).timestamp())
+            + delay.total_seconds()
+        )
+        now_timestamp = round(datetime.now(tz=timezone.utc).timestamp())
+        sleep_time_based_on_timestamp = next_timestamp - now_timestamp
+        logging.debug(
+            f"{next_timestamp=} | {last_candle.time.astimezone(tz=timezone.utc).timestamp()} | {now_timestamp} | {sleep_time_based_on_timestamp=}"
+        )
+        return timedelta(seconds=sleep_time_based_on_timestamp + 1)
