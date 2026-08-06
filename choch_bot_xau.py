@@ -1,9 +1,6 @@
-from config import settings
-settings.TELEGRAM_BOT_TOKEN = "8750919120:AAGwJ6n7_iE9twPx1464Ez8gac4_rxHn-l4"
 from Forex import ForexAgent, ForexChochQueueTradeConfig
 from ChartModule import Chart, TimeFrame
 from TradingModule.PositionHandlers.stepping_handler import SteppingHandlerForex
-from TradingModule.reporter import TelegramReporter
 from TradingModule.trader_bot import TraderBot
 from ChochQueueStrategy.choch_queue import ChochQueueFilter
 from custom_logger import CustomLogger
@@ -16,21 +13,21 @@ CustomLogger(
 )
 
 one_m = ForexChochQueueTradeConfig(
-    chart=Chart("XAUUSD!", TimeFrame.one_minute),
+    chart=Chart("XAUUSD", TimeFrame.one_minute),
     strategy=ChochQueueFilter(
         pivot_length=50,
         backstep=2,
         retrace_fib=0.5,
         use_wick=True,
-        use_fibo_filter=True,  # True -> wait for price to retrace to the fib level | False -> signal as soon as the CHoCH/BOS break happens
+        use_fibo_filter=False,  # True -> wait for price to retrace to the fib level | False -> signal as soon as the CHoCH/BOS break happens
         name="ChochQueue",
     ),
     bar_between_signals=2,
     position_handler=SteppingHandlerForex(
         ForexAgent(),
         stoploss_pip=30,
-        targets_in_pip=[10],
-        targets_ratio_volumes=[0.01],
+        targets_ratio=[1, 2, 3],
+        targets_ratio_volumes=[0.01, 0.01, 0.01],
         trail_stop=True,
         long_trade=False,
         short_trade=False,
@@ -38,7 +35,7 @@ one_m = ForexChochQueueTradeConfig(
     heikingashi_chartdata=False,
 )
 
-TelegramReporter().main_channel = "@nader_support_resistance"
+
 TraderBot("Choch Queue Bot", [one_m], report_time={"h": 20, "m": 0})
 
 

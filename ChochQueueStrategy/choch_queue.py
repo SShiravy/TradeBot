@@ -305,12 +305,14 @@ class ChochQueueFilter(Strategy):
         self.chart = chartdata.chart
         self._simulate(chartdata.candles)
 
+        last_candle = chartdata.candles[-1]
         newest_validated: ChochModel | None = None
         for model in self.queue:
             if not model.validated or model.touch_candle is None:
                 continue
-            if newest_validated is None or model.touch_candle.time > newest_validated.touch_candle.time:  # type: ignore[union-attr]
+            if model.touch_candle.time == last_candle.time:
                 newest_validated = model
+                break
 
         if newest_validated is None:
             return None
