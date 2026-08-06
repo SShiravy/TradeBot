@@ -2,14 +2,14 @@ from ChartModule.models import Candle
 from Forex.agent import ForexAgent
 from ChartModule import Chart, ChartData
 from TradingModule import ExchangeAgent
-from DivergenceStrategy.divergence import Divergence, DivergenceTradeConfig
+from DivergenceStrategy.two_chart_divergence import Divergence, TwoChartDiverTradeConfig
 from ChochQueueStrategy.choch_queue import ChochQueueFilter, ChochQueueTradeConfig
 from dataclasses import dataclass, field
 from datetime import timedelta
 
 
 @dataclass(kw_only=True)
-class ForexDiverTradeConfig(DivergenceTradeConfig):
+class ForexDiverTradeConfig(TwoChartDiverTradeConfig):
     second_chart: Chart
     agent: ExchangeAgent = field(default=ForexAgent(), init=False)
     strategy: Divergence  # type: ignore[override]

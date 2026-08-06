@@ -1,6 +1,9 @@
+from config import settings
+settings.TELEGRAM_BOT_TOKEN = "8750919120:AAGwJ6n7_iE9twPx1464Ez8gac4_rxHn-l4"
 from Forex import ForexAgent, ForexChochQueueTradeConfig
 from ChartModule import Chart, TimeFrame
 from TradingModule.PositionHandlers.stepping_handler import SteppingHandlerForex
+from TradingModule.reporter import TelegramReporter
 from TradingModule.trader_bot import TraderBot
 from ChochQueueStrategy.choch_queue import ChochQueueFilter
 from custom_logger import CustomLogger
@@ -35,7 +38,7 @@ one_m = ForexChochQueueTradeConfig(
     heikingashi_chartdata=False,
 )
 
-
+TelegramReporter().main_channel = "@nader_support_resistance"
 TraderBot("Choch Queue Bot", [one_m], report_time={"h": 20, "m": 0})
 
 
