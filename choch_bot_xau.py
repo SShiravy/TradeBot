@@ -29,8 +29,8 @@ one_m = ForexChochQueueTradeConfig(
     position_handler=SteppingHandlerForex(
         ForexAgent(),
         stoploss_pip=30,
-        targets_ratio=[1, 2, 3],
-        targets_ratio_volumes=[0.01, 0.01, 0.01],
+        targets_in_pip=[10],
+        targets_ratio_volumes=[0.01],
         trail_stop=True,
         long_trade=False,
         short_trade=False,
