@@ -1,3 +1,7 @@
+from config import settings
+settings.METATRADER_TERMINAL_PATH = settings.SECOND_METATRADER_TERMINAL_PATH
+settings.TELEGRAM_BOT_TOKEN = "8750919120:AAGwJ6n7_iE9twPx1464Ez8gac4_rxHn-l4"
+from TradingModule.reporter import TelegramReporter
 from Forex import ForexAgent, ForexChochQueueTradeConfig
 from ChartModule import Chart, TimeFrame
 from TradingModule.PositionHandlers.stepping_handler import SteppingHandlerForex
@@ -25,9 +29,9 @@ one_m = ForexChochQueueTradeConfig(
     bar_between_signals=2,
     position_handler=SteppingHandlerForex(
         ForexAgent(),
-        stoploss_pip=30,
-        targets_ratio=[1, 2, 3],
-        targets_ratio_volumes=[0.01, 0.01, 0.01],
+        stoploss_pip=15,
+        targets_in_pip=[15],
+        targets_ratio_volumes=[0.01],
         trail_stop=True,
         long_trade=False,
         short_trade=False,
@@ -35,7 +39,7 @@ one_m = ForexChochQueueTradeConfig(
     heikingashi_chartdata=False,
 )
 
-
+TelegramReporter().main_channel = "@nader_support_resistance"
 TraderBot("Choch Queue Bot", [one_m], report_time={"h": 20, "m": 0})
 
 
