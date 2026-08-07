@@ -6,7 +6,6 @@ from dataclasses import dataclass
 
 @dataclass(slots=True, frozen=True)
 class PivotPoint:
-    
     index: int
     candle: Candle
     price: float
@@ -40,8 +39,9 @@ class SwingPivots(IndicatorBaseModel):
         configs.update({"depth": self.depth, "backstep": self.backstep})
         return configs
 
-    def _apply_backstep(self, pivots: list[PivotPoint], is_high: bool) -> list[PivotPoint]:
-        
+    def _apply_backstep(
+        self, pivots: list[PivotPoint], is_high: bool
+    ) -> list[PivotPoint]:
         if self.backstep <= 0 or not pivots:
             return pivots
 
@@ -65,7 +65,9 @@ class SwingPivots(IndicatorBaseModel):
 
         pivots: list[PivotPoint] = []
 
-        direction = 0  # 0 = tracking both (not decided yet), 1 = tracking a high, -1 = a low
+        direction = (
+            0  # 0 = tracking both (not decided yet), 1 = tracking a high, -1 = a low
+        )
         high_idx = high_last_update = 0
         high_price = candles[0].high
         low_idx = low_last_update = 0
@@ -95,7 +97,9 @@ class SwingPivots(IndicatorBaseModel):
                     high_last_update = i
                 if i - high_last_update >= self.depth:
                     pivots.append(
-                        PivotPoint(high_idx, candles[high_idx], high_price, True, i, True)
+                        PivotPoint(
+                            high_idx, candles[high_idx], high_price, True, i, True
+                        )
                     )
                     direction = -1
                     low_price = candle.low
@@ -109,11 +113,15 @@ class SwingPivots(IndicatorBaseModel):
         last_index = len(candles) - 1
         if direction <= 0:
             self.live_pivots.append(
-                PivotPoint(low_idx, candles[low_idx], low_price, False, last_index, False)
+                PivotPoint(
+                    low_idx, candles[low_idx], low_price, False, last_index, False
+                )
             )
         if direction >= 0:
             self.live_pivots.append(
-                PivotPoint(high_idx, candles[high_idx], high_price, True, last_index, False)
+                PivotPoint(
+                    high_idx, candles[high_idx], high_price, True, last_index, False
+                )
             )
 
         return confirmed
