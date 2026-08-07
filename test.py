@@ -140,11 +140,11 @@ def test_choch_queue():
     from Forex.agent import ForexAgent
 
     chart = Chart("XAUUSD", TimeFrame.one_minute)
-    chart_data = ForexAgent().get_chartdata(chart, 500)
+    chart_data = ForexAgent().get_chartdata(chart, 1000)
     if chart_data is None:
         raise ValueError
 
-    choch = ChochQueueFilter(pivot_length=2, retrace_fib=0.8, use_fibo_filter=True)
+    choch = ChochQueueFilter(pivot_length=50, retrace_fib=0.8, use_fibo_filter=False)
     choch.check_signal(chart_data)
 
     validated_models = [model for model in choch.queue if model.validated]
@@ -261,9 +261,9 @@ if __name__ == "__main__":
     # asyncio.run(start_fibochoch_backtest())
     # asyncio.run(start_fich_diver_backtest())
 
-    # test_choch_queue()
+    test_choch_queue()
 
-    test_auto_trendlines()
+    # test_auto_trendlines()
 
     # test_sr_zones()
 
