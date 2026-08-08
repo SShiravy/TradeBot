@@ -1,5 +1,4 @@
 from config import settings
-settings.METATRADER_TERMINAL_PATH = settings.SECOND_METATRADER_TERMINAL_PATH
 settings.TELEGRAM_BOT_TOKEN = "8750919120:AAGwJ6n7_iE9twPx1464Ez8gac4_rxHn-l4"
 from TradingModule.reporter import TelegramReporter
 from Forex import ForexAgent, ForexChochQueueTradeConfig
@@ -19,7 +18,7 @@ CustomLogger(
 one_m = ForexChochQueueTradeConfig(
     chart=Chart("XAUUSD", TimeFrame.one_minute),
     strategy=ChochQueueFilter(
-        pivot_length=50,
+        pivot_length=2,
         backstep=2,
         retrace_fib=0.5,
         use_wick=True,
