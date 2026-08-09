@@ -9,6 +9,7 @@ from ChartModule.models import (
 from ChartModule.Indicators import IndicatorBaseModel, SupportCandleConditions
 from ChartModule.Indicators.swing_pivots import SwingPivots
 from ChartModule.plot import ChartPlot
+from TradingModule.reporter import TelegramReporter
 from TradingModule.trader_bot import TradeConfig
 from TradingModule.models import Position, Strategy
 from datetime import datetime
@@ -420,6 +421,7 @@ class ChochQueueTradeConfig(TradeConfig):
     async def find_signal(
         self, chartdata: ChartData, *args, **kwargs
     ) -> None | tuple[ChochSignal, Position]:
+        chartdata.give_sub_chartdata(chartdata.candles[:-1])
         signal = self.strategy.check_signal(
             chartdata, self.long_signal, self.short_signal
         )
@@ -430,6 +432,10 @@ class ChochQueueTradeConfig(TradeConfig):
         if self.send_signal:
             plot = ChartPlot(chartdata)
             self.strategy.draw(plot, signal, draw_indicators=True)
+        if not self.consider_position:
+            if self.send_signal:
+                await TelegramReporter().new_signal(signal, plot)
+            return signal
 
         position = await self.position_handler.generate_position(
             signal, sl_base_price=signal.choch_model.anchor, plot=plot

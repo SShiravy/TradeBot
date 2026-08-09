@@ -21,7 +21,7 @@ class MarketState(Enum):
             case MarketState.OPEN:
                 return 0
             case MarketState.CLOSED:
-                return 900  # wait for 15m and check again
+                return 1  # wait for 15m and check again
             case MarketState.CHECK_LATER:
                 return 10  # wait for 1m and check again
             case MarketState.NOT_RESPONDING:

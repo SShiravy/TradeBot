@@ -1,6 +1,4 @@
 from config import settings
-
-settings.METATRADER_TERMINAL_PATH = settings.SECOND_METATRADER_TERMINAL_PATH
 from Forex import ForexAgent, ForexDiverTradeConfig
 from ChartModule import Chart, TimeFrame
 from TradingModule.PositionHandlers.stepping_handler import SteppingHandlerForex
@@ -21,8 +19,8 @@ CustomLogger(
     consol_log_level=logging.DEBUG,
 )
 one_m = ForexDiverTradeConfig(
-    chart=Chart("XAUUSD", TimeFrame.one_minute),
-    second_chart=Chart("USDJPY", TimeFrame.one_minute),
+    chart=Chart("XAUUSD!", TimeFrame.one_minute),
+    second_chart=Chart("USDJPY!", TimeFrame.one_minute),
     strategy=Divergence(
         5, 100, [], name="ForexDiver(Single TP)", inverse_diver_long=True
     ),

@@ -1,7 +1,7 @@
 from ChartModule.models import Candle, MarketSide
 from ChartModule.Indicators.models import IndicatorBaseModel
 from ChartModule.plot import ChartPlot
-from SRZoneModule.swing_pivots import SwingPivots, PivotPoint
+from SRZoneModule import SwingPivots, PivotPoint
 from SRZoneModule.atr import ATR
 from dataclasses import dataclass, field
 from statistics import median
