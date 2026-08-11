@@ -160,13 +160,13 @@ class Rsi3PushChochConfig(TradeConfig):
         return chartdata
 
     def give_delay(self, last_candle: Candle, jump=False) -> timedelta:
-        delay = self.chart.timeframe.time_delta
+        delay = self.choch_chart.timeframe.time_delta
         if jump:
             delay *= self.bar_between_signals
         last_candle_time = ForexAgent().get_chartdata(self.choch_chart, n_bars=1).candles[0]  # type: ignore
         next_timestamp = int(round(last_candle_time.timestamp) + delay.total_seconds())
         sleep_time_based_on_timestamp = (
-            next_timestamp - ForexAgent().give_current_timestamp(self.chart)
+            next_timestamp - ForexAgent().give_current_timestamp(self.choch_chart)
         )
 
         return timedelta(seconds=sleep_time_based_on_timestamp + 1)
