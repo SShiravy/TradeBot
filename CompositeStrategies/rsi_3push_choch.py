@@ -1,4 +1,7 @@
+from datetime import timedelta
+
 from ChochQueueStrategy.choch_queue import ChochQueueFilter, ChochSignal
+from Forex.agent import ForexAgent
 from custom_logger import CustomLogger
 from ChartModule.models import (
     Candle,
@@ -155,6 +158,18 @@ class Rsi3PushChochConfig(TradeConfig):
         if self.heikingashi_chartdata:
             chartdata = chartdata.give_heikingashi_chartdata()
         return chartdata
+
+    def give_delay(self, last_candle: Candle, jump=False) -> timedelta:
+        delay = self.chart.timeframe.time_delta
+        if jump:
+            delay *= self.bar_between_signals
+        last_candle_time = ForexAgent().get_chartdata(self.choch_chart, n_bars=1).candles[0]  # type: ignore
+        next_timestamp = int(round(last_candle_time.timestamp) + delay.total_seconds())
+        sleep_time_based_on_timestamp = (
+            next_timestamp - ForexAgent().give_current_timestamp(self.chart)
+        )
+
+        return timedelta(seconds=sleep_time_based_on_timestamp + 1)
 
     async def task(self):
         # RSI 3-push chart data
