@@ -388,7 +388,7 @@ btc = Rsi3PushChochConfig(
 )
 
 
-TelegramReporter().main_channel = "@result_forex_crypto"
+TelegramReporter().main_channel = "@Develop_Test_TraderBot"
 TraderBot(
     "RSI_3Push_Choch",
     [xau, audcad, usdjpy, eurgbp, eurusd, usdchf, btc],
