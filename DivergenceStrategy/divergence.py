@@ -322,15 +322,18 @@ class DivergenceConfig(TradeConfig):
         show_image=True,
     ):
         self.send_signal = False
+        self.consider_position = False
 
         all_signals: list[Signal | DivergenceSignal] = []
 
         jump = 0
         base_chartdata, second_chartdata = self.get_chartdata(n_bar)
-        for i in range(len_sub_data, len(base_chartdata) - 2):
-            base_subdata = base_chartdata.subdata(end_index=i, copy=True)
-            seocnd_sub_data = second_chartdata.subdata(end_index=i, copy=True)
-            logger.debug(f"backtest subdata: {base_subdata[-1]}")
+        n = 1
+        for i in range(len_sub_data, len(base_chartdata) - 1):
+            base_subdata = base_chartdata.subdata(end_index=i, copy=False)
+            seocnd_sub_data = second_chartdata.subdata(end_index=i, copy=False)
+            logger.debug(f"backtest subdata: {base_subdata[-1]}-{n}")
+            n += 1
             if jump > 0:
                 jump -= 1
                 continue
