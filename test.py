@@ -133,6 +133,7 @@ def test_rsi():
     rsi.plot(plot, plot.oscillator_ax)
     plot.show()
 
+
 def test_choch_queue():
     from ChartModule.models import Chart, TimeFrame
     from ChartModule.plot import ChartPlot
@@ -160,6 +161,7 @@ def test_choch_queue():
     plot.plot()
     choch.draw_all(plot)
     plot.show()
+
 
 def test_auto_trendlines():
     from ChartModule.models import Chart, TimeFrame
@@ -190,7 +192,9 @@ def test_auto_trendlines():
     auto_trendlines.set(chart_data.candles)
 
     active_lines = [line for line in auto_trendlines.data if not line.broken]
-    logging.info(f"total lines: {len(auto_trendlines.data)}, active: {len(active_lines)}")
+    logging.info(
+        f"total lines: {len(auto_trendlines.data)}, active: {len(active_lines)}"
+    )
     for line in auto_trendlines.data:
         logging.info(line)
 
@@ -249,6 +253,7 @@ def test_sr_zones():
         show_live=True,
     )
     plot.show()
+
 
 if __name__ == "__main__":
     import cProfile

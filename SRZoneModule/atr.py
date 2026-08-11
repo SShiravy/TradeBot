@@ -79,6 +79,4 @@ class ATR(IndicatorBaseModel):
         self.last_checked_candle = candles[-1]
 
     def plot(self, plot: ChartPlot, ax=None):
-        plot.linear_plot(
-            self.data.keys(), self.data.values(), legend="ATR", ax=ax
-        )
+        plot.linear_plot(self.data.keys(), self.data.values(), legend="ATR", ax=ax)

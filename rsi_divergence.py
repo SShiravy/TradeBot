@@ -20,7 +20,7 @@ CustomLogger(
 )
 
 xau_double_diver_five_m = OscillatorDoubleDiverConfig(
-    chart=Chart("XAUUSD!", TimeFrame.one_minute),
+    chart=Chart("XAUUSD!", TimeFrame.five_minutes),
     consider_position=False,
     agent=ForexAgent(),
     strategy=OscillatorDivergence(
@@ -54,7 +54,7 @@ xau_double_diver_five_m = OscillatorDoubleDiverConfig(
 )
 
 audcad_double_diver_five_m = OscillatorDoubleDiverConfig(
-    chart=Chart("AUDCAD!", TimeFrame.one_minute),
+    chart=Chart("AUDCAD!", TimeFrame.five_minutes),
     consider_position=False,
     agent=ForexAgent(),
     strategy=OscillatorDivergence(
@@ -88,7 +88,7 @@ audcad_double_diver_five_m = OscillatorDoubleDiverConfig(
 )
 
 usdjpy_double_diver_five_m = OscillatorDoubleDiverConfig(
-    chart=Chart("USDJPY!", TimeFrame.one_minute),
+    chart=Chart("USDJPY!", TimeFrame.five_minutes),
     consider_position=False,
     agent=ForexAgent(),
     strategy=OscillatorDivergence(
@@ -121,7 +121,7 @@ usdjpy_double_diver_five_m = OscillatorDoubleDiverConfig(
     heikingashi_chartdata=False,
 )
 eurgbp_double_diver_five_m = OscillatorDoubleDiverConfig(
-    chart=Chart("EURGBP!", TimeFrame.one_minute),
+    chart=Chart("EURGBP!", TimeFrame.five_minutes),
     consider_position=False,
     agent=ForexAgent(),
     strategy=OscillatorDivergence(

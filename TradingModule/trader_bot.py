@@ -60,7 +60,7 @@ class TradeConfig:
         )
         return timedelta(seconds=sleep_time_based_on_timestamp + 1)
 
-    def get_chartdata(self, n_bar: int | None = None) -> ChartData:
+    def get_chartdata(self, n_bar: int | None = None, *args, **kwargs) -> ChartData:
         chartdata = self.agent.get_chartdata(
             self.chart, n_bars=n_bar if n_bar else self.n_candle_check
         )

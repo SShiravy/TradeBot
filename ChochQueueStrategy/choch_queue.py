@@ -36,7 +36,9 @@ class ChochModel:
     touch_candle: Candle | None = field(default=None, init=False)
 
     def __post_init__(self):
-        self.extreme = float("-inf") if self.side is MarketSide.BULLISH else float("inf")
+        self.extreme = (
+            float("-inf") if self.side is MarketSide.BULLISH else float("inf")
+        )
 
     def __str__(self) -> str:
         kind = "CHoCH" if self.is_choch else "BOS"
@@ -161,17 +163,23 @@ class ChochQueueFilter(Strategy):
             # model is being validated on its own break bar
             if model.side is MarketSide.BULLISH:
                 leg_bot = model.anchor
-                leg_top = candle.high if model.extreme == float("-inf") else model.extreme
+                leg_top = (
+                    candle.high if model.extreme == float("-inf") else model.extreme
+                )
             else:
                 leg_top = model.anchor
                 leg_bot = candle.low if model.extreme == float("inf") else model.extreme
 
             if self.use_fibo_filter:
                 if model.side is MarketSide.BULLISH:
-                    retrace_level = leg_bot + (leg_top - leg_bot) * (1 - self.retrace_fib)
+                    retrace_level = leg_bot + (leg_top - leg_bot) * (
+                        1 - self.retrace_fib
+                    )
                     is_validated = break_low <= retrace_level
                 else:
-                    retrace_level = leg_top - (leg_top - leg_bot) * (1 - self.retrace_fib)
+                    retrace_level = leg_top - (leg_top - leg_bot) * (
+                        1 - self.retrace_fib
+                    )
                     is_validated = break_high >= retrace_level
             else:
                 retrace_level = model.break_level
@@ -231,14 +239,20 @@ class ChochQueueFilter(Strategy):
                     last_pl_candle = candle
                     pl_crossed = False
 
-            break_high = candle.high if self.use_wick else max(candle.open, candle.close)
+            break_high = (
+                candle.high if self.use_wick else max(candle.open, candle.close)
+            )
             break_low = candle.low if self.use_wick else min(candle.open, candle.close)
 
             bull_break = (
-                last_ph_price is not None and break_high > last_ph_price and not ph_crossed
+                last_ph_price is not None
+                and break_high > last_ph_price
+                and not ph_crossed
             )
             bear_break = (
-                last_pl_price is not None and break_low < last_pl_price and not pl_crossed
+                last_pl_price is not None
+                and break_low < last_pl_price
+                and not pl_crossed
             )
 
             is_bull_choch = bull_break and bias is MarketSide.BEARISH
@@ -325,7 +339,10 @@ class ChochQueueFilter(Strategy):
 
         self.last_reported_time = newest_validated.touch_candle.time  # type: ignore[union-attr]
         signal = ChochSignal(
-            self.chart, newest_validated.touch_candle, newest_validated.side, newest_validated  # type: ignore[arg-type]
+            self.chart,
+            newest_validated.touch_candle,
+            newest_validated.side,
+            newest_validated,  # type: ignore[arg-type]
         )
 
         if signal.side is MarketSide.BULLISH and not check_long:
@@ -362,11 +379,17 @@ class ChochQueueFilter(Strategy):
         )
 
         pivot_source = (
-            CandlesSource.High if model.side is MarketSide.BULLISH else CandlesSource.Low
+            CandlesSource.High
+            if model.side is MarketSide.BULLISH
+            else CandlesSource.Low
         )
         plot.mark_candle(model.pivot_candle, source=pivot_source, color=color)
 
-        if self.use_fibo_filter and model.retrace_level is not None and model.touch_candle is not None:
+        if (
+            self.use_fibo_filter
+            and model.retrace_level is not None
+            and model.touch_candle is not None
+        ):
             plot.draw_horizontal_line(
                 model.break_candle.time,
                 model.touch_candle.time,
@@ -430,7 +453,7 @@ class ChochQueueTradeConfig(TradeConfig):
 
         plot = None
         if self.send_signal:
-            plot = ChartPlot(chartdata)
+            plot = ChartPlot(chartdata, plot_n_candles=self.n_candle_check)
             self.strategy.draw(plot, signal, draw_indicators=True)
         if not self.consider_position:
             if self.send_signal:

@@ -14,7 +14,6 @@ logger = logging.getLogger("SRZones")
 
 @dataclass(slots=True)
 class ZoneModel:
-
     is_support: bool
     center: float
     width: float
@@ -61,7 +60,7 @@ class ZoneModel:
 class SRZones(IndicatorBaseModel):
     """
     Support & Resistance Zone Engine (ATR Adaptive)
-    
+
     values: list[ZoneModel]
     """
 
@@ -170,7 +169,6 @@ class SRZones(IndicatorBaseModel):
         return new_zone
 
     def _merge_overlapping_zones(self, bar_index: int):
-        
         if not self.merge_nearby:
             return
         n = len(self._zones)
@@ -202,17 +200,18 @@ class SRZones(IndicatorBaseModel):
                 zj.invalidated_index = bar_index
 
     def _prune_zones(self, bar_index: int):
-        
         self._zones = [
             z
             for z in self._zones
-            if z.invalidated_index is None or (bar_index - z.invalidated_index) <= self.prune_after_bars
+            if z.invalidated_index is None
+            or (bar_index - z.invalidated_index) <= self.prune_after_bars
         ]
 
     # --- PIVOT PROCESSING ------------------------------
 
-    def _process_new_pivot(self, pivot: PivotPoint, base_radius: float, median_atr: float):
-        
+    def _process_new_pivot(
+        self, pivot: PivotPoint, base_radius: float, median_atr: float
+    ):
         is_support = not pivot.is_high
         matched = False
 
@@ -239,16 +238,22 @@ class SRZones(IndicatorBaseModel):
                 zone.touch_count += 1
                 zone.last_touch_index = pivot.index
                 zone.last_touch_candle = pivot.candle
-                new_width = max(zone.width, abs(pivot.price - zone.center) * self.width_mult)
+                new_width = max(
+                    zone.width, abs(pivot.price - zone.center) * self.width_mult
+                )
                 zone.width = self._clamp(new_width, 0.1 * median_atr, 2 * base_radius)
                 matched = True
                 break
 
         if not matched:
             fallback_width = self._clamp(
-                self.fallback_width_factor * base_radius, 0.1 * median_atr, 2 * base_radius
+                self.fallback_width_factor * base_radius,
+                0.1 * median_atr,
+                2 * base_radius,
             )
-            self._add_new_zone(is_support, pivot.price, pivot.index, pivot.candle, fallback_width)
+            self._add_new_zone(
+                is_support, pivot.price, pivot.index, pivot.candle, fallback_width
+            )
 
     def _check_zone_breaks(self, candle: Candle, bar_index: int):
         """mirrors f_checkZoneBreaks exactly, including its two-separate-`if` gating order"""
@@ -260,7 +265,11 @@ class SRZones(IndicatorBaseModel):
                 continue
 
             in_band = zone.lower <= candle.close <= zone.upper
-            broke_now = candle.close < zone.lower if zone.is_support else candle.close > zone.upper
+            broke_now = (
+                candle.close < zone.lower
+                if zone.is_support
+                else candle.close > zone.upper
+            )
             zone.consec_break = zone.consec_break + 1 if broke_now else 0
 
             if zone.consec_break == 1:
@@ -274,10 +283,16 @@ class SRZones(IndicatorBaseModel):
                     zone.last_touch_index = bar_index
                     zone.last_touch_candle = candle
 
-            if zone.invalidated_index is None and zone.consec_break >= self.zone_break_bars:
+            if (
+                zone.invalidated_index is None
+                and zone.consec_break >= self.zone_break_bars
+            ):
                 zone.break_count += 1
                 zone.consec_break = 0
-                if zone.break_count >= self.max_zone_breaks or zone.touch_count >= self.max_zone_touches:
+                if (
+                    zone.break_count >= self.max_zone_breaks
+                    or zone.touch_count >= self.max_zone_touches
+                ):
                     zone.invalidated_index = bar_index
 
             if zone.invalidated_index is None and in_band and not zone.was_in_band:
@@ -298,7 +313,6 @@ class SRZones(IndicatorBaseModel):
     # --- SCORING ---------------------------------------
 
     def _compute_scores(self, bar_index: int, med_pivot_spacing: float):
-        
         for zone in self._zones:
             age_bars = bar_index - zone.base_index
             age_comp = 1 - math.exp(-age_bars / max(1.0, med_pivot_spacing))
@@ -306,7 +320,6 @@ class SRZones(IndicatorBaseModel):
             zone.raw_score = (touch_comp**0.5) * (max(age_comp, 0.001) ** 0.5)
 
     def _percentile_filter(self):
-        
         scores = [z.raw_score for z in self._zones]
         n = len(scores)
         for zone in self._zones:
@@ -351,7 +364,9 @@ class SRZones(IndicatorBaseModel):
                 median_atr = median(atr_buf)
                 raw_radius = median_atr * self.radius_factor
                 base_radius = self._clamp(
-                    raw_radius, self.min_radius_mult * median_atr, self.max_radius_mult * median_atr
+                    raw_radius,
+                    self.min_radius_mult * median_atr,
+                    self.max_radius_mult * median_atr,
                 )
             self._last_median_atr = median_atr or 0.0
             self._last_base_radius = base_radius or 0.0
@@ -419,7 +434,6 @@ class SRZones(IndicatorBaseModel):
         show_labels: bool = True,
         show_live: bool = True,
     ):
-
         if not self.candles:
             return
 
@@ -434,7 +448,9 @@ class SRZones(IndicatorBaseModel):
             return zone.score_pct * (1 + proximity_boost * prox)
 
         candidates.sort(key=priority, reverse=True)
-        candidates = candidates if max_zones_display is None else candidates[:max_zones_display]
+        candidates = (
+            candidates if max_zones_display is None else candidates[:max_zones_display]
+        )
 
         for rank, zone in enumerate(candidates):
             color = support_color if zone.is_support else resist_color
@@ -443,8 +459,12 @@ class SRZones(IndicatorBaseModel):
                 if zone.invalidated_index is not None
                 else end_time
             )
-            plot.draw_horizontal_line(zone.base_candle.time, zone_end, zone.upper, color)
-            plot.draw_horizontal_line(zone.base_candle.time, zone_end, zone.lower, color)
+            plot.draw_horizontal_line(
+                zone.base_candle.time, zone_end, zone.upper, color
+            )
+            plot.draw_horizontal_line(
+                zone.base_candle.time, zone_end, zone.lower, color
+            )
 
             if show_labels and rank < 3:
                 status = " [INVALID]" if zone.broken else ""
@@ -460,7 +480,9 @@ class SRZones(IndicatorBaseModel):
                 zone = self._nearest_zone(pivot.price, is_support)
                 if zone is None:
                     continue
-                plot.draw_horizontal_line(zone.base_candle.time, end_time, zone.center, "#ffffff80")
+                plot.draw_horizontal_line(
+                    zone.base_candle.time, end_time, zone.center, "#ffffff80"
+                )
 
     def update(self, candles: list[Candle], *args, **kwargs):
         pass
