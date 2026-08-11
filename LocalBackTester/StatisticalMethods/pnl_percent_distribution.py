@@ -161,14 +161,14 @@ class PercentAfterSLDistribution(BasePnLDistribution):
         *args,
         **kwargs,
     ):
-        if pos.closed is None:
+        if pos.closed_timestamp is None:
             raise ValueError("position closed time is None!!")
 
         seconds_check_range = (
             the_config.chart.timeframe.minutes * 60 * self.candles_range
         )
 
-        closed_time = int(pos.closed.timestamp())
+        closed_time = int(pos.closed_timestamp.timestamp())
 
         pos_ticks_after_sl = ticks_handler.get_ticks_from_timstamp_range(
             closed_time,

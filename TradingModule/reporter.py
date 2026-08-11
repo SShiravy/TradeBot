@@ -144,22 +144,22 @@ class TelegramReporter:
         await self.send_msg(self.main_channel, msg)
 
     async def triggered_step(self, position: Position):
-        if position.closed:
+        if position.closed_timestamp:
             trigger = position.steps[-1]
             triggered_id = len(position.steps) - 1
         else:
             trigger = position.previous_step
             triggered_id = position._current_step_index - 1
         end_timestamp = (
-            trigger.triggered_time
-            if trigger.triggered_time
+            trigger.triggered_timestamp
+            if trigger.triggered_timestamp
             else datetime.now(tz=timezone.utc)
         ).timestamp()
         duration = timedelta(
-            seconds=int(end_timestamp) - int(trigger.defined_time.timestamp())
+            seconds=int(end_timestamp) - int(trigger.defined_timestamp.timestamp())
         )
         logger.debug(
-            f"Duration in reporter Trigger step: {duration=} | {end_timestamp=} | {trigger.defined_time.timestamp()=}"
+            f"Duration in reporter Trigger step: {duration=} | {end_timestamp=} | {trigger.defined_timestamp.timestamp()=}"
         )
 
         msg_list = [

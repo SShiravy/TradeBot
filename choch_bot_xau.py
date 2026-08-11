@@ -37,7 +37,6 @@ one_m = ForexChochQueueTradeConfig(
         long_trade=False,
         short_trade=False,
     ),
-    heikingashi_chartdata=False,
 )
 
 TelegramReporter().main_channel = "@nader_support_resistance"

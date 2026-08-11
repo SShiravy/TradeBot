@@ -68,7 +68,6 @@ diver_forex_xau_1m_5000_test = ForexDiverTradeConfig(
             # LoseInRowConstraint(n_long_lose=1, n_short_lose=1, n_bar=30),
         ],
     ),
-    heikingashi_chartdata=True,
     merge_two_chart_time=True,
     send_signal=False,
 )
@@ -96,7 +95,6 @@ diver_forex_xau_1m_99000 = ForexDiverTradeConfig(
             # LoseInRowConstraint(n_long_lose=1, n_short_lose=1, n_bar=30),
         ],
     ),
-    heikingashi_chartdata=True,
     merge_two_chart_time=True,
     send_signal=False,
 )
@@ -124,7 +122,6 @@ diver_forex_xau_3m_99000 = ForexDiverTradeConfig(
             # LoseInRowConstraint(n_long_lose=1, n_short_lose=1, n_bar=30),
         ],
     ),
-    heikingashi_chartdata=True,
     merge_two_chart_time=False,
     send_signal=False,
 )
@@ -152,7 +149,6 @@ diver_forex_xau_jpy_1m_99000_28_6 = ForexDiverTradeConfig(
             LoseInRowConstraint(n_long_lose=1, n_short_lose=1, n_bar=30),
         ],
     ),
-    heikingashi_chartdata=True,
     merge_two_chart_time=False,
     send_signal=False,
 )
@@ -177,7 +173,6 @@ diver_solbtc_5m_17570 = CoinexDiverTradeConfig(
         short_trade=False,
     ),
     agent=local_agent,  # type: ignore
-    heikingashi_chartdata=True,
     send_signal=False,
 )
 
@@ -198,7 +193,6 @@ diver_solbtc_5m_1000 = CoinexDiverTradeConfig(
         short_trade=False,
     ),
     agent=local_agent,  # type: ignore
-    heikingashi_chartdata=True,
     send_signal=False,
 )
 
@@ -219,7 +213,6 @@ diver_ftmbtc_5m_17280_2024_month0203 = CoinexDiverTradeConfig(
         short_trade=False,
     ),
     agent=local_agent,  # type: ignore
-    heikingashi_chartdata=True,
     send_signal=False,
     merge_two_chart_time=False,
 )
@@ -241,7 +234,6 @@ diver_ftmbtc_5m_test = CoinexDiverTradeConfig(
         short_trade=False,
     ),
     agent=local_agent,  # type: ignore
-    heikingashi_chartdata=True,
     send_signal=False,
 )
 
@@ -262,7 +254,6 @@ diver_avaxbtc_5m_17280_2024_month0203 = CoinexDiverTradeConfig(
         short_trade=False,
     ),
     agent=local_agent,  # type: ignore
-    heikingashi_chartdata=True,
     send_signal=False,
     merge_two_chart_time=False,
 )
@@ -284,7 +275,6 @@ diver_avaxbtc_5m_test = CoinexDiverTradeConfig(
         short_trade=False,
     ),
     agent=local_agent,  # type: ignore
-    heikingashi_chartdata=True,
     send_signal=False,
 )
 
@@ -305,7 +295,6 @@ diver_nearbtc_5m_17280_2024_month0203 = CoinexDiverTradeConfig(
         short_trade=False,
     ),
     agent=local_agent,  # type: ignore
-    heikingashi_chartdata=True,
     send_signal=False,
     merge_two_chart_time=False,
 )
@@ -327,7 +316,6 @@ diver_nearbtc_5m_test = CoinexDiverTradeConfig(
         short_trade=False,
     ),
     agent=local_agent,  # type: ignore
-    heikingashi_chartdata=True,
     send_signal=False,
 )
 
@@ -348,7 +336,6 @@ diver_pendlebtc_5m_17280_2024_month0203 = CoinexDiverTradeConfig(
         short_trade=False,
     ),
     agent=local_agent,  # type: ignore
-    heikingashi_chartdata=True,
     send_signal=False,
     merge_two_chart_time=False,
 )
@@ -370,7 +357,6 @@ diver_pendlebtc_5m_test = CoinexDiverTradeConfig(
         short_trade=False,
     ),
     agent=local_agent,  # type: ignore
-    heikingashi_chartdata=True,
     send_signal=False,
 )
 
@@ -391,7 +377,6 @@ diver_rndrbtc_5m_17280_2024_month0203 = CoinexDiverTradeConfig(
         short_trade=False,
     ),
     agent=local_agent,  # type: ignore
-    heikingashi_chartdata=True,
     send_signal=False,
     merge_two_chart_time=False,
 )
@@ -413,7 +398,6 @@ diver_rndrbtc_5m_test = CoinexDiverTradeConfig(
         short_trade=False,
     ),
     agent=local_agent,  # type: ignore
-    heikingashi_chartdata=True,
     send_signal=False,
 )
 
@@ -434,7 +418,6 @@ diver_solbtc_5m_17280_2024_month0203 = CoinexDiverTradeConfig(
         short_trade=False,
     ),
     agent=local_agent,  # type: ignore
-    heikingashi_chartdata=True,
     send_signal=False,
     merge_two_chart_time=False,
 )
@@ -456,6 +439,5 @@ diver_solbtc_5m_test = CoinexDiverTradeConfig(
         short_trade=False,
     ),
     agent=local_agent,  # type: ignore
-    heikingashi_chartdata=True,
     send_signal=False,
 )

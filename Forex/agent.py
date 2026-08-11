@@ -1,3 +1,5 @@
+import numpy as np
+
 from ChartModule import Chart, Candle, ChartData, TimeFrame
 from TradingModule.models import ExchangeAgent, Position, OrderSide
 from datetime import datetime, timedelta, timezone
@@ -111,30 +113,15 @@ class ForexAgent(ExchangeAgent):
         if ohlcv_res is None:
             logger.error(f"fetching chart data failed: {chart=}")
             return None
-
-        all_candles_list = []
-        for candle in ohlcv_res:
-            candle_timestamp, open, high, low, close, volume, _, _ = candle
-
-            candle_time = datetime.fromtimestamp(
-                candle_timestamp, tz=timezone.utc
-            ).replace(microsecond=0, second=0)
-
-            all_candles_list.append(
-                Candle(
-                    float(open),
-                    float(close),
-                    float(high),
-                    float(low),
-                    float(volume),
-                    candle_time,
-                    candle_timestamp,
-                    chart.timeframe,
-                )
-            )
-
-        chartdata = ChartData(chart, all_candles_list)
-        return chartdata
+        return ChartData(
+            chart=chart,
+            timestamps=ohlcv_res["time"].astype(np.int64),
+            open=ohlcv_res["open"].astype(np.float64),
+            high=ohlcv_res["high"].astype(np.float64),
+            low=ohlcv_res["low"].astype(np.float64),
+            close=ohlcv_res["close"].astype(np.float64),
+            volume=ohlcv_res["tick_volume"].astype(np.float64),
+        )
 
     def get_candles_since(self, chart: Chart, time: datetime):
         return super().get_candles_since(chart, time)

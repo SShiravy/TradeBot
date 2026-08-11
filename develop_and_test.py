@@ -45,7 +45,6 @@ xau_jpy_1m = ForexDiverTradeConfig(
         check_with_agent=False,
     ),
     merge_two_chart_time=False,
-    heikingashi_chartdata=True,
 )
 
 xau_dxy_1m = ForexDiverTradeConfig(
@@ -67,7 +66,6 @@ xau_dxy_1m = ForexDiverTradeConfig(
         short_trade=False,
     ),
     merge_two_chart_time=False,
-    heikingashi_chartdata=False,
 )
 
 xau_double_diver_rsi_1m = OscillatorDoubleDiverConfig(
@@ -101,7 +99,6 @@ xau_double_diver_rsi_1m = OscillatorDoubleDiverConfig(
             trail_stop=True,
         )
     ),
-    heikingashi_chartdata=False,
 )
 
 audcad_double_diver_rsi_1m = OscillatorDoubleDiverConfig(
@@ -135,7 +132,6 @@ audcad_double_diver_rsi_1m = OscillatorDoubleDiverConfig(
             trail_stop=True,
         )
     ),
-    heikingashi_chartdata=False,
 )
 
 usdjpy_double_diver_rsi_1m = OscillatorDoubleDiverConfig(
@@ -169,7 +165,6 @@ usdjpy_double_diver_rsi_1m = OscillatorDoubleDiverConfig(
             trail_stop=True,
         )
     ),
-    heikingashi_chartdata=False,
 )
 eurgbp_double_diver_rsi_1m = OscillatorDoubleDiverConfig(
     chart=Chart("EURGBP!", TimeFrame.one_minute),
@@ -202,7 +197,6 @@ eurgbp_double_diver_rsi_1m = OscillatorDoubleDiverConfig(
             trail_stop=True,
         )
     ),
-    heikingashi_chartdata=False,
 )
 
 xau_rsi_1m = OscillatorDiverConfig(
@@ -235,9 +229,8 @@ xau_rsi_1m = OscillatorDiverConfig(
             trail_stop=True,
         )
     ),
-    heikingashi_chartdata=False,
 )
-TelegramReporter().main_channel = "@Develop_Test_TraderBot"
+TelegramReporter().main_channel = "@result_forex_crypto"
 TraderBot(
     "Develop & Test",
     [

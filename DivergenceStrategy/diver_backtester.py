@@ -92,7 +92,7 @@ class TwoChartDiverBacktester:
                 candle.close,
             ]
             for pos in position_handler.open_positions.copy():
-                if pos.closed:
+                if pos.closed_timestamp:
                     position_handler.closed_positions.append(pos)
                     position_handler.open_positions.remove(pos)
                     continue
@@ -232,7 +232,7 @@ class OscilatorDiverBacktester:
                 candle.close,
             ]
             for pos in position_handler.open_positions.copy():
-                if pos.closed:
+                if pos.closed_timestamp:
                     position_handler.closed_positions.append(pos)
                     position_handler.open_positions.remove(pos)
                     continue

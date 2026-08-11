@@ -155,7 +155,7 @@ class PositionHandler(ABC):
     def manage_positions(self):
         all_pos = self.open_positions.copy()
         for pos in all_pos:
-            if pos.closed:
+            if pos.closed_timestamp:
                 self.closed_positions.append(pos)
                 self.open_positions.remove(pos)
                 continue

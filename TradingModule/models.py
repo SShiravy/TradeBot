@@ -51,8 +51,10 @@ class Trigger:
     price: float
     volume: float = field(default=0.0)
     pip_trail_stop: bool = field(default=False)
-    defined_time: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
-    triggered_time: datetime | None = field(default=None)
+    defined_timestamp: int = field(
+        default_factory=lambda: int(datetime.now(timezone.utc).timestamp())
+    )
+    triggered_timestamp: int | None = field(default=None)
     exchange_id: str = field(default="", init=False)
 
     def __str__(self) -> str:
@@ -84,12 +86,14 @@ class Position:
     stoploss: float
     takeprofit: float
     leverage: int = 1
-    candle_time: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
+    candle_timestamp: int = field(
+        default_factory=lambda: int(datetime.now(timezone.utc).timestamp())
+    )
     source: str = "Unknown"
     real_trade: bool = field(default=True)
     plot: Plot | None = field(default=None)
 
-    open_time: datetime | None = field(default=None, init=False)
+    open_timestamp: int | None = field(default=None, init=False)
     confiremed: bool = field(default=False, init=False)
     sended: bool = field(default=False, init=False)
     _steps: list[Trigger] = field(default_factory=list[Trigger], init=False)
@@ -103,9 +107,9 @@ class Position:
     exchange_id: str = field(default="", init=False)
     spread: float = field(default=0.0, init=False)
     msg_id: Any = field(default=None, init=False)
-    closed: datetime | None = field(default=None, init=False)
-    previous_check: datetime | None = field(default=None, init=False)
-    last_update: datetime | None = field(default=None, init=False)
+    closed_timestamp: int | None = field(default=None, init=False)
+    previous_check_timestamp: int | None = field(default=None, init=False)
+    last_update_timestamp: int | None = field(default=None, init=False)
     pnl: float = field(default=0.0, init=False)
     pnl_percent: float = field(default=0.0, init=False)
     in_forex: bool = field(default=False, init=False)
@@ -116,11 +120,7 @@ class Position:
 
     @property
     def start_time(self):
-        return self.open_time if self.open_time else self.candle_time
-
-    @property
-    def open_timestamp(self):
-        return int(self.start_time.timestamp())
+        return self.open_timestamp if self.open_timestamp else self.candle_timestamp
 
     @property
     def steps(self):
@@ -129,12 +129,14 @@ class Position:
                 Trigger(
                     price=self.entry_price,
                     volume=self.volume,
-                    defined_time=self.start_time,
+                    defined_timestamp=self.start_time,
                 )
             ]
         elif self._steps[0].price != self.entry_price:
             self._steps[0] = Trigger(
-                price=self.entry_price, volume=self.volume, defined_time=self.start_time
+                price=self.entry_price,
+                volume=self.volume,
+                defined_timestamp=self.start_time,
             )
         return self._steps
 
@@ -142,7 +144,9 @@ class Position:
     def steps(self, value: list[Trigger]):
         self._steps = [
             Trigger(
-                price=self.entry_price, volume=self.volume, defined_time=self.start_time
+                price=self.entry_price,
+                volume=self.volume,
+                defined_timestamp=self.start_time,
             )
         ]
         # Bubble sort
@@ -160,7 +164,9 @@ class Position:
     def previous_step(self):
         if self._current_step_index == 0:
             return Trigger(
-                price=self.stoploss, volume=self.volume, defined_time=self.start_time
+                price=self.stoploss,
+                volume=self.volume,
+                defined_timestamp=self.start_time,
             )
         return self.steps[self._current_step_index - 1]
 
@@ -170,7 +176,9 @@ class Position:
             return None
         if self._current_step_index == 1:
             return Trigger(
-                price=self.stoploss, volume=self.volume, defined_time=self.start_time
+                price=self.stoploss,
+                volume=self.volume,
+                defined_timestamp=self.start_time,
             )
         return self.steps[self._current_step_index - 2]
 
@@ -184,12 +192,14 @@ class Position:
             return None
         return self.steps[self._current_step_index + 1]
 
-    def go_next_step(self, triggered_time: datetime | None = None):
-        self.current_step.triggered_time = (
-            triggered_time if triggered_time else datetime.now(timezone.utc)
+    def go_next_step(self, triggered_time: int | None = None):
+        self.current_step.triggered_timestamp = (
+            triggered_time
+            if triggered_time
+            else int(datetime.now(timezone.utc).timestamp())
         )
         if self.next_step is None:
-            self.closed = self.current_step.triggered_time
+            self.closed_timestamp = self.current_step.triggered_timestamp
             return False
         self._current_step_index += 1
         return True
@@ -237,7 +247,7 @@ class Position:
             {
                 "chart": str(self.chart),
                 "side": self.side.value,
-                "time": str(self.start_time.timestamp()),
+                "time": str(self.start_time),
                 "source": self.source,
             },
             sort_keys=True,
@@ -248,9 +258,13 @@ class Position:
         if not self.plot:
             return
         plot = self.plot.chart_plot
-        if self.closed:
-            end_of_line = self.closed
-            start_of_line = self.last_update if self.last_update else self.start_time
+        if self.closed_timestamp:
+            end_of_line = self.closed_timestamp
+            start_of_line = (
+                self.last_update_timestamp
+                if self.last_update_timestamp
+                else self.start_time
+            )
             plot.draw_line(
                 self.start_time,
                 self.entry_price,
@@ -266,8 +280,8 @@ class Position:
                 "#7fff86",
             )
         else:
-            end_of_line = self.plot.give_chartdata().candles[-1].time
-            start_of_line = end_of_line - self.chart.timeframe.time_delta * 10
+            end_of_line = self.plot.give_chartdata()[-1].timestamp
+            start_of_line = end_of_line - self.chart.timeframe.minutes * 60 * 10
 
         plot.draw_sl_tp_lines(
             start_of_line,
@@ -275,8 +289,8 @@ class Position:
             self.takeprofit,
             self.stoploss,
         )
-        if not self.closed:
-            start_of_step = end_of_line - self.chart.timeframe.time_delta * 10
+        if not self.closed_timestamp:
+            start_of_step = end_of_line - self.chart.timeframe.minutes * 60 * 10
         else:
             start_of_step = self.start_time
 
@@ -284,7 +298,7 @@ class Position:
             plot.draw_line(
                 start_of_step,
                 step.price,
-                step.triggered_time if step.triggered_time else end_of_line,
+                step.triggered_timestamp if step.triggered_timestamp else end_of_line,
                 step.price,
                 "#00B957",
                 width=2,
@@ -387,16 +401,16 @@ class PositionsReport:
     @classmethod
     def generate_position_report(cls, position: Position):
         close_time = position.start_time
-        if position.closed:
-            close_time = position.closed
-        elif position.last_update:
-            close_time = position.last_update
+        if position.closed_timestamp:
+            close_time = position.closed_timestamp
+        elif position.last_update_timestamp:
+            close_time = position.last_update_timestamp
         report = cls(
             chart=position.chart,
             side=position.side,
             source=position.source,
-            first_time=position.start_time,
-            last_time=close_time,
+            first_time=datetime.fromtimestamp(position.start_time, tz=timezone.utc),
+            last_time=datetime.fromtimestamp(close_time, tz=timezone.utc),
         )
 
         report.pnl = position.pnl
@@ -414,7 +428,7 @@ class PositionsReport:
             report.flats += 1
         if len(position.steps) > 1:
             for i, step in enumerate(position.steps[1:]):
-                if step.triggered_time:
+                if step.triggered_timestamp:
                     report.triggered_steps[i] = report.triggered_steps.get(i, 0) + 1
 
         return report
@@ -422,7 +436,9 @@ class PositionsReport:
     def calculate_max_win_lose_in_row(self, all_positions: list[Position]):
         all_pos = all_positions.copy()
         all_pos.sort(
-            key=lambda pos: pos.closed if pos.closed else datetime.now(tz=timezone.utc)
+            key=lambda pos: pos.closed_timestamp
+            if pos.closed_timestamp
+            else datetime.now(tz=timezone.utc)
         )
         win_in_a_row = 0
         lose_in_a_row = 0
@@ -522,7 +538,7 @@ class ExchangeAgent(ABC):
             return []
         candles = []
         for candle in chartdata:
-            if candle.time < time:
+            if datetime.fromtimestamp(candle.timestamp, tz=timezone.utc) < time:
                 continue
             candles.append(candle)
         return candles
@@ -584,8 +600,8 @@ class Strategy(ABC):
             return [MarketSide.NEUTRAL]
         all_forcasts = []
         for indicator in self.confirmation_indicators:
-            indicator.set(chartdata.candles)
-            all_forcasts.append(indicator.forcast())
+            indicator.set(chartdata)
+            all_forcasts.append(indicator.forecast())
         return all_forcasts
 
     @abstractmethod
@@ -597,10 +613,6 @@ class Strategy(ABC):
         *args,
         **kwargs,
     ) -> Signal | None:
-        pass
-
-    @abstractmethod
-    def report(self, *args, **kwargs) -> str:
         pass
 
     @abstractmethod

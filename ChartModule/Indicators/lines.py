@@ -1,61 +1,61 @@
-from typing import Any
+from dataclasses import dataclass, field
+from typing import Any, Callable, Iterator
 
-from ChartModule.models import Candle, MarketSide, CandlesSource
+from ChartModule.models import Candle, ChartData, MarketSide, CandlesSource
 from ChartModule.Indicators.models import IndicatorBaseModel, SupportCandleConditions
 from ChartModule.plot import ChartPlot
 import numpy as np
 
 
+@dataclass(slots=True, frozen=True)
 class Line:
-    def __init__(
-        self, source: CandlesSource, start_candle: Candle, end_candle: Candle
-    ) -> None:
-        self.source = source
-        self.start_candle = start_candle
-        self.end_candle = end_candle
-        self._slope: float | None = None
+    start_value: float
+    end_value: float
+    start_timestamp: int
+    end_timestamp: int
+    step: int  # number of values spanned between start and end, timeframe-agnostic
 
     @property
     def slope(self) -> float:
-        if self._slope:
-            return self._slope
-        slope = round(
-            self.source(self.end_candle) - self.source(self.start_candle), 10
-        ) / (self.end_candle.timestamp - self.start_candle.timestamp)
-        return slope
-
-    @slope.setter
-    def slope(self, value: float):
-        self._slope = value
+        return (self.end_value - self.start_value) / self.step
 
     def direction(self) -> MarketSide:
-        if not self.start_candle or not self.end_candle:
-            return MarketSide.NEUTRAL
-        if self.source(self.start_candle) > self.source(self.end_candle):
+        if self.start_value > self.end_value:
             return MarketSide.BEARISH
-        elif self.source(self.start_candle) < self.source(self.end_candle):
+        if self.start_value < self.end_value:
             return MarketSide.BULLISH
-        else:
-            return MarketSide.NEUTRAL
+        return MarketSide.NEUTRAL
 
-    def plot(self, plot: ChartPlot):
-        plot.draw_straight_line(self.start_candle, self.end_candle, self.source)
+    def value_at(self, step_from_start: int) -> float:
+        """Predicted value at a given number of steps past start_index, along the line."""
+        return self.start_value + step_from_start * self.slope
+
+    def plot(self, plot: "ChartPlot", chartdata: ChartData):
+        start_index = chartdata.timestamp_index(self.start_timestamp)
+        end_index = chartdata.timestamp_index(self.end_timestamp)
+        plot.draw_chart_line(
+            self.start_value,
+            self.start_timestamp,
+            self.end_value,
+            self.end_timestamp,
+            self.direction(),
+        )
 
 
-class TrendLine(IndicatorBaseModel):
+class LineFinder(IndicatorBaseModel):
     def __init__(
         self,
         source: CandlesSource,
         min_step: int,
         max_step: int,
-        ignore_shadow_cross=True,
-        support_conditions=SupportCandleConditions.RAW,
+        cross_check_source: CandlesSource | None = None,
+        support_conditions: SupportCandleConditions = SupportCandleConditions.RAW,
     ) -> None:
         super().__init__()
         self.source = source
+        self.cross_check_source = cross_check_source or source
         self.min_step = min_step
         self.max_step = max_step
-        self.ignore_shadow_cross = ignore_shadow_cross
         self.support_conditions = support_conditions
 
     def export_configs(self) -> dict:
@@ -63,107 +63,111 @@ class TrendLine(IndicatorBaseModel):
         configs.update(
             {
                 "source": self.source,
+                "cross_check_source": self.cross_check_source,
                 "min_step": self.min_step,
                 "max_step": self.max_step,
-                "ignore_shadow_cross": self.ignore_shadow_cross,
                 "support_conditions": self.support_conditions,
             }
         )
         return configs
 
-    def valid_trendline(
-        self, candles: list[Candle], start_index: int, end_index: int
-    ) -> Line | None:
-        if len(candles) - start_index > self.max_step:
-            return None
-        source_list = []
-        time_list = []
-        start_candle = candles[start_index]
-        the_line = Line(self.source, start_candle, candles[end_index])
-
-        candle_source = self.source
-        if self.source in [CandlesSource.Low, CandlesSource.Bottom]:
-            cross_multiplier = 1
-            if self.ignore_shadow_cross:
-                candle_source = CandlesSource.Bottom
-        else:
-            cross_multiplier = -1
-            if self.ignore_shadow_cross:
-                candle_source = CandlesSource.Top
-
-        for candle in candles[end_index:start_index:-1]:
-            source_list.append(candle_source(candle))
-            time_list.append(candle.timestamp)
-
-        expected_low = (
-            np.array(time_list) - candles[start_index].time.timestamp()
-        ) * the_line.slope + self.source(start_candle)
-
-        if np.any((np.array(source_list) - expected_low) * cross_multiplier < 0):
-            # invalid (line crossed candles)
-            return None
-        return the_line
-
-    def _calculate(self) -> list[Line]:
-        lines = []
-        last_index = len(self.candles) - 1
-        last_candle = self.candles[last_index]
-
-        candle_source = self.source
-
+    def _cross_multiplier(self) -> int:
+        """
+        Support-type lines (Low/Bottom) must stay at or below every value -> +1.
+        Resistance-type lines (High/Top) must stay at or above every value -> -1.
+        """
         if self.source in (CandlesSource.Low, CandlesSource.Bottom):
-            cross_multiplier = 1
-            if self.ignore_shadow_cross:
-                candle_source = CandlesSource.Bottom
-        else:
-            cross_multiplier = -1
-            if self.ignore_shadow_cross:
-                candle_source = CandlesSource.Top
+            return 1
+        return -1
 
-        last_value = self.source(last_candle)
+    @classmethod
+    def iter_value_lines(
+        cls,
+        anchor_values: np.ndarray,
+        timestamps: np.ndarray,
+        end_index: int,
+        min_step: int,
+        max_step: int,
+        cross_multiplier: int,
+        check_values: np.ndarray | None = None,
+        valid_step: Callable[[int], bool] | None = None,
+    ) -> Iterator[Line]:
+        if end_index < 0:
+            end_index += len(anchor_values)
 
-        indices = np.arange(self.max_step + 1, dtype=np.float64)
-        source_values = np.empty(self.max_step + 1, dtype=np.float64)
+        check_values = anchor_values if check_values is None else check_values
+        end_value = anchor_values[end_index]
+        end_timestamp = int(timestamps[end_index])
 
-        count = 0
+        max_step = min(max_step, end_index)
+        window_values = np.empty(max_step, dtype=np.float64)
 
-        start = last_index
-        stop = max(-1, last_index - self.max_step)
+        for step in range(1, max_step + 1):
+            start_index = end_index - step
+            window_values[step - 1] = check_values[start_index]
 
-        for candle_index in range(start, stop, -1):
-            candle = self.candles[candle_index]
-
-            if not self.support_conditions.check(self.candles[: candle_index + 2]):
+            if step < min_step:
                 continue
 
-            start_value = candle_source(candle)
-
-            source_values[count] = start_value
-            count += 1
-
-            step = last_index - candle_index
-
-            if step < self.min_step:
+            if valid_step is not None and not valid_step(start_index):
                 continue
 
-            slope = (last_value - start_value) / step
+            start_value = anchor_values[start_index]
+            slope = (end_value - start_value) / step
 
-            line_values = start_value + indices[:count] * slope
+            offset_from_start = step - np.arange(1, step + 1, dtype=np.float64)
+            predicted = start_value + offset_from_start * slope
 
-            if np.any((source_values[:count] - line_values) * cross_multiplier < 0):
+            if np.any((window_values[:step] - predicted) * cross_multiplier < 0):
                 continue
 
-            lines.append(Line(self.source, candle, last_candle))
+            yield Line(
+                start_value=float(start_value),
+                end_value=float(end_value),
+                start_timestamp=int(timestamps[start_index]),
+                end_timestamp=end_timestamp,
+                step=step,
+            )
 
-        return lines
+    def iter_lines_at_index(
+        self, chartdata: ChartData, end_index: int
+    ) -> Iterator[Line]:
+        if end_index < 0:
+            end_index += len(chartdata)
 
-    def _forcast(self) -> MarketSide:
-        return self.data[-1].direction
+        anchor_values = self.source(chartdata)
+        check_values = self.cross_check_source(chartdata)
 
-    def plot(self, plot: ChartPlot):
-        plot.draw_straight_line(
-            self.data[-1].start_candle, self.data[-1].end_candle, self.source
+        valid_step = None
+        if self.support_conditions is not SupportCandleConditions.RAW:
+            valid_step = lambda i: self.support_conditions.check(chartdata, i)
+
+        yield from self.iter_value_lines(
+            anchor_values=anchor_values,
+            timestamps=chartdata.timestamps,
+            end_index=end_index,
+            min_step=self.min_step,
+            max_step=self.max_step,
+            cross_multiplier=self._cross_multiplier(),
+            check_values=check_values,
+            valid_step=valid_step,
         )
 
-    def update(self, candles: list[Candle], *args, **kwargs) -> Any:
-        pass
+    def find_lines_at_index(self, chartdata: ChartData, end_index: int) -> list[Line]:
+        return list(self.iter_lines_at_index(chartdata, end_index))
+
+    def _calculate(self, chartdata: ChartData) -> list[Line]:
+        return self.find_lines_at_index(chartdata, end_index=len(chartdata) - 1)
+
+    def update(self, chartdata: ChartData, *args, **kwargs) -> Any:
+        return self._calculate(chartdata)
+
+    def forecast(self, *args, **kwargs) -> MarketSide:
+        if not self.data:
+            return MarketSide.NEUTRAL
+        return self.data[-1].direction()
+
+    def plot(self, plot: "ChartPlot", chartdata: ChartData):
+        if not self.data:
+            return
+        self.data[-1].plot(plot, chartdata)

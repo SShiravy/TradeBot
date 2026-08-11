@@ -179,7 +179,7 @@ class SendPositionSignal(TradeCommand):
 
     def command(self, time):
         self.position.sended = True
-        self.position.last_update = time
+        self.position.last_update_timestamp = time
         return True
 
 
@@ -204,7 +204,7 @@ class TrailStoploss(TradeCommand):
         ):
             return False
         self.position.stoploss = self.stoploss_price
-        self.position.last_update = time
+        self.position.last_update_timestamp = time
         return True
 
 
@@ -226,7 +226,7 @@ class ChangeTakeProfit(TradeCommand):
         ):
             return False
         self.position.takeprofit = self.takeprofit_price
-        self.position.last_update = time
+        self.position.last_update_timestamp = time
         return True
 
 
@@ -253,7 +253,7 @@ class ParitalClose(TradeCommand):
                 return False
         elif self.exec_price:
             self.position.update_pnl(self.exec_price, self.volume)
-        self.position.last_update = time
+        self.position.last_update_timestamp = time
         return True
 
 
@@ -281,7 +281,7 @@ class ClosePosition(TradeCommand):
                 return False
         elif self.exec_price:
             self.position.update_pnl(self.exec_price)
-        self.position.closed = time
+        self.position.closed_timestamp = time
         return True
 
 
@@ -301,7 +301,7 @@ class StopLoss(TradeCommand):
         await TelegramReporter().position_closed(self.position)
 
     def command(self, time) -> bool:
-        self.position.closed = time
+        self.position.closed_timestamp = time
         self.position.update_pnl(self.position.stoploss, pnl=self.pnl)
         return True
 
@@ -311,7 +311,7 @@ class TakeProfit(TradeCommand):
         await TelegramReporter().position_closed(self.position)
 
     def command(self, time) -> bool:
-        self.position.closed = time
+        self.position.closed_timestamp = time
         self.position.update_pnl(self.position.takeprofit)
         return True
 
@@ -393,7 +393,7 @@ class TrailStoplossbyStep(TradeCommand):
             else:
                 return self.exchange.change_stoploss(self.position, new_sl_price)
         self.position.stoploss = new_sl_price
-        self.position.last_update = time
+        self.position.last_update_timestamp = time
         logging.debug(
             f"TrailStopStep: id={self.position.id}, real={self.position.real_trade}, {self.position.stoploss}"
         )

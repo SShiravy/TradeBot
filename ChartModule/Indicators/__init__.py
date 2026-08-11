@@ -1,4 +1,4 @@
-from ChartModule.Indicators.lines import Line, TrendLine
+from ChartModule.Indicators.lines import Line, LineFinder
 from ChartModule.Indicators.pivot import Pivot
 from ChartModule.Indicators.cvd import CVD
 from ChartModule.Indicators.moving_avg import SMA, EMA, WMA, HMA
@@ -10,7 +10,7 @@ from ChartModule.Indicators.rsi import RSI
 __all__ = [
     "IndicatorBaseModel",
     "Line",
-    "TrendLine",
+    "LineFinder",
     "Pivot",
     "CVD",
     "SMA",

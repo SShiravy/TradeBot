@@ -7,7 +7,7 @@ from ChartModule.models import (
 )
 from ChartModule.Indicators import (
     IndicatorBaseModel,
-    TrendLine,
+    LineFinder,
     Line,
     SupportCandleConditions,
 )
@@ -77,7 +77,7 @@ class Divergence(Strategy):
     @classmethod
     def find_divergence(
         cls,
-        trendline: TrendLine,
+        trendline: LineFinder,
         base_chartdata: ChartData,
         second_chartdata: ChartData,
         inverse: bool = False,
@@ -88,8 +88,10 @@ class Divergence(Strategy):
         trendline.set(base_chartdata.candles[:-1])
         all_lines = trendline.data  # type: list[Line]
         for base_chart_line in all_lines:
-            start_candle_index = base_chartdata.index(base_chart_line.start_candle)
-            end_candle_index = base_chartdata.index(base_chart_line.end_candle)
+            start_candle_index = base_chartdata.candle_index(
+                base_chart_line.start_candle
+            )
+            end_candle_index = base_chartdata.candle_index(base_chart_line.end_candle)
             if other_chart_line_validation:
                 second_chart_line = trendline.valid_trendline(
                     second_chartdata.candles, start_candle_index, end_candle_index
@@ -113,7 +115,7 @@ class Divergence(Strategy):
         if not self.long_support_conditions.check(base_chartdata.candles):
             return None
         res = self.find_divergence(
-            TrendLine(
+            LineFinder(
                 CandlesSource.Bottom if self.body_candle else CandlesSource.Low,
                 self.min_step,
                 self.max_step,
@@ -143,7 +145,7 @@ class Divergence(Strategy):
         if not self.short_support_conditions.check(base_chartdata.candles):
             return None
         res = self.find_divergence(
-            TrendLine(
+            LineFinder(
                 CandlesSource.Top if self.body_candle else CandlesSource.High,
                 self.min_step,
                 self.max_step,
@@ -276,9 +278,6 @@ class TwoChartDiverTradeConfig(TradeConfig):
 
         if base_chartdata is None or second_chartdata is None:
             raise ValueError(f"chart data is None from {self.agent.__class__.__name__}")
-        if self.heikingashi_chartdata:
-            base_chartdata = base_chartdata.give_heikingashi_chartdata()
-            second_chartdata = second_chartdata.give_heikingashi_chartdata()
         return base_chartdata, second_chartdata
 
     async def find_signal(

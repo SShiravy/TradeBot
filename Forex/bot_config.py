@@ -59,9 +59,6 @@ class ForexDiverTradeConfig(TwoChartDiverTradeConfig):
             base_chartdata.candles = base_candles
             second_chartdata.candles = second_candles
 
-        if self.heikingashi_chartdata:
-            base_chartdata = base_chartdata.give_heikingashi_chartdata()
-            second_chartdata = second_chartdata.give_heikingashi_chartdata()
         return base_chartdata, second_chartdata
 
     def give_delay(self, last_candle: Candle, jump=False) -> timedelta:
@@ -122,8 +119,6 @@ class ForexChochQueueTradeConfig(ChochQueueTradeConfig):
 #             raise ValueError(f"chart data is None from {self.agent.__class__.__name__}")
 
 #         second_chartdata = CVD(self.chart).set(base_chartdata.candles)
-#         if self.heikingashi_chartdata:
-#             base_chartdata = base_chartdata.give_heikingashi_chartdata()
 
 #         return base_chartdata, second_chartdata
 

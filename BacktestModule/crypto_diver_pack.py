@@ -59,7 +59,6 @@ async def start_diver_crypto_backtest_pack(send_report=False):
                 short_trade=False,
             ),
             agent=coinex_agent,
-            heikingashi_chartdata=True,
         )
         res = await five_m_diver.backtest(1000, show_image=False)
         overal_report = PositionsReport.give_overall_report(res[-2])

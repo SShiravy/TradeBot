@@ -50,7 +50,6 @@ xau_double_diver_five_m = OscillatorDoubleDiverConfig(
             trail_stop=True,
         )
     ),
-    heikingashi_chartdata=False,
 )
 
 audcad_double_diver_five_m = OscillatorDoubleDiverConfig(
@@ -84,7 +83,6 @@ audcad_double_diver_five_m = OscillatorDoubleDiverConfig(
             trail_stop=True,
         )
     ),
-    heikingashi_chartdata=False,
 )
 
 usdjpy_double_diver_five_m = OscillatorDoubleDiverConfig(
@@ -118,7 +116,6 @@ usdjpy_double_diver_five_m = OscillatorDoubleDiverConfig(
             trail_stop=True,
         )
     ),
-    heikingashi_chartdata=False,
 )
 eurgbp_double_diver_five_m = OscillatorDoubleDiverConfig(
     chart=Chart("EURGBP!", TimeFrame.five_minutes),
@@ -151,7 +148,6 @@ eurgbp_double_diver_five_m = OscillatorDoubleDiverConfig(
             trail_stop=True,
         )
     ),
-    heikingashi_chartdata=False,
 )
 TelegramReporter().main_channel = "@three_push"
 TraderBot(

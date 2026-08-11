@@ -1,8 +1,12 @@
-from ChartModule.Indicators.lines import Line, TrendLine
+from ChartModule.Indicators.lines import Line, LineFinder
 from ChartModule.Indicators.pivot import Pivot
 from ChartModule.Indicators.cvd import CVD
 from ChartModule.Indicators.moving_avg import SMA, EMA, WMA, HMA
-from ChartModule.Indicators.models import IndicatorBaseModel, SupportCandleConditions
+from ChartModule.Indicators.models import (
+    IndicatorBaseModel,
+    SupportCandleConditions,
+    IndicatorRule,
+)
 from ChartModule.Indicators.moving_color import MovingColor, MovingCandleLength
 from ChartModule.Indicators.fibonacci import FibonacciRetracement, FiboLevels
 from ChartModule.Indicators.swing_pivots import SwingPivots, PivotPoint
@@ -10,12 +14,13 @@ from ChartModule.Indicators.swing_pivots import SwingPivots, PivotPoint
 __all__ = [
     "IndicatorBaseModel",
     "Line",
-    "TrendLine",
+    "LineFinder",
     "Pivot",
     "CVD",
     "SMA",
     "EMA",
     "SupportCandleConditions",
+    "IndicatorRule",
     "MovingColor",
     "MovingCandleLength",
     "FibonacciRetracement",

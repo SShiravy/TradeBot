@@ -134,7 +134,10 @@ class SlTpRatioCrypto(PositionHandler):
         res = super().handler(position, tick_prices)
         if res:
             return res
-        if len(position.steps) <= 1 or position.current_step.triggered_time is not None:
+        if (
+            len(position.steps) <= 1
+            or position.current_step.triggered_timestamp is not None
+        ):
             return None
 
         step = position.current_step
@@ -272,7 +275,10 @@ class SlTpRatioForex(PositionHandler):
         if not position.steps:
             return None
 
-        if len(position.steps) <= 1 or position.current_step.triggered_time is not None:
+        if (
+            len(position.steps) <= 1
+            or position.current_step.triggered_timestamp is not None
+        ):
             return None
 
         step = position.current_step

@@ -28,8 +28,6 @@ class TradeConfig:
 
     n_candle_check: int = field(default=1000)
 
-    heikingashi_chartdata: bool = field(default=False)
-
     max_long_lose: int = field(default=3)
     max_short_lose: int = field(default=3)
 
@@ -42,21 +40,17 @@ class TradeConfig:
         return {
             "chart": self.chart.export_config(),
             "bar_between_signals": self.bar_between_signals,
-            "heikingashi_chartdata": self.heikingashi_chartdata,
         }
 
     def give_delay(self, last_candle: Candle, jump=False) -> timedelta:
         delay = self.chart.timeframe.time_delta
         if jump:
             delay *= self.bar_between_signals
-        next_timestamp = int(
-            round(last_candle.time.astimezone(tz=timezone.utc).timestamp())
-            + delay.total_seconds()
-        )
+        next_timestamp = int(round(last_candle.timestamp) + delay.total_seconds())
         now_timestamp = round(datetime.now(tz=timezone.utc).timestamp())
         sleep_time_based_on_timestamp = next_timestamp - now_timestamp
         logging.debug(
-            f"{next_timestamp=} | {last_candle.time.astimezone(tz=timezone.utc).timestamp()} | {now_timestamp} | {sleep_time_based_on_timestamp=}"
+            f"{next_timestamp=} | {last_candle.timestamp} | {now_timestamp} | {sleep_time_based_on_timestamp=}"
         )
         return timedelta(seconds=sleep_time_based_on_timestamp + 1)
 
@@ -66,8 +60,6 @@ class TradeConfig:
         )
         if chartdata is None:
             raise ValueError(f"chart data is None from {self.agent.__class__.__name__}")
-        if self.heikingashi_chartdata:
-            chartdata = chartdata.give_heikingashi_chartdata()
         return chartdata
 
     async def find_signal(
@@ -162,7 +154,7 @@ class TradeConfig:
         for signal in all_signals:
             self.strategy.draw(plot, signal)
         for pos in all_positions:
-            if not pos.closed:
+            if not pos.closed_timestamp:
                 continue
             pos.plot = plot
             pos.draw()

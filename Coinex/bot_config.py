@@ -25,12 +25,8 @@ class CoinexDiverTradeConfig(TwoChartDiverTradeConfig):
             symbol=base_chartdata.chart.symbol.replace("USDT", "")
             + other_chartdata.chart.symbol.replace("USDT", ""),
             timeframe=base_chartdata.chart.timeframe,
-            precision=base_chartdata.chart.precision,
         )
         second_chartdata = ChartData.generate_crosspair(
             base_chartdata, other_chartdata, crosspair_chart
         )
-        if self.heikingashi_chartdata:
-            base_chartdata = base_chartdata.give_heikingashi_chartdata()
-            second_chartdata = second_chartdata.give_heikingashi_chartdata()
         return base_chartdata, second_chartdata

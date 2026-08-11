@@ -37,7 +37,6 @@ one_m = ForexDiverTradeConfig(
         check_with_agent=False,
     ),
     merge_two_chart_time=False,
-    heikingashi_chartdata=True,
 )
 
 dxy_1m = ForexDiverTradeConfig(
@@ -59,7 +58,6 @@ dxy_1m = ForexDiverTradeConfig(
         short_trade=False,
     ),
     merge_two_chart_time=False,
-    heikingashi_chartdata=False,
 )
 
 

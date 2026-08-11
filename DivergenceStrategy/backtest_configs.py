@@ -39,7 +39,6 @@ crypto_diver_five_m_sol = BitUnixDiverTradeConfig(
         trail_stop=True,
     ),
     agent=bitunix_agent,
-    heikingashi_chartdata=True,
 )
 
 
@@ -58,7 +57,6 @@ crypto_diver_five_m_near = BitUnixDiverTradeConfig(
         trail_stop=True,
     ),
     agent=bitunix_agent,
-    heikingashi_chartdata=True,
 )
 
 
@@ -82,7 +80,6 @@ forex_diver_one_m = ForexDiverTradeConfig(
         trail_stop=True,
     ),
     merge_two_chart_time=False,
-    heikingashi_chartdata=True,
 )
 
 
@@ -111,8 +108,7 @@ forex_rsi_diver_five_m = OscillatorDiverConfig(
             short_trade=False,
             trail_stop=True,
         )
-    ),
-    heikingashi_chartdata=False,
+    ),,
 )
 
 
@@ -145,7 +141,6 @@ forex_rsi_double_diver_five_m = OscillatorDoubleDiverConfig(
             trail_stop=True,
         )
     ),
-    heikingashi_chartdata=True,
 )
 # CVD ----
 

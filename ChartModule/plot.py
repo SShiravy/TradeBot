@@ -10,6 +10,9 @@ fplt.legend_fill_color = "#FFFFFF"
 fplt.legend_text_color = "#000000"
 fplt.display_timezone = timezone.utc
 
+BEARISH_COLOR = "#e20000"
+BULLISH_COLOR = "#e2c800"
+
 
 class BaseChartPlot(ABC):
     @abstractmethod
@@ -63,8 +66,10 @@ class ChartPlot(BaseChartPlot):
         self._y_max = max(self._y_max, boundaries[0] * 1.0001, boundaries[1] * 1.0001)
 
     def plot(self):
-        if len(self.chartdata.candles) > self.plot_n_candles:
-            self.chartdata.candles = self.chartdata.candles[-self.plot_n_candles :]
+        if len(self.chartdata) > self.plot_n_candles:
+            self.chartdata = self.chartdata.subdata(
+                end_index=-self.plot_n_candles, copy=True
+            )
         df = self.chartdata.generate_dataframe()
         fplt.add_legend(ax=self.ax, text=f"{self.chartdata.chart.symbol}")
 
@@ -92,7 +97,7 @@ class ChartPlot(BaseChartPlot):
 
         return image_path_name
 
-    def draw_line(self, x1, y1, x2, y2, color="#cb00e2", width=1, ax=None):
+    def draw_line(self, x1, y1, x2, y2, color="#cb00e2", width=2, ax=None):
         fplt.add_line(
             (x1, y1),
             (x2, y2),
@@ -102,25 +107,19 @@ class ChartPlot(BaseChartPlot):
             ax=self.ax if not ax else ax,
         )
 
-    def draw_straight_line(
+    def draw_chart_line(
         self,
-        start_candle: Candle,
-        end_candle: Candle,
-        source: CandlesSource,
+        start_price: float,
+        start_timestamp: int,
+        end_price: float,
+        end_timestamp: int,
+        side: MarketSide,
         ax=None,
-        prices: tuple[float, float] | None = None,
     ):
-        color = (
-            "#e20000"
-            if source in [CandlesSource.Top, CandlesSource.High]
-            else "#e2c800"
-        )
-        price1, price2 = (
-            prices if prices else (source(start_candle), source(end_candle))
-        )
+        color = BEARISH_COLOR if side is MarketSide.BEARISH else BULLISH_COLOR
         fplt.add_line(
-            (start_candle.time, price1),
-            (end_candle.time, price2),
+            (start_timestamp, start_price),
+            (end_timestamp, end_price),
             color=color,
             width=2,
             interactive=False,
@@ -129,8 +128,8 @@ class ChartPlot(BaseChartPlot):
 
     def draw_horizontal_line(
         self,
-        start_time: datetime,
-        end_time: datetime,
+        start_time: int,
+        end_time: int,
         price: float,
         color: str = "#8b0072ff",
         ax=None,
@@ -145,7 +144,7 @@ class ChartPlot(BaseChartPlot):
         )
 
     def draw_sl_tp_lines(
-        self, start_time: datetime, end_time: datetime, tp_price: float, sl_price: float
+        self, start_time: int, end_time: int, tp_price: float, sl_price: float
     ):
         self.draw_horizontal_line(start_time, end_time, tp_price, "#09ff00b5")
         self.draw_horizontal_line(start_time, end_time, sl_price, "#ff0000d5")
@@ -153,7 +152,7 @@ class ChartPlot(BaseChartPlot):
     def mark_signal(self, signal: Signal, ax=None):
         if signal.side is MarketSide.BULLISH:
             fplt.plot(
-                signal.candle.time,
+                signal.candle.timestamp,
                 signal.candle.low * 0.9995,
                 style="^",
                 color="#1DBD1D",
@@ -163,7 +162,7 @@ class ChartPlot(BaseChartPlot):
             )
         else:
             fplt.plot(
-                signal.candle.time,
+                signal.candle.timestamp,
                 signal.candle.high * 1.0005,
                 style="v",
                 color="#BD1D1D",
@@ -210,7 +209,7 @@ class ChartPlot(BaseChartPlot):
             )
         )
         fplt.plot(
-            candle.time,
+            candle.timestamp,
             source(candle),
             style="o",
             color=color,

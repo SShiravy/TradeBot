@@ -45,7 +45,6 @@ one_m = ForexDiverTradeConfig(
         short_trade=True,
     ),
     merge_two_chart_time=False,
-    heikingashi_chartdata=True,
 )
 
 

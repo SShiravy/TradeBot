@@ -27,7 +27,6 @@ choch_queue_xau_one_m = ForexChochQueueTradeConfig(
         short_trade=False,
         trail_stop=True,
     ),
-    heikingashi_chartdata=False,
 )
 
 
@@ -56,5 +55,4 @@ choch_queue_five_m_sol = BitUnixChochQueueTradeConfig(
         trail_stop=True,
     ),
     agent=bitunix_agent,
-    heikingashi_chartdata=False,
 )

@@ -7,27 +7,25 @@ import logging
 
 logger = logging.getLogger("IndicatorModel")
 
+from abc import ABC, abstractmethod
+from typing import Any
+
 
 class IndicatorBaseModel(ABC):
     def __init__(self) -> None:
+        self.chartdata: ChartData | None = None
         self.data: Any = None
-        self.candles: list[Candle] = []
-        self.forcast_rules: list[IndicatorForcastRule] = []
+        self.rules: list[IndicatorRule] = []
         self.last_checked_candle: Candle | None = None
 
     def export_configs(self) -> dict:
         return {"name": self.__class__.__name__}
 
-    def find_new_candle_index(self, candles: list[Candle]):
-        """
-        Reverse Linear Search
-        """
-        if not self.last_checked_candle:
+    def find_new_candle_index(self, chartdata: ChartData) -> int:
+        if self.last_checked_candle is None:
             raise ValueError("last_checked_candle is None")
-        for i, candle in enumerate(candles[::-1]):
-            if candle.timestamp == self.last_checked_candle.timestamp:
-                return len(candles) - i
-        raise ValueError("last_checked_candle not found")
+        idx = chartdata.timestamp_index(self.last_checked_candle.timestamp)
+        return idx + 1
 
     @abstractmethod
     def _calculate(self, *args, **kwargs) -> Any: ...
@@ -36,27 +34,46 @@ class IndicatorBaseModel(ABC):
     def plot(self, plot, *args, **kwargs) -> Any: ...
 
     @abstractmethod
-    def update(self, candles: list[Candle], *args, **kwargs) -> Any: ...
+    def update(self, chartdata: ChartData, *args, **kwargs) -> Any:
+        """
+        Must return the updated data. Called by set() when incremental
+        update is possible instead of a full recalculation.
+        """
+        ...
 
-    def set(self, candles: list[Candle], *args, **kwargs) -> Any:
-        if not self.data:
-            self.candles = candles
-            self.data = self._calculate(*args, **kwargs)
-            self.last_checked_candle = candles[-1]
+    def set(self, chartdata: ChartData, *args, **kwargs) -> Any:
+        if self.data is None:
+            self.chartdata = chartdata
+            self.data = self._calculate(chartdata, *args, **kwargs)
         else:
-            self.update(candles, *args, **kwargs)
+            self.chartdata = chartdata
+            self.data = self.update(chartdata, *args, **kwargs)
+        self.last_checked_candle = chartdata[-1]
         return self.data
 
-    def forcast(self, *args, **kwargs) -> MarketSide:
-        if self.data is None or self.forcast_rules == []:
+    def forecast(self, *args, **kwargs) -> MarketSide:
+        if self.data is None or not self.rules:
             return MarketSide.NEUTRAL
-        else:
-            return sum([rule.forcast(self.data) for rule in self.forcast_rules])  # type: ignore
+        votes = [rule.forecast(self, *args, **kwargs) for rule in self.rules]
+        return self._aggregate_votes(votes)
+
+    def _aggregate_votes(self, votes: list[MarketSide]) -> MarketSide:
+        """
+        Majority vote aggregation. Override in a subclass for weighted
+        or rule-priority-based logic if a simple majority isn't enough.
+        """
+        bullish = votes.count(MarketSide.BULLISH)
+        bearish = votes.count(MarketSide.BEARISH)
+        if bullish > bearish:
+            return MarketSide.BULLISH
+        if bearish > bullish:
+            return MarketSide.BEARISH
+        return MarketSide.NEUTRAL
 
 
-class IndicatorForcastRule(ABC):
+class IndicatorRule(ABC):
     @abstractmethod
-    def forcast(
+    def forecast(
         self,
         indicator: IndicatorBaseModel,
         *args,
@@ -64,7 +81,7 @@ class IndicatorForcastRule(ABC):
     ) -> MarketSide: ...
 
     def __call__(self, *args: Any, **kwargs: Any) -> Any:
-        return self.forcast(*args, **kwargs)
+        return self.forecast(*args, **kwargs)
 
 
 class SupportCandleConditions(Flag):
@@ -86,8 +103,6 @@ class SupportCandleConditions(Flag):
 
     GREEN_RED = 1024
     RED_GREEN = 2048
-
-    Heikin_Ashi = 4096
 
     @classmethod
     def get_index_dict(cls):
@@ -115,49 +130,52 @@ class SupportCandleConditions(Flag):
                 result = support_condition
         return result
 
-    def check(self, candles: list[Candle]) -> bool:
+    def check(self, chartdata: ChartData, index: int = -1) -> bool:
         if SupportCandleConditions.RAW in self:
             return True
-        if SupportCandleConditions.Heikin_Ashi in self:
-            candles = ChartData.heikinashi_candles(candles)
+
+        current_candle = chartdata.candle(index)
+        previous_candle = chartdata.candle(index - 1)
+        if SupportCandleConditions.RAW in self:
+            return True
 
         if SupportCandleConditions.GREEN_RED in self:
             if not (
-                candles[-2].side is MarketSide.BULLISH
-                and candles[-1].side is MarketSide.BEARISH
+                previous_candle.side is MarketSide.BULLISH
+                and current_candle.side is MarketSide.BEARISH
             ):
                 return False
 
         elif SupportCandleConditions.RED_GREEN in self:
             if not (
-                candles[-2].side is MarketSide.BEARISH
-                and candles[-1].side is MarketSide.BULLISH
+                previous_candle.side is MarketSide.BEARISH
+                and current_candle.side is MarketSide.BULLISH
             ):
                 return False
 
         if SupportCandleConditions.HIGHER_LOW in self:
-            if candles[-1].low < candles[-2].low:
+            if current_candle.low < previous_candle.low:
                 return False
         if SupportCandleConditions.HIGHER_BOTTOM in self:
-            if candles[-1].body_bottom < candles[-2].body_bottom:
+            if current_candle.body_bottom < previous_candle.body_bottom:
                 return False
         if SupportCandleConditions.HIGHER_HIGH in self:
-            if candles[-1].high < candles[-2].high:
+            if current_candle.high < previous_candle.high:
                 return False
         if SupportCandleConditions.HIGHER_TOP in self:
-            if candles[-1].body_top < candles[-2].body_top:
+            if current_candle.body_top < previous_candle.body_top:
                 return False
 
         if SupportCandleConditions.LOWER_LOW in self:
-            if candles[-1].low > candles[-2].low:
+            if current_candle.low > previous_candle.low:
                 return False
         if SupportCandleConditions.LOWER_BOTTOM in self:
-            if candles[-1].body_bottom > candles[-2].body_bottom:
+            if current_candle.body_bottom > previous_candle.body_bottom:
                 return False
         if SupportCandleConditions.LOWER_HIGHT in self:
-            if candles[-1].high > candles[-2].high:
+            if current_candle.high > previous_candle.high:
                 return False
         if SupportCandleConditions.LOWER_TOP in self:
-            if candles[-1].body_top > candles[-2].body_top:
+            if current_candle.body_top > previous_candle.body_top:
                 return False
         return True
