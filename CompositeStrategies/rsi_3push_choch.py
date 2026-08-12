@@ -102,16 +102,18 @@ class Rsi3PushChochConfig(TradeConfig):
             return None
 
         # Check if the last 3-push signal is too old
-        if (
-            (
-                chartdata.candles[-1].time
-                - self.last_3push_signal.main_chart_line.end_candle.time
-            ).total_seconds()
-            > self.n_candle_confirmation
+        elapsed_time = (
+            chartdata.candles[-1].time
+            - self.last_3push_signal.main_chart_line.end_candle.time
+        ).total_seconds()
+        time_condition = (
+            self.n_candle_confirmation
             * chartdata.chart.timeframe.time_delta.total_seconds()
-        ):
+        )
+        if elapsed_time > time_condition:
             self.last_3push_signal = None
             self.last_3push_signal_msg_id = None
+            logging.warning(f"rsi3push was too old {elapsed_time=} > {time_condition}")
             return None
 
         # Check for CHoCH signal
@@ -121,12 +123,15 @@ class Rsi3PushChochConfig(TradeConfig):
 
         # Check if the CHoCH signal is in the same direction as the last 3-push signal
         if choch_signal.side != self.last_3push_signal.side:
+            logging.warning(
+                f"different side for rsi3push & choch: {self.last_3push_signal.side} | {choch_signal.side}"
+            )
             return None
 
         # Generate position based on the combined signals
         plot = None
         if self.send_signal:
-            plot = ChartPlot(chartdata)
+            plot = ChartPlot(choch_chartdata)
             self.choch_strategy.draw(plot, choch_signal, draw_indicators=True)
         if not self.consider_position:
             if self.send_signal:
@@ -139,7 +144,9 @@ class Rsi3PushChochConfig(TradeConfig):
             choch_signal, sl_base_price=choch_signal.choch_model.anchor, plot=plot
         )
         if not position:
+            logger.warning("Position is None")
             return None
+        logger.info(f"RSI 3push & CHoCH Signal")
         position.reply_msg_id = self.last_3push_signal_msg_id
         self.last_3push_signal = None
         self.last_3push_signal_msg_id = None
@@ -163,7 +170,9 @@ class Rsi3PushChochConfig(TradeConfig):
         delay = self.choch_chart.timeframe.time_delta
         if jump:
             delay *= self.bar_between_signals
-        last_candle_time = ForexAgent().get_chartdata(self.choch_chart, n_bars=1).candles[0]  # type: ignore
+        last_candle_time = (
+            ForexAgent().get_chartdata(self.choch_chart, n_bars=1).candles[0] # type: ignore
+        )  
         next_timestamp = int(round(last_candle_time.timestamp) + delay.total_seconds())
         sleep_time_based_on_timestamp = (
             next_timestamp - ForexAgent().give_current_timestamp(self.choch_chart)
