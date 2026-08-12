@@ -94,6 +94,7 @@ class TradeConfig:
 
     async def task(self) -> timedelta | tuple[timedelta, Signal, Position | None]:
         chartdata = self.get_chartdata()
+        chartdata = chartdata.give_sub_chartdata(chartdata[:-1])
         res = await self.find_signal(chartdata)
         if res is None:
             return self.give_delay(chartdata[-1])

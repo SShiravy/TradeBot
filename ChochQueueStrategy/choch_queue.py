@@ -444,7 +444,6 @@ class ChochQueueTradeConfig(TradeConfig):
     async def find_signal(
         self, chartdata: ChartData, *args, **kwargs
     ) -> None | tuple[ChochSignal, Position]:
-        chartdata.give_sub_chartdata(chartdata.candles[:-1])
         signal = self.strategy.check_signal(
             chartdata, self.long_signal, self.short_signal
         )
