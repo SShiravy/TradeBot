@@ -52,9 +52,11 @@ class TwoChartDiverBacktester:
         plot.show()
         del plot
 
-    def handle_positions(self,candle:Candle,position_handler:PositionHandler):
-        if isinstance(self.diver_config.chart,CsvChart):
-            tickdata = self.diver_config.chart.tick_handler.get_ticks_for_candle(candle,self.diver_config.chart)
+    def handle_positions(self, candle: Candle, position_handler: PositionHandler):
+        if isinstance(self.diver_config.chart, CsvChart):
+            tickdata = self.diver_config.chart.tick_handler.get_ticks_for_candle(
+                candle, self.diver_config.chart
+            )
             for pos in position_handler.open_positions.copy():
                 if pos.closed:
                     position_handler.closed_positions.append(pos)
@@ -62,14 +64,16 @@ class TwoChartDiverBacktester:
                     continue
                 ticks = tickdata.bids if pos.side is OrderSide.BUY else tickdata.asks
                 position_handler.handler(pos, ticks)
-            self.diver_config.chart.tick_handler.trim(start_timestamp=tickdata[-1].timestamp)
+            self.diver_config.chart.tick_handler.trim(
+                start_timestamp=tickdata[-1].timestamp
+            )
         else:
             ticks = [
-                        candle.open,
-                        candle.low,
-                        candle.high,
-                        candle.close,
-                    ]
+                candle.open,
+                candle.low,
+                candle.high,
+                candle.close,
+            ]
             for pos in position_handler.open_positions.copy():
                 if pos.closed:
                     position_handler.closed_positions.append(pos)
@@ -108,8 +112,8 @@ class TwoChartDiverBacktester:
         signal_generator = give_next_signal(all_signals)
         signal, entry_source = next(signal_generator, (None, None))
         chartdata, second_chartdata = self.diver_config.get_chartdata(n_bar)
-        for i, candle in enumerate(chartdata.candles):            
-            self.handle_positions(candle,position_handler)
+        for i, candle in enumerate(chartdata.candles):
+            self.handle_positions(candle, position_handler)
             await commands.TradeCommand.execute_pending_commands(
                 candle.time, report=False
             )
@@ -126,10 +130,16 @@ class TwoChartDiverBacktester:
                 )
             # candle == signal.candle
             pos_candle = chartdata.candles[i + 1]
-            if isinstance(self.diver_config.chart,CsvChart):
-                tickdata = self.diver_config.chart.tick_handler.get_ticks_from_timstamp_range(pos_candle.timestamp,pos_candle.timestamp+5)
+            if isinstance(self.diver_config.chart, CsvChart):
+                tickdata = (
+                    self.diver_config.chart.tick_handler.get_ticks_from_timstamp_range(
+                        pos_candle.timestamp, pos_candle.timestamp + 5
+                    )
+                )
                 tick = tickdata[1]
-                entry_price = tick.ask if signal.side is MarketSide.BULLISH else tick.bid
+                entry_price = (
+                    tick.ask if signal.side is MarketSide.BULLISH else tick.bid
+                )
                 pos_open_time = datetime.fromtimestamp(tick.timestamp)
             else:
                 entry_price = pos_candle.open

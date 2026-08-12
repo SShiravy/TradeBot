@@ -24,11 +24,8 @@ class Tick:
     last: float
     volume: float
 
-import numpy as np
-
 
 class TickData:
-
     def __init__(
         self,
         timestamps: np.ndarray,
@@ -42,7 +39,6 @@ class TickData:
         self.asks = asks
         self.lasts = lasts
         self.volumes = volumes
-        
 
     def __len__(self):
         return len(self.timestamps)
@@ -75,19 +71,18 @@ class TickData:
             self.lasts[left:right],
             self.volumes[left:right],
         )
-class TickDataHandler:
 
-    def __init__(self, parquet_path: str,        
-                start_timestamp: int | None = None,
-                end_timestamp: int | None = None
-                ):
+
+class TickDataHandler:
+    def __init__(
+        self,
+        parquet_path: str,
+        start_timestamp: int | None = None,
+        end_timestamp: int | None = None,
+    ):
         logger.info(f"Reading TickData from: {parquet_path}")
 
-        df = (
-            pd.read_parquet(parquet_path)
-            .sort_values("time")
-            .reset_index(drop=True)
-        )
+        df = pd.read_parquet(parquet_path).sort_values("time").reset_index(drop=True)
 
         if start_timestamp is not None:
             left = np.searchsorted(df["time"].to_numpy(), start_timestamp, side="left")
@@ -105,11 +100,7 @@ class TickDataHandler:
 
         df = df.iloc[left:right].reset_index(drop=True)
 
-        df = (
-            pd.read_parquet(parquet_path)
-            .sort_values("time")
-            .reset_index(drop=True)
-        )
+        df = pd.read_parquet(parquet_path).sort_values("time").reset_index(drop=True)
 
         self.tick_data = TickData(
             timestamps=df["time"].to_numpy(np.int64),
@@ -120,39 +111,42 @@ class TickDataHandler:
         )
 
     def trim(
-            self,
-            start_timestamp: int | None = None,
-            end_timestamp: int | None = None,
-        ) -> None:
-            if start_timestamp:
-                left = int(np.searchsorted(
+        self,
+        start_timestamp: int | None = None,
+        end_timestamp: int | None = None,
+    ) -> None:
+        if start_timestamp:
+            left = int(
+                np.searchsorted(
                     self.tick_data.timestamps,
                     start_timestamp,
                     side="left",
-                ))
-            else:
-                left = 0
-            if end_timestamp:
-                right = int(np.searchsorted(
+                )
+            )
+        else:
+            left = 0
+        if end_timestamp:
+            right = int(
+                np.searchsorted(
                     self.tick_data.timestamps,
                     end_timestamp + 1,
                     side="left",
-                ))
-            else:
-                right = -1
+                )
+            )
+        else:
+            right = -1
 
-            self.tick_data.timestamps = self.tick_data.timestamps[left:right]
-            self.tick_data.bids = self.tick_data.bids[left:right]
-            self.tick_data.asks = self.tick_data.asks[left:right]
-            self.tick_data.lasts = self.tick_data.lasts[left:right]
-            self.tick_data.volumes = self.tick_data.volumes[left:right]
+        self.tick_data.timestamps = self.tick_data.timestamps[left:right]
+        self.tick_data.bids = self.tick_data.bids[left:right]
+        self.tick_data.asks = self.tick_data.asks[left:right]
+        self.tick_data.lasts = self.tick_data.lasts[left:right]
+        self.tick_data.volumes = self.tick_data.volumes[left:right]
 
     def get_ticks_from_timstamp_range(
         self,
         start_timestamp: int,
         end_timestamp: int,
     ) -> TickData:
-
         left = np.searchsorted(
             self.tick_data.timestamps,
             start_timestamp,
@@ -172,12 +166,12 @@ class TickDataHandler:
         candle: Candle,
         chart: Chart,
     ) -> TickData:
-
         return self.get_ticks_from_timstamp_range(
             candle.timestamp,
             candle.timestamp + chart.timeframe.minutes * 60,
         )
-    
+
+
 @dataclass(slots=True)
 class CsvChart(Chart):
     csv_path: str = field(default="")

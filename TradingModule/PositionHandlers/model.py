@@ -119,7 +119,11 @@ class PositionHandler(ABC):
                 position, self.exchange_agent, report=self.send_report
             )
         direction = position.side.factor()
-        ticks = np.array(tick_prices) * direction if isinstance(tick_prices, list) else tick_prices
+        ticks = (
+            np.array(tick_prices) * direction
+            if isinstance(tick_prices, list)
+            else tick_prices
+        )
         sl = position.stoploss * direction
         tp = position.takeprofit * direction
         cross = np.logical_or(ticks <= sl, ticks >= tp)

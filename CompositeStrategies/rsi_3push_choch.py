@@ -146,7 +146,7 @@ class Rsi3PushChochConfig(TradeConfig):
         if not position:
             logger.warning("Position is None")
             return None
-        logger.info(f"RSI 3push & CHoCH Signal")
+        logger.info("RSI 3push & CHoCH Signal")
         position.reply_msg_id = self.last_3push_signal_msg_id
         self.last_3push_signal = None
         self.last_3push_signal_msg_id = None
@@ -171,8 +171,8 @@ class Rsi3PushChochConfig(TradeConfig):
         if jump:
             delay *= self.bar_between_signals
         last_candle_time = (
-            ForexAgent().get_chartdata(self.choch_chart, n_bars=1).candles[0] # type: ignore
-        )  
+            ForexAgent().get_chartdata(self.choch_chart, n_bars=1).candles[0]  # type: ignore
+        )
         next_timestamp = int(round(last_candle_time.timestamp) + delay.total_seconds())
         sleep_time_based_on_timestamp = (
             next_timestamp - ForexAgent().give_current_timestamp(self.choch_chart)

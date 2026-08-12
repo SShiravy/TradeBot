@@ -1,5 +1,4 @@
 from datetime import timedelta
-from turtle import position
 from ChartModule.models import Chart, MarketSide, Signal
 from ChartModule.plot import Plot
 from TradingModule.PositionHandlers.model import PositionHandler
@@ -251,7 +250,11 @@ class SteppingHandlerForex(PositionHandler):
             position._current_step_index = len(position.steps) - 1
 
         direction = position.side.factor()
-        ticks = np.array(tick_prices) * direction if isinstance(tick_prices,list) else tick_prices
+        ticks = (
+            np.array(tick_prices) * direction
+            if isinstance(tick_prices, list)
+            else tick_prices
+        )
         sl = position.stoploss * direction
         tp = step.price * direction
         cross = np.logical_or(ticks <= sl, ticks >= tp)
