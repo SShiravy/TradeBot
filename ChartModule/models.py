@@ -72,7 +72,7 @@ class MarketSide(Enum):
         return {
             MarketSide.BEARISH: -1,
             MarketSide.BULLISH: 1,
-            MarketSide.BEARISH: 0,
+            MarketSide.NEUTRAL: 0,
         }[self]
 
     def __add__(self, other: "MarketSide") -> "MarketSide":

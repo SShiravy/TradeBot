@@ -110,7 +110,7 @@ class PositionHandler(ABC):
         logger.info(f"Position Updated on {position.chart}")
 
     def handler(
-        self, position: Position, tick_prices: list[float]
+        self, position: Position, tick_prices: list[float] | np.ndarray
     ) -> TradeCommand | None:
         if not position.confiremed:
             self.modify_init_sl_tp(position)
@@ -119,7 +119,7 @@ class PositionHandler(ABC):
                 position, self.exchange_agent, report=self.send_report
             )
         direction = position.side.factor()
-        ticks = np.array(tick_prices) * direction
+        ticks = np.array(tick_prices) * direction if isinstance(tick_prices, list) else tick_prices
         sl = position.stoploss * direction
         tp = position.takeprofit * direction
         cross = np.logical_or(ticks <= sl, ticks >= tp)
