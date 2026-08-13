@@ -192,6 +192,7 @@ class Chart:
         return {
             "symbol": self.symbol,
             "timeframe": self.timeframe.value,
+            "pip_factor": self.pip_factor,
             "precision": self.precision,
         }
 

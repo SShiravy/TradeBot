@@ -29,7 +29,7 @@ logger = CustomLogger(
 class Rsi3PushChochConfig(TradeConfig):
     strategy: OscillatorDivergence  # type: ignore[override]
     choch_strategy: ChochQueueFilter  # type: ignore[override]
-    choch_chart: Chart
+    rsi_chart: Chart
     same_line_source: bool = True
     n_candle_confirmation: int = 10
     last_3push_signal: OscillatorDoubleDiverSignal | None = field(
@@ -167,27 +167,27 @@ class Rsi3PushChochConfig(TradeConfig):
         return chartdata
 
     def give_delay(self, last_candle: Candle, jump=False) -> timedelta:
-        delay = self.choch_chart.timeframe.time_delta
+        delay = self.chart.timeframe.time_delta
         if jump:
             delay *= self.bar_between_signals
         last_candle_time = (
-            ForexAgent().get_chartdata(self.choch_chart, n_bars=1).candles[0]  # type: ignore
+            ForexAgent().get_chartdata(self.chart, n_bars=1).candles[0]  # type: ignore
         )
         next_timestamp = int(round(last_candle_time.timestamp) + delay.total_seconds())
         sleep_time_based_on_timestamp = (
-            next_timestamp - ForexAgent().give_current_timestamp(self.choch_chart)
+            next_timestamp - ForexAgent().give_current_timestamp(self.chart)
         )
 
         return timedelta(seconds=sleep_time_based_on_timestamp + 1)
 
     async def task(self):
         # RSI 3-push chart data
-        rsi_chartdata = self.get_chartdata(self.chart)
+        rsi_chartdata = self.get_chartdata(self.rsi_chart)
         rsi_sub_chartdata = copy(rsi_chartdata)
         rsi_sub_chartdata.candles = rsi_sub_chartdata.candles[:-1]
 
         # Get CHoCH chart data
-        choch_chartdata = self.get_chartdata(self.choch_chart)
+        choch_chartdata = self.get_chartdata(self.chart)
         choch_sub_chartdata = copy(choch_chartdata)
         choch_sub_chartdata.candles = choch_chartdata.candles[:-1]
 

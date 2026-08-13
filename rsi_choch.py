@@ -21,8 +21,8 @@ CustomLogger(
 )
 
 xau = Rsi3PushChochConfig(
-    chart=Chart("XAUUSD!", TimeFrame.five_minutes),
-    choch_chart=Chart("XAUUSD!", TimeFrame.one_minute),
+    rsi_chart=Chart("XAUUSD!", TimeFrame.five_minutes),
+    chart=Chart("XAUUSD!", TimeFrame.one_minute),
     agent=ForexAgent(),
     strategy=OscillatorDivergence(
         RSI(),
@@ -67,8 +67,8 @@ xau = Rsi3PushChochConfig(
 
 
 audcad = Rsi3PushChochConfig(
-    chart=Chart("AUDCAD!", TimeFrame.five_minutes),
-    choch_chart=Chart("AUDCAD!", TimeFrame.one_minute),
+    rsi_chart=Chart("AUDCAD!", TimeFrame.five_minutes),
+    chart=Chart("AUDCAD!", TimeFrame.one_minute),
     agent=ForexAgent(),
     strategy=OscillatorDivergence(
         RSI(),
@@ -113,8 +113,8 @@ audcad = Rsi3PushChochConfig(
 
 
 usdjpy = Rsi3PushChochConfig(
-    chart=Chart("USDJPY!", TimeFrame.five_minutes),
-    choch_chart=Chart("USDJPY!", TimeFrame.one_minute),
+    rsi_chart=Chart("USDJPY!", TimeFrame.five_minutes),
+    chart=Chart("USDJPY!", TimeFrame.one_minute),
     agent=ForexAgent(),
     strategy=OscillatorDivergence(
         RSI(),
@@ -159,54 +159,8 @@ usdjpy = Rsi3PushChochConfig(
 
 
 eurgbp = Rsi3PushChochConfig(
-    chart=Chart("EURGBP!", TimeFrame.five_minutes),
-    choch_chart=Chart("EURGBP!", TimeFrame.one_minute),
-    agent=ForexAgent(),
-    strategy=OscillatorDivergence(
-        RSI(),
-        3,
-        150,
-        [],
-        name="RSI_Double_Diver",
-        long_support_conditions=SupportCandleConditions.RED_GREEN,
-        short_support_conditions=SupportCandleConditions.GREEN_RED,
-        body_candle=True,
-        ignore_shadow_cross=True,
-        inverse_diver_long=False,
-    ),
-    choch_strategy=ChochQueueFilter(
-        pivot_length=2,
-        backstep=2,
-        retrace_fib=0.5,
-        use_wick=True,
-        use_fibo_filter=False,  # True -> wait for price to retrace to the fib level | False -> signal as soon as the CHoCH/BOS break happens
-        name="ChochQueue",
-    ),
-    bar_between_signals=2,
-    same_line_source=True,
-    n_candle_confirmation=100,
-    n_candle_check=200,
-    consider_position=True,
-    position_handler=(
-        SteppingHandlerForex(
-            ForexAgent(),
-            targets_ratio=[],
-            targets_ratio_volumes=[],
-            stoploss_pip=5,
-            targets_in_pip=[5],
-            targets_in_pip_volumes=[0.01],
-            long_trade=False,
-            short_trade=False,
-            trail_stop=True,
-        )
-    ),
-    heikingashi_chartdata=False,
-)
-
-
-eurgbp = Rsi3PushChochConfig(
-    chart=Chart("EURGBP!", TimeFrame.five_minutes),
-    choch_chart=Chart("EURGBP!", TimeFrame.one_minute),
+    rsi_chart=Chart("EURGBP!", TimeFrame.five_minutes),
+    chart=Chart("EURGBP!", TimeFrame.one_minute),
     agent=ForexAgent(),
     strategy=OscillatorDivergence(
         RSI(),
@@ -251,8 +205,8 @@ eurgbp = Rsi3PushChochConfig(
 
 
 eurusd = Rsi3PushChochConfig(
-    chart=Chart("EURUSD!", TimeFrame.five_minutes),
-    choch_chart=Chart("EURUSD!", TimeFrame.one_minute),
+    rsi_chart=Chart("EURUSD!", TimeFrame.five_minutes),
+    chart=Chart("EURUSD!", TimeFrame.one_minute),
     agent=ForexAgent(),
     strategy=OscillatorDivergence(
         RSI(),
@@ -297,8 +251,8 @@ eurusd = Rsi3PushChochConfig(
 
 
 usdchf = Rsi3PushChochConfig(
-    chart=Chart("USDCHF!", TimeFrame.five_minutes),
-    choch_chart=Chart("USDCHF!", TimeFrame.one_minute),
+    rsi_chart=Chart("USDCHF!", TimeFrame.five_minutes),
+    chart=Chart("USDCHF!", TimeFrame.one_minute),
     agent=ForexAgent(),
     strategy=OscillatorDivergence(
         RSI(),
@@ -343,8 +297,8 @@ usdchf = Rsi3PushChochConfig(
 
 
 btc = Rsi3PushChochConfig(
-    chart=Chart("BTCUSD", TimeFrame.five_minutes),
-    choch_chart=Chart("BTCUSD", TimeFrame.one_minute),
+    rsi_chart=Chart("BTCUSD", TimeFrame.five_minutes),
+    chart=Chart("BTCUSD", TimeFrame.one_minute),
     agent=ForexAgent(),
     strategy=OscillatorDivergence(
         RSI(),
