@@ -1,5 +1,4 @@
 from datetime import timedelta
-from turtle import position
 from ChartModule.models import Chart, MarketSide, Signal
 from ChartModule.plot import Plot
 from TradingModule.PositionHandlers.model import PositionHandler
@@ -242,7 +241,7 @@ class SteppingHandlerForex(PositionHandler):
         logger.info(f"Position Updated on {position.chart}")
 
     def tick_prices_handler(
-        self, position: Position, step: Trigger, tick_prices: list[float]
+        self, position: Position, step: Trigger, tick_prices: list[float] | np.ndarray
     ):
         step = position.current_step
         if step is None:
@@ -251,7 +250,11 @@ class SteppingHandlerForex(PositionHandler):
             position._current_step_index = len(position.steps) - 1
 
         direction = position.side.factor()
-        ticks = np.array(tick_prices) * direction
+        ticks = (
+            np.array(tick_prices) * direction
+            if isinstance(tick_prices, list)
+            else tick_prices
+        )
         sl = position.stoploss * direction
         tp = step.price * direction
         cross = np.logical_or(ticks <= sl, ticks >= tp)
@@ -313,7 +316,7 @@ class SteppingHandlerForex(PositionHandler):
         return command
 
     def handler(
-        self, position: Position, tick_prices: list[float]
+        self, position: Position, tick_prices: list[float] | np.ndarray
     ) -> TradeCommand | None:
         if not position.confiremed:
             self.modify_init_sl_tp(position)

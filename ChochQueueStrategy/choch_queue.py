@@ -9,6 +9,7 @@ from ChartModule.models import (
 from ChartModule.Indicators import IndicatorBaseModel, SupportCandleConditions
 from ChartModule.Indicators.swing_pivots import SwingPivots
 from ChartModule.plot import ChartPlot
+from TradingModule.reporter import TelegramReporter
 from TradingModule.trader_bot import TradeConfig
 from TradingModule.models import Position, Strategy
 from datetime import datetime
@@ -35,7 +36,9 @@ class ChochModel:
     touch_candle: Candle | None = field(default=None, init=False)
 
     def __post_init__(self):
-        self.extreme = float("-inf") if self.side is MarketSide.BULLISH else float("inf")
+        self.extreme = (
+            float("-inf") if self.side is MarketSide.BULLISH else float("inf")
+        )
 
     def __str__(self) -> str:
         kind = "CHoCH" if self.is_choch else "BOS"
@@ -154,7 +157,9 @@ class ChochQueueFilter(Strategy):
             # model is being validated on its own break bar
             if model.side is MarketSide.BULLISH:
                 leg_bot = model.anchor
-                leg_top = candle.high if model.extreme == float("-inf") else model.extreme
+                leg_top = (
+                    candle.high if model.extreme == float("-inf") else model.extreme
+                )
             else:
                 leg_top = model.anchor
                 leg_bot = candle.low if model.extreme == float("inf") else model.extreme
@@ -162,10 +167,10 @@ class ChochQueueFilter(Strategy):
             if self.use_fibo_filter:
                 if model.side is MarketSide.BULLISH:
                     retrace_level = leg_bot + (leg_top - leg_bot) * (1 - self.retrace_fib)
-                    is_validated = candle.low <= retrace_level
+                    is_validated = break_low <= retrace_level
                 else:
                     retrace_level = leg_top - (leg_top - leg_bot) * (1 - self.retrace_fib)
-                    is_validated = candle.high >= retrace_level
+                    is_validated = break_high >= retrace_level
             else:
                 retrace_level = model.break_level
                 is_validated = True
@@ -233,42 +238,20 @@ class ChochQueueFilter(Strategy):
                     last_pl_index = i
                     pl_crossed = False
 
-            bull_choch = (
-                bias is not MarketSide.BULLISH
-                and range_high is not None
-                and candle.high > range_high
+            break_high = candle.high if self.use_wick else max(candle.open, candle.close)
+            break_low = candle.low if self.use_wick else min(candle.open, candle.close)
+
+            bull_break = (
+                last_ph_price is not None and break_high > last_ph_price and not ph_crossed
             )
-            bear_choch = (
-                bias is not MarketSide.BEARISH
-                and range_low is not None
-                and candle.low < range_low
-            )
-            bull_bos = (
-                bias is MarketSide.BULLISH
-                and last_ph_price is not None
-                and not ph_crossed
-                and candle.close > last_ph_price
-            )
-            bear_bos = (
-                bias is MarketSide.BEARISH
-                and last_pl_price is not None
-                and not pl_crossed
-                and candle.close < last_pl_price
+            bear_break = (
+                last_pl_price is not None and break_low < last_pl_price and not pl_crossed
             )
 
-            bull_signal = bull_choch or bull_bos
-            bear_signal = bear_choch or bear_bos
+            is_bull_choch = bull_break and bias is MarketSide.BEARISH
+            is_bear_choch = bear_break and bias is MarketSide.BULLISH
 
-            if bull_choch:
-                bull_sig_level, bull_sig_index = range_high, range_high_index
-            else:
-                bull_sig_level, bull_sig_index = last_ph_price, last_ph_index
-            if bear_choch:
-                bear_sig_level, bear_sig_index = range_low, range_low_index
-            else:
-                bear_sig_level, bear_sig_index = last_pl_price, last_pl_index
-
-            if bull_signal:
+            if bull_break:
                 ph_crossed = True
                 bias = MarketSide.BULLISH
                 start = bull_sig_index if bull_sig_index is not None else i
@@ -367,7 +350,10 @@ class ChochQueueFilter(Strategy):
 
         self.last_reported_time = newest_validated.touch_candle.time  # type: ignore[union-attr]
         signal = ChochSignal(
-            self.chart, newest_validated.touch_candle, newest_validated.side, newest_validated  # type: ignore[arg-type]
+            self.chart,
+            newest_validated.touch_candle,
+            newest_validated.side,
+            newest_validated,  # type: ignore[arg-type]
         )
 
         if signal.side is MarketSide.BULLISH and not check_long:
@@ -404,11 +390,17 @@ class ChochQueueFilter(Strategy):
         )
 
         pivot_source = (
-            CandlesSource.High if model.side is MarketSide.BULLISH else CandlesSource.Low
+            CandlesSource.High
+            if model.side is MarketSide.BULLISH
+            else CandlesSource.Low
         )
         plot.mark_candle(model.pivot_candle, source=pivot_source, color=color)
 
-        if self.use_fibo_filter and model.retrace_level is not None and model.touch_candle is not None:
+        if (
+            self.use_fibo_filter
+            and model.retrace_level is not None
+            and model.touch_candle is not None
+        ):
             plot.draw_horizontal_line(
                 model.break_candle.time,
                 model.touch_candle.time,
@@ -471,8 +463,12 @@ class ChochQueueTradeConfig(TradeConfig):
 
         plot = None
         if self.send_signal:
-            plot = ChartPlot(chartdata)
+            plot = ChartPlot(chartdata, plot_n_candles=self.n_candle_check)
             self.strategy.draw(plot, signal, draw_indicators=True)
+        if not self.consider_position:
+            if self.send_signal:
+                await TelegramReporter().new_signal(signal, plot)
+            return signal
 
         position = await self.position_handler.generate_position(
             signal, sl_base_price=signal.choch_model.anchor, plot=plot

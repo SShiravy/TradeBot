@@ -16,45 +16,160 @@ class KlineSource(Enum):
     OTHER = "other"
 
 
+@dataclass(slots=True, frozen=True)
+class Tick:
+    timestamp: int
+    bid: float
+    ask: float
+    last: float
+    volume: float
+
+
+class TickData:
+    def __init__(
+        self,
+        timestamps: np.ndarray,
+        bids: np.ndarray,
+        asks: np.ndarray,
+        lasts: np.ndarray,
+        volumes: np.ndarray,
+    ):
+        self.timestamps = timestamps
+        self.bids = bids
+        self.asks = asks
+        self.lasts = lasts
+        self.volumes = volumes
+
+    def __len__(self):
+        return len(self.timestamps)
+
+    def __getitem__(self, index: int) -> Tick:
+        return Tick(
+            timestamp=int(self.timestamps[index]),
+            bid=float(self.bids[index]),
+            ask=float(self.asks[index]),
+            last=float(self.lasts[index]),
+            volume=float(self.volumes[index]),
+        )
+
+    def get_by_timestamp(self, timestamp: int) -> Tick | None:
+        idx = np.searchsorted(self.timestamps, timestamp)
+
+        if idx >= len(self.timestamps):
+            return None
+
+        if self.timestamps[idx] != timestamp:
+            return None
+
+        return self[int(idx)]
+
+    def slice(self, left: int, right: int) -> "TickData":
+        return TickData(
+            self.timestamps[left:right],
+            self.bids[left:right],
+            self.asks[left:right],
+            self.lasts[left:right],
+            self.volumes[left:right],
+        )
+
+
 class TickDataHandler:
     def __init__(
         self,
         parquet_path: str,
+        start_timestamp: int | None = None,
+        end_timestamp: int | None = None,
     ):
         logger.info(f"Reading TickData from: {parquet_path}")
-        self.df = pd.read_parquet(
-            parquet_path,
+
+        df = pd.read_parquet(parquet_path).sort_values("time").reset_index(drop=True)
+
+        if start_timestamp is not None:
+            left = np.searchsorted(df["time"].to_numpy(), start_timestamp, side="left")
+        else:
+            left = 0
+
+        if end_timestamp is not None:
+            right = np.searchsorted(
+                df["time"].to_numpy(),
+                end_timestamp + 1,
+                side="left",
+            )
+        else:
+            right = len(df)
+
+        df = df.iloc[left:right].reset_index(drop=True)
+
+        df = pd.read_parquet(parquet_path).sort_values("time").reset_index(drop=True)
+
+        self.tick_data = TickData(
+            timestamps=df["time"].to_numpy(np.int64),
+            bids=df["bid"].to_numpy(np.float64),
+            asks=df["ask"].to_numpy(np.float64),
+            lasts=df["last"].to_numpy(np.float64),
+            volumes=df["volume"].to_numpy(np.float64),
         )
 
-        self.df = self.df.sort_values(
-            "time",
-        )
+    def trim(
+        self,
+        start_timestamp: int | None = None,
+        end_timestamp: int | None = None,
+    ) -> None:
+        if start_timestamp:
+            left = int(
+                np.searchsorted(
+                    self.tick_data.timestamps,
+                    start_timestamp,
+                    side="left",
+                )
+            )
+        else:
+            left = 0
+        if end_timestamp:
+            right = int(
+                np.searchsorted(
+                    self.tick_data.timestamps,
+                    end_timestamp + 1,
+                    side="left",
+                )
+            )
+        else:
+            right = -1
 
-        self.timestamps = self.df["time"].to_numpy(dtype=np.int64)
+        self.tick_data.timestamps = self.tick_data.timestamps[left:right]
+        self.tick_data.bids = self.tick_data.bids[left:right]
+        self.tick_data.asks = self.tick_data.asks[left:right]
+        self.tick_data.lasts = self.tick_data.lasts[left:right]
+        self.tick_data.volumes = self.tick_data.volumes[left:right]
 
     def get_ticks_from_timstamp_range(
         self,
         start_timestamp: int,
         end_timestamp: int,
-    ) -> pd.DataFrame:
+    ) -> TickData:
         left = np.searchsorted(
-            self.timestamps,
+            self.tick_data.timestamps,
             start_timestamp,
             side="left",
         )
 
         right = np.searchsorted(
-            self.timestamps,
+            self.tick_data.timestamps,
             end_timestamp + 1,
             side="left",
         )
 
-        return self.df.iloc[left:right]
+        return self.tick_data.slice(int(left), int(right))
 
-    def get_ticks_for_candle(self, candle: Candle, chart: Chart) -> pd.DataFrame:
-        start_ts = candle.timestamp
-        end_ts = start_ts + chart.timeframe.minutes * 60
-        return self.get_ticks_from_timstamp_range(start_ts, end_ts)
+    def get_ticks_for_candle(
+        self,
+        candle: Candle,
+        chart: Chart,
+    ) -> TickData:
+        return self.get_ticks_from_timstamp_range(
+            candle.timestamp,
+            candle.timestamp + chart.timeframe.minutes * 60,
+        )
 
 
 @dataclass(slots=True)

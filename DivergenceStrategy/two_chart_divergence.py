@@ -342,6 +342,8 @@ class TwoChartDiverTradeConfig(TradeConfig):
         show_image=True,
     ):
         self.send_signal = False
+        self.consider_position = self.consider_position
+        self.consider_position = False
 
         all_signals: list[Signal | DivergenceSignal] = []
 
@@ -362,7 +364,7 @@ class TwoChartDiverTradeConfig(TradeConfig):
                 continue
             jump = self.bar_between_signals
             all_signals.append(signal)  # type: ignore
-
+        self.consider_position = self.consider_position
         plot = DoubleChartPlot(base_chartdata, second_chartdata, plot_n_candles=n_bar)
         if not all_signals:
             if show_image:

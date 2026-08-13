@@ -154,16 +154,15 @@ class OscillatorDoubleDiverConfig(TradeConfig):
         # TODO: add a param for removing last candle or not (current candle)
         sub_chart_data = copy(chart_data)
         sub_chart_data.candles = sub_chart_data.candles[:-1]
-        chartdata = self.get_chartdata()
-        res = await self.find_signal(chartdata)
+        res = await self.find_signal(sub_chart_data)
         if res is None:
-            return self.give_delay(chartdata[-1])
+            return self.give_delay(sub_chart_data[-1])
         if isinstance(res, tuple):
             signal, position = res
         else:
             signal = res
             position = None
-        return self.give_delay(chartdata[-1], jump=True), signal, position
+        return self.give_delay(sub_chart_data[-1], jump=True), signal, position
 
     async def backtest(  # type: ignore
         self,

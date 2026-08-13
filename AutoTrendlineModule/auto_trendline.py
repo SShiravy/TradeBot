@@ -2,7 +2,7 @@ from ChartModule.models import Candle, MarketSide, CandlesSource, TimeFrame
 from ChartModule.Indicators.models import IndicatorBaseModel
 from ChartModule.Indicators.lines import Line
 from ChartModule.plot import ChartPlot
-from ChartModule.Indicators.swing_pivots import SwingPivots, PivotPoint
+from AutoTrendlineModule.swing_pivots import SwingPivots, PivotPoint
 from AutoTrendlineModule.atr import ATR
 from dataclasses import dataclass, field
 import logging
@@ -13,7 +13,6 @@ logger = logging.getLogger("AutoTrendlines")
 
 @dataclass(slots=True)
 class TrendlineModel:
-    
     direction: MarketSide
     source: CandlesSource
     base_index: int
@@ -50,7 +49,7 @@ class TrendlineModel:
 class AutoTrendlines(IndicatorBaseModel):
     """
     Auto Trendlines (ATR Adaptive)
-    
+
     values: list[TrendlineModel]
     """
 
@@ -167,7 +166,9 @@ class AutoTrendlines(IndicatorBaseModel):
 
     def _find_most_recent_active(self, direction: MarketSide) -> TrendlineModel | None:
         candidates = [
-            line for line in self._lines if not line.broken and line.direction is direction
+            line
+            for line in self._lines
+            if not line.broken and line.direction is direction
         ]
         if not candidates:
             return None
@@ -175,7 +176,9 @@ class AutoTrendlines(IndicatorBaseModel):
 
     def _find_weakest_active(self, direction: MarketSide) -> TrendlineModel | None:
         candidates = [
-            line for line in self._lines if not line.broken and line.direction is direction
+            line
+            for line in self._lines
+            if not line.broken and line.direction is direction
         ]
         if not candidates:
             return None
@@ -204,7 +207,9 @@ class AutoTrendlines(IndicatorBaseModel):
             if weakest is not None:
                 weakest.broken = True
 
-        source = CandlesSource.Low if direction is MarketSide.BULLISH else CandlesSource.High
+        source = (
+            CandlesSource.Low if direction is MarketSide.BULLISH else CandlesSource.High
+        )
         new_line = TrendlineModel(
             direction=direction,
             source=source,
@@ -237,7 +242,8 @@ class AutoTrendlines(IndicatorBaseModel):
 
         if merge_target is not None:
             divergence = (
-                abs(candidate_slope - merge_target.group_slope) * merge_projection_seconds
+                abs(candidate_slope - merge_target.group_slope)
+                * merge_projection_seconds
             )
             if divergence <= similar_tolerance:
                 new_slope = (
@@ -255,11 +261,16 @@ class AutoTrendlines(IndicatorBaseModel):
 
         if not merged:
             self._add_new_line(
-                direction, base_index, base_candle, candidate_slope, score, new_index, new_candle
+                direction,
+                base_index,
+                base_candle,
+                candidate_slope,
+                score,
+                new_index,
+                new_candle,
             )
 
     def _merge_similar_lines(self, current_candle: Candle, similar_tolerance: float):
-        
         active = [line for line in self._lines if not line.broken]
         for i in range(len(active)):
             line_i = active[i]
@@ -363,7 +374,6 @@ class AutoTrendlines(IndicatorBaseModel):
     # ─── MAIN CALCULATION ────────────────────────────
 
     def _bar_seconds(self) -> float:
-        
         timeframe = self.candles[0].timeframe
         if isinstance(timeframe, TimeFrame):
             return timeframe.minutes * 60
@@ -401,7 +411,12 @@ class AutoTrendlines(IndicatorBaseModel):
 
             for pivot in pivots_by_confirm_index.get(i, []):
                 self._process_new_pivot(
-                    pivot, i, touch_tol, break_tol, similar_tolerance, merge_projection_seconds
+                    pivot,
+                    i,
+                    touch_tol,
+                    break_tol,
+                    similar_tolerance,
+                    merge_projection_seconds,
                 )
 
             for line in self._lines.copy():
@@ -429,7 +444,9 @@ class AutoTrendlines(IndicatorBaseModel):
 
                 if broke or stale:
                     line.broken = True
-                    logger.debug(f"trendline archived (broke={broke}, stale={stale}): {line}")
+                    logger.debug(
+                        f"trendline archived (broke={broke}, stale={stale}): {line}"
+                    )
                     if not self.keep_archived:
                         self._lines.remove(line)
 

@@ -92,7 +92,9 @@ class TelegramReporter:
             img_path = position.plot.save_image(position.source + str(position.chart))
 
         msg = "\n\n".join(msg_list)
-        res = await self.send_msg(self.main_channel, msg, img_path)
+        res = await self.send_msg(
+            self.main_channel, msg, img_path, reply_id=position.reply_msg_id
+        )
         position.msg_id = res.message_id if res else 0
 
     async def position_closed(self, position: Position, filled_price=None):
@@ -174,7 +176,7 @@ class TelegramReporter:
         msg = "\n\n".join(msg_list)
         await self.send_msg(self.main_channel, msg, reply_id=position.msg_id)
 
-    async def new_signal(self, signal: Signal, plot):
+    async def new_signal(self, signal: Signal, plot, reply_id: int | None = None):
         msg_list = [
             signal.source,
             f"📊 {signal.chart}",

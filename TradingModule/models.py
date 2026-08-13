@@ -102,6 +102,7 @@ class Position:
 
     exchange_id: str = field(default="", init=False)
     spread: float = field(default=0.0, init=False)
+    reply_msg_id: Any = field(default=None, init=False)
     msg_id: Any = field(default=None, init=False)
     closed: datetime | None = field(default=None, init=False)
     previous_check: datetime | None = field(default=None, init=False)

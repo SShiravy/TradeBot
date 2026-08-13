@@ -5,7 +5,6 @@ from typing import Any
 
 
 class ATR(IndicatorBaseModel):
-    
     def __init__(self, n_bar: int = 14) -> None:
         super().__init__()
         self.data: dict[int, float]
@@ -74,6 +73,4 @@ class ATR(IndicatorBaseModel):
         self.last_checked_candle = candles[-1]
 
     def plot(self, plot: ChartPlot, ax=None):
-        plot.linear_plot(
-            self.data.keys(), self.data.values(), legend="ATR", ax=ax
-        )
+        plot.linear_plot(self.data.keys(), self.data.values(), legend="ATR", ax=ax)
