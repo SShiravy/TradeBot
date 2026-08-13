@@ -2,7 +2,7 @@ from ChartModule.models import Candle, MarketSide, CandlesSource, TimeFrame
 from ChartModule.Indicators.models import IndicatorBaseModel
 from ChartModule.Indicators.lines import Line
 from ChartModule.plot import ChartPlot
-from AutoTrendlineModule.swing_pivots import SwingPivots, PivotPoint
+from ChartModule.Indicators.swing_pivots import SwingPivots, PivotPoint
 from AutoTrendlineModule.atr import ATR
 from dataclasses import dataclass, field
 import logging
