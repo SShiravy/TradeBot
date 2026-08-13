@@ -21,7 +21,6 @@ one_m = ForexChochQueueTradeConfig(
         pivot_length=2,
         backstep=2,
         retrace_fib=0.5,
-        use_wick=True,
         use_fibo_filter=False,  # True -> wait for price to retrace to the fib level | False -> signal as soon as the CHoCH/BOS break happens
         name="ChochQueue",
     ),

@@ -57,7 +57,6 @@ class ChochQueueFilter(Strategy):
         pivot_length: int = 50,
         backstep: int = 2,
         retrace_fib: float = 0.5,
-        use_wick: bool = True,
         use_fibo_filter: bool = True,
         max_queue: int = 30,
         confirmation_indicators: list[IndicatorBaseModel] = [],
@@ -74,7 +73,6 @@ class ChochQueueFilter(Strategy):
         self.pivot_length = pivot_length
         self.backstep = backstep
         self.retrace_fib = retrace_fib
-        self.use_wick = use_wick
         self.use_fibo_filter = use_fibo_filter
         self.max_queue = max_queue
 
@@ -93,7 +91,6 @@ class ChochQueueFilter(Strategy):
                 "pivot_length": self.pivot_length,
                 "backstep": self.backstep,
                 "retrace_fib": self.retrace_fib,
-                "use_wick": self.use_wick,
                 "use_fibo_filter": self.use_fibo_filter,
                 "max_queue": self.max_queue,
             }
@@ -146,9 +143,6 @@ class ChochQueueFilter(Strategy):
         if not self.queue or self.cur_group_type is MarketSide.NEUTRAL:
             return
 
-        break_high = candle.high if self.use_wick else max(candle.open, candle.close)
-        break_low = candle.low if self.use_wick else min(candle.open, candle.close)
-
         group_start = self._find_group_start()
         for model in self.queue[group_start:]:
             if not (model.active and model.side is self.cur_group_type):
@@ -168,10 +162,10 @@ class ChochQueueFilter(Strategy):
             if self.use_fibo_filter:
                 if model.side is MarketSide.BULLISH:
                     retrace_level = leg_bot + (leg_top - leg_bot) * (1 - self.retrace_fib)
-                    is_validated = break_low <= retrace_level
+                    is_validated = candle.low <= retrace_level
                 else:
                     retrace_level = leg_top - (leg_top - leg_bot) * (1 - self.retrace_fib)
-                    is_validated = break_high >= retrace_level
+                    is_validated = candle.high >= retrace_level
             else:
                 retrace_level = model.break_level
                 is_validated = True
@@ -211,47 +205,96 @@ class ChochQueueFilter(Strategy):
         self.queue = []
         self.cur_group_type = MarketSide.NEUTRAL
         self.cur_group_count = 0
+
         last_ph_price: float | None = None
-        last_ph_candle: Candle | None = None
+        last_ph_index: int | None = None
         ph_crossed = False
         last_pl_price: float | None = None
-        last_pl_candle: Candle | None = None
+        last_pl_index: int | None = None
         pl_crossed = False
         bias: MarketSide = MarketSide.NEUTRAL
+
+        range_low: float | None = None
+        range_low_index: int | None = None
+        range_high: float | None = None
+        range_high_index: int | None = None
+
+        highs = [c.high for c in candles]
+        lows = [c.low for c in candles]
 
         for i, candle in enumerate(candles):
             for event in events_by_index.get(i, []):
                 if event["type"] == "high":
                     last_ph_price = event["price"]
-                    last_ph_candle = candle
+                    last_ph_index = i
                     ph_crossed = False
                 else:
                     last_pl_price = event["price"]
-                    last_pl_candle = candle
+                    last_pl_index = i
                     pl_crossed = False
 
-            break_high = candle.high if self.use_wick else max(candle.open, candle.close)
-            break_low = candle.low if self.use_wick else min(candle.open, candle.close)
-
-            bull_break = (
-                last_ph_price is not None and break_high > last_ph_price and not ph_crossed
+            bull_choch = (
+                bias is not MarketSide.BULLISH
+                and range_high is not None
+                and candle.high > range_high
             )
-            bear_break = (
-                last_pl_price is not None and break_low < last_pl_price and not pl_crossed
+            bear_choch = (
+                bias is not MarketSide.BEARISH
+                and range_low is not None
+                and candle.low < range_low
+            )
+            bull_bos = (
+                bias is MarketSide.BULLISH
+                and last_ph_price is not None
+                and not ph_crossed
+                and candle.close > last_ph_price
+            )
+            bear_bos = (
+                bias is MarketSide.BEARISH
+                and last_pl_price is not None
+                and not pl_crossed
+                and candle.close < last_pl_price
             )
 
-            is_bull_choch = bull_break and bias is MarketSide.BEARISH
-            is_bear_choch = bear_break and bias is MarketSide.BULLISH
+            bull_signal = bull_choch or bull_bos
+            bear_signal = bear_choch or bear_bos
 
-            if bull_break:
+            if bull_choch:
+                bull_sig_level, bull_sig_index = range_high, range_high_index
+            else:
+                bull_sig_level, bull_sig_index = last_ph_price, last_ph_index
+            if bear_choch:
+                bear_sig_level, bear_sig_index = range_low, range_low_index
+            else:
+                bear_sig_level, bear_sig_index = last_pl_price, last_pl_index
+
+            if bull_signal:
                 ph_crossed = True
                 bias = MarketSide.BULLISH
+                start = bull_sig_index if bull_sig_index is not None else i
+                window = lows[start : i + 1]
+                lo = min(window)
+                range_low, range_low_index = lo, start + window.index(lo)
+                if bull_choch:
+                    range_high, range_high_index = None, None
 
-            if bear_break:
+            if bear_signal:
                 pl_crossed = True
                 bias = MarketSide.BEARISH
+                start = bear_sig_index if bear_sig_index is not None else i
+                window = highs[start : i + 1]
+                hi = max(window)
+                range_high, range_high_index = hi, start + window.index(hi)
+                if bear_choch:
+                    range_low, range_low_index = None, None
 
-            if bull_break:
+            if bias is MarketSide.NEUTRAL:
+                if range_low is None or candle.low < range_low:
+                    range_low, range_low_index = candle.low, i
+                if range_high is None or candle.high > range_high:
+                    range_high, range_high_index = candle.high, i
+
+            if bull_signal:
                 if self.cur_group_type is MarketSide.BEARISH:
                     self._deactivate_all(MarketSide.BEARISH)
                     self.cur_group_count = 0
@@ -263,14 +306,14 @@ class ChochQueueFilter(Strategy):
                     ChochModel(
                         side=MarketSide.BULLISH,
                         break_candle=candle,
-                        break_level=last_ph_price,  # type: ignore[arg-type]
-                        pivot_candle=last_ph_candle,  # type: ignore[arg-type]
+                        break_level=bull_sig_level,  # type: ignore[arg-type]
+                        pivot_candle=candles[bull_sig_index] if bull_sig_index is not None else candle,
                         anchor=last_pl_price,
-                        is_choch=is_bull_choch,
+                        is_choch=bull_choch,
                     )
                 )
 
-            if bear_break:
+            if bear_signal:
                 if self.cur_group_type is MarketSide.BULLISH:
                     self._deactivate_all(MarketSide.BULLISH)
                     self.cur_group_count = 0
@@ -282,10 +325,10 @@ class ChochQueueFilter(Strategy):
                     ChochModel(
                         side=MarketSide.BEARISH,
                         break_candle=candle,
-                        break_level=last_pl_price,  # type: ignore[arg-type]
-                        pivot_candle=last_pl_candle,  # type: ignore[arg-type]
+                        break_level=bear_sig_level,  # type: ignore[arg-type]
+                        pivot_candle=candles[bear_sig_index] if bear_sig_index is not None else candle,
                         anchor=last_ph_price,
-                        is_choch=is_bear_choch,
+                        is_choch=bear_choch,
                     )
                 )
 

@@ -13,7 +13,6 @@ choch_queue_xau_one_m = ForexChochQueueTradeConfig(
         pivot_length=50,
         backstep=2,
         retrace_fib=0.5,
-        use_wick=True,
         use_fibo_filter=True,  # False -> confirm signal on the CHoCH break itself
         name="ChochQueue",
     ),
@@ -41,7 +40,6 @@ choch_queue_five_m_sol = BitUnixChochQueueTradeConfig(
         pivot_length=30,
         backstep=2,
         retrace_fib=0.5,
-        use_wick=True,
         use_fibo_filter=True,
         name="ChochQueue",
     ),

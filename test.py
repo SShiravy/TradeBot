@@ -139,7 +139,7 @@ def test_choch_queue():
     from ChochQueueStrategy.choch_queue import ChochQueueFilter
     from Forex.agent import ForexAgent
 
-    chart = Chart("XAUUSD", TimeFrame.one_minute)
+    chart = Chart("SOLUSD", TimeFrame.one_minute)
     chart_data = ForexAgent().get_chartdata(chart, 500)
     if chart_data is None:
         raise ValueError
@@ -173,7 +173,7 @@ def test_auto_trendlines():
         raise ValueError
 
     auto_trendlines = AutoTrendlines(
-        depth=25,
+        depth=15,
         backstep=2,
         atr_len=14,
         touch_mult=0.5,
@@ -182,7 +182,7 @@ def test_auto_trendlines():
         min_line_bars=15,
         max_span_bars=150,
         stale_bars=50,
-        max_total_lines=300,
+        max_total_lines=500,
         max_active_per_dir=50,
         merge_projection_bars=50,
         display_only_aligned=False,
@@ -261,9 +261,9 @@ if __name__ == "__main__":
     # asyncio.run(start_fibochoch_backtest())
     # asyncio.run(start_fich_diver_backtest())
 
-    test_choch_queue()
+    # test_choch_queue()
 
-    # test_auto_trendlines()
+    test_auto_trendlines()
 
     # test_sr_zones()
 
