@@ -19,7 +19,7 @@ CustomLogger(
 )
 
 auto_trendlines = AutoTrendlines(
-    depth=25,
+    depth=15,
     backstep=2,
     atr_len=14,
     touch_mult=0.5,
@@ -42,7 +42,6 @@ one_m = ForexChochQueueTradeConfig(
         confirmation_indicators=[auto_trendlines],
         backstep=2,
         retrace_fib=0.5,
-        use_wick=True,
         use_fibo_filter=False,  # True -> wait for price to retrace to the fib level | False -> signal as soon as the CHoCH/BOS break happens
         name="ChochQueue",
     ),
@@ -61,7 +60,7 @@ one_m = ForexChochQueueTradeConfig(
 )
 
 sr_zones = SRZones(
-    depth=20,
+    depth=15,
     backstep=2,
     max_candidates=150,
     atr_len=14,
@@ -70,7 +69,7 @@ sr_zones = SRZones(
     min_radius_mult=0.25,
     max_radius_mult=3.0,
     merge_nearby=True,
-    merge_interval_bars=300,
+    merge_interval_bars=1000,
     width_mult=1.0,
     fallback_width_factor=0.35,
     max_zone_touches=5,
