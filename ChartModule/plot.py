@@ -103,24 +103,17 @@ class ChartPlot(BaseChartPlot):
         )
 
     def draw_straight_line(
-        self,
-        start_candle: Candle,
-        end_candle: Candle,
-        source: CandlesSource,
-        ax=None,
-        prices: tuple[float, float] | None = None,
+        self, start_candle: Candle, end_candle: Candle, source: CandlesSource, ax=None
     ):
         color = (
             "#e20000"
             if source in [CandlesSource.Top, CandlesSource.High]
             else "#e2c800"
         )
-        price1, price2 = (
-            prices if prices else (source(start_candle), source(end_candle))
-        )
+
         fplt.add_line(
-            (start_candle.time, price1),
-            (end_candle.time, price2),
+            (start_candle.time, source(start_candle)),
+            (end_candle.time, source(end_candle)),
             color=color,
             width=2,
             interactive=False,
@@ -149,6 +142,23 @@ class ChartPlot(BaseChartPlot):
     ):
         self.draw_horizontal_line(start_time, end_time, tp_price, "#09ff00b5")
         self.draw_horizontal_line(start_time, end_time, sl_price, "#ff0000d5")
+
+    def draw_label(
+        self,
+        time,
+        price: float,
+        text: str,
+        color: str = "#000000",
+        anchor: tuple[float, float] = (0.5, 0.5),
+        ax=None,
+    ):
+        fplt.add_text(
+            (time, price),
+            text,
+            color=color,
+            anchor=anchor,
+            ax=self.ax if not ax else ax,
+        )
 
     def mark_signal(self, signal: Signal, ax=None):
         if signal.side is MarketSide.BULLISH:
