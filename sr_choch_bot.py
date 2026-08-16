@@ -1,0 +1,392 @@
+from ChochQueueStrategy.choch_queue import ChochQueueFilter
+from CompositeStrategies.sr_choch import SR_ChochConfig
+from SRZoneModule.sr_zone import SRZones
+from config import settings
+
+settings.TELEGRAM_BOT_TOKEN = "8470075659:AAHxX4BDBiUeKB85REsL8RB7jpe8XeubDbc"
+from TradingModule.reporter import TelegramReporter
+from Forex import ForexAgent
+from ChartModule import Chart, TimeFrame
+from TradingModule.PositionHandlers.stepping_handler import SteppingHandlerForex
+from TradingModule.trader_bot import TraderBot
+from custom_logger import CustomLogger
+import asyncio
+import logging
+
+
+CustomLogger(
+    log_file=True, file_log_name="Forex_SR_ChoCh", consol_log_level=logging.DEBUG
+)
+
+
+xau = SR_ChochConfig(
+    sr_chart=Chart("XAUUSD!", TimeFrame.five_minutes),
+    chart=Chart("XAUUSD!", TimeFrame.one_minute),
+    sr_indicator=SRZones(
+        depth=20,
+        backstep=2,
+        max_candidates=150,
+        atr_len=14,
+        atr_median_lookback=21,
+        radius_factor=1.0,
+        min_radius_mult=0.25,
+        max_radius_mult=3.0,
+        merge_nearby=True,
+        merge_interval_bars=300,
+        width_mult=1.0,
+        fallback_width_factor=0.35,
+        max_zone_touches=5,
+        max_zone_breaks=1,
+        zone_break_bars=2,
+        min_bars_between_touches=3,
+        max_bars_between_touches=200,
+        prune_after_bars=4500,
+    ),
+    agent=ForexAgent(),
+    strategy=ChochQueueFilter(
+        pivot_length=2,
+        backstep=2,
+        retrace_fib=0.5,
+        use_fibo_filter=False, 
+        name="ChochQueue",
+    ),
+    bar_between_signals=2,
+    n_candle_confirmation=100,
+    n_candle_check=300,
+    consider_position=True,
+    position_handler=(
+            SteppingHandlerForex(
+                ForexAgent(),
+                targets_ratio=[],
+                targets_ratio_volumes=[],
+                stoploss_pip=10,
+                targets_in_pip=[10],
+                targets_in_pip_volumes=[0.01],
+                long_trade=False,
+                short_trade=False,
+                trail_stop=True,
+            )
+        ),
+)
+
+
+audcad = SR_ChochConfig(
+    sr_chart=Chart("AUDCAD!", TimeFrame.five_minutes),
+    chart=Chart("AUDCAD!", TimeFrame.one_minute),
+    sr_indicator=SRZones(
+        depth=20,
+        backstep=2,
+        max_candidates=150,
+        atr_len=14,
+        atr_median_lookback=21,
+        radius_factor=1.0,
+        min_radius_mult=0.25,
+        max_radius_mult=3.0,
+        merge_nearby=True,
+        merge_interval_bars=300,
+        width_mult=1.0,
+        fallback_width_factor=0.35,
+        max_zone_touches=5,
+        max_zone_breaks=1,
+        zone_break_bars=2,
+        min_bars_between_touches=3,
+        max_bars_between_touches=200,
+        prune_after_bars=4500,
+    ),
+    agent=ForexAgent(),
+    strategy=ChochQueueFilter(
+        pivot_length=2,
+        backstep=2,
+        retrace_fib=0.5,
+        use_fibo_filter=False, 
+        name="ChochQueue",
+    ),
+    bar_between_signals=2,
+    n_candle_confirmation=100,
+    n_candle_check=300,
+    consider_position=True,
+    position_handler=(
+            SteppingHandlerForex(
+                ForexAgent(),
+                targets_ratio=[],
+                targets_ratio_volumes=[],
+                stoploss_pip=5,
+                targets_in_pip=[5],
+                targets_in_pip_volumes=[0.01],
+                long_trade=False,
+                short_trade=False,
+                trail_stop=True,
+            )
+        ),
+)
+
+
+usdjpy = SR_ChochConfig(
+    sr_chart=Chart("USDJPY!", TimeFrame.five_minutes),
+    chart=Chart("USDJPY!", TimeFrame.one_minute),
+    sr_indicator=SRZones(
+        depth=20,
+        backstep=2,
+        max_candidates=150,
+        atr_len=14,
+        atr_median_lookback=21,
+        radius_factor=1.0,
+        min_radius_mult=0.25,
+        max_radius_mult=3.0,
+        merge_nearby=True,
+        merge_interval_bars=300,
+        width_mult=1.0,
+        fallback_width_factor=0.35,
+        max_zone_touches=5,
+        max_zone_breaks=1,
+        zone_break_bars=2,
+        min_bars_between_touches=3,
+        max_bars_between_touches=200,
+        prune_after_bars=4500,
+    ),
+    agent=ForexAgent(),
+    strategy=ChochQueueFilter(
+        pivot_length=2,
+        backstep=2,
+        retrace_fib=0.5,
+        use_fibo_filter=False, 
+        name="ChochQueue",
+    ),
+    bar_between_signals=2,
+    n_candle_confirmation=100,
+    n_candle_check=300,
+    consider_position=True,
+    position_handler=(
+            SteppingHandlerForex(
+                ForexAgent(),
+                targets_ratio=[],
+                targets_ratio_volumes=[],
+                stoploss_pip=5,
+                targets_in_pip=[5],
+                targets_in_pip_volumes=[0.01],
+                long_trade=False,
+                short_trade=False,
+                trail_stop=True,
+            )
+        ),
+)
+
+
+
+eurgbp = SR_ChochConfig(
+    sr_chart=Chart("EURGBP!", TimeFrame.five_minutes),
+    chart=Chart("EURGBP!", TimeFrame.one_minute),
+    sr_indicator=SRZones(
+        depth=20,
+        backstep=2,
+        max_candidates=150,
+        atr_len=14,
+        atr_median_lookback=21,
+        radius_factor=1.0,
+        min_radius_mult=0.25,
+        max_radius_mult=3.0,
+        merge_nearby=True,
+        merge_interval_bars=300,
+        width_mult=1.0,
+        fallback_width_factor=0.35,
+        max_zone_touches=5,
+        max_zone_breaks=1,
+        zone_break_bars=2,
+        min_bars_between_touches=3,
+        max_bars_between_touches=200,
+        prune_after_bars=4500,
+    ),
+    agent=ForexAgent(),
+    strategy=ChochQueueFilter(
+        pivot_length=2,
+        backstep=2,
+        retrace_fib=0.5,
+        use_fibo_filter=False, 
+        name="ChochQueue",
+    ),
+    bar_between_signals=2,
+    n_candle_confirmation=100,
+    n_candle_check=300,
+    consider_position=True,
+    position_handler=(
+            SteppingHandlerForex(
+                ForexAgent(),
+                targets_ratio=[],
+                targets_ratio_volumes=[],
+                stoploss_pip=5,
+                targets_in_pip=[5],
+                targets_in_pip_volumes=[0.01],
+                long_trade=False,
+                short_trade=False,
+                trail_stop=True,
+            )
+        ),
+)
+
+
+
+eurusd = SR_ChochConfig(
+    sr_chart=Chart("EURUSD!", TimeFrame.five_minutes),
+    chart=Chart("EURUSD!", TimeFrame.one_minute),
+    sr_indicator=SRZones(
+        depth=20,
+        backstep=2,
+        max_candidates=150,
+        atr_len=14,
+        atr_median_lookback=21,
+        radius_factor=1.0,
+        min_radius_mult=0.25,
+        max_radius_mult=3.0,
+        merge_nearby=True,
+        merge_interval_bars=300,
+        width_mult=1.0,
+        fallback_width_factor=0.35,
+        max_zone_touches=5,
+        max_zone_breaks=1,
+        zone_break_bars=2,
+        min_bars_between_touches=3,
+        max_bars_between_touches=200,
+        prune_after_bars=4500,
+    ),
+    agent=ForexAgent(),
+    strategy=ChochQueueFilter(
+        pivot_length=2,
+        backstep=2,
+        retrace_fib=0.5,
+        use_fibo_filter=False, 
+        name="ChochQueue",
+    ),
+    bar_between_signals=2,
+    n_candle_confirmation=100,
+    n_candle_check=300,
+    consider_position=True,
+    position_handler=(
+            SteppingHandlerForex(
+                ForexAgent(),
+                targets_ratio=[],
+                targets_ratio_volumes=[],
+                stoploss_pip=7,
+                targets_in_pip=[7],
+                targets_in_pip_volumes=[0.01],
+                long_trade=False,
+                short_trade=False,
+                trail_stop=True,
+            )
+        ),
+)
+
+
+
+usdchf = SR_ChochConfig(
+    sr_chart=Chart("USDCHF!", TimeFrame.five_minutes),
+    chart=Chart("USDCHF!", TimeFrame.one_minute),
+    sr_indicator=SRZones(
+        depth=20,
+        backstep=2,
+        max_candidates=150,
+        atr_len=14,
+        atr_median_lookback=21,
+        radius_factor=1.0,
+        min_radius_mult=0.25,
+        max_radius_mult=3.0,
+        merge_nearby=True,
+        merge_interval_bars=300,
+        width_mult=1.0,
+        fallback_width_factor=0.35,
+        max_zone_touches=5,
+        max_zone_breaks=1,
+        zone_break_bars=2,
+        min_bars_between_touches=3,
+        max_bars_between_touches=200,
+        prune_after_bars=4500,
+    ),
+    agent=ForexAgent(),
+    strategy=ChochQueueFilter(
+        pivot_length=2,
+        backstep=2,
+        retrace_fib=0.5,
+        use_fibo_filter=False, 
+        name="ChochQueue",
+    ),
+    bar_between_signals=2,
+    n_candle_confirmation=100,
+    n_candle_check=300,
+    consider_position=True,
+    position_handler=(
+            SteppingHandlerForex(
+                ForexAgent(),
+                targets_ratio=[],
+                targets_ratio_volumes=[],
+                stoploss_pip=4,
+                targets_in_pip=[4],
+                targets_in_pip_volumes=[0.01],
+                long_trade=False,
+                short_trade=False,
+                trail_stop=True,
+            )
+        ),
+)
+
+
+btcusd = SR_ChochConfig(
+    sr_chart=Chart("BTCUSD!", TimeFrame.five_minutes),
+    chart=Chart("BTCUSD!", TimeFrame.one_minute),
+    sr_indicator=SRZones(
+        depth=20,
+        backstep=2,
+        max_candidates=150,
+        atr_len=14,
+        atr_median_lookback=21,
+        radius_factor=1.0,
+        min_radius_mult=0.25,
+        max_radius_mult=3.0,
+        merge_nearby=True,
+        merge_interval_bars=300,
+        width_mult=1.0,
+        fallback_width_factor=0.35,
+        max_zone_touches=5,
+        max_zone_breaks=1,
+        zone_break_bars=2,
+        min_bars_between_touches=3,
+        max_bars_between_touches=200,
+        prune_after_bars=4500,
+    ),
+    agent=ForexAgent(),
+    strategy=ChochQueueFilter(
+        pivot_length=2,
+        backstep=2,
+        retrace_fib=0.5,
+        use_fibo_filter=False, 
+        name="ChochQueue",
+    ),
+    bar_between_signals=2,
+    n_candle_confirmation=100,
+    n_candle_check=300,
+    consider_position=True,
+    position_handler=(
+            SteppingHandlerForex(
+                ForexAgent(),
+                targets_ratio=[],
+                targets_ratio_volumes=[],
+                stoploss_pip=60,
+                targets_in_pip=[60],
+                targets_in_pip_volumes=[0.01],
+                long_trade=False,
+                short_trade=False,
+                trail_stop=True,
+            )
+        ),
+)
+
+TelegramReporter().main_channel = "@crypto_result_1"
+TraderBot(
+    "SR_ChoCh",
+    [
+        xau,audcad,usdjpy,eurgbp,eurusd,usdchf,btcusd 
+    ],
+    report_time={"h": 20, "m": 22},
+)
+
+
+if __name__ == "__main__":
+    asyncio.run(TraderBot().start())
