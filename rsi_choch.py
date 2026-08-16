@@ -1,6 +1,6 @@
 from config import settings
 
-settings.TELEGRAM_BOT_TOKEN = "8937168160:AAHtl4qXCSKXgT6YTSZEvYYDSHs3UcVqD5Y"
+settings.TELEGRAM_BOT_TOKEN = "8470075659:AAHxX4BDBiUeKB85REsL8RB7jpe8XeubDbc"
 from ChartModule.Indicators.models import SupportCandleConditions
 from ChartModule.Indicators.rsi import RSI
 from ChartModule.models import Chart, TimeFrame
@@ -335,7 +335,7 @@ btc = Rsi3PushChochConfig(
 )
 
 
-TelegramReporter().main_channel = "@crypto_result_1"
+TelegramReporter().main_channel = "@three_push"
 TraderBot(
     "RSI_3Push_Choch",
     [xau, audcad, usdjpy, eurgbp, eurusd, usdchf, btc],
