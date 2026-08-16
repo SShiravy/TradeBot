@@ -25,7 +25,6 @@ solusd = ForexChochQueueTradeConfig(
         confirmation_indicators=[],
         backstep=2,
         retrace_fib=0.5,
-        use_wick=True,
         use_fibo_filter=False,
         name="ChochQueue",
     ),
@@ -54,7 +53,6 @@ audcad = ForexChochQueueTradeConfig(
         confirmation_indicators=[],
         backstep=2,
         retrace_fib=0.5,
-        use_wick=True,
         use_fibo_filter=False,
         name="ChochQueue",
     ),
@@ -82,7 +80,6 @@ eurgbp = ForexChochQueueTradeConfig(
         confirmation_indicators=[],
         backstep=2,
         retrace_fib=0.5,
-        use_wick=True,
         use_fibo_filter=False,
         name="ChochQueue",
     ),
@@ -111,7 +108,6 @@ usdjpy = ForexChochQueueTradeConfig(
         confirmation_indicators=[],
         backstep=2,
         retrace_fib=0.5,
-        use_wick=True,
         use_fibo_filter=False,
         name="ChochQueue",
     ),
@@ -139,7 +135,6 @@ eurusd = ForexChochQueueTradeConfig(
         confirmation_indicators=[],
         backstep=2,
         retrace_fib=0.5,
-        use_wick=True,
         use_fibo_filter=False,
         name="ChochQueue",
     ),
@@ -168,7 +163,6 @@ usdchf = ForexChochQueueTradeConfig(
         confirmation_indicators=[],
         backstep=2,
         retrace_fib=0.5,
-        use_wick=True,
         use_fibo_filter=False,
         name="ChochQueue",
     ),
@@ -197,7 +191,6 @@ btc = ForexChochQueueTradeConfig(
         confirmation_indicators=[],
         backstep=2,
         retrace_fib=0.5,
-        use_wick=True,
         use_fibo_filter=False,
         name="ChochQueue",
     ),
@@ -224,7 +217,6 @@ xau = ForexChochQueueTradeConfig(
         confirmation_indicators=[],
         backstep=2,
         retrace_fib=0.5,
-        use_wick=True,
         use_fibo_filter=False,
         name="ChochQueue",
     ),
@@ -245,7 +237,11 @@ xau = ForexChochQueueTradeConfig(
 )
 
 TelegramReporter().main_channel = "@nader_support_resistance"
-TraderBot("Choch Queue Bot", [solusd,audcad,eurgbp,usdjpy,eurusd,usdchf,btc,xau], report_time={"h": 20, "m": 0})
+TraderBot(
+    "Choch Queue Bot",
+    [solusd, audcad, eurgbp, usdjpy, eurusd, usdchf, btc, xau],
+    report_time={"h": 20, "m": 0},
+)
 
 
 if __name__ == "__main__":

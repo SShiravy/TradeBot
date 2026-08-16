@@ -1,5 +1,4 @@
 from datetime import timedelta
-
 from ChochQueueStrategy.choch_queue import ChochQueueFilter, ChochSignal
 from Forex.agent import ForexAgent
 from custom_logger import CustomLogger
@@ -85,7 +84,7 @@ class Rsi3PushChochConfig(TradeConfig):
                 double_diver_signal, plot
             )
 
-    async def _check_choch(self, chartdata: ChartData):
+    def _check_choch(self, chartdata: ChartData):
         signal = self.choch_strategy.check_signal(
             chartdata, self.long_signal, self.short_signal
         )
@@ -117,7 +116,7 @@ class Rsi3PushChochConfig(TradeConfig):
             return None
 
         # Check for CHoCH signal
-        choch_signal = await self._check_choch(choch_chartdata)
+        choch_signal = self._check_choch(choch_chartdata)
         if choch_signal is None:
             return None
 

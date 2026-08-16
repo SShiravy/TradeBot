@@ -40,7 +40,6 @@ xau = Rsi3PushChochConfig(
         pivot_length=2,
         backstep=2,
         retrace_fib=0.5,
-        use_wick=True,
         use_fibo_filter=False,  # True -> wait for price to retrace to the fib level | False -> signal as soon as the CHoCH/BOS break happens
         name="ChochQueue",
     ),
@@ -57,8 +56,8 @@ xau = Rsi3PushChochConfig(
             stoploss_pip=30,
             targets_in_pip=[20],
             targets_in_pip_volumes=[0.01],
-            long_trade=False,
-            short_trade=False,
+            long_trade=True,
+            short_trade=True,
             trail_stop=True,
         )
     ),
@@ -86,7 +85,6 @@ audcad = Rsi3PushChochConfig(
         pivot_length=2,
         backstep=2,
         retrace_fib=0.5,
-        use_wick=True,
         use_fibo_filter=False,  # True -> wait for price to retrace to the fib level | False -> signal as soon as the CHoCH/BOS break happens
         name="ChochQueue",
     ),
@@ -103,8 +101,8 @@ audcad = Rsi3PushChochConfig(
             stoploss_pip=5,
             targets_in_pip=[5],
             targets_in_pip_volumes=[0.01],
-            long_trade=False,
-            short_trade=False,
+            long_trade=True,
+            short_trade=True,
             trail_stop=True,
         )
     ),
@@ -132,7 +130,6 @@ usdjpy = Rsi3PushChochConfig(
         pivot_length=2,
         backstep=2,
         retrace_fib=0.5,
-        use_wick=True,
         use_fibo_filter=False,  # True -> wait for price to retrace to the fib level | False -> signal as soon as the CHoCH/BOS break happens
         name="ChochQueue",
     ),
@@ -149,8 +146,8 @@ usdjpy = Rsi3PushChochConfig(
             stoploss_pip=5,
             targets_in_pip=[5],
             targets_in_pip_volumes=[0.01],
-            long_trade=False,
-            short_trade=False,
+            long_trade=True,
+            short_trade=True,
             trail_stop=True,
         )
     ),
@@ -178,7 +175,6 @@ eurgbp = Rsi3PushChochConfig(
         pivot_length=2,
         backstep=2,
         retrace_fib=0.5,
-        use_wick=True,
         use_fibo_filter=False,  # True -> wait for price to retrace to the fib level | False -> signal as soon as the CHoCH/BOS break happens
         name="ChochQueue",
     ),
@@ -195,8 +191,8 @@ eurgbp = Rsi3PushChochConfig(
             stoploss_pip=5,
             targets_in_pip=[5],
             targets_in_pip_volumes=[0.01],
-            long_trade=False,
-            short_trade=False,
+            long_trade=True,
+            short_trade=True,
             trail_stop=True,
         )
     ),
@@ -224,7 +220,6 @@ eurusd = Rsi3PushChochConfig(
         pivot_length=2,
         backstep=2,
         retrace_fib=0.5,
-        use_wick=True,
         use_fibo_filter=False,  # True -> wait for price to retrace to the fib level | False -> signal as soon as the CHoCH/BOS break happens
         name="ChochQueue",
     ),
@@ -241,8 +236,8 @@ eurusd = Rsi3PushChochConfig(
             stoploss_pip=20,
             targets_in_pip=[20],
             targets_in_pip_volumes=[0.01],
-            long_trade=False,
-            short_trade=False,
+            long_trade=True,
+            short_trade=True,
             trail_stop=True,
         )
     ),
@@ -270,7 +265,6 @@ usdchf = Rsi3PushChochConfig(
         pivot_length=2,
         backstep=2,
         retrace_fib=0.5,
-        use_wick=True,
         use_fibo_filter=False,  # True -> wait for price to retrace to the fib level | False -> signal as soon as the CHoCH/BOS break happens
         name="ChochQueue",
     ),
@@ -287,8 +281,8 @@ usdchf = Rsi3PushChochConfig(
             stoploss_pip=10,
             targets_in_pip=[10],
             targets_in_pip_volumes=[0.01],
-            long_trade=False,
-            short_trade=False,
+            long_trade=True,
+            short_trade=True,
             trail_stop=True,
         )
     ),
@@ -316,7 +310,6 @@ btc = Rsi3PushChochConfig(
         pivot_length=2,
         backstep=2,
         retrace_fib=0.5,
-        use_wick=True,
         use_fibo_filter=False,  # True -> wait for price to retrace to the fib level | False -> signal as soon as the CHoCH/BOS break happens
         name="ChochQueue",
     ),
@@ -333,8 +326,8 @@ btc = Rsi3PushChochConfig(
             stoploss_pip=30,
             targets_in_pip=[30],
             targets_in_pip_volumes=[0.01],
-            long_trade=False,
-            short_trade=False,
+            long_trade=True,
+            short_trade=True,
             trail_stop=True,
         )
     ),
