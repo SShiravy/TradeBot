@@ -329,8 +329,8 @@ usdchf = SR_ChochConfig(
 
 
 btcusd = SR_ChochConfig(
-    sr_chart=Chart("BTCUSD!", TimeFrame.five_minutes),
-    chart=Chart("BTCUSD!", TimeFrame.one_minute),
+    sr_chart=Chart("BTCUSD", TimeFrame.five_minutes),
+    chart=Chart("BTCUSD", TimeFrame.one_minute),
     sr_indicator=SRZones(
         depth=20,
         backstep=2,
