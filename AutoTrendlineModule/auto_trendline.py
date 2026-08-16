@@ -86,7 +86,7 @@ class AutoTrendlines(IndicatorBaseModel):
         max_span_bars: int = 2000,
         max_stored_pivots: int = 60,
         max_active_per_dir: int = 4,
-        max_total_lines: int = 20,
+        max_total_lines: int = 200,
         stale_bars: int = 50,
         merge_projection_bars: int = 50,
         display_only_aligned: bool = True,
@@ -157,6 +157,7 @@ class AutoTrendlines(IndicatorBaseModel):
         break_tol: float,
         touch_tol: float,
     ) -> tuple[int, int, int]:
+        """mirrors f_validateLow / f_validateHigh"""
         violations = 0
         touches = 0
         max_gap = 0
@@ -211,13 +212,15 @@ class AutoTrendlines(IndicatorBaseModel):
             return None
         return min(candidates, key=lambda line: line.score)
 
-    def _remove_oldest_archived(self):
-        if len(self._lines) <= self.max_total_lines:
-            return
-        for i, line in enumerate(self._lines):
-            if line.broken:
-                del self._lines[i]
-                return
+    def _enforce_max_total_lines(self):
+        
+        while len(self._lines) > self.max_total_lines:
+            for i, line in enumerate(self._lines):
+                if line.broken:
+                    del self._lines[i]
+                    break
+            else:
+                self._lines.pop(0)
 
     def _add_new_line(
         self,
@@ -250,7 +253,7 @@ class AutoTrendlines(IndicatorBaseModel):
         )
         self._lines.append(new_line)
         logger.debug(f"new trendline added: {new_line}")
-        self._remove_oldest_archived()
+        self._enforce_max_total_lines()
 
     def _try_merge_or_add(
         self,
@@ -463,11 +466,9 @@ class AutoTrendlines(IndicatorBaseModel):
         ]
         return min(diffs) if diffs else 60.0
 
-    def _calculate(self) -> list[TrendlineModel]:
+    def _prepare_run(self, start_index: int) -> tuple[dict[int, list[PivotPoint]], float]:
+        
         candles = self.candles
-        if len(candles) < self.pivots.depth + 2:
-            return []
-
         self.pivots.set(candles)
         self.atr.set(candles)
 
@@ -475,82 +476,96 @@ class AutoTrendlines(IndicatorBaseModel):
 
         pivots_by_confirm_index: dict[int, list[PivotPoint]] = {}
         for pivot in self.pivots.data:
-            pivots_by_confirm_index.setdefault(pivot.confirmed_index, []).append(pivot)
+            if pivot.confirmed_index >= start_index:
+                pivots_by_confirm_index.setdefault(pivot.confirmed_index, []).append(pivot)
+
+        return pivots_by_confirm_index, merge_projection_seconds
+
+    def _process_bar(
+        self,
+        i: int,
+        candle: Candle,
+        pivots_by_confirm_index: dict[int, list[PivotPoint]],
+        merge_projection_seconds: float,
+    ):
+        atr_value = self.atr.data.get(candle.timestamp, 0.0)
+        touch_tol = atr_value * self.touch_mult
+        break_tol = atr_value * self.break_mult
+        similar_tolerance = touch_tol * 2.5
+
+        for pivot in pivots_by_confirm_index.get(i, []):
+            self._process_new_pivot(
+                pivot, i, touch_tol, break_tol, similar_tolerance, merge_projection_seconds
+            )
+
+        resistance_breaks = 0
+        support_breaks = 0
+
+        for line in self._lines.copy():
+            if line.broken:
+                continue
+
+            line.end_candle = candle
+            line_value = line.value_at(candle.timestamp)
+            is_support = line.direction is MarketSide.BULLISH
+
+            touched = (
+                abs(candle.low - line_value) <= touch_tol
+                if is_support
+                else abs(candle.high - line_value) <= touch_tol
+            )
+            if touched:
+                line.last_touch_index = i
+                line.last_touch_candle = candle
+
+            broke = self._check_break(line, candle, line_value, is_support, break_tol)
+
+            mtr_eligible = not self.display_only_aligned or (
+                line.slope > 0 if is_support else line.slope < 0
+            )
+            if broke and mtr_eligible:
+                if is_support:
+                    support_breaks += 1
+                else:
+                    resistance_breaks += 1
+
+            stale = (i - line.last_touch_index) > self.stale_bars
+
+            if broke or stale:
+                line.broken = True
+                logger.debug(f"trendline archived (broke={broke}, stale={stale}): {line}")
+                if not self.keep_archived:
+                    self._lines.remove(line)
+
+        if resistance_breaks > 0:
+            self.mtr_events.append(MTREvent(candle, True, resistance_breaks))
+        if support_breaks > 0:
+            self.mtr_events.append(MTREvent(candle, False, support_breaks))
+
+        self._merge_similar_lines(candle, similar_tolerance)
+        self._enforce_max_total_lines()
+
+    def _visible_lines(self) -> list[TrendlineModel]:
+        if not self.keep_archived:
+            return [line for line in self._lines if not line.broken]
+        return self._lines
+
+    def _calculate(self) -> list[TrendlineModel]:
+        candles = self.candles
+        if len(candles) < self.pivots.depth + 2:
+            return []
 
         self._pivot_highs = []
         self._pivot_lows = []
         self._lines = []
         self.mtr_events = []
 
+        pivots_by_confirm_index, merge_projection_seconds = self._prepare_run(0)
+
         for i, candle in enumerate(candles):
-            atr_value = self.atr.data.get(candle.timestamp, 0.0)
-            touch_tol = atr_value * self.touch_mult
-            break_tol = atr_value * self.break_mult
-            similar_tolerance = touch_tol * 2.5
+            self._process_bar(i, candle, pivots_by_confirm_index, merge_projection_seconds)
 
-            for pivot in pivots_by_confirm_index.get(i, []):
-                self._process_new_pivot(
-                    pivot,
-                    i,
-                    touch_tol,
-                    break_tol,
-                    similar_tolerance,
-                    merge_projection_seconds,
-                )
-
-            resistance_breaks = 0
-            support_breaks = 0
-
-            for line in self._lines.copy():
-                if line.broken:
-                    continue
-
-                line.end_candle = candle
-                line_value = line.value_at(candle.timestamp)
-                is_support = line.direction is MarketSide.BULLISH
-
-                touched = (
-                    abs(candle.low - line_value) <= touch_tol
-                    if is_support
-                    else abs(candle.high - line_value) <= touch_tol
-                )
-                if touched:
-                    line.last_touch_index = i
-                    line.last_touch_candle = candle
-
-                broke = self._check_break(
-                    line, candle, line_value, is_support, break_tol
-                )
-
-                mtr_eligible = not self.display_only_aligned or (
-                    line.slope > 0 if is_support else line.slope < 0
-                )
-                if broke and mtr_eligible:
-                    if is_support:
-                        support_breaks += 1
-                    else:
-                        resistance_breaks += 1
-
-                stale = (i - line.last_touch_index) > self.stale_bars
-
-                if broke or stale:
-                    line.broken = True
-                    logger.debug(
-                        f"trendline archived (broke={broke}, stale={stale}): {line}"
-                    )
-                    if not self.keep_archived:
-                        self._lines.remove(line)
-
-            if resistance_breaks > 0:
-                self.mtr_events.append(MTREvent(candle, True, resistance_breaks))
-            if support_breaks > 0:
-                self.mtr_events.append(MTREvent(candle, False, support_breaks))
-
-            self._merge_similar_lines(candle, similar_tolerance)
-
-        if not self.keep_archived:
-            return [line for line in self._lines if not line.broken]
-        return self._lines
+        return self._visible_lines()
 
     def _forcast(self) -> MarketSide:
         return MarketSide.NEUTRAL
@@ -601,5 +616,21 @@ class AutoTrendlines(IndicatorBaseModel):
                         anchor=(0.5, 1.0),
                     )
 
-    def update(self, candles: list[Candle], *args, **kwargs):
-        pass
+    def update(self, candles: list[Candle], *args, **kwargs) -> list[TrendlineModel]:
+        if self.last_checked_candle is None:
+            raise ValueError("last_checked_candle is None")
+
+        start_index = self.find_new_candle_index(candles)
+        if start_index >= len(candles):
+            return self.data
+
+        self.candles = candles
+
+        pivots_by_confirm_index, merge_projection_seconds = self._prepare_run(start_index)
+
+        for i in range(start_index, len(candles)):
+            self._process_bar(i, candles[i], pivots_by_confirm_index, merge_projection_seconds)
+
+        self.data = self._visible_lines()
+        self.last_checked_candle = candles[-1]
+        return self.data

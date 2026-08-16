@@ -1,7 +1,7 @@
 from ChartModule.models import Candle, MarketSide
 from ChartModule.Indicators.models import IndicatorBaseModel
 from ChartModule.plot import ChartPlot
-from SRZoneModule import SwingPivots, PivotPoint
+from ChartModule.Indicators.swing_pivots import SwingPivots, PivotPoint
 from SRZoneModule.atr import ATR
 from dataclasses import dataclass, field
 from statistics import median
@@ -14,6 +14,7 @@ logger = logging.getLogger("SRZones")
 
 @dataclass(slots=True)
 class ZoneModel:
+
     is_support: bool
     center: float
     width: float
@@ -58,11 +59,7 @@ class ZoneModel:
 
 
 class SRZones(IndicatorBaseModel):
-    """
-    Support & Resistance Zone Engine (ATR Adaptive)
-
-    values: list[ZoneModel]
-    """
+    
 
     def __init__(
         self,
@@ -89,8 +86,8 @@ class SRZones(IndicatorBaseModel):
         # (7) Touch Spacing
         min_bars_between_touches: int = 3,
         max_bars_between_touches: int = 300,
-        # bookkeeping (mirrors Pine's hardcoded f_pruneZones age, 4500)
         prune_after_bars: int = 4500,
+        max_stored_zones: int = 200,
     ) -> None:
         super().__init__()
         self.data: list[ZoneModel]
@@ -113,11 +110,21 @@ class SRZones(IndicatorBaseModel):
         self.min_bars_between_touches = min_bars_between_touches
         self.max_bars_between_touches = max_bars_between_touches
         self.prune_after_bars = prune_after_bars
+        self.max_stored_zones = max_stored_zones
 
         self._zones: list[ZoneModel] = []
         self._pivot_log: list[PivotPoint] = []
         self._last_median_atr: float = 0.0
         self._last_base_radius: float = 0.0
+
+        self._atr_buf: list[float] = []
+        self._pivot_gaps: list[int] = []
+        self._last_confirmed_bar_index: int | None = None
+        self._med_pivot_spacing: float = 20.0
+        self._median_atr: float | None = None
+        self._base_radius: float | None = None
+        
+        self._last_processed_confirm_index: int | None = None
 
     def export_configs(self) -> dict:
         configs = super().export_configs()
@@ -140,6 +147,7 @@ class SRZones(IndicatorBaseModel):
                 "min_bars_between_touches": self.min_bars_between_touches,
                 "max_bars_between_touches": self.max_bars_between_touches,
                 "prune_after_bars": self.prune_after_bars,
+                "max_stored_zones": self.max_stored_zones,
             }
         )
         return configs
@@ -169,6 +177,7 @@ class SRZones(IndicatorBaseModel):
         return new_zone
 
     def _merge_overlapping_zones(self, bar_index: int):
+        
         if not self.merge_nearby:
             return
         n = len(self._zones)
@@ -200,18 +209,29 @@ class SRZones(IndicatorBaseModel):
                 zj.invalidated_index = bar_index
 
     def _prune_zones(self, bar_index: int):
+        
         self._zones = [
             z
             for z in self._zones
-            if z.invalidated_index is None
-            or (bar_index - z.invalidated_index) <= self.prune_after_bars
+            if z.invalidated_index is None or (bar_index - z.invalidated_index) <= self.prune_after_bars
         ]
+
+    def _enforce_storage_cap(self):
+        
+        if len(self._zones) <= self.max_stored_zones:
+            return
+        ranked = sorted(
+            self._zones,
+            key=lambda z: (z.invalidated_index is not None, -z.raw_score),
+        )
+        kept_ids = {id(z) for z in ranked[: self.max_stored_zones]}
+        
+        self._zones = [z for z in self._zones if id(z) in kept_ids]
 
     # --- PIVOT PROCESSING ------------------------------
 
-    def _process_new_pivot(
-        self, pivot: PivotPoint, base_radius: float, median_atr: float
-    ):
+    def _process_new_pivot(self, pivot: PivotPoint, base_radius: float, median_atr: float):
+        
         is_support = not pivot.is_high
         matched = False
 
@@ -238,25 +258,19 @@ class SRZones(IndicatorBaseModel):
                 zone.touch_count += 1
                 zone.last_touch_index = pivot.index
                 zone.last_touch_candle = pivot.candle
-                new_width = max(
-                    zone.width, abs(pivot.price - zone.center) * self.width_mult
-                )
+                new_width = max(zone.width, abs(pivot.price - zone.center) * self.width_mult)
                 zone.width = self._clamp(new_width, 0.1 * median_atr, 2 * base_radius)
                 matched = True
                 break
 
         if not matched:
             fallback_width = self._clamp(
-                self.fallback_width_factor * base_radius,
-                0.1 * median_atr,
-                2 * base_radius,
+                self.fallback_width_factor * base_radius, 0.1 * median_atr, 2 * base_radius
             )
-            self._add_new_zone(
-                is_support, pivot.price, pivot.index, pivot.candle, fallback_width
-            )
+            self._add_new_zone(is_support, pivot.price, pivot.index, pivot.candle, fallback_width)
 
     def _check_zone_breaks(self, candle: Candle, bar_index: int):
-        """mirrors f_checkZoneBreaks exactly, including its two-separate-`if` gating order"""
+        
         for zone in self._zones:
             if zone.invalidated_index is not None:
                 continue
@@ -265,11 +279,7 @@ class SRZones(IndicatorBaseModel):
                 continue
 
             in_band = zone.lower <= candle.close <= zone.upper
-            broke_now = (
-                candle.close < zone.lower
-                if zone.is_support
-                else candle.close > zone.upper
-            )
+            broke_now = candle.close < zone.lower if zone.is_support else candle.close > zone.upper
             zone.consec_break = zone.consec_break + 1 if broke_now else 0
 
             if zone.consec_break == 1:
@@ -283,16 +293,10 @@ class SRZones(IndicatorBaseModel):
                     zone.last_touch_index = bar_index
                     zone.last_touch_candle = candle
 
-            if (
-                zone.invalidated_index is None
-                and zone.consec_break >= self.zone_break_bars
-            ):
+            if zone.invalidated_index is None and zone.consec_break >= self.zone_break_bars:
                 zone.break_count += 1
                 zone.consec_break = 0
-                if (
-                    zone.break_count >= self.max_zone_breaks
-                    or zone.touch_count >= self.max_zone_touches
-                ):
+                if zone.break_count >= self.max_zone_breaks or zone.touch_count >= self.max_zone_touches:
                     zone.invalidated_index = bar_index
 
             if zone.invalidated_index is None and in_band and not zone.was_in_band:
@@ -313,6 +317,7 @@ class SRZones(IndicatorBaseModel):
     # --- SCORING ---------------------------------------
 
     def _compute_scores(self, bar_index: int, med_pivot_spacing: float):
+        
         for zone in self._zones:
             age_bars = bar_index - zone.base_index
             age_comp = 1 - math.exp(-age_bars / max(1.0, med_pivot_spacing))
@@ -320,6 +325,7 @@ class SRZones(IndicatorBaseModel):
             zone.raw_score = (touch_comp**0.5) * (max(age_comp, 0.001) ** 0.5)
 
     def _percentile_filter(self):
+        
         scores = [z.raw_score for z in self._zones]
         n = len(scores)
         for zone in self._zones:
@@ -331,6 +337,69 @@ class SRZones(IndicatorBaseModel):
 
     # --- MAIN CALCULATION (mirrors PER-BAR + PER-REFRESH Pine sections) --
 
+    def _process_bar(self, i: int, candle: Candle, pivots_by_confirm_index: dict[int, list[PivotPoint]]):
+        
+        atr_value = self.atr.data.get(candle.timestamp)
+        if atr_value is not None:
+            self._atr_buf.append(atr_value)
+            if len(self._atr_buf) > self.atr_median_lookback:
+                self._atr_buf.pop(0)
+        if self._atr_buf:
+            self._median_atr = median(self._atr_buf)
+            raw_radius = self._median_atr * self.radius_factor
+            self._base_radius = self._clamp(
+                raw_radius, self.min_radius_mult * self._median_atr, self.max_radius_mult * self._median_atr
+            )
+        self._last_median_atr = self._median_atr or 0.0
+        self._last_base_radius = self._base_radius or 0.0
+
+        for pivot in pivots_by_confirm_index.get(i, []):
+            self._pivot_log.append(pivot)
+            if len(self._pivot_log) > self.max_candidates:
+                self._pivot_log.pop(0)
+
+            if self._base_radius is not None and self._median_atr is not None:
+                self._process_new_pivot(pivot, self._base_radius, self._median_atr)
+
+            if self._last_confirmed_bar_index is not None:
+                gap = pivot.index - self._last_confirmed_bar_index
+                if gap > 0:
+                    self._pivot_gaps.append(gap)
+                    if len(self._pivot_gaps) > 10:
+                        self._pivot_gaps.pop(0)
+            self._last_confirmed_bar_index = pivot.index
+            if self._pivot_gaps:
+                self._med_pivot_spacing = median(self._pivot_gaps)
+
+            if self._last_processed_confirm_index is None or pivot.confirmed_index > self._last_processed_confirm_index:
+                self._last_processed_confirm_index = pivot.confirmed_index
+
+        if self._base_radius is not None:
+            self._check_zone_breaks(candle, i)
+            if i % self.merge_interval_bars == 0:
+                self._merge_overlapping_zones(i)
+                self._prune_zones(i)
+
+    def _finalize(self, last_index: int) -> list[ZoneModel]:
+        
+        self._merge_overlapping_zones(last_index)
+        self._prune_zones(last_index)
+
+        self._compute_scores(last_index, self._med_pivot_spacing)
+        self._enforce_storage_cap()
+        self._percentile_filter()
+
+        return self._zones
+
+    def _new_pivots_by_confirm_index(self) -> dict[int, list[PivotPoint]]:
+        
+        pivots_by_confirm_index: dict[int, list[PivotPoint]] = {}
+        for pivot in self.pivots.data:
+            if self._last_processed_confirm_index is not None and pivot.confirmed_index <= self._last_processed_confirm_index:
+                continue
+            pivots_by_confirm_index.setdefault(pivot.confirmed_index, []).append(pivot)
+        return pivots_by_confirm_index
+
     def _calculate(self) -> list[ZoneModel]:
         candles = self.candles
         n = len(candles)
@@ -340,66 +409,22 @@ class SRZones(IndicatorBaseModel):
         self.pivots.set(candles)
         self.atr.set(candles)
 
-        pivots_by_confirm_index: dict[int, list[PivotPoint]] = {}
-        for pivot in self.pivots.data:
-            pivots_by_confirm_index.setdefault(pivot.confirmed_index, []).append(pivot)
-
         self._zones = []
         self._pivot_log = []
+        self._atr_buf = []
+        self._pivot_gaps = []
+        self._last_confirmed_bar_index = None
+        self._med_pivot_spacing = 20.0
+        self._median_atr = None
+        self._base_radius = None
+        self._last_processed_confirm_index = None
 
-        atr_buf: list[float] = []
-        pivot_gaps: list[int] = []
-        last_confirmed_index: int | None = None
-        med_pivot_spacing = 20.0
-        median_atr: float | None = None
-        base_radius: float | None = None
+        pivots_by_confirm_index = self._new_pivots_by_confirm_index()
 
         for i, candle in enumerate(candles):
-            atr_value = self.atr.data.get(candle.timestamp)
-            if atr_value is not None:
-                atr_buf.append(atr_value)
-                if len(atr_buf) > self.atr_median_lookback:
-                    atr_buf.pop(0)
-            if atr_buf:
-                median_atr = median(atr_buf)
-                raw_radius = median_atr * self.radius_factor
-                base_radius = self._clamp(
-                    raw_radius,
-                    self.min_radius_mult * median_atr,
-                    self.max_radius_mult * median_atr,
-                )
-            self._last_median_atr = median_atr or 0.0
-            self._last_base_radius = base_radius or 0.0
+            self._process_bar(i, candle, pivots_by_confirm_index)
 
-            for pivot in pivots_by_confirm_index.get(i, []):
-                self._pivot_log.append(pivot)
-                if len(self._pivot_log) > self.max_candidates:
-                    self._pivot_log.pop(0)
-
-                if base_radius is not None and median_atr is not None:
-                    self._process_new_pivot(pivot, base_radius, median_atr)
-
-                if last_confirmed_index is not None:
-                    gap = pivot.index - last_confirmed_index
-                    if gap > 0:
-                        pivot_gaps.append(gap)
-                        if len(pivot_gaps) > 10:
-                            pivot_gaps.pop(0)
-                last_confirmed_index = pivot.index
-                if pivot_gaps:
-                    med_pivot_spacing = median(pivot_gaps)
-
-            if base_radius is not None:
-                self._check_zone_breaks(candle, i)
-                if i % self.merge_interval_bars == 0:
-                    self._merge_overlapping_zones(i)
-                    self._prune_zones(i)
-
-        last_index = n - 1
-        self._compute_scores(last_index, med_pivot_spacing)
-        self._percentile_filter()
-
-        return self._zones
+        return self._finalize(n - 1)
 
     def _forcast(self) -> MarketSide:
         return MarketSide.NEUTRAL
@@ -407,12 +432,7 @@ class SRZones(IndicatorBaseModel):
     # --- DISPLAY ---------------------------------------
 
     def _nearest_zone(self, price: float, is_support: bool) -> ZoneModel | None:
-        """
-        Display-only nearest-zone lookup for the live/repaint preview. Not
-        used anywhere in `_calculate` -- Pine has no equivalent lookup for a
-        real pivot (see `_process_new_pivot`'s first-in-array-order rule);
-        "nearest" is simply the more sensible choice for a plain preview.
-        """
+        
         best: ZoneModel | None = None
         best_dist: float | None = None
         for zone in self._zones:
@@ -434,6 +454,7 @@ class SRZones(IndicatorBaseModel):
         show_labels: bool = True,
         show_live: bool = True,
     ):
+        
         if not self.candles:
             return
 
@@ -448,9 +469,7 @@ class SRZones(IndicatorBaseModel):
             return zone.score_pct * (1 + proximity_boost * prox)
 
         candidates.sort(key=priority, reverse=True)
-        candidates = (
-            candidates if max_zones_display is None else candidates[:max_zones_display]
-        )
+        candidates = candidates if max_zones_display is None else candidates[:max_zones_display]
 
         for rank, zone in enumerate(candidates):
             color = support_color if zone.is_support else resist_color
@@ -459,12 +478,8 @@ class SRZones(IndicatorBaseModel):
                 if zone.invalidated_index is not None
                 else end_time
             )
-            plot.draw_horizontal_line(
-                zone.base_candle.time, zone_end, zone.upper, color
-            )
-            plot.draw_horizontal_line(
-                zone.base_candle.time, zone_end, zone.lower, color
-            )
+            plot.draw_horizontal_line(zone.base_candle.time, zone_end, zone.upper, color)
+            plot.draw_horizontal_line(zone.base_candle.time, zone_end, zone.lower, color)
 
             if show_labels and rank < 3:
                 status = " [INVALID]" if zone.broken else ""
@@ -480,9 +495,25 @@ class SRZones(IndicatorBaseModel):
                 zone = self._nearest_zone(pivot.price, is_support)
                 if zone is None:
                     continue
-                plot.draw_horizontal_line(
-                    zone.base_candle.time, end_time, zone.center, "#ffffff80"
-                )
+                plot.draw_horizontal_line(zone.base_candle.time, end_time, zone.center, "#ffffff80")
 
-    def update(self, candles: list[Candle], *args, **kwargs):
-        pass
+    def update(self, candles: list[Candle], *args, **kwargs) -> list[ZoneModel]:
+        if self.last_checked_candle is None:
+            raise ValueError("last_checked_candle is None")
+
+        start_index = self.find_new_candle_index(candles)
+        if start_index >= len(candles):
+            return self.data
+
+        self.candles = candles
+        self.pivots.update(candles)
+        self.atr.update(candles)
+
+        pivots_by_confirm_index = self._new_pivots_by_confirm_index()
+
+        for i in range(start_index, len(candles)):
+            self._process_bar(i, candles[i], pivots_by_confirm_index)
+
+        self.data = self._finalize(len(candles) - 1)
+        self.last_checked_candle = candles[-1]
+        return self.data
