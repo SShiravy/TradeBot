@@ -41,6 +41,11 @@ class SR_ChochConfig(TradeConfig):
     last_sr_checked_candle: Candle | None = field(default=None, init=False)
 
     async def _check_sr(self, chartdata: ChartData):
+        if (
+            self.last_sr_checked_candle
+            and self.last_sr_checked_candle == chartdata.candles[-1]
+        ):
+            return None
         self.sr_indicator.set(chartdata.candles)  # or however you feed candles into it
         if not self.sr_indicator.candles or not self.sr_indicator.data:
             return None

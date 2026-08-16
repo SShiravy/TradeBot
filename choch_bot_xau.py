@@ -83,7 +83,7 @@ sr_zones = SRZones(
 )
 
 xau_1m = ForexChochQueueTradeConfig(
-    chart=Chart("XAUUSD", TimeFrame.one_minute),
+    chart=Chart("XAUUSD!", TimeFrame.one_minute),
     strategy=ChochQueueFilter(
         pivot_length=50,
         backstep=2,
