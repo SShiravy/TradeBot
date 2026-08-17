@@ -29,7 +29,7 @@ solusd = ForexChochQueueTradeConfig(
         name="ChochQueue",
     ),
     bar_between_signals=2,
-    consider_position=True,
+    consider_position=False,
     position_handler=SteppingHandlerForex(
         ForexAgent(),
         stoploss_pip=10,
@@ -57,7 +57,7 @@ audcad = ForexChochQueueTradeConfig(
         name="ChochQueue",
     ),
     bar_between_signals=2,
-    consider_position=True,
+    consider_position=False,
     position_handler=SteppingHandlerForex(
         ForexAgent(),
         stoploss_pip=10,
@@ -84,7 +84,7 @@ eurgbp = ForexChochQueueTradeConfig(
         name="ChochQueue",
     ),
     bar_between_signals=2,
-    consider_position=True,
+    consider_position=False,
     position_handler=SteppingHandlerForex(
         ForexAgent(),
         stoploss_pip=10,
@@ -112,7 +112,7 @@ usdjpy = ForexChochQueueTradeConfig(
         name="ChochQueue",
     ),
     bar_between_signals=2,
-    consider_position=True,
+    consider_position=False,
     position_handler=SteppingHandlerForex(
         ForexAgent(),
         stoploss_pip=10,
@@ -139,7 +139,7 @@ eurusd = ForexChochQueueTradeConfig(
         name="ChochQueue",
     ),
     bar_between_signals=2,
-    consider_position=True,
+    consider_position=False,
     position_handler=SteppingHandlerForex(
         ForexAgent(),
         stoploss_pip=10,
@@ -167,7 +167,7 @@ usdchf = ForexChochQueueTradeConfig(
         name="ChochQueue",
     ),
     bar_between_signals=2,
-    consider_position=True,
+    consider_position=False,
     position_handler=SteppingHandlerForex(
         ForexAgent(),
         stoploss_pip=10,
@@ -195,7 +195,7 @@ btc = ForexChochQueueTradeConfig(
         name="ChochQueue",
     ),
     bar_between_signals=2,
-    consider_position=True,
+    consider_position=False,
     position_handler=SteppingHandlerForex(
         ForexAgent(),
         stoploss_pip=10,
@@ -221,7 +221,7 @@ xau = ForexChochQueueTradeConfig(
         name="ChochQueue",
     ),
     bar_between_signals=2,
-    consider_position=True,
+    consider_position=False,
     position_handler=SteppingHandlerForex(
         ForexAgent(),
         stoploss_pip=10,
