@@ -145,7 +145,9 @@ def test_choch_queue():
     if chart_data is None:
         raise ValueError
 
-    choch = ChochQueueFilter(pivot_length=2, max_queue=30, retrace_fib=0.8, use_fibo_filter=False)
+    choch = ChochQueueFilter(
+        pivot_length=2, max_queue=30, retrace_fib=0.8, use_fibo_filter=False
+    )
     choch.check_signal(chart_data)
 
     validated_models = [model for model in choch.queue if model.validated]

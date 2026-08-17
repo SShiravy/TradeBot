@@ -47,7 +47,7 @@ xau = SR_ChochConfig(
         pivot_length=2,
         backstep=2,
         retrace_fib=0.5,
-        use_fibo_filter=False, 
+        use_fibo_filter=False,
         name="ChochQueue",
     ),
     bar_between_signals=2,
@@ -55,18 +55,18 @@ xau = SR_ChochConfig(
     n_candle_check=300,
     consider_position=True,
     position_handler=(
-            SteppingHandlerForex(
-                ForexAgent(),
-                targets_ratio=[],
-                targets_ratio_volumes=[],
-                stoploss_pip=10,
-                targets_in_pip=[10],
-                targets_in_pip_volumes=[0.01],
-                long_trade=False,
-                short_trade=False,
-                trail_stop=True,
-            )
-        ),
+        SteppingHandlerForex(
+            ForexAgent(),
+            targets_ratio=[],
+            targets_ratio_volumes=[],
+            stoploss_pip=10,
+            targets_in_pip=[10],
+            targets_in_pip_volumes=[0.01],
+            long_trade=False,
+            short_trade=False,
+            trail_stop=True,
+        )
+    ),
 )
 
 
@@ -98,7 +98,7 @@ audcad = SR_ChochConfig(
         pivot_length=2,
         backstep=2,
         retrace_fib=0.5,
-        use_fibo_filter=False, 
+        use_fibo_filter=False,
         name="ChochQueue",
     ),
     bar_between_signals=2,
@@ -106,18 +106,18 @@ audcad = SR_ChochConfig(
     n_candle_check=300,
     consider_position=True,
     position_handler=(
-            SteppingHandlerForex(
-                ForexAgent(),
-                targets_ratio=[],
-                targets_ratio_volumes=[],
-                stoploss_pip=5,
-                targets_in_pip=[5],
-                targets_in_pip_volumes=[0.01],
-                long_trade=False,
-                short_trade=False,
-                trail_stop=True,
-            )
-        ),
+        SteppingHandlerForex(
+            ForexAgent(),
+            targets_ratio=[],
+            targets_ratio_volumes=[],
+            stoploss_pip=5,
+            targets_in_pip=[5],
+            targets_in_pip_volumes=[0.01],
+            long_trade=False,
+            short_trade=False,
+            trail_stop=True,
+        )
+    ),
 )
 
 
@@ -149,7 +149,7 @@ usdjpy = SR_ChochConfig(
         pivot_length=2,
         backstep=2,
         retrace_fib=0.5,
-        use_fibo_filter=False, 
+        use_fibo_filter=False,
         name="ChochQueue",
     ),
     bar_between_signals=2,
@@ -157,20 +157,19 @@ usdjpy = SR_ChochConfig(
     n_candle_check=300,
     consider_position=True,
     position_handler=(
-            SteppingHandlerForex(
-                ForexAgent(),
-                targets_ratio=[],
-                targets_ratio_volumes=[],
-                stoploss_pip=5,
-                targets_in_pip=[5],
-                targets_in_pip_volumes=[0.01],
-                long_trade=False,
-                short_trade=False,
-                trail_stop=True,
-            )
-        ),
+        SteppingHandlerForex(
+            ForexAgent(),
+            targets_ratio=[],
+            targets_ratio_volumes=[],
+            stoploss_pip=5,
+            targets_in_pip=[5],
+            targets_in_pip_volumes=[0.01],
+            long_trade=False,
+            short_trade=False,
+            trail_stop=True,
+        )
+    ),
 )
-
 
 
 eurgbp = SR_ChochConfig(
@@ -201,7 +200,7 @@ eurgbp = SR_ChochConfig(
         pivot_length=2,
         backstep=2,
         retrace_fib=0.5,
-        use_fibo_filter=False, 
+        use_fibo_filter=False,
         name="ChochQueue",
     ),
     bar_between_signals=2,
@@ -209,20 +208,19 @@ eurgbp = SR_ChochConfig(
     n_candle_check=300,
     consider_position=True,
     position_handler=(
-            SteppingHandlerForex(
-                ForexAgent(),
-                targets_ratio=[],
-                targets_ratio_volumes=[],
-                stoploss_pip=5,
-                targets_in_pip=[5],
-                targets_in_pip_volumes=[0.01],
-                long_trade=False,
-                short_trade=False,
-                trail_stop=True,
-            )
-        ),
+        SteppingHandlerForex(
+            ForexAgent(),
+            targets_ratio=[],
+            targets_ratio_volumes=[],
+            stoploss_pip=5,
+            targets_in_pip=[5],
+            targets_in_pip_volumes=[0.01],
+            long_trade=False,
+            short_trade=False,
+            trail_stop=True,
+        )
+    ),
 )
-
 
 
 eurusd = SR_ChochConfig(
@@ -253,7 +251,7 @@ eurusd = SR_ChochConfig(
         pivot_length=2,
         backstep=2,
         retrace_fib=0.5,
-        use_fibo_filter=False, 
+        use_fibo_filter=False,
         name="ChochQueue",
     ),
     bar_between_signals=2,
@@ -261,20 +259,19 @@ eurusd = SR_ChochConfig(
     n_candle_check=300,
     consider_position=True,
     position_handler=(
-            SteppingHandlerForex(
-                ForexAgent(),
-                targets_ratio=[],
-                targets_ratio_volumes=[],
-                stoploss_pip=7,
-                targets_in_pip=[7],
-                targets_in_pip_volumes=[0.01],
-                long_trade=False,
-                short_trade=False,
-                trail_stop=True,
-            )
-        ),
+        SteppingHandlerForex(
+            ForexAgent(),
+            targets_ratio=[],
+            targets_ratio_volumes=[],
+            stoploss_pip=7,
+            targets_in_pip=[7],
+            targets_in_pip_volumes=[0.01],
+            long_trade=False,
+            short_trade=False,
+            trail_stop=True,
+        )
+    ),
 )
-
 
 
 usdchf = SR_ChochConfig(
@@ -305,7 +302,7 @@ usdchf = SR_ChochConfig(
         pivot_length=2,
         backstep=2,
         retrace_fib=0.5,
-        use_fibo_filter=False, 
+        use_fibo_filter=False,
         name="ChochQueue",
     ),
     bar_between_signals=2,
@@ -313,18 +310,18 @@ usdchf = SR_ChochConfig(
     n_candle_check=300,
     consider_position=True,
     position_handler=(
-            SteppingHandlerForex(
-                ForexAgent(),
-                targets_ratio=[],
-                targets_ratio_volumes=[],
-                stoploss_pip=4,
-                targets_in_pip=[4],
-                targets_in_pip_volumes=[0.01],
-                long_trade=False,
-                short_trade=False,
-                trail_stop=True,
-            )
-        ),
+        SteppingHandlerForex(
+            ForexAgent(),
+            targets_ratio=[],
+            targets_ratio_volumes=[],
+            stoploss_pip=4,
+            targets_in_pip=[4],
+            targets_in_pip_volumes=[0.01],
+            long_trade=False,
+            short_trade=False,
+            trail_stop=True,
+        )
+    ),
 )
 
 
@@ -356,7 +353,7 @@ btcusd = SR_ChochConfig(
         pivot_length=2,
         backstep=2,
         retrace_fib=0.5,
-        use_fibo_filter=False, 
+        use_fibo_filter=False,
         name="ChochQueue",
     ),
     bar_between_signals=2,
@@ -364,26 +361,24 @@ btcusd = SR_ChochConfig(
     n_candle_check=300,
     consider_position=True,
     position_handler=(
-            SteppingHandlerForex(
-                ForexAgent(),
-                targets_ratio=[],
-                targets_ratio_volumes=[],
-                stoploss_pip=60,
-                targets_in_pip=[60],
-                targets_in_pip_volumes=[0.01],
-                long_trade=False,
-                short_trade=False,
-                trail_stop=True,
-            )
-        ),
+        SteppingHandlerForex(
+            ForexAgent(),
+            targets_ratio=[],
+            targets_ratio_volumes=[],
+            stoploss_pip=60,
+            targets_in_pip=[60],
+            targets_in_pip_volumes=[0.01],
+            long_trade=False,
+            short_trade=False,
+            trail_stop=True,
+        )
+    ),
 )
 
 TelegramReporter().main_channel = "@crypto_result_1"
 TraderBot(
     "SR_ChoCh",
-    [
-        xau,audcad,usdjpy,eurgbp,eurusd,usdchf,btcusd 
-    ],
+    [xau, audcad, usdjpy, eurgbp, eurusd, usdchf, btcusd],
     report_time={"h": 20, "m": 22},
 )
 

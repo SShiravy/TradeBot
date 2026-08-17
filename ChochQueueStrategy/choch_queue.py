@@ -497,9 +497,7 @@ class ChochQueueTradeConfig(TradeConfig):
             self.strategy.draw(plot, signal, draw_indicators=True)
         if not self.consider_position:
             if self.send_signal:
-                await TelegramReporter().new_signal(
-                    signal, plot
-                )
+                await TelegramReporter().new_signal(signal, plot)
             return signal
         position = await self.position_handler.generate_position(
             signal, sl_base_price=signal.choch_model.anchor, plot=plot

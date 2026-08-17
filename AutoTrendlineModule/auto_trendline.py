@@ -213,7 +213,6 @@ class AutoTrendlines(IndicatorBaseModel):
         return min(candidates, key=lambda line: line.score)
 
     def _enforce_max_total_lines(self):
-        
         while len(self._lines) > self.max_total_lines:
             for i, line in enumerate(self._lines):
                 if line.broken:
@@ -466,8 +465,9 @@ class AutoTrendlines(IndicatorBaseModel):
         ]
         return min(diffs) if diffs else 60.0
 
-    def _prepare_run(self, start_index: int) -> tuple[dict[int, list[PivotPoint]], float]:
-        
+    def _prepare_run(
+        self, start_index: int
+    ) -> tuple[dict[int, list[PivotPoint]], float]:
         candles = self.candles
         self.pivots.set(candles)
         self.atr.set(candles)
@@ -477,7 +477,9 @@ class AutoTrendlines(IndicatorBaseModel):
         pivots_by_confirm_index: dict[int, list[PivotPoint]] = {}
         for pivot in self.pivots.data:
             if pivot.confirmed_index >= start_index:
-                pivots_by_confirm_index.setdefault(pivot.confirmed_index, []).append(pivot)
+                pivots_by_confirm_index.setdefault(pivot.confirmed_index, []).append(
+                    pivot
+                )
 
         return pivots_by_confirm_index, merge_projection_seconds
 
@@ -495,7 +497,12 @@ class AutoTrendlines(IndicatorBaseModel):
 
         for pivot in pivots_by_confirm_index.get(i, []):
             self._process_new_pivot(
-                pivot, i, touch_tol, break_tol, similar_tolerance, merge_projection_seconds
+                pivot,
+                i,
+                touch_tol,
+                break_tol,
+                similar_tolerance,
+                merge_projection_seconds,
             )
 
         resistance_breaks = 0
@@ -533,7 +540,9 @@ class AutoTrendlines(IndicatorBaseModel):
 
             if broke or stale:
                 line.broken = True
-                logger.debug(f"trendline archived (broke={broke}, stale={stale}): {line}")
+                logger.debug(
+                    f"trendline archived (broke={broke}, stale={stale}): {line}"
+                )
                 if not self.keep_archived:
                     self._lines.remove(line)
 
@@ -563,7 +572,9 @@ class AutoTrendlines(IndicatorBaseModel):
         pivots_by_confirm_index, merge_projection_seconds = self._prepare_run(0)
 
         for i, candle in enumerate(candles):
-            self._process_bar(i, candle, pivots_by_confirm_index, merge_projection_seconds)
+            self._process_bar(
+                i, candle, pivots_by_confirm_index, merge_projection_seconds
+            )
 
         return self._visible_lines()
 
@@ -626,10 +637,14 @@ class AutoTrendlines(IndicatorBaseModel):
 
         self.candles = candles
 
-        pivots_by_confirm_index, merge_projection_seconds = self._prepare_run(start_index)
+        pivots_by_confirm_index, merge_projection_seconds = self._prepare_run(
+            start_index
+        )
 
         for i in range(start_index, len(candles)):
-            self._process_bar(i, candles[i], pivots_by_confirm_index, merge_projection_seconds)
+            self._process_bar(
+                i, candles[i], pivots_by_confirm_index, merge_projection_seconds
+            )
 
         self.data = self._visible_lines()
         self.last_checked_candle = candles[-1]

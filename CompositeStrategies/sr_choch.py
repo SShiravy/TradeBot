@@ -40,6 +40,11 @@ class SR_ChochConfig(TradeConfig):
     last_sr_signal_msg_id: int | None = field(default=None, init=False)
     last_sr_checked_candle: Candle | None = field(default=None, init=False)
 
+    def give_allowed_time(self):
+        return (
+            self.n_candle_confirmation * self.chart.timeframe.time_delta.total_seconds()
+        )
+
     async def _check_sr(self, chartdata: ChartData):
         if (
             self.last_sr_checked_candle
@@ -67,6 +72,15 @@ class SR_ChochConfig(TradeConfig):
             return None
 
         best_zone = max(candidates, key=lambda z: z.score_pct)
+        if (
+            self.last_sr_signal
+            and self.last_sr_signal.zone == best_zone
+            and (
+                (self.last_sr_signal.candle.time - candle.time).total_seconds()
+                < self.give_allowed_time()
+            )
+        ):
+            return None
 
         side = MarketSide.BULLISH if best_zone.is_support else MarketSide.BEARISH
         body_low = min(candle.body_top, candle.body_bottom)
@@ -118,12 +132,9 @@ class SR_ChochConfig(TradeConfig):
 
         # Check if the last signal is too old
         elapsed_time = (
-            chartdata.candles[-1].time - self.last_sr_signal.candle.time
+            choch_chartdata.candles[-1].time - self.last_sr_signal.candle.time
         ).total_seconds()
-        time_condition = (
-            self.n_candle_confirmation
-            * chartdata.chart.timeframe.time_delta.total_seconds()
-        )
+        time_condition = self.give_allowed_time()
         if elapsed_time > time_condition:
             self.last_sr_signal = None
             self.last_sr_signal_msg_id = None

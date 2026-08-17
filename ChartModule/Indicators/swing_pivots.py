@@ -6,7 +6,6 @@ from dataclasses import dataclass
 
 @dataclass(slots=True, frozen=True)
 class PivotPoint:
-    
     index: int
     candle: Candle
     price: float
@@ -21,8 +20,6 @@ class PivotPoint:
 
 
 class SwingPivots(IndicatorBaseModel):
-    
-
     def __init__(self, depth: int = 12, backstep: int = 2) -> None:
         super().__init__()
         self.data: list[PivotPoint] = []
@@ -46,7 +43,9 @@ class SwingPivots(IndicatorBaseModel):
         configs.update({"depth": self.depth, "backstep": self.backstep})
         return configs
 
-    def _apply_backstep(self, pivots: list[PivotPoint], is_high: bool) -> list[PivotPoint]:
+    def _apply_backstep(
+        self, pivots: list[PivotPoint], is_high: bool
+    ) -> list[PivotPoint]:
         """
         Drop the weaker of two same-type pivots that are closer than
         `backstep` bars apart, keeping only the stronger extreme.
@@ -66,7 +65,6 @@ class SwingPivots(IndicatorBaseModel):
         return result
 
     def _scan(self, start: int, end: int):
-        
         candles = self.candles
         for i in range(start, end):
             candle = candles[i]
@@ -79,7 +77,12 @@ class SwingPivots(IndicatorBaseModel):
                 if i - self._low_last_update >= self.depth:
                     self._raw_pivots.append(
                         PivotPoint(
-                            self._low_idx, candles[self._low_idx], self._low_price, False, i, True
+                            self._low_idx,
+                            candles[self._low_idx],
+                            self._low_price,
+                            False,
+                            i,
+                            True,
                         )
                     )
                     self._direction = 1
@@ -95,7 +98,12 @@ class SwingPivots(IndicatorBaseModel):
                 if i - self._high_last_update >= self.depth:
                     self._raw_pivots.append(
                         PivotPoint(
-                            self._high_idx, candles[self._high_idx], self._high_price, True, i, True
+                            self._high_idx,
+                            candles[self._high_idx],
+                            self._high_price,
+                            True,
+                            i,
+                            True,
                         )
                     )
                     self._direction = -1
@@ -105,7 +113,9 @@ class SwingPivots(IndicatorBaseModel):
 
     def _finalize(self) -> list[PivotPoint]:
         highs = self._apply_backstep([p for p in self._raw_pivots if p.is_high], True)
-        lows = self._apply_backstep([p for p in self._raw_pivots if not p.is_high], False)
+        lows = self._apply_backstep(
+            [p for p in self._raw_pivots if not p.is_high], False
+        )
         confirmed = sorted(highs + lows, key=lambda pivot: pivot.confirmed_index)
 
         candles = self.candles
@@ -113,11 +123,25 @@ class SwingPivots(IndicatorBaseModel):
         self.live_pivots = []
         if self._direction <= 0:
             self.live_pivots.append(
-                PivotPoint(self._low_idx, candles[self._low_idx], self._low_price, False, last_index, False)
+                PivotPoint(
+                    self._low_idx,
+                    candles[self._low_idx],
+                    self._low_price,
+                    False,
+                    last_index,
+                    False,
+                )
             )
         if self._direction >= 0:
             self.live_pivots.append(
-                PivotPoint(self._high_idx, candles[self._high_idx], self._high_price, True, last_index, False)
+                PivotPoint(
+                    self._high_idx,
+                    candles[self._high_idx],
+                    self._high_price,
+                    True,
+                    last_index,
+                    False,
+                )
             )
         return confirmed
 
