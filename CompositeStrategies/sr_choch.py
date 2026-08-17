@@ -35,7 +35,7 @@ class SR_ChochConfig(TradeConfig):
     strategy: ChochQueueFilter  # type: ignore[override]
     sr_indicator: SRZones
     sr_chart: Chart
-    n_candle_confirmation: int = 10
+    n_candle_confirmation: int = 100
     last_sr_signal: SRSignal | None = field(default=None, init=False)
     last_sr_signal_msg_id: int | None = field(default=None, init=False)
     last_sr_checked_candle: Candle | None = field(default=None, init=False)

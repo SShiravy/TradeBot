@@ -2,7 +2,6 @@ from AutoTrendlineModule.auto_trendline import AutoTrendlines, BreakLogicMode
 from SRZoneModule.sr_zone import SRZones
 from config import settings
 
-settings.METATRADER_TERMINAL_PATH = settings.SECOND_METATRADER_TERMINAL_PATH
 settings.TELEGRAM_BOT_TOKEN = "8750919120:AAGwJ6n7_iE9twPx1464Ez8gac4_rxHn-l4"
 from TradingModule.reporter import TelegramReporter
 from Forex import ForexAgent, ForexChochQueueTradeConfig

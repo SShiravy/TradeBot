@@ -30,7 +30,7 @@ class Rsi3PushChochConfig(TradeConfig):
     choch_strategy: ChochQueueFilter  # type: ignore[override]
     rsi_chart: Chart
     same_line_source: bool = True
-    n_candle_confirmation: int = 10
+    n_candle_confirmation: int = 100
     last_3push_signal: OscillatorDoubleDiverSignal | None = field(
         default=None, init=False
     )

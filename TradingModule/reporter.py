@@ -187,4 +187,5 @@ class TelegramReporter:
         if plot:
             img_path = plot.save_image(signal.source + str(signal.chart))
         msg = "\n\n".join(msg_list)
-        await self.send_msg(self.main_channel, msg, img_path)
+        res = await self.send_msg(self.main_channel, msg, img_path, reply_id=reply_id)
+        return res.message_id if res else None
