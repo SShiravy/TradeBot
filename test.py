@@ -140,7 +140,7 @@ def test_choch_queue():
     from ChochQueueStrategy.choch_queue import ChochQueueFilter
     from Forex.agent import ForexAgent
 
-    chart = Chart("SOLUSD", TimeFrame.one_minute)
+    chart = Chart("XAUUSD", TimeFrame.one_minute)
     chart_data = ForexAgent().get_chartdata(chart, 500)
     if chart_data is None:
         raise ValueError
@@ -230,7 +230,7 @@ def test_sr_zones():
         fallback_width_factor=0.35,
         max_zone_touches=5,
         max_zone_breaks=1,
-        zone_break_bars=2,
+        zone_break_bars=1,
         min_bars_between_touches=3,
         max_bars_between_touches=200,
         prune_after_bars=4500,
@@ -266,11 +266,11 @@ if __name__ == "__main__":
     # asyncio.run(start_fibochoch_backtest())
     # asyncio.run(start_fich_diver_backtest())
 
-    test_choch_queue()
+    # test_choch_queue()
 
     # test_auto_trendlines()
 
-    # test_sr_zones()
+    test_sr_zones()
 
     # new_backtest()
 

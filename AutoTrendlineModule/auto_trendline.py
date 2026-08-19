@@ -49,6 +49,7 @@ class TrendlineModel:
     score: int
     last_touch_index: int
     last_touch_candle: Candle
+    aligned_only: bool
 
     end_candle: Candle = field(init=False)
     broken: bool = field(default=False, init=False)
@@ -66,6 +67,21 @@ class TrendlineModel:
 
     def as_line(self) -> Line:
         return Line(self.source, self.base_candle, self.end_candle)
+
+    @property
+    def role(self) -> MarketSide:
+        
+        if self.aligned_only:
+            return self.direction
+        return MarketSide.BULLISH if self.slope > 0 else MarketSide.BEARISH
+
+    @property
+    def is_support(self) -> bool:
+        return self.role is MarketSide.BULLISH
+
+    @property
+    def is_resistance(self) -> bool:
+        return self.role is MarketSide.BEARISH
 
     def __str__(self) -> str:
         return (
@@ -246,6 +262,7 @@ class AutoTrendlines(IndicatorBaseModel):
             score=score,
             last_touch_index=touch_index,
             last_touch_candle=touch_candle,
+            aligned_only=self.display_only_aligned,
         )
         self._lines.append(new_line)
         logger.debug(f"new trendline added: {new_line}")
@@ -421,7 +438,7 @@ class AutoTrendlines(IndicatorBaseModel):
         is_support: bool,
         break_tol: float,
     ) -> bool:
-        
+        """mirrors the breakLogicMode branch in the per-bar loop"""
         if self.break_logic_mode is BreakLogicMode.ATR_DISTANCE:
             return (
                 candle.close < line_value - break_tol

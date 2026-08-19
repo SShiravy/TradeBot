@@ -137,6 +137,23 @@ class ChartPlot(BaseChartPlot):
             ax=self.ax if not ax else ax,
         )
 
+    def draw_filled_rect(
+        self,
+        start_time: datetime,
+        end_time: datetime,
+        upper_price: float,
+        lower_price: float,
+        color: str = "#8b007240",
+        ax=None,
+    ):
+        fplt.add_rect(
+            (start_time, upper_price),
+            (end_time, lower_price),
+            color=color,
+            interactive=False,
+            ax=self.ax if not ax else ax,
+        )
+
     def draw_sl_tp_lines(
         self, start_time: datetime, end_time: datetime, tp_price: float, sl_price: float
     ):
