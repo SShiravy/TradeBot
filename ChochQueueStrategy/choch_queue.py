@@ -7,12 +7,12 @@ from ChartModule.models import (
     CandlesSource,
 )
 from ChartModule.Indicators import IndicatorBaseModel, SupportCandleConditions
-from ChartModule.Indicators.swing_pivots import SwingPivots
 from ChartModule.plot import ChartPlot
 from TradingModule.trader_bot import TradeConfig
 from TradingModule.models import Position, Strategy
 from datetime import datetime
 from dataclasses import dataclass, field
+import pandas as pd
 import logging
 
 
@@ -58,12 +58,14 @@ class ChochQueueFilter(Strategy):
         backstep: int = 2,
         retrace_fib: float = 0.5,
         use_fibo_filter: bool = True,
+        use_bos: bool = True,
         max_queue: int = 30,
         confirmation_indicators: list[IndicatorBaseModel] = [],
         long_support_conditions=SupportCandleConditions.RAW,
         short_support_conditions=SupportCandleConditions.RAW,
         name="ChochQueue",
     ) -> None:
+        
         super().__init__(
             name,
             long_support_conditions,
@@ -74,6 +76,7 @@ class ChochQueueFilter(Strategy):
         self.backstep = backstep
         self.retrace_fib = retrace_fib
         self.use_fibo_filter = use_fibo_filter
+        self.use_bos = use_bos
         self.max_queue = max_queue
 
         self.chart: Chart
@@ -92,19 +95,73 @@ class ChochQueueFilter(Strategy):
                 "backstep": self.backstep,
                 "retrace_fib": self.retrace_fib,
                 "use_fibo_filter": self.use_fibo_filter,
+                "use_bos": self.use_bos,
                 "max_queue": self.max_queue,
             }
         )
         return conf_dict
 
+    @staticmethod
+    def _rolling_extreme_excl(values: list[float], length: int, find_max: bool) -> list[float]:
+        
+        series = pd.Series(values, dtype=float)
+        rolled = (
+            series.rolling(window=length, min_periods=length).max()
+            if find_max
+            else series.rolling(window=length, min_periods=length).min()
+        )
+        return rolled.shift(1).tolist()
+
     def _find_pivots(self, candles: list[Candle]) -> list[dict]:
-        detector = SwingPivots(depth=self.pivot_length, backstep=self.backstep)
-        detector.set(candles)
-        events = [
-            {"index": p.index, "price": p.price, "type": "high" if p.is_high else "low"}
-            for p in detector.data
-        ]
-        return sorted(events, key=lambda e: e["index"])
+        
+        length = self.pivot_length
+        n = len(candles)
+        if n <= 2 * length:
+            return []
+
+        highs = [c.high for c in candles]
+        lows = [c.low for c in candles]
+
+        left_high = self._rolling_extreme_excl(highs, length, find_max=True)
+        right_high = self._rolling_extreme_excl(highs[::-1], length, find_max=True)[::-1]
+        left_low = self._rolling_extreme_excl(lows, length, find_max=False)
+        right_low = self._rolling_extreme_excl(lows[::-1], length, find_max=False)[::-1]
+
+        events = []
+        for p in range(length, n - length):
+            confirm_index = p + length
+            if highs[p] > left_high[p] and highs[p] >= right_high[p]:
+                events.append(
+                    {
+                        "pivot_index": p,
+                        "confirm_index": confirm_index,
+                        "price": highs[p],
+                        "type": "high",
+                    }
+                )
+            if lows[p] < left_low[p] and lows[p] <= right_low[p]:
+                events.append(
+                    {
+                        "pivot_index": p,
+                        "confirm_index": confirm_index,
+                        "price": lows[p],
+                        "type": "low",
+                    }
+                )
+        events.sort(key=lambda e: e["confirm_index"])
+        return events
+
+    @staticmethod
+    def _pine_extreme(values: list[float], start: int, end: int, find_min: bool) -> tuple[float, int]:
+        
+        best = values[end]
+        best_index = end
+        for idx in range(end - 1, start - 1, -1):
+            v = values[idx]
+            if (find_min and v < best) or (not find_min and v > best):
+                best = v
+                best_index = idx
+        return best, best_index
 
     def _push_model(self, model: ChochModel):
         self.queue.append(model)
@@ -200,7 +257,7 @@ class ChochQueueFilter(Strategy):
         events = self._find_pivots(candles)
         events_by_index: dict[int, list[dict]] = {}
         for event in events:
-            events_by_index.setdefault(event["index"], []).append(event)
+            events_by_index.setdefault(event["confirm_index"], []).append(event)
 
         self.queue = []
         self.cur_group_type = MarketSide.NEUTRAL
@@ -226,11 +283,11 @@ class ChochQueueFilter(Strategy):
             for event in events_by_index.get(i, []):
                 if event["type"] == "high":
                     last_ph_price = event["price"]
-                    last_ph_index = i
+                    last_ph_index = event["pivot_index"]
                     ph_crossed = False
                 else:
                     last_pl_price = event["price"]
-                    last_pl_index = i
+                    last_pl_index = event["pivot_index"]
                     pl_crossed = False
 
             bull_choch = (
@@ -244,13 +301,15 @@ class ChochQueueFilter(Strategy):
                 and candle.low < range_low
             )
             bull_bos = (
-                bias is MarketSide.BULLISH
+                self.use_bos
+                and bias is MarketSide.BULLISH
                 and last_ph_price is not None
                 and not ph_crossed
                 and candle.close > last_ph_price
             )
             bear_bos = (
-                bias is MarketSide.BEARISH
+                self.use_bos
+                and bias is MarketSide.BEARISH
                 and last_pl_price is not None
                 and not pl_crossed
                 and candle.close < last_pl_price
@@ -272,9 +331,9 @@ class ChochQueueFilter(Strategy):
                 ph_crossed = True
                 bias = MarketSide.BULLISH
                 start = bull_sig_index if bull_sig_index is not None else i
-                window = lows[start : i + 1]
-                lo = min(window)
-                range_low, range_low_index = lo, start + window.index(lo)
+                range_low, range_low_index = self._pine_extreme(
+                    lows, start, i, find_min=True
+                )
                 if bull_choch:
                     range_high, range_high_index = None, None
 
@@ -282,9 +341,9 @@ class ChochQueueFilter(Strategy):
                 pl_crossed = True
                 bias = MarketSide.BEARISH
                 start = bear_sig_index if bear_sig_index is not None else i
-                window = highs[start : i + 1]
-                hi = max(window)
-                range_high, range_high_index = hi, start + window.index(hi)
+                range_high, range_high_index = self._pine_extreme(
+                    highs, start, i, find_min=False
+                )
                 if bear_choch:
                     range_low, range_low_index = None, None
 

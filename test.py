@@ -266,11 +266,11 @@ if __name__ == "__main__":
     # asyncio.run(start_fibochoch_backtest())
     # asyncio.run(start_fich_diver_backtest())
 
-    # test_choch_queue()
+    test_choch_queue()
 
     # test_auto_trendlines()
 
-    test_sr_zones()
+    # test_sr_zones()
 
     # new_backtest()
 
