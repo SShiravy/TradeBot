@@ -69,7 +69,6 @@ class TrendlineModel:
 
     @property
     def role(self) -> MarketSide:
-        
         if self.aligned_only:
             return self.direction
         return MarketSide.BULLISH if self.slope > 0 else MarketSide.BEARISH

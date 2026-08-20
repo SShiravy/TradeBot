@@ -68,7 +68,6 @@ class ChochQueueFilter(Strategy):
         short_support_conditions=SupportCandleConditions.RAW,
         name="ChochQueue",
     ) -> None:
-        
         super().__init__(
             name,
             long_support_conditions,
@@ -105,8 +104,9 @@ class ChochQueueFilter(Strategy):
         return conf_dict
 
     @staticmethod
-    def _rolling_extreme_excl(values: list[float], length: int, find_max: bool) -> list[float]:
-        
+    def _rolling_extreme_excl(
+        values: list[float], length: int, find_max: bool
+    ) -> list[float]:
         series = pd.Series(values, dtype=float)
         rolled = (
             series.rolling(window=length, min_periods=length).max()
@@ -116,7 +116,6 @@ class ChochQueueFilter(Strategy):
         return rolled.shift(1).tolist()
 
     def _find_pivots(self, candles: list[Candle]) -> list[dict]:
-        
         length = self.pivot_length
         n = len(candles)
         if n <= 2 * length:
@@ -126,7 +125,9 @@ class ChochQueueFilter(Strategy):
         lows = [c.low for c in candles]
 
         left_high = self._rolling_extreme_excl(highs, length, find_max=True)
-        right_high = self._rolling_extreme_excl(highs[::-1], length, find_max=True)[::-1]
+        right_high = self._rolling_extreme_excl(highs[::-1], length, find_max=True)[
+            ::-1
+        ]
         left_low = self._rolling_extreme_excl(lows, length, find_max=False)
         right_low = self._rolling_extreme_excl(lows[::-1], length, find_max=False)[::-1]
 
@@ -155,8 +156,9 @@ class ChochQueueFilter(Strategy):
         return events
 
     @staticmethod
-    def _pine_extreme(values: list[float], start: int, end: int, find_min: bool) -> tuple[float, int]:
-        
+    def _pine_extreme(
+        values: list[float], start: int, end: int, find_min: bool
+    ) -> tuple[float, int]:
         best = values[end]
         best_index = end
         for idx in range(end - 1, start - 1, -1):

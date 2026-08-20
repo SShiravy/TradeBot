@@ -240,7 +240,9 @@ class SRZones(IndicatorBaseModel):
 
     # --- PIVOT PROCESSING ------------------------------
 
-    def _process_new_pivot(self, pivot: PivotPoint, base_radius: float, median_atr: float):
+    def _process_new_pivot(
+        self, pivot: PivotPoint, base_radius: float, median_atr: float
+    ):
         is_support = not pivot.is_high
         matched = False
 
@@ -359,7 +361,12 @@ class SRZones(IndicatorBaseModel):
 
     # --- MAIN CALCULATION (mirrors PER-BAR + PER-REFRESH Pine sections) --
 
-    def _process_bar(self, i: int, candle: Candle, pivots_by_confirm_index: dict[int, list[PivotPoint]]):
+    def _process_bar(
+        self,
+        i: int,
+        candle: Candle,
+        pivots_by_confirm_index: dict[int, list[PivotPoint]],
+    ):
         atr_value = self.atr.data.get(candle.timestamp)
         if atr_value is not None:
             self._atr_buf.append(atr_value)
@@ -507,7 +514,9 @@ class SRZones(IndicatorBaseModel):
                 if zone.invalidated_index is not None
                 else end_time
             )
-            plot.draw_filled_rect(zone.base_candle.time, zone_end, zone.upper, zone.lower, color)
+            plot.draw_filled_rect(
+                zone.base_candle.time, zone_end, zone.upper, zone.lower, color
+            )
 
             if show_labels and rank < 3:
                 status = " [INVALID]" if zone.broken else ""
