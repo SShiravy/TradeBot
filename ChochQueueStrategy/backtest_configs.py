@@ -14,6 +14,7 @@ choch_queue_xau_one_m = ForexChochQueueTradeConfig(
         backstep=2,
         retrace_fib=0.5,
         use_fibo_filter=True,  # False -> confirm signal on the CHoCH break itself
+        use_bos=True,  # False -> only CHoCH breaks are queued/traded, BOS is ignored
         name="ChochQueue",
     ),
     bar_between_signals=2,
@@ -41,6 +42,7 @@ choch_queue_five_m_sol = BitUnixChochQueueTradeConfig(
         backstep=2,
         retrace_fib=0.5,
         use_fibo_filter=True,
+        use_bos=True,  # False -> only CHoCH breaks are queued/traded, BOS is ignored
         name="ChochQueue",
     ),
     position_handler=SteppingHandlerCrypto(
