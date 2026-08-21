@@ -329,10 +329,10 @@ class ChartWithOscillatorPlot(ChartPlot):
 
         self.base_plot.ax = ax1
         self.base_plot.plot()
-
+        n_candle = len(base_chartdata.candles)
         fplt.plot(
-            oscillator_data.keys(),
-            oscillator_data.values(),
+            list(oscillator_data.keys())[-n_candle:],
+            list(oscillator_data.values())[-n_candle:],
             ax=ax2,
             legend=label,
             color=color,

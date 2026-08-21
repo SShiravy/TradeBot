@@ -315,7 +315,7 @@ class ChartData:
             low_list.append(candle.low)
             close_list.append(candle.close)
             volume_list.append(candle.volume)
-            time_list.append(candle.time)
+            time_list.append(candle.timestamp)
 
         df = pd.DataFrame(
             {

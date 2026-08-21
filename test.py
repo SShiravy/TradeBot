@@ -268,7 +268,8 @@ if __name__ == "__main__":
     # asyncio.run(start_fibochoch_backtest())
     # asyncio.run(start_fich_diver_backtest())
 
-    test_choch_queue()
+    # test_choch_queue()
+    test_rsi()
 
     # test_auto_trendlines()
 

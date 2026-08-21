@@ -4,8 +4,7 @@ settings.TELEGRAM_BOT_TOKEN = "8470075659:AAHxX4BDBiUeKB85REsL8RB7jpe8XeubDbc"
 from TradingModule.reporter import TelegramReporter
 from ChartModule.Indicators.models import SupportCandleConditions
 from ChartModule.Indicators.rsi import RSI
-from DivergenceStrategy.oscillator_divergence import OscillatorDivergence
-from DivergenceStrategy.oscillator_double_divergence import OscillatorDoubleDiverConfig
+from DivergenceStrategy.oscillator_divergence import OscillatorDivergence,OscillatorDiverConfig
 from Forex import ForexAgent
 from ChartModule import Chart, TimeFrame
 from TradingModule.PositionHandlers.stepping_handler import SteppingHandlerForex
@@ -19,8 +18,8 @@ CustomLogger(
     log_file=True, file_log_name="ForexDiverBot(RSI)", consol_log_level=logging.DEBUG
 )
 
-xau_double_diver_five_m = OscillatorDoubleDiverConfig(
-    chart=Chart("XAUUSD!", TimeFrame.five_minutes),
+xau_diver_five_m = OscillatorDiverConfig(
+    chart=Chart("XAUUSD!", TimeFrame.one_minute),
     consider_position=False,
     agent=ForexAgent(),
     strategy=OscillatorDivergence(
@@ -28,7 +27,7 @@ xau_double_diver_five_m = OscillatorDoubleDiverConfig(
         3,
         200,
         [],
-        name="RSI_Double_Diver",
+        name="RSI_Diver",
         long_support_conditions=SupportCandleConditions.RED_GREEN,
         short_support_conditions=SupportCandleConditions.GREEN_RED,
         body_candle=True,
@@ -36,7 +35,6 @@ xau_double_diver_five_m = OscillatorDoubleDiverConfig(
         inverse_diver_long=False,
     ),
     bar_between_signals=2,
-    same_line_source=True,
     position_handler=(
         SteppingHandlerForex(
             ForexAgent(),
@@ -53,8 +51,8 @@ xau_double_diver_five_m = OscillatorDoubleDiverConfig(
     heikingashi_chartdata=False,
 )
 
-audcad_double_diver_five_m = OscillatorDoubleDiverConfig(
-    chart=Chart("AUDCAD!", TimeFrame.five_minutes),
+audcad_diver_five_m = OscillatorDiverConfig(
+    chart=Chart("AUDCAD!", TimeFrame.one_minute),
     consider_position=False,
     agent=ForexAgent(),
     strategy=OscillatorDivergence(
@@ -62,7 +60,7 @@ audcad_double_diver_five_m = OscillatorDoubleDiverConfig(
         3,
         200,
         [],
-        name="RSI_Double_Diver",
+        name="RSI_Diver",
         long_support_conditions=SupportCandleConditions.RED_GREEN,
         short_support_conditions=SupportCandleConditions.GREEN_RED,
         body_candle=True,
@@ -70,7 +68,6 @@ audcad_double_diver_five_m = OscillatorDoubleDiverConfig(
         inverse_diver_long=False,
     ),
     bar_between_signals=2,
-    same_line_source=True,
     position_handler=(
         SteppingHandlerForex(
             ForexAgent(),
@@ -87,8 +84,8 @@ audcad_double_diver_five_m = OscillatorDoubleDiverConfig(
     heikingashi_chartdata=False,
 )
 
-usdjpy_double_diver_five_m = OscillatorDoubleDiverConfig(
-    chart=Chart("USDJPY!", TimeFrame.five_minutes),
+usdjpy_diver_five_m = OscillatorDiverConfig(
+    chart=Chart("USDJPY!", TimeFrame.one_minute),
     consider_position=False,
     agent=ForexAgent(),
     strategy=OscillatorDivergence(
@@ -96,7 +93,7 @@ usdjpy_double_diver_five_m = OscillatorDoubleDiverConfig(
         3,
         200,
         [],
-        name="RSI_Double_Diver",
+        name="RSI_Diver",
         long_support_conditions=SupportCandleConditions.RED_GREEN,
         short_support_conditions=SupportCandleConditions.GREEN_RED,
         body_candle=True,
@@ -104,7 +101,6 @@ usdjpy_double_diver_five_m = OscillatorDoubleDiverConfig(
         inverse_diver_long=False,
     ),
     bar_between_signals=2,
-    same_line_source=True,
     position_handler=(
         SteppingHandlerForex(
             ForexAgent(),
@@ -120,8 +116,8 @@ usdjpy_double_diver_five_m = OscillatorDoubleDiverConfig(
     ),
     heikingashi_chartdata=False,
 )
-eurgbp_double_diver_five_m = OscillatorDoubleDiverConfig(
-    chart=Chart("EURGBP!", TimeFrame.five_minutes),
+eurgbp_diver_five_m = OscillatorDiverConfig(
+    chart=Chart("EURGBP!", TimeFrame.one_minute),
     consider_position=False,
     agent=ForexAgent(),
     strategy=OscillatorDivergence(
@@ -129,7 +125,7 @@ eurgbp_double_diver_five_m = OscillatorDoubleDiverConfig(
         3,
         200,
         [],
-        name="RSI_Double_Diver",
+        name="RSI_Diver",
         long_support_conditions=SupportCandleConditions.RED_GREEN,
         short_support_conditions=SupportCandleConditions.GREEN_RED,
         body_candle=True,
@@ -137,7 +133,6 @@ eurgbp_double_diver_five_m = OscillatorDoubleDiverConfig(
         inverse_diver_long=False,
     ),
     bar_between_signals=2,
-    same_line_source=True,
     position_handler=(
         SteppingHandlerForex(
             ForexAgent(),
@@ -155,12 +150,12 @@ eurgbp_double_diver_five_m = OscillatorDoubleDiverConfig(
 )
 TelegramReporter().main_channel = "@three_push"
 TraderBot(
-    "3 Push RSI",
+    "RSI Diver",
     [
-        xau_double_diver_five_m,
-        audcad_double_diver_five_m,
-        usdjpy_double_diver_five_m,
-        eurgbp_double_diver_five_m,
+        xau_diver_five_m,
+        audcad_diver_five_m,
+        usdjpy_diver_five_m,
+        eurgbp_diver_five_m,
     ],
     report_time={"h": 20, "m": 10},
 )

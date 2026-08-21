@@ -1,3 +1,5 @@
+from datetime import timedelta
+
 from ChartModule.models import (
     Candle,
     Signal,
@@ -11,6 +13,7 @@ from ChartModule.Indicators import (
     SupportCandleConditions,
 )
 from ChartModule.plot import ChartWithOscillatorPlot
+from Forex.agent import ForexAgent
 from TradingModule.reporter import TelegramReporter
 from TradingModule.trader_bot import TradeConfig, Position
 from TradingModule.models import Strategy
@@ -395,6 +398,20 @@ class OscillatorDivergence(Strategy):
 @dataclass(kw_only=True)
 class OscillatorDiverConfig(TradeConfig):
     strategy: OscillatorDivergence  # type: ignore[override]
+    
+    def give_delay(self, last_candle: Candle, jump=False) -> timedelta:
+        # TODO: fix here for all agents not only forex
+        delay = self.chart.timeframe.time_delta
+        if jump:
+            delay *= self.bar_between_signals
+        last_candle_time = ForexAgent().get_chartdata(self.chart, n_bars=1).candles[0]  # type: ignore
+        next_timestamp = int(round(last_candle_time.timestamp) + delay.total_seconds())
+        sleep_time_based_on_timestamp = (
+            next_timestamp - ForexAgent().give_current_timestamp(self.chart)
+        )
+
+        return timedelta(seconds=sleep_time_based_on_timestamp + 1)
+
 
     async def find_signal(
         self, chartdata: ChartData
