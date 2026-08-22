@@ -1,3 +1,5 @@
+from typing import Literal
+
 from ChartModule.models import Candle, MarketSide, CandlesSource, TimeFrame
 from ChartModule.Indicators.models import IndicatorBaseModel
 from ChartModule.Indicators.lines import Line
@@ -21,7 +23,7 @@ class BreakLogicMode(Enum):
 @dataclass(slots=True, frozen=True)
 class MTREvent:
     candle: Candle
-    bullish: bool
+    side: Literal[MarketSide.BEARISH, MarketSide.BULLISH]
     count: int
 
     @property
@@ -33,7 +35,7 @@ class MTREvent:
 
     def __str__(self) -> str:
         return (
-            f"{self.text}|{'bullish' if self.bullish else 'bearish'}|{self.candle.time}"
+            f"{self.text}|{self.side}|{self.candle.time}"
         )
 
 
@@ -564,9 +566,9 @@ class AutoTrendlines(IndicatorBaseModel):
                     self._lines.remove(line)
 
         if resistance_breaks > 0:
-            self.mtr_events.append(MTREvent(candle, True, resistance_breaks))
+            self.mtr_events.append(MTREvent(candle, MarketSide.BULLISH, resistance_breaks))
         if support_breaks > 0:
-            self.mtr_events.append(MTREvent(candle, False, support_breaks))
+            self.mtr_events.append(MTREvent(candle, MarketSide.BEARISH, support_breaks))
 
         self._merge_similar_lines(candle, similar_tolerance)
         self._enforce_max_total_lines()
@@ -625,7 +627,7 @@ class AutoTrendlines(IndicatorBaseModel):
             for event in self.mtr_events:
                 atr_value = self.atr.data.get(event.candle.timestamp, 0.0)
                 offset = atr_value * 0.6 if atr_value else event.candle.close * 0.001
-                if event.bullish:
+                if event.side == MarketSide.BULLISH:
                     # resistance broken -> bullish break, label below the low
                     plot.draw_label(
                         event.candle.time,

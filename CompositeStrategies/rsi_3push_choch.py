@@ -1,5 +1,7 @@
 from datetime import timedelta
+from AutoTrendlineModule.auto_trendline import AutoTrendlines
 from ChochQueueStrategy.choch_queue import ChochQueueFilter, ChochSignal
+from CompositeStrategies.models import MTRSignal
 from Forex.agent import ForexAgent
 from custom_logger import CustomLogger
 from ChartModule.models import (
@@ -30,12 +32,16 @@ class Rsi3PushChochConfig(TradeConfig):
     choch_strategy: ChochQueueFilter  # type: ignore[override]
     rsi_chart: Chart
     same_line_source: bool = True
+    mtr_indicator: AutoTrendlines | None = None
     n_candle_confirmation: int = 100
     last_3push_signal: OscillatorDoubleDiverSignal | None = field(
         default=None, init=False
     )
-    last_3push_signal_msg_id: int | None = field(default=None, init=False)
+    last_signal_msg_id: int | None = field(default=None, init=False)
     last_3push_checked_candle: Candle | None = field(default=None, init=False)
+    last_mtr_checked_candle: Candle | None = field(default=None, init=False)
+    last_mtr_signal: MTRSignal | None = field(default=None, init=False)
+
 
     async def _check_rsi(self, chartdata: ChartData):
         if (
@@ -80,9 +86,31 @@ class Rsi3PushChochConfig(TradeConfig):
             )
             self.strategy.oscillator_indicator.plot(plot, plot.oscillator_ax)
             self.last_3push_signal = double_diver_signal
-            self.last_3push_signal_msg_id = await TelegramReporter().new_signal(
+            self.last_signal_msg_id = await TelegramReporter().new_signal(
                 double_diver_signal, plot
             )
+
+    async def _check_mtr(self,chartdata:ChartData):
+        if self.mtr_indicator is None:
+            return None
+        if (
+            self.last_3push_checked_candle
+            and self.last_3push_checked_candle == chartdata.candles[-1]
+        ):
+            return None
+        
+        self.mtr_indicator.set(chartdata.candles)
+        self.last_mtr_checked_candle = chartdata.candles[-1]
+        if self.mtr_indicator.mtr_events and \
+            self.mtr_indicator.mtr_events[-1].candle == chartdata.candles[-1]:
+            mtr = self.mtr_indicator.mtr_events[-1]
+            self.last_mtr_signal = MTRSignal(chartdata.chart,chartdata.candles[-1],mtr.side,"MTR",mtr)
+            if self.send_signal:
+                plot = ChartPlot(chartdata,self.n_candle_check)
+                self.mtr_indicator.plot(plot)
+                self.last_mtr_signal_msg_id = await TelegramReporter().new_signal(
+                    self.last_mtr_signal, plot,self.last_signal_msg_id
+                )
 
     def _check_choch(self, chartdata: ChartData):
         signal = self.choch_strategy.check_signal(
@@ -111,10 +139,11 @@ class Rsi3PushChochConfig(TradeConfig):
         )
         if elapsed_time > time_condition:
             self.last_3push_signal = None
-            self.last_3push_signal_msg_id = None
+            self.last_signal_msg_id = None
             logging.warning(f"rsi3push was too old {elapsed_time=} > {time_condition}")
             return None
-
+        # Check for MTR Signal
+        await self._check_mtr(choch_chartdata)
         # Check for CHoCH signal
         choch_signal = self._check_choch(choch_chartdata)
         if choch_signal is None:
@@ -135,7 +164,7 @@ class Rsi3PushChochConfig(TradeConfig):
         if not self.consider_position:
             if self.send_signal:
                 await TelegramReporter().new_signal(
-                    choch_signal, plot, self.last_3push_signal_msg_id
+                    choch_signal, plot, self.last_signal_msg_id
                 )
             return choch_signal
 
@@ -146,9 +175,9 @@ class Rsi3PushChochConfig(TradeConfig):
             logger.warning("Position is None")
             return None
         logger.info("RSI 3push & CHoCH Signal")
-        position.reply_msg_id = self.last_3push_signal_msg_id
+        position.reply_msg_id = self.last_signal_msg_id
         self.last_3push_signal = None
-        self.last_3push_signal_msg_id = None
+        self.last_signal_msg_id = None
         return choch_signal, position
 
     def get_chartdata(

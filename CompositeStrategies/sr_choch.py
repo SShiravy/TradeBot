@@ -1,5 +1,6 @@
 from datetime import timedelta
 from ChochQueueStrategy.choch_queue import ChochQueueFilter, ChochSignal
+from CompositeStrategies.models import SRSignal
 from Forex.agent import ForexAgent
 from SRZoneModule.sr_zone import SRZones, ZoneModel
 from custom_logger import CustomLogger
@@ -8,13 +9,11 @@ from ChartModule.models import (
     Chart,
     ChartData,
     MarketSide,
-    Signal,
 )
 from ChartModule.plot import ChartPlot
 from TradingModule.reporter import TelegramReporter
 from TradingModule.trader_bot import TradeConfig, Position
 from dataclasses import dataclass, field
-from typing import Literal
 from copy import copy
 import logging
 
@@ -24,10 +23,6 @@ logger = CustomLogger(
 )
 
 
-@dataclass(slots=True, frozen=True)
-class SRSignal(Signal):
-    zone: ZoneModel
-    touch_type: Literal["Shadow", "Body"]
 
 
 @dataclass(kw_only=True)
