@@ -626,7 +626,11 @@ TraderBot(
     "RSI_3Push_Choch",
     [
         # xau, audcad, usdjpy, eurgbp, eurusd, usdchf,
-      btc, sol, xrp, eth],
+        btc,
+        sol,
+        xrp,
+        eth,
+    ],
     report_time={"h": 20, "m": 20},
 )
 

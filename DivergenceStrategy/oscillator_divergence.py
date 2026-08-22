@@ -398,7 +398,7 @@ class OscillatorDivergence(Strategy):
 @dataclass(kw_only=True)
 class OscillatorDiverConfig(TradeConfig):
     strategy: OscillatorDivergence  # type: ignore[override]
-    
+
     def give_delay(self, last_candle: Candle, jump=False) -> timedelta:
         # TODO: fix here for all agents not only forex
         delay = self.chart.timeframe.time_delta
@@ -411,7 +411,6 @@ class OscillatorDiverConfig(TradeConfig):
         )
 
         return timedelta(seconds=sleep_time_based_on_timestamp + 1)
-
 
     async def find_signal(
         self, chartdata: ChartData

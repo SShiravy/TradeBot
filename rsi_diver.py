@@ -4,7 +4,10 @@ settings.TELEGRAM_BOT_TOKEN = "8470075659:AAHxX4BDBiUeKB85REsL8RB7jpe8XeubDbc"
 from TradingModule.reporter import TelegramReporter
 from ChartModule.Indicators.models import SupportCandleConditions
 from ChartModule.Indicators.rsi import RSI
-from DivergenceStrategy.oscillator_divergence import OscillatorDivergence,OscillatorDiverConfig
+from DivergenceStrategy.oscillator_divergence import (
+    OscillatorDivergence,
+    OscillatorDiverConfig,
+)
 from Forex import ForexAgent
 from ChartModule import Chart, TimeFrame
 from TradingModule.PositionHandlers.stepping_handler import SteppingHandlerForex

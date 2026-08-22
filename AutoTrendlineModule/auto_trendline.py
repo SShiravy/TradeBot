@@ -34,14 +34,12 @@ class MTREvent:
         return f"MTR{suffix}+" if suffix > 1 else "MTR+"
 
     def __str__(self) -> str:
-        return (
-            f"{self.text}|{self.side}|{self.candle.time}"
-        )
+        return f"{self.text}|{self.side}|{self.candle.time}"
 
 
 @dataclass(slots=True)
 class TrendlineModel:
-    direction: MarketSide
+    direction: Literal[MarketSide.BULLISH, MarketSide.BEARISH]
     source: CandlesSource
     base_index: int
     base_candle: Candle
@@ -70,18 +68,18 @@ class TrendlineModel:
         return Line(self.source, self.base_candle, self.end_candle)
 
     @property
-    def role(self) -> MarketSide:
+    def side(self) -> Literal[MarketSide.BULLISH, MarketSide.BEARISH]:
         if self.aligned_only:
             return self.direction
         return MarketSide.BULLISH if self.slope > 0 else MarketSide.BEARISH
 
     @property
     def is_support(self) -> bool:
-        return self.role is MarketSide.BULLISH
+        return self.side is MarketSide.BULLISH
 
     @property
     def is_resistance(self) -> bool:
-        return self.role is MarketSide.BEARISH
+        return self.side is MarketSide.BEARISH
 
     def __str__(self) -> str:
         return (
@@ -204,12 +202,16 @@ class AutoTrendlines(IndicatorBaseModel):
 
     # ─── LINE POOL MANAGEMENT ───────────────────────
 
-    def _count_active(self, direction: MarketSide) -> int:
+    def _count_active(
+        self, direction: Literal[MarketSide.BEARISH, MarketSide.BULLISH]
+    ) -> int:
         return sum(
             1 for line in self._lines if not line.broken and line.direction is direction
         )
 
-    def _find_most_recent_active(self, direction: MarketSide) -> TrendlineModel | None:
+    def _find_most_recent_active(
+        self, direction: Literal[MarketSide.BEARISH, MarketSide.BULLISH]
+    ) -> TrendlineModel | None:
         candidates = [
             line
             for line in self._lines
@@ -219,7 +221,9 @@ class AutoTrendlines(IndicatorBaseModel):
             return None
         return max(candidates, key=lambda line: line.base_index)
 
-    def _find_weakest_active(self, direction: MarketSide) -> TrendlineModel | None:
+    def _find_weakest_active(
+        self, direction: Literal[MarketSide.BEARISH, MarketSide.BULLISH]
+    ) -> TrendlineModel | None:
         candidates = [
             line
             for line in self._lines
@@ -240,7 +244,7 @@ class AutoTrendlines(IndicatorBaseModel):
 
     def _add_new_line(
         self,
-        direction: MarketSide,
+        direction: Literal[MarketSide.BEARISH, MarketSide.BULLISH],
         base_index: int,
         base_candle: Candle,
         slope: float,
@@ -274,7 +278,7 @@ class AutoTrendlines(IndicatorBaseModel):
 
     def _try_merge_or_add(
         self,
-        direction: MarketSide,
+        direction: Literal[MarketSide.BEARISH, MarketSide.BULLISH],
         base_index: int,
         base_candle: Candle,
         new_index: int,
@@ -441,7 +445,7 @@ class AutoTrendlines(IndicatorBaseModel):
 
     # ─── BREAK DETECTION ─────────────────────────────
 
-    def _check_break(
+    def check_break(
         self,
         line: TrendlineModel,
         candle: Candle,
@@ -544,7 +548,7 @@ class AutoTrendlines(IndicatorBaseModel):
                 line.last_touch_index = i
                 line.last_touch_candle = candle
 
-            broke = self._check_break(line, candle, line_value, is_support, break_tol)
+            broke = self.check_break(line, candle, line_value, is_support, break_tol)
 
             mtr_eligible = not self.display_only_aligned or (
                 line.slope > 0 if is_support else line.slope < 0
@@ -566,7 +570,9 @@ class AutoTrendlines(IndicatorBaseModel):
                     self._lines.remove(line)
 
         if resistance_breaks > 0:
-            self.mtr_events.append(MTREvent(candle, MarketSide.BULLISH, resistance_breaks))
+            self.mtr_events.append(
+                MTREvent(candle, MarketSide.BULLISH, resistance_breaks)
+            )
         if support_breaks > 0:
             self.mtr_events.append(MTREvent(candle, MarketSide.BEARISH, support_breaks))
 

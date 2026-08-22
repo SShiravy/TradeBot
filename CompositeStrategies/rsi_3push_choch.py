@@ -42,7 +42,6 @@ class Rsi3PushChochConfig(TradeConfig):
     last_mtr_checked_candle: Candle | None = field(default=None, init=False)
     last_mtr_signal: MTRSignal | None = field(default=None, init=False)
 
-
     async def _check_rsi(self, chartdata: ChartData):
         if (
             self.last_3push_checked_candle
@@ -90,26 +89,30 @@ class Rsi3PushChochConfig(TradeConfig):
                 double_diver_signal, plot
             )
 
-    async def _check_mtr(self,chartdata:ChartData):
+    async def _check_mtr(self, chartdata: ChartData):
         if self.mtr_indicator is None:
             return None
         if (
-            self.last_3push_checked_candle
-            and self.last_3push_checked_candle == chartdata.candles[-1]
+            self.last_mtr_checked_candle
+            and self.last_mtr_checked_candle == chartdata.candles[-1]
         ):
             return None
-        
+
         self.mtr_indicator.set(chartdata.candles)
         self.last_mtr_checked_candle = chartdata.candles[-1]
-        if self.mtr_indicator.mtr_events and \
-            self.mtr_indicator.mtr_events[-1].candle == chartdata.candles[-1]:
+        if (
+            self.mtr_indicator.mtr_events
+            and self.mtr_indicator.mtr_events[-1].candle == chartdata.candles[-1]
+        ):
             mtr = self.mtr_indicator.mtr_events[-1]
-            self.last_mtr_signal = MTRSignal(chartdata.chart,chartdata.candles[-1],mtr.side,"MTR",mtr)
+            self.last_mtr_signal = MTRSignal(
+                chartdata.chart, chartdata.candles[-1], mtr.side, "MTR", mtr
+            )
             if self.send_signal:
-                plot = ChartPlot(chartdata,self.n_candle_check)
+                plot = ChartPlot(chartdata, self.n_candle_check)
                 self.mtr_indicator.plot(plot)
                 self.last_mtr_signal_msg_id = await TelegramReporter().new_signal(
-                    self.last_mtr_signal, plot,self.last_signal_msg_id
+                    self.last_mtr_signal, plot, self.last_signal_msg_id
                 )
 
     def _check_choch(self, chartdata: ChartData):

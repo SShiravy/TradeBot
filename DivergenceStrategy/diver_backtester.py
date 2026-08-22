@@ -1,7 +1,7 @@
 from datetime import datetime
 
 from DivergenceStrategy.oscillator_divergence import OscillatorDiverConfig
-from LocalBackTester.models import CsvChart, TickData
+from LocalBackTester.models import CsvChart
 from TradingModule import commands
 from LocalBackTester.Database.methods import (
     fetch_oscillator_diver_siganls,

@@ -1,6 +1,7 @@
 from datetime import timedelta
+from AutoTrendlineModule.auto_trendline import AutoTrendlines, TrendlineModel
 from ChochQueueStrategy.choch_queue import ChochQueueFilter, ChochSignal
-from CompositeStrategies.models import SRSignal
+from CompositeStrategies.models import DynamicSRSignal, StaticSRSignal
 from Forex.agent import ForexAgent
 from SRZoneModule.sr_zone import SRZones, ZoneModel
 from custom_logger import CustomLogger
@@ -23,38 +24,41 @@ logger = CustomLogger(
 )
 
 
-
-
 @dataclass(kw_only=True)
 class SR_ChochConfig(TradeConfig):
     strategy: ChochQueueFilter  # type: ignore[override]
-    sr_indicator: SRZones
+    static_sr_indicator: SRZones
     sr_chart: Chart
+    dynamic_sr: AutoTrendlines
     n_candle_confirmation: int = 100
-    last_sr_signal: SRSignal | None = field(default=None, init=False)
-    last_sr_signal_msg_id: int | None = field(default=None, init=False)
-    last_sr_checked_candle: Candle | None = field(default=None, init=False)
+    last_sr_signal: StaticSRSignal | DynamicSRSignal | None = field(
+        default=None, init=False
+    )
+    last_static_sr_checked_candle: Candle | None = field(default=None, init=False)
+    last_dynamic_sr_checked_candle: Candle | None = field(default=None, init=False)
 
     def give_allowed_time(self):
         return (
             self.n_candle_confirmation * self.chart.timeframe.time_delta.total_seconds()
         )
 
-    async def _check_sr(self, chartdata: ChartData):
+    async def _check_static_sr(self, chartdata: ChartData):
         if (
-            self.last_sr_checked_candle
-            and self.last_sr_checked_candle == chartdata.candles[-1]
+            self.last_static_sr_checked_candle
+            and self.last_static_sr_checked_candle == chartdata.candles[-1]
         ):
             return None
-        self.sr_indicator.set(chartdata.candles)  # or however you feed candles into it
-        if not self.sr_indicator.candles or not self.sr_indicator.data:
+        self.static_sr_indicator.set(
+            chartdata.candles
+        )  # or however you feed candles into it
+        if not self.static_sr_indicator.candles or not self.static_sr_indicator.data:
             return None
 
-        candle = self.sr_indicator.candles[-1]
-        self.last_sr_checked_candle = candle
+        candle = self.static_sr_indicator.candles[-1]
+        self.last_static_sr_checked_candle = candle
 
         candidates: list[ZoneModel] = []
-        for zone in self.sr_indicator.data:
+        for zone in self.static_sr_indicator.data:
             if zone.broken:
                 continue
             else:
@@ -68,7 +72,7 @@ class SR_ChochConfig(TradeConfig):
 
         best_zone = max(candidates, key=lambda z: z.score_pct)
         if (
-            self.last_sr_signal
+            isinstance(self.last_sr_signal, StaticSRSignal)
             and self.last_sr_signal.zone == best_zone
             and (
                 (self.last_sr_signal.candle.time - candle.time).total_seconds()
@@ -86,11 +90,11 @@ class SR_ChochConfig(TradeConfig):
             else "Shadow"
         )
 
-        self.last_sr_signal = SRSignal(
+        self.last_sr_signal = StaticSRSignal(
             self.sr_chart,
             candle,
             side,
-            source="S&R",
+            source="Static Suppor" if best_zone.is_support else "Static Resistance",
             zone=best_zone,
             touch_type=touch_type,
         )
@@ -101,7 +105,65 @@ class SR_ChochConfig(TradeConfig):
                 plot_n_candles=self.n_candle_check,
             )
 
-            self.sr_indicator.plot(plot)
+            self.static_sr_indicator.plot(plot)
+            plot.mark_signal(
+                self.last_sr_signal,
+            )
+            self.last_sr_signal_msg_id = await TelegramReporter().new_signal(
+                self.last_sr_signal, plot
+            )
+
+    async def _check_dynamic_sr(self, chartdata: ChartData):
+        if (
+            self.last_dynamic_sr_checked_candle
+            and self.last_dynamic_sr_checked_candle == chartdata.candles[-1]
+        ):
+            return None
+
+        self.dynamic_sr.set(chartdata.candles)
+
+        candle = self.dynamic_sr.candles[-1]
+        self.last_dynamic_sr_checked_candle = candle
+
+        candidates: list[TrendlineModel] = []
+        for trendline in self.dynamic_sr.data:
+            if trendline.broken:
+                continue
+
+            if trendline.last_touch_candle == chartdata.candles[-1]:
+                candidates.append(trendline)
+
+        if not candidates:
+            return None
+
+        best_dynamic_sr = max(candidates, key=lambda d: d.score)
+        if (
+            isinstance(self.last_sr_signal, DynamicSRSignal)
+            and self.last_sr_signal.dynamic_sr == best_dynamic_sr
+            and (
+                (self.last_sr_signal.candle.time - candle.time).total_seconds()
+                < self.give_allowed_time()
+            )
+        ):
+            return None
+
+        self.last_sr_signal = DynamicSRSignal(
+            self.sr_chart,
+            candle,
+            best_dynamic_sr.side,
+            source="Dynamic Suppor"
+            if best_dynamic_sr.is_support
+            else "Dynamic Resistance",
+            dynamic_sr=best_dynamic_sr,
+        )
+        logger.info(f"S&R Signal:{self.last_sr_signal}")
+        if self.send_signal:
+            plot = ChartPlot(
+                chartdata,
+                plot_n_candles=self.n_candle_check,
+            )
+
+            self.static_sr_indicator.plot(plot)
             plot.mark_signal(
                 self.last_sr_signal,
             )
@@ -121,7 +183,8 @@ class SR_ChochConfig(TradeConfig):
         self, chartdata: ChartData, choch_chartdata: ChartData
     ) -> None | ChochSignal | tuple[ChochSignal, Position]:
         # Check for S&R
-        await self._check_sr(chartdata)
+        await self._check_static_sr(chartdata)
+        await self._check_dynamic_sr(chartdata)
         if self.last_sr_signal is None:
             return None
 

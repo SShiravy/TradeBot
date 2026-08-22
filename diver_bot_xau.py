@@ -1,10 +1,6 @@
 from Forex import ForexAgent, ForexDiverTradeConfig
 from ChartModule import Chart, TimeFrame
 from TradingModule.PositionHandlers.stepping_handler import SteppingHandlerForex
-from TradingModule.PositionHandlers.trading_constraints import (
-    LoseInRowConstraint,
-    SideConstraint,
-)
 from TradingModule.trader_bot import TraderBot
 from DivergenceStrategy import Divergence
 from custom_logger import CustomLogger

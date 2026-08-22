@@ -2,7 +2,6 @@ from ChartModule import Chart, TimeFrame
 from ChartModule.Indicators.models import SupportCandleConditions
 from ChartModule.Indicators.rsi import RSI
 from DivergenceStrategy import Divergence
-from ChartModule.Indicators import EMA
 from DivergenceStrategy.oscillator_divergence import (
     OscillatorDiverConfig,
     OscillatorDivergence,
@@ -11,8 +10,6 @@ from DivergenceStrategy.oscillator_double_divergence import OscillatorDoubleDive
 from Forex import ForexAgent, ForexDiverTradeConfig
 from BitUnix import BitUnixAgent, BitUnixDiverTradeConfig
 from TradingModule.PositionHandlers import (
-    RiskFreeForex,
-    SlTpRatioForex,
     SteppingHandlerForex,
     SteppingHandlerCrypto,
 )

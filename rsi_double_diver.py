@@ -16,7 +16,9 @@ import logging
 
 
 CustomLogger(
-    log_file=True, file_log_name="ForexDoubleDiverBot(RSI)", consol_log_level=logging.DEBUG
+    log_file=True,
+    file_log_name="ForexDoubleDiverBot(RSI)",
+    consol_log_level=logging.DEBUG,
 )
 
 xau_double_diver_five_m = OscillatorDoubleDiverConfig(
