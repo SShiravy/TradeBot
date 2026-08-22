@@ -29,7 +29,7 @@ class SR_ChochConfig(TradeConfig):
     strategy: ChochQueueFilter  # type: ignore[override]
     static_sr_indicator: SRZones
     sr_chart: Chart
-    dynamic_sr: AutoTrendlines
+    dynamic_sr_indicator: AutoTrendlines
     n_candle_confirmation: int = 100
     last_sr_signal: StaticSRSignal | DynamicSRSignal | None = field(
         default=None, init=False
@@ -120,13 +120,13 @@ class SR_ChochConfig(TradeConfig):
         ):
             return None
 
-        self.dynamic_sr.set(chartdata.candles)
+        self.dynamic_sr_indicator.set(chartdata.candles)
 
-        candle = self.dynamic_sr.candles[-1]
+        candle = self.dynamic_sr_indicator.candles[-1]
         self.last_dynamic_sr_checked_candle = candle
 
         candidates: list[TrendlineModel] = []
-        for trendline in self.dynamic_sr.data:
+        for trendline in self.dynamic_sr_indicator.data:
             if trendline.broken:
                 continue
 
@@ -163,7 +163,7 @@ class SR_ChochConfig(TradeConfig):
                 plot_n_candles=self.n_candle_check,
             )
 
-            self.static_sr_indicator.plot(plot)
+            self.dynamic_sr_indicator.plot(plot)
             plot.mark_signal(
                 self.last_sr_signal,
             )

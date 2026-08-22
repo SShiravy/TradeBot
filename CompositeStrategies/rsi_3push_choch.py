@@ -111,6 +111,9 @@ class Rsi3PushChochConfig(TradeConfig):
             if self.send_signal:
                 plot = ChartPlot(chartdata, self.n_candle_check)
                 self.mtr_indicator.plot(plot)
+                plot.mark_signal(
+                    self.last_mtr_signal,
+                )
                 self.last_mtr_signal_msg_id = await TelegramReporter().new_signal(
                     self.last_mtr_signal, plot, self.last_signal_msg_id
                 )

@@ -43,7 +43,7 @@ xau = SR_ChochConfig(
         max_bars_between_touches=200,
         prune_after_bars=4500,
     ),
-    dynamic_sr=AutoTrendlines(
+    dynamic_sr_indicator=AutoTrendlines(
         depth=15,
         backstep=2,
         atr_len=14,
@@ -109,7 +109,7 @@ audcad = SR_ChochConfig(
         max_bars_between_touches=200,
         prune_after_bars=4500,
     ),
-    dynamic_sr=AutoTrendlines(
+    dynamic_sr_indicator=AutoTrendlines(
         depth=15,
         backstep=2,
         atr_len=14,
@@ -175,7 +175,7 @@ usdjpy = SR_ChochConfig(
         max_bars_between_touches=200,
         prune_after_bars=4500,
     ),
-    dynamic_sr=AutoTrendlines(
+    dynamic_sr_indicator=AutoTrendlines(
         depth=15,
         backstep=2,
         atr_len=14,
@@ -241,7 +241,7 @@ eurgbp = SR_ChochConfig(
         max_bars_between_touches=200,
         prune_after_bars=4500,
     ),
-    dynamic_sr=AutoTrendlines(
+    dynamic_sr_indicator=AutoTrendlines(
         depth=15,
         backstep=2,
         atr_len=14,
@@ -307,7 +307,7 @@ eurusd = SR_ChochConfig(
         max_bars_between_touches=200,
         prune_after_bars=4500,
     ),
-    dynamic_sr=AutoTrendlines(
+    dynamic_sr_indicator=AutoTrendlines(
         depth=15,
         backstep=2,
         atr_len=14,
@@ -373,7 +373,7 @@ usdchf = SR_ChochConfig(
         max_bars_between_touches=200,
         prune_after_bars=4500,
     ),
-    dynamic_sr=AutoTrendlines(
+    dynamic_sr_indicator=AutoTrendlines(
         depth=15,
         backstep=2,
         atr_len=14,
@@ -439,7 +439,7 @@ btc = SR_ChochConfig(
         max_bars_between_touches=200,
         prune_after_bars=4500,
     ),
-    dynamic_sr=AutoTrendlines(
+    dynamic_sr_indicator=AutoTrendlines(
         depth=15,
         backstep=2,
         atr_len=14,
@@ -505,7 +505,7 @@ sol = SR_ChochConfig(
         max_bars_between_touches=200,
         prune_after_bars=4500,
     ),
-    dynamic_sr=AutoTrendlines(
+    dynamic_sr_indicator=AutoTrendlines(
         depth=15,
         backstep=2,
         atr_len=14,
@@ -571,7 +571,7 @@ eth = SR_ChochConfig(
         max_bars_between_touches=200,
         prune_after_bars=4500,
     ),
-    dynamic_sr=AutoTrendlines(
+    dynamic_sr_indicator=AutoTrendlines(
         depth=15,
         backstep=2,
         atr_len=14,
@@ -637,7 +637,7 @@ xrp = SR_ChochConfig(
         max_bars_between_touches=200,
         prune_after_bars=4500,
     ),
-    dynamic_sr=AutoTrendlines(
+    dynamic_sr_indicator=AutoTrendlines(
         depth=15,
         backstep=2,
         atr_len=14,
