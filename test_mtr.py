@@ -282,7 +282,7 @@ xau = MTRConfig(
 
 TelegramReporter().main_channel = "@crypto_result_1"
 
-TraderBot("Choch Bot", 
+TraderBot("MTR Bot", 
           [
             xau, 
             sol,

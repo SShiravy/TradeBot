@@ -1,3 +1,6 @@
+from config import settings
+
+settings.METATRADER_TERMINAL_PATH = settings.SECOND_METATRADER_TERMINAL_PATH
 from Forex import ForexAgent, ForexDiverTradeConfig
 from ChartModule import Chart, TimeFrame
 from TradingModule.PositionHandlers.stepping_handler import SteppingHandlerForex
