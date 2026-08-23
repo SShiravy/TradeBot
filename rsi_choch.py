@@ -624,7 +624,12 @@ TelegramReporter().main_channel = "@three_push"
 TraderBot(
     "RSI_3Push_Choch",
     [
-        xau, audcad, usdjpy, eurgbp, eurusd, usdchf,
+        xau,
+        audcad,
+        usdjpy,
+        eurgbp,
+        eurusd,
+        usdchf,
         btc,
         sol,
         xrp,

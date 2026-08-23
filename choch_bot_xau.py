@@ -1,6 +1,5 @@
-from AutoTrendlineModule.auto_trendline import AutoTrendlines, BreakLogicMode
+from AutoTrendlineModule.auto_trendline import AutoTrendlines
 from CompositeStrategies.mtr_strategy import MTRConfig
-from SRZoneModule.sr_zone import SRZones
 from config import settings
 
 settings.TELEGRAM_BOT_TOKEN = "8937168160:AAHtl4qXCSKXgT6YTSZEvYYDSHs3UcVqD5Y"
@@ -15,40 +14,38 @@ import asyncio
 import logging
 
 
-CustomLogger(
-    log_file=True, file_log_name="ChochBot", consol_log_level=logging.DEBUG
-)
+CustomLogger(log_file=True, file_log_name="ChochBot", consol_log_level=logging.DEBUG)
 
 mtr_xau = MTRConfig(
-        chart=Chart("XAUUSD!", TimeFrame.one_minute),
-        strategy=None,
-        bar_between_signals=2,
-        consider_position=False,
-        mtr_indicator=AutoTrendlines(
-                depth=15,
-                backstep=2,
-                atr_len=14,
-                touch_mult=0.5,
-                break_mult=0.4,
-                min_touches=2,
-                min_line_bars=5,
-                max_span_bars=150,
-                stale_bars=50,
-                max_total_lines=500,
-                max_active_per_dir=50,
-                merge_projection_bars=50,
-                display_only_aligned=False,
-            ),
-        position_handler=SteppingHandlerForex(
-            ForexAgent(),
-            stoploss_pip=1,
-            targets_ratio=[1],
-            targets_ratio_volumes=[0.01],
-            trail_stop=True,
-            long_trade=False,
-            short_trade=False,
-        ),
-        heikingashi_chartdata=False,
+    chart=Chart("XAUUSD!", TimeFrame.one_minute),
+    strategy=None,
+    bar_between_signals=2,
+    consider_position=False,
+    mtr_indicator=AutoTrendlines(
+        depth=15,
+        backstep=2,
+        atr_len=14,
+        touch_mult=0.5,
+        break_mult=0.4,
+        min_touches=2,
+        min_line_bars=5,
+        max_span_bars=150,
+        stale_bars=50,
+        max_total_lines=500,
+        max_active_per_dir=50,
+        merge_projection_bars=50,
+        display_only_aligned=False,
+    ),
+    position_handler=SteppingHandlerForex(
+        ForexAgent(),
+        stoploss_pip=1,
+        targets_ratio=[1],
+        targets_ratio_volumes=[0.01],
+        trail_stop=True,
+        long_trade=False,
+        short_trade=False,
+    ),
+    heikingashi_chartdata=False,
 )
 
 choch_xau = ForexChochQueueTradeConfig(

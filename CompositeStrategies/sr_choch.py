@@ -94,7 +94,7 @@ class SR_ChochConfig(TradeConfig):
             self.sr_chart,
             candle,
             side,
-            source="Static Suppor" if best_zone.is_support else "Static Resistance",
+            source="Static Support" if best_zone.is_support else "Static Resistance",
             zone=best_zone,
             touch_type=touch_type,
         )
@@ -151,7 +151,7 @@ class SR_ChochConfig(TradeConfig):
             self.sr_chart,
             candle,
             best_dynamic_sr.side,
-            source="Dynamic Suppor"
+            source="Dynamic Support"
             if best_dynamic_sr.is_support
             else "Dynamic Resistance",
             dynamic_sr=best_dynamic_sr,

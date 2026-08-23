@@ -21,6 +21,7 @@ logger = CustomLogger(
     log_file=True, file_log_name="MTR_Signal", consol_log_level=logging.DEBUG
 )
 
+
 @dataclass(kw_only=True)
 class MTRConfig(TradeConfig):
     strategy: None = field(default=None)  # type: ignore[override]
@@ -30,11 +31,7 @@ class MTRConfig(TradeConfig):
     last_checked_candle: Candle | None = field(default=None, init=False)
     last_mtr_signal: MTRSignal | None = field(default=None, init=False)
 
-  
-    async def find_signal(
-        self, chartdata: ChartData
-    ) -> None | MTRSignal:
-        
+    async def find_signal(self, chartdata: ChartData) -> None | MTRSignal:
         # Check for MTR Signal
         if (
             self.last_mtr_checked_candle

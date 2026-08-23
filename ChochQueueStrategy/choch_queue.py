@@ -50,7 +50,7 @@ class ChochModel:
 
 @dataclass(slots=True, frozen=True)
 class ChochSignal(Signal):
-    source: str = field(default="ChochQueue", init=False)
+    source: str = field(default="Choch", init=False)
     choch_model: ChochModel
 
 
@@ -118,7 +118,9 @@ class ChochQueueFilter(Strategy):
         return conf_dict
 
     @staticmethod
-    def _rolling_extreme_excl(values: list[float], length: int, find_max: bool) -> list[float]:
+    def _rolling_extreme_excl(
+        values: list[float], length: int, find_max: bool
+    ) -> list[float]:
         """
         result[i] = max/min(values[i-length : i]) i.e. the extreme of the
         `length` values strictly BEFORE i, excluding i itself.
@@ -186,7 +188,9 @@ class ChochQueueFilter(Strategy):
         return events
 
     @staticmethod
-    def _pine_extreme(values: list[float], start: int, end: int, find_min: bool) -> tuple[float, int]:
+    def _pine_extreme(
+        values: list[float], start: int, end: int, find_min: bool
+    ) -> tuple[float, int]:
         """
         Mirrors Pine's:
             float lo = low  (or high)
