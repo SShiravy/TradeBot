@@ -57,7 +57,7 @@ choch_xau = ForexChochQueueTradeConfig(
         pivot_length=50,
         backstep=2,
         retrace_fib=0.5,
-        use_fibo_filter=False,  # True -> wait for price to retrace to the fib level | False -> signal as soon as the CHoCH/BOS break happens
+        use_fibo_filter=True,
         name="Choch",
     ),
     bar_between_signals=2,
