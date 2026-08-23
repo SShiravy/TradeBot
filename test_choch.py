@@ -1,6 +1,6 @@
 from config import settings
 
-settings.TELEGRAM_BOT_TOKEN = "8750919120:AAGwJ6n7_iE9twPx1464Ez8gac4_rxHn-l4"
+settings.TELEGRAM_BOT_TOKEN = "8937168160:AAHtl4qXCSKXgT6YTSZEvYYDSHs3UcVqD5Y"
 from TradingModule.reporter import TelegramReporter
 from Forex import ForexAgent, ForexChochQueueTradeConfig
 from ChartModule import Chart, TimeFrame
@@ -13,7 +13,7 @@ import logging
 
 
 CustomLogger(
-    log_file=True, file_log_name="ChochQueueBot", consol_log_level=logging.DEBUG
+    log_file=True, file_log_name="ChochBot", consol_log_level=logging.DEBUG
 )
 
 
@@ -27,7 +27,7 @@ solusd = ForexChochQueueTradeConfig(
         backstep=2,
         retrace_fib=0.5,
         use_fibo_filter=False,
-        name="ChochQueue",
+        name="Choch",
     ),
     bar_between_signals=2,
     consider_position=False,
@@ -56,7 +56,7 @@ audcad = ForexChochQueueTradeConfig(
         backstep=2,
         retrace_fib=0.5,
         use_fibo_filter=False,
-        name="ChochQueue",
+        name="Choch",
     ),
     bar_between_signals=2,
     consider_position=False,
@@ -84,7 +84,7 @@ eurgbp = ForexChochQueueTradeConfig(
         backstep=2,
         retrace_fib=0.5,
         use_fibo_filter=False,
-        name="ChochQueue",
+        name="Choch",
     ),
     bar_between_signals=2,
     consider_position=False,
@@ -113,7 +113,7 @@ usdjpy = ForexChochQueueTradeConfig(
         backstep=2,
         retrace_fib=0.5,
         use_fibo_filter=False,
-        name="ChochQueue",
+        name="Choch",
     ),
     bar_between_signals=2,
     consider_position=False,
@@ -141,7 +141,7 @@ eurusd = ForexChochQueueTradeConfig(
         backstep=2,
         retrace_fib=0.5,
         use_fibo_filter=False,
-        name="ChochQueue",
+        name="Choch",
     ),
     bar_between_signals=2,
     consider_position=False,
@@ -170,7 +170,7 @@ usdchf = ForexChochQueueTradeConfig(
         backstep=2,
         retrace_fib=0.5,
         use_fibo_filter=False,
-        name="ChochQueue",
+        name="Choch",
     ),
     bar_between_signals=2,
     consider_position=False,
@@ -199,7 +199,7 @@ btc = ForexChochQueueTradeConfig(
         backstep=2,
         retrace_fib=0.5,
         use_fibo_filter=False,
-        name="ChochQueue",
+        name="Choch",
     ),
     bar_between_signals=2,
     consider_position=False,
@@ -226,7 +226,7 @@ xau = ForexChochQueueTradeConfig(
         backstep=2,
         retrace_fib=0.5,
         use_fibo_filter=False,
-        name="ChochQueue",
+        name="Choch",
     ),
     bar_between_signals=2,
     consider_position=False,
@@ -244,7 +244,7 @@ xau = ForexChochQueueTradeConfig(
     heikingashi_chartdata=False,
 )
 
-TelegramReporter().main_channel = "@nader_support_resistance"
+TelegramReporter().main_channel = "@crypto_result_1"
 TraderBot(
     "Choch Queue Bot",
     [solusd, audcad, eurgbp, usdjpy, eurusd, usdchf, btc, xau],
