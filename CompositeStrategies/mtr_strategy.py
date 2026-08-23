@@ -1,6 +1,7 @@
 from datetime import timedelta
 from AutoTrendlineModule.auto_trendline import AutoTrendlines
-from CompositeStrategies.models import MTRSignal
+from ChochQueueStrategy.choch_queue import ChochQueueFilter
+from CompositeStrategies.models import DummyStrategy, MTRSignal
 from Forex.agent import ForexAgent
 from TradingModule.models import ExchangeAgent
 from custom_logger import CustomLogger
@@ -24,7 +25,7 @@ logger = CustomLogger(
 
 @dataclass(kw_only=True)
 class MTRConfig(TradeConfig):
-    strategy: None = field(default=None)  # type: ignore[override]
+    strategy: DummyStrategy = field(default=DummyStrategy("MTR"))  # type: ignore[override]
     agent: ExchangeAgent = field(default=ForexAgent(), init=False)
     mtr_indicator: AutoTrendlines
     last_signal_msg_id: int | None = field(default=None, init=False)

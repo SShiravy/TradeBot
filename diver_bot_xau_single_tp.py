@@ -17,8 +17,8 @@ CustomLogger(
     consol_log_level=logging.DEBUG,
 )
 one_m = ForexDiverTradeConfig(
-    chart=Chart("XAUUSD!", TimeFrame.one_minute),
-    second_chart=Chart("USDJPY!", TimeFrame.one_minute),
+    chart=Chart("XAUUSD", TimeFrame.one_minute),
+    second_chart=Chart("USDJPY", TimeFrame.one_minute),
     strategy=Divergence(
         5, 100, [], name="ForexDiver(Single TP)", inverse_diver_long=True
     ),

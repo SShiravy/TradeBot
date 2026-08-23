@@ -17,7 +17,6 @@ CustomLogger(log_file=True, file_log_name="MTR", consol_log_level=logging.DEBUG)
 
 sol = MTRConfig(
     chart=Chart("SOLUSD", TimeFrame.one_minute),
-    strategy=None,
     bar_between_signals=2,
     consider_position=False,
     mtr_indicator=AutoTrendlines(
@@ -50,7 +49,6 @@ sol = MTRConfig(
 
 audcad = MTRConfig(
     chart=Chart("AUDCAD!", TimeFrame.one_minute),
-    strategy=None,
     bar_between_signals=2,
     consider_position=False,
     mtr_indicator=AutoTrendlines(
@@ -83,7 +81,6 @@ audcad = MTRConfig(
 
 eurgbp = MTRConfig(
     chart=Chart("EURGBP!", TimeFrame.one_minute),
-    strategy=None,
     bar_between_signals=2,
     consider_position=False,
     mtr_indicator=AutoTrendlines(
@@ -116,7 +113,6 @@ eurgbp = MTRConfig(
 
 usdjpy = MTRConfig(
     chart=Chart("USDJPY!", TimeFrame.one_minute),
-    strategy=None,
     bar_between_signals=2,
     consider_position=False,
     mtr_indicator=AutoTrendlines(
@@ -149,7 +145,6 @@ usdjpy = MTRConfig(
 
 eur = MTRConfig(
     chart=Chart("EURUSD!", TimeFrame.one_minute),
-    strategy=None,
     bar_between_signals=2,
     consider_position=False,
     mtr_indicator=AutoTrendlines(
@@ -182,7 +177,6 @@ eur = MTRConfig(
 
 usdchf = MTRConfig(
     chart=Chart("USDCHF!", TimeFrame.one_minute),
-    strategy=None,
     bar_between_signals=2,
     consider_position=False,
     mtr_indicator=AutoTrendlines(
@@ -215,7 +209,6 @@ usdchf = MTRConfig(
 
 btc = MTRConfig(
     chart=Chart("BTCUSD!", TimeFrame.one_minute),
-    strategy=None,
     bar_between_signals=2,
     consider_position=False,
     mtr_indicator=AutoTrendlines(
@@ -248,7 +241,6 @@ btc = MTRConfig(
 
 xau = MTRConfig(
     chart=Chart("XAUUSD!", TimeFrame.one_minute),
-    strategy=None,
     bar_between_signals=2,
     consider_position=False,
     mtr_indicator=AutoTrendlines(
