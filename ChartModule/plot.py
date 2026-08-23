@@ -320,7 +320,6 @@ class ChartWithOscillatorPlot(ChartPlot):
     ) -> None:
         self.base_plot = ChartPlot(base_chartdata, plot_n_candles=plot_n_candles)
         self.oscillator_data = oscillator_data
-        self.plot_n_candles = plot_n_candles
 
         ax1, ax2 = fplt.create_plot(
             f"TimeFrame: {base_chartdata.chart.timeframe.value}", rows=2
@@ -329,10 +328,9 @@ class ChartWithOscillatorPlot(ChartPlot):
 
         self.base_plot.ax = ax1
         self.base_plot.plot()
-        n_candle = len(base_chartdata.candles)
         fplt.plot(
-            list(oscillator_data.keys())[-n_candle:],
-            list(oscillator_data.values())[-n_candle:],
+            list(oscillator_data.keys())[-plot_n_candles:],
+            list(oscillator_data.values())[-plot_n_candles:],
             ax=ax2,
             legend=label,
             color=color,

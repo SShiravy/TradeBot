@@ -131,7 +131,7 @@ class RSI(IndicatorBaseModel):
             end_time,
             self.upper_bond,
             color="#2b9000",
-            width=2,
+            width=1,
             ax=ax,
         )
         plot.draw_line(
@@ -140,6 +140,6 @@ class RSI(IndicatorBaseModel):
             end_time,
             self.lower_bond,
             color="#900000",
-            width=2,
+            width=1,
             ax=ax,
         )

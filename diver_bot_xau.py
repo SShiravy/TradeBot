@@ -12,18 +12,18 @@ CustomLogger(
     log_file=True, file_log_name="ForexDiverBot", consol_log_level=logging.DEBUG
 )
 
-one_m = ForexDiverTradeConfig(
-    chart=Chart("XAUUSD!", TimeFrame.one_minute),
-    second_chart=Chart("USDJPY!", TimeFrame.one_minute),
+xau = ForexDiverTradeConfig(
+    chart=Chart("XAUUSD!", TimeFrame.five_minutes),
+    second_chart=Chart("USDJPY!", TimeFrame.five_minutes),
     strategy=Divergence(5, 100, [], name="ForexDiver", inverse_diver_long=True),
     bar_between_signals=2,
     position_handler=SteppingHandlerForex(
         ForexAgent(),
-        stoploss_pip=30,
-        targets_ratio=[1, 2, 3],
-        targets_ratio_volumes=[0.01, 0.01, 0.01],
-        targets_in_pip=[20],
-        targets_in_pip_volumes=[0.01],
+        stoploss_pip=10,
+        targets_ratio=[1, 2],
+        targets_ratio_volumes=[0.01, 0.01],
+        targets_in_pip=[],
+        targets_in_pip_volumes=[],
         trail_stop=True,
         pip_trail_stop_under_entry=False,
         trading_constraints=[
@@ -59,7 +59,7 @@ dxy_1m = ForexDiverTradeConfig(
 )
 
 
-TraderBot("Gold Diver Bot", [one_m, dxy_1m], report_time={"h": 20, "m": 0})
+TraderBot("Gold Diver Bot", [xau], report_time={"h": 20, "m": 0})
 
 
 if __name__ == "__main__":

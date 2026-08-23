@@ -149,6 +149,7 @@ class Rsi3PushChochConfig(TradeConfig):
             logging.warning(f"rsi3push was too old {elapsed_time=} > {time_condition}")
             return None
         # Check for MTR Signal
+        # TODO: add mtr condition for choch position
         await self._check_mtr(choch_chartdata)
         # Check for CHoCH signal
         choch_signal = self._check_choch(choch_chartdata)

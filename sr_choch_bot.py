@@ -4,7 +4,7 @@ from CompositeStrategies.sr_choch import SR_ChochConfig
 from SRZoneModule.sr_zone import SRZones
 from config import settings
 
-settings.TELEGRAM_BOT_TOKEN = "8937168160:AAHtl4qXCSKXgT6YTSZEvYYDSHs3UcVqD5Y"
+settings.TELEGRAM_BOT_TOKEN = "8750919120:AAGwJ6n7_iE9twPx1464Ez8gac4_rxHn-l4"
 from TradingModule.reporter import TelegramReporter
 from Forex import ForexAgent
 from ChartModule import Chart, TimeFrame
@@ -56,7 +56,7 @@ xau = SR_ChochConfig(
         max_total_lines=500,
         max_active_per_dir=50,
         merge_projection_bars=50,
-        display_only_aligned=False,
+        display_only_aligned=True,
     ),
     agent=ForexAgent(),
     strategy=ChochQueueFilter(
@@ -67,7 +67,7 @@ xau = SR_ChochConfig(
         name="Choch",
     ),
     bar_between_signals=2,
-    n_candle_confirmation=100,
+    n_candle_confirmation=60,
     n_candle_check=300,
     consider_position=True,
     position_handler=(
@@ -122,7 +122,7 @@ audcad = SR_ChochConfig(
         max_total_lines=500,
         max_active_per_dir=50,
         merge_projection_bars=50,
-        display_only_aligned=False,
+        display_only_aligned=True,
     ),
     agent=ForexAgent(),
     strategy=ChochQueueFilter(
@@ -133,7 +133,7 @@ audcad = SR_ChochConfig(
         name="Choch",
     ),
     bar_between_signals=2,
-    n_candle_confirmation=100,
+    n_candle_confirmation=60,
     n_candle_check=300,
     consider_position=True,
     position_handler=(
@@ -188,7 +188,7 @@ usdjpy = SR_ChochConfig(
         max_total_lines=500,
         max_active_per_dir=50,
         merge_projection_bars=50,
-        display_only_aligned=False,
+        display_only_aligned=True,
     ),
     agent=ForexAgent(),
     strategy=ChochQueueFilter(
@@ -199,7 +199,7 @@ usdjpy = SR_ChochConfig(
         name="Choch",
     ),
     bar_between_signals=2,
-    n_candle_confirmation=100,
+    n_candle_confirmation=60,
     n_candle_check=300,
     consider_position=True,
     position_handler=(
@@ -254,7 +254,7 @@ eurgbp = SR_ChochConfig(
         max_total_lines=500,
         max_active_per_dir=50,
         merge_projection_bars=50,
-        display_only_aligned=False,
+        display_only_aligned=True,
     ),
     agent=ForexAgent(),
     strategy=ChochQueueFilter(
@@ -265,7 +265,7 @@ eurgbp = SR_ChochConfig(
         name="Choch",
     ),
     bar_between_signals=2,
-    n_candle_confirmation=100,
+    n_candle_confirmation=60,
     n_candle_check=300,
     consider_position=True,
     position_handler=(
@@ -320,7 +320,7 @@ eurusd = SR_ChochConfig(
         max_total_lines=500,
         max_active_per_dir=50,
         merge_projection_bars=50,
-        display_only_aligned=False,
+        display_only_aligned=True,
     ),
     agent=ForexAgent(),
     strategy=ChochQueueFilter(
@@ -331,7 +331,7 @@ eurusd = SR_ChochConfig(
         name="Choch",
     ),
     bar_between_signals=2,
-    n_candle_confirmation=100,
+    n_candle_confirmation=60,
     n_candle_check=300,
     consider_position=True,
     position_handler=(
@@ -386,7 +386,7 @@ usdchf = SR_ChochConfig(
         max_total_lines=500,
         max_active_per_dir=50,
         merge_projection_bars=50,
-        display_only_aligned=False,
+        display_only_aligned=True,
     ),
     agent=ForexAgent(),
     strategy=ChochQueueFilter(
@@ -397,7 +397,7 @@ usdchf = SR_ChochConfig(
         name="Choch",
     ),
     bar_between_signals=2,
-    n_candle_confirmation=100,
+    n_candle_confirmation=60,
     n_candle_check=300,
     consider_position=True,
     position_handler=(
@@ -452,7 +452,7 @@ btc = SR_ChochConfig(
         max_total_lines=500,
         max_active_per_dir=50,
         merge_projection_bars=50,
-        display_only_aligned=False,
+        display_only_aligned=True,
     ),
     agent=ForexAgent(),
     strategy=ChochQueueFilter(
@@ -463,7 +463,7 @@ btc = SR_ChochConfig(
         name="Choch",
     ),
     bar_between_signals=2,
-    n_candle_confirmation=100,
+    n_candle_confirmation=60,
     n_candle_check=300,
     consider_position=True,
     position_handler=(
@@ -518,7 +518,7 @@ sol = SR_ChochConfig(
         max_total_lines=500,
         max_active_per_dir=50,
         merge_projection_bars=50,
-        display_only_aligned=False,
+        display_only_aligned=True,
     ),
     agent=ForexAgent(),
     strategy=ChochQueueFilter(
@@ -529,7 +529,7 @@ sol = SR_ChochConfig(
         name="Choch",
     ),
     bar_between_signals=2,
-    n_candle_confirmation=100,
+    n_candle_confirmation=60,
     n_candle_check=300,
     consider_position=True,
     position_handler=(
@@ -584,7 +584,7 @@ eth = SR_ChochConfig(
         max_total_lines=500,
         max_active_per_dir=50,
         merge_projection_bars=50,
-        display_only_aligned=False,
+        display_only_aligned=True,
     ),
     agent=ForexAgent(),
     strategy=ChochQueueFilter(
@@ -595,7 +595,7 @@ eth = SR_ChochConfig(
         name="Choch",
     ),
     bar_between_signals=2,
-    n_candle_confirmation=100,
+    n_candle_confirmation=60,
     n_candle_check=300,
     consider_position=True,
     position_handler=(
@@ -650,7 +650,7 @@ xrp = SR_ChochConfig(
         max_total_lines=500,
         max_active_per_dir=50,
         merge_projection_bars=50,
-        display_only_aligned=False,
+        display_only_aligned=True,
     ),
     agent=ForexAgent(),
     strategy=ChochQueueFilter(
@@ -661,7 +661,7 @@ xrp = SR_ChochConfig(
         name="Choch",
     ),
     bar_between_signals=2,
-    n_candle_confirmation=100,
+    n_candle_confirmation=60,
     n_candle_check=300,
     consider_position=True,
     position_handler=(
@@ -679,7 +679,8 @@ xrp = SR_ChochConfig(
     ),
 )
 
-TelegramReporter().main_channel = "@crypto_result_1"
+TelegramReporter().main_channel = "@nader_support_resistance"
+
 TraderBot(
     "SR_ChoCh",
     [xau, audcad, usdjpy, eurgbp, eurusd, usdchf, btc, eth, xrp, sol],
