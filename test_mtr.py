@@ -208,7 +208,7 @@ usdchf = MTRConfig(
 
 
 btc = MTRConfig(
-    chart=Chart("BTCUSD!", TimeFrame.one_minute),
+    chart=Chart("BTCUSD", TimeFrame.one_minute),
     bar_between_signals=2,
     consider_position=False,
     mtr_indicator=AutoTrendlines(

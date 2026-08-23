@@ -35,13 +35,13 @@ class MTRConfig(TradeConfig):
     async def find_signal(self, chartdata: ChartData) -> None | MTRSignal:
         # Check for MTR Signal
         if (
-            self.last_mtr_checked_candle
-            and self.last_mtr_checked_candle == chartdata.candles[-1]
+            self.last_checked_candle
+            and self.last_checked_candle == chartdata.candles[-1]
         ):
             return None
 
         self.mtr_indicator.set(chartdata.candles)
-        self.last_mtr_checked_candle = chartdata.candles[-1]
+        self.last_checked_candle = chartdata.candles[-1]
         if (
             self.mtr_indicator.mtr_events
             and self.mtr_indicator.mtr_events[-1].candle == chartdata.candles[-1]
