@@ -65,7 +65,20 @@ class ChochQueueFilter(Strategy):
         short_support_conditions=SupportCandleConditions.RAW,
         name="ChochQueue",
     ) -> None:
-        
+        """
+        backstep: kept only for backward compatibility with existing configs;
+        the Pine source has no such filter on pivots, so it is unused here.
+
+        use_bos: BOS breaks are ALWAYS computed and pushed into the internal
+                 queue/state exactly like the Pine script - they still flip
+                 bias, set range_low/range_high, etc., since later CHoCH
+                 detection depends on that state evolving correctly.
+                 True  -> validated BOS entries are also surfaced as tradable
+                          signals and drawn (matches the Pine script).
+                 False -> validated BOS entries are skipped when picking a
+                          signal in check_signal() and skipped in draw_all();
+                          only CHoCH entries are ever surfaced/traded/drawn.
+        """
         super().__init__(
             name,
             long_support_conditions,
@@ -103,7 +116,11 @@ class ChochQueueFilter(Strategy):
 
     @staticmethod
     def _rolling_extreme_excl(values: list[float], length: int, find_max: bool) -> list[float]:
-        
+        """
+        result[i] = max/min(values[i-length : i]) i.e. the extreme of the
+        `length` values strictly BEFORE i, excluding i itself.
+        NaN where the window isn't fully available.
+        """
         series = pd.Series(values, dtype=float)
         rolled = (
             series.rolling(window=length, min_periods=length).max()
@@ -113,7 +130,19 @@ class ChochQueueFilter(Strategy):
         return rolled.shift(1).tolist()
 
     def _find_pivots(self, candles: list[Candle]) -> list[dict]:
-        
+        """
+        Mirrors Pine's `ta.pivothigh(length, length)` / `ta.pivotlow(length, length)`:
+        a candidate bar `p` is a pivot high if its high is strictly greater
+        than the `length` highs to its left and greater-or-equal to the
+        `length` highs to its right (mirrored for pivot low). Because the
+        right side needs `length` future bars to exist, the pivot only
+        becomes known/confirmed at bar `p + length` - exactly like Pine only
+        returning a non-na value once those bars have printed. Each event
+        therefore carries both the pivot's own bar (`pivot_index`, used as
+        the level/anchor location - Pine's `ph_bar := n - length`) and the
+        bar at which it becomes visible (`confirm_index`, when Pine's `if ph`
+        block actually runs).
+        """
         length = self.pivot_length
         n = len(candles)
         if n <= 2 * length:
@@ -153,7 +182,17 @@ class ChochQueueFilter(Strategy):
 
     @staticmethod
     def _pine_extreme(values: list[float], start: int, end: int, find_min: bool) -> tuple[float, int]:
-        
+        """
+        Mirrors Pine's:
+            float lo = low  (or high)
+            for off = 1 to rng
+                if low[off] < lo   (strict)
+                    lo := low[off]
+        i.e. scans from `end` backward down to `start`, only replacing on a
+        STRICT improvement. On ties this keeps the bar closer to `end` (the
+        most recently found one), unlike `min()/list.index()` which would
+        keep the oldest/leftmost bar.
+        """
         best = values[end]
         best_index = end
         for idx in range(end - 1, start - 1, -1):
@@ -301,15 +340,13 @@ class ChochQueueFilter(Strategy):
                 and candle.low < range_low
             )
             bull_bos = (
-                self.use_bos
-                and bias is MarketSide.BULLISH
+                bias is MarketSide.BULLISH
                 and last_ph_price is not None
                 and not ph_crossed
                 and candle.close > last_ph_price
             )
             bear_bos = (
-                self.use_bos
-                and bias is MarketSide.BEARISH
+                bias is MarketSide.BEARISH
                 and last_pl_price is not None
                 and not pl_crossed
                 and candle.close < last_pl_price
@@ -412,6 +449,12 @@ class ChochQueueFilter(Strategy):
         for model in self.queue:
             if not model.validated or model.touch_candle is None:
                 continue
+            if not model.is_choch and not self.use_bos:
+                # BOS is still fully computed/queued/validated above (it can
+                # still flip bias, set ranges, etc. for later CHoCH detection)
+                # - use_bos only decides whether it's ever surfaced as a
+                # tradable signal.
+                continue
             if model.touch_candle.time == last_candle.time:
                 newest_validated = model
                 break
@@ -490,8 +533,11 @@ class ChochQueueFilter(Strategy):
 
     def draw_all(self, plot: ChartPlot):
         for model in self.queue:
-            if model.validated:
-                self._draw_model(plot, model)
+            if not model.validated:
+                continue
+            if not model.is_choch and not self.use_bos:
+                continue
+            self._draw_model(plot, model)
 
     def generate_dummy_signal(
         self,
