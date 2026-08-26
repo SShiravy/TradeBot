@@ -136,12 +136,12 @@ class Rsi3PushChochConfig(TradeConfig):
 
         # Check if the last 3-push signal is too old
         elapsed_time = (
-            chartdata.candles[-1].time
+            choch_chartdata.candles[-1].time
             - self.last_3push_signal.main_chart_line.end_candle.time
         ).total_seconds()
         time_condition = (
             self.n_candle_confirmation
-            * chartdata.chart.timeframe.time_delta.total_seconds()
+            * choch_chartdata.chart.timeframe.time_delta.total_seconds()
         )
         if elapsed_time > time_condition:
             self.last_3push_signal = None
