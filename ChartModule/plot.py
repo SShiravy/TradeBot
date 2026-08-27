@@ -67,6 +67,13 @@ class ChartPlot(BaseChartPlot):
             self.chartdata.candles = self.chartdata.candles[-self.plot_n_candles :]
         df = self.chartdata.generate_dataframe()
         fplt.add_legend(ax=self.ax, text=f"{self.chartdata.chart.symbol}")
+        if self.ax.legend is not None:
+            # keep the legend box small - on some Windows setups (DPI
+            # scaling issues) it otherwise renders huge enough to cover
+            # most of the chart
+            self.ax.legend.setLabelTextSize("7pt")
+            self.ax.legend.layout.setVerticalSpacing(0)
+            self.ax.legend.layout.setHorizontalSpacing(8)
 
         fplt.candlestick_ochl(df[["open", "close", "high", "low"]], ax=self.ax)
 
@@ -199,6 +206,36 @@ class ChartPlot(BaseChartPlot):
                 # legend=signal.source + "_Signal",
             )
 
+    def mark_signals(self, signals: list[Signal], ax=None):
+        """
+        Same as mark_signal(), but for many signals in ONE fplt.plot() call
+        per side. Prefer this when marking a whole list of signals (e.g. a
+        full backtest run): calling mark_signal() once per signal in a loop
+        makes finplot's auto-view zoom in on just the last one added,
+        leaving the rest of the chart (including the candlesticks) far
+        outside the visible viewport.
+        """
+        bullish = [s for s in signals if s.side is MarketSide.BULLISH]
+        bearish = [s for s in signals if s.side is not MarketSide.BULLISH]
+        if bullish:
+            fplt.plot(
+                [s.candle.time for s in bullish],
+                [s.candle.low * 0.9995 for s in bullish],
+                style="^",
+                color="#1DBD1D",
+                width=3,
+                ax=self.ax if not ax else ax,
+            )
+        if bearish:
+            fplt.plot(
+                [s.candle.time for s in bearish],
+                [s.candle.high * 1.0005 for s in bearish],
+                style="v",
+                color="#BD1D1D",
+                width=3,
+                ax=self.ax if not ax else ax,
+            )
+
     def mark_price(self, time, price: float, side: MarketSide, ax=None):
         if side is MarketSide.BULLISH:
             fplt.plot(
@@ -264,6 +301,34 @@ class ChartPlot(BaseChartPlot):
             color=color,
             legend=legend,
             width=thickness,
+        )
+
+    def mark_points(
+        self,
+        points: list[tuple],
+        legend: str | None = None,
+        color: str = "#e2c800",
+        ax=None,
+    ):
+        """
+        Plot many individual markers (dots) in a SINGLE fplt.plot() call.
+        Prefer this over calling mark_candle() in a loop: adding dozens of
+        separate single-point traces makes finplot's auto-view zoom in on
+        just the last one added, leaving the rest of the chart (including
+        the candlesticks) far outside the visible viewport.
+        """
+        if not points:
+            return
+        xs = [p[0] for p in points]
+        ys = [p[1] for p in points]
+        fplt.plot(
+            xs,
+            ys,
+            style="o",
+            ax=self.ax if not ax else ax,
+            color=color,
+            legend=legend,
+            width=1,
         )
 
 
