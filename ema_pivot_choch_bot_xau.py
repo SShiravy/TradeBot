@@ -1,4 +1,5 @@
 from config import settings
+settings.TELEGRAM_BOT_TOKEN = "8937168160:AAHtl4qXCSKXgT6YTSZEvYYDSHs3UcVqD5Y"
 from TradingModule.reporter import TelegramReporter
 from Forex import ForexAgent, ForexEmaPivotChochTradeConfig
 from ChartModule import Chart, TimeFrame
