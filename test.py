@@ -163,14 +163,14 @@ def test_choch_queue():
     plot.show()
 
 
-def test_ema_pivot_choch(n_ltf_candles: int = 1500, n_htf_candles: int = 500, warm_up_candles: int = 50):
+def test_ema_pivot_choch(n_ltf_candles: int = 1500, n_htf_candles: int = 300, warm_up_candles: int = 50):
     from ChartModule.models import Chart, TimeFrame
     from ChartModule.plot import DoubleChartPlot
     from EmaPivotChochStrategy.ema_pivot_choch import EmaPivotChochFilter
     from Forex.agent import ForexAgent
 
     ltf_chart = Chart("XAUUSD", TimeFrame.one_minute)
-    htf_chart = Chart("XAUUSD", TimeFrame.three_minutes)
+    htf_chart = Chart("XAUUSD", TimeFrame.five_minutes)
 
     ltf_chartdata = ForexAgent().get_chartdata(ltf_chart, n_ltf_candles)
     htf_chartdata = ForexAgent().get_chartdata(htf_chart, n_htf_candles)
@@ -187,27 +187,20 @@ def test_ema_pivot_choch(n_ltf_candles: int = 1500, n_htf_candles: int = 500, wa
     )
 
     ema_pivot_choch = EmaPivotChochFilter(
-        ema_periods=[40, 131, 278],
-        htf_pivot_length=10,
+        ema_periods=[20, 40, 60],
+        htf_pivot_length=2,
         htf_backstep=2,
         atr_period=14,
-        atr_multiplier=1.0,
+        atr_multiplier=0.5,
         max_bars_after_pivot=100,
         choch_pivot_length=2,
         choch_backstep=2,
         retrace_fib=0.5,
         use_fibo_filter=False,
         use_bos=False,
+        use_choch=False
     )
 
-    # check_signal() only fires when the signal lands exactly on the LAST
-    # candle of whatever chartdata you hand it (that's the correct behaviour
-    # live: fire once, the moment it happens). So calling it a single time on
-    # the whole fetched history only tells you "is a setup completing right
-    # now", not "did any setup happen in this window". To see every
-    # historical setup (like test_choch_queue() does via .queue), we walk
-    # the LTF candles forward one at a time and collect every signal along
-    # the way - this mirrors exactly how the live bot calls it every candle.
     signals = []
     ltf_candles = ltf_chartdata.candles
     htf_candles = htf_chartdata.candles
@@ -233,9 +226,6 @@ def test_ema_pivot_choch(n_ltf_candles: int = 1500, n_htf_candles: int = 500, wa
 
     plot = DoubleChartPlot(ltf_chartdata, htf_chartdata, plot_n_candles=n_ltf_candles)
     if signals:
-        # draw every signal found during the walk in ONE batched call (not
-        # in a loop) - looping mark_candle()/mark_signal() per signal makes
-        # finplot's auto-view zoom in on just the last marker added
         ema_pivot_choch.draw_all(plot, signals, draw_indicators=True)
     else:
         logging.info("no signals found in this window, showing raw EMAs instead")
@@ -244,8 +234,6 @@ def test_ema_pivot_choch(n_ltf_candles: int = 1500, n_htf_candles: int = 500, wa
                 ema_values.keys(), ema_values.values(), legend=f"EMA{period}"
             )
 
-    # mark every EMA-pivot touch on the LTF pane, whether or not it ever led
-    # to a CHoCH/BOS afterward
     logging.info(f"marking {len(ema_pivot_choch._touch_events)} EMA-pivot touches on the LTF chart")
     touch_debug = ema_pivot_choch.describe_touches()
     suspicious = [t for t in touch_debug if t["suspicious"]]
