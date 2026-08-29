@@ -145,26 +145,20 @@ class EmaPivotChochFilter(Strategy):
 
     def _touching_emas(self, pivot: PivotPoint) -> list[EmaTouch]:
         atr_value = self._atr.get(pivot.candle.timestamp)
+        max_distance = (atr_value * self.atr_multiplier) if atr_value is not None else 0.0
+        if pivot.is_high:
+            zone_low = pivot.candle.low
+            zone_high = pivot.candle.high + max_distance
+        else:
+            zone_low = pivot.candle.low - max_distance
+            zone_high = pivot.candle.high
+
         touches: list[EmaTouch] = []
         for period in self.ema_periods:
             ema_value = self._emas[period].get(pivot.candle.timestamp)
             if ema_value is None:
                 continue
-            if pivot.candle.low <= ema_value <= pivot.candle.high:
-                touches.append(EmaTouch(period, ema_value))
-                continue
-            if atr_value is None:
-                continue
-            max_distance = atr_value * self.atr_multiplier
-            if (
-                ema_value > pivot.candle.high
-                and ema_value - pivot.candle.high <= max_distance
-            ):
-                touches.append(EmaTouch(period, ema_value))
-            elif (
-                ema_value < pivot.candle.low
-                and pivot.candle.low - ema_value <= max_distance
-            ):
+            if zone_low <= ema_value <= zone_high:
                 touches.append(EmaTouch(period, ema_value))
         return touches
 
@@ -326,7 +320,7 @@ class EmaPivotChochFilter(Strategy):
             (htf_bearish_points if pivot.is_high else htf_bullish_points).append(
                 htf_point
             )
-        plot.base_plot.mark_points(ltf_points, legend="EMA-pivot touch", color=color)
+        plot.base_plot.mark_points(ltf_points, color=color)
         plot.second_plot.mark_points(htf_bullish_points, color="#26a69a")
         plot.second_plot.mark_points(htf_bearish_points, color="#ef5350")
 
@@ -341,9 +335,7 @@ class EmaPivotChochFilter(Strategy):
     ):
         if draw_emas:
             for period, ema_values in self._emas.items():
-                plot.second_plot.linear_plot(
-                    ema_values.keys(), ema_values.values(), legend=f"EMA{period}"
-                )
+                plot.second_plot.linear_plot(ema_values.keys(), ema_values.values())
         pivot_color = "#ef5350" if signal.side is MarketSide.BEARISH else "#26a69a"
         pivot_source = CandlesSource.High if signal.pivot.is_high else CandlesSource.Low
         plot.second_plot.mark_candle(
@@ -366,9 +358,7 @@ class EmaPivotChochFilter(Strategy):
         if not signals:
             return
         for period, ema_values in self._emas.items():
-            plot.second_plot.linear_plot(
-                ema_values.keys(), ema_values.values(), legend=f"EMA{period}"
-            )
+            plot.second_plot.linear_plot(ema_values.keys(), ema_values.values())
         model_pivot_points: dict[tuple, list] = {}
         retrace_points: dict[MarketSide, list] = {
             MarketSide.BULLISH: [],
@@ -455,9 +445,6 @@ class EmaPivotChochTradeConfig(TradeConfig):
     strategy: EmaPivotChochFilter
     n_ltf_candle_check: int = 1500
     n_htf_candle_check: int = 500
-    report_every_n_candles: int | None = None
-    _htf_candles_since_last_report: int = field(default=0, init=False)
-    _last_htf_time_seen: datetime | None = field(default=None, init=False)
 
     def export_config(self) -> dict:
         conf_dict = super().export_config()
@@ -508,10 +495,10 @@ class EmaPivotChochTradeConfig(TradeConfig):
             return None
         return (signal, position)
 
-    async def send_periodic_touch_report(self, ltf_chartdata: ChartData, htf_chartdata: ChartData):
+    async def send_touch_report(self, ltf_chartdata: ChartData, htf_chartdata: ChartData):
         plot = self._make_plot(ltf_chartdata, htf_chartdata)
         for period, ema_values in self.strategy._emas.items():
-            plot.second_plot.linear_plot(ema_values.keys(), ema_values.values(), legend=f"EMA{period}")
+            plot.second_plot.linear_plot(ema_values.keys(), ema_values.values())
         self.strategy.draw_touches(plot)
         img_path = plot.save_image(f"{self.strategy.name}_{self.chart}")
         msg = f"{self.strategy.name}\n📈 {self.chart}\nEMA-pivot touch report"
@@ -523,16 +510,13 @@ class EmaPivotChochTradeConfig(TradeConfig):
         ltf_data.candles = ltf_data.candles[:-1]
         htf_data = copy(htf_chartdata)
         htf_data.candles = htf_data.candles[:-1]
-        res = await self.find_signal(ltf_data, htf_data)
 
-        if self.report_every_n_candles and not self.strategy.use_bos and not self.strategy.use_choch:
-            current_htf_time = htf_data.candles[-1].time if htf_data.candles else None
-            if current_htf_time is not None and current_htf_time != self._last_htf_time_seen:
-                self._last_htf_time_seen = current_htf_time
-                self._htf_candles_since_last_report += 1
-            if self._htf_candles_since_last_report >= self.report_every_n_candles:
-                self._htf_candles_since_last_report = 0
-                await self.send_periodic_touch_report(ltf_data, htf_data)
+        touch_count_before = len(self.strategy._touch_events)
+        res = await self.find_signal(ltf_data, htf_data)
+        new_touch = len(self.strategy._touch_events) > touch_count_before
+
+        if new_touch and not self.strategy.use_bos and not self.strategy.use_choch:
+            await self.send_touch_report(ltf_data, htf_data)
 
         if res is None:
             return self.give_delay(ltf_data[-1])

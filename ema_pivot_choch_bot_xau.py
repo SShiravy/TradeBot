@@ -35,7 +35,6 @@ xau_1m = ForexEmaPivotChochTradeConfig(
         use_choch=False,
         name="EmaPivotChoch",
     ),
-    report_every_n_candles=5,
     bar_between_signals=2,
     consider_position=False,
     position_handler=SteppingHandlerForex(

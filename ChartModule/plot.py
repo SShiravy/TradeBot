@@ -66,11 +66,6 @@ class ChartPlot(BaseChartPlot):
         if len(self.chartdata.candles) > self.plot_n_candles:
             self.chartdata.candles = self.chartdata.candles[-self.plot_n_candles :]
         df = self.chartdata.generate_dataframe()
-        fplt.add_legend(ax=self.ax, text=f"{self.chartdata.chart.symbol}")
-        if self.ax.legend is not None:
-            self.ax.legend.setLabelTextSize("7pt")
-            self.ax.legend.layout.setVerticalSpacing(0)
-            self.ax.legend.layout.setHorizontalSpacing(8)
 
         fplt.candlestick_ochl(df[["open", "close", "high", "low"]], ax=self.ax)
 
