@@ -8,14 +8,11 @@ from ChartModule import Chart, TimeFrame
 from TradingModule.PositionHandlers.stepping_handler import SteppingHandlerForex
 from TradingModule.trader_bot import TraderBot
 from ChochQueueStrategy.choch_queue import ChochQueueFilter
-from custom_logger import CustomLogger
+from custom_logger import LoggerConfig, build_logger
 import asyncio
-import logging
 
+build_logger(LoggerConfig(name="root", log_file_name="ChochQueueBot"))
 
-CustomLogger(
-    log_file=True, file_log_name="ChochQueueBot", consol_log_level=logging.DEBUG
-)
 
 one_m = ForexChochQueueTradeConfig(
     chart=Chart("XAUUSD", TimeFrame.one_minute),

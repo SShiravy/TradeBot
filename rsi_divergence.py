@@ -10,14 +10,11 @@ from Forex import ForexAgent
 from ChartModule import Chart, TimeFrame
 from TradingModule.PositionHandlers.stepping_handler import SteppingHandlerForex
 from TradingModule.trader_bot import TraderBot
-from custom_logger import CustomLogger
+from custom_logger import build_logger, LoggerConfig
 import asyncio
-import logging
 
+build_logger(LoggerConfig(name="root", log_file_name="ForexDiverBot(RSI)"))
 
-CustomLogger(
-    log_file=True, file_log_name="ForexDiverBot(RSI)", consol_log_level=logging.DEBUG
-)
 
 xau_double_diver_five_m = OscillatorDoubleDiverConfig(
     chart=Chart("XAUUSD!", TimeFrame.five_minutes),

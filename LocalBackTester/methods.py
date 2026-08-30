@@ -9,13 +9,12 @@ from LocalBackTester.Database.methods import (
     store_diver_signal,
     fetch_diver_backtest,
 )
-from custom_logger import CustomLogger
+from custom_logger import build_logger, LoggerConfig
 import mt5_wrapper as mt5
 import pandas as pd
 import logging
 
-
-CustomLogger(True, consol_log_level=logging.DEBUG)
+build_logger(LoggerConfig(name="root"))
 
 
 def plot_csv_kline(chart: CsvChart):

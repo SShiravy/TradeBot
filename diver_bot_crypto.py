@@ -5,14 +5,13 @@ from TradingModule.PositionHandlers.stepping_handler import SteppingHandlerCrypt
 from TradingModule.reporter import TelegramReporter
 from TradingModule.trader_bot import TraderBot
 from DivergenceStrategy import Divergence
-from custom_logger import CustomLogger
+from custom_logger import build_logger, LoggerConfig
 from config import settings
 import asyncio
-import logging
 
-CustomLogger(
-    log_file=True, file_log_name="CryptoDiverBot", consol_log_level=logging.DEBUG
-)
+
+build_logger(LoggerConfig(name="root", log_file_name="CryptoDiverBot"))
+
 
 bitunix_agent = BitUnixAgent(settings.BITUNIX_API_KEY, settings.BITUNIX_API_SECRET_KEY)
 

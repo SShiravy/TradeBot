@@ -7,14 +7,11 @@ from TradingModule.PositionHandlers.trading_constraints import (
 )
 from TradingModule.trader_bot import TraderBot
 from DivergenceStrategy import Divergence
-from custom_logger import CustomLogger
+from custom_logger import LoggerConfig, build_logger
 import asyncio
-import logging
 
+build_logger(LoggerConfig(name="root", log_file_name="ForexDiverBot"))
 
-CustomLogger(
-    log_file=True, file_log_name="ForexDiverBot", consol_log_level=logging.DEBUG
-)
 
 one_m = ForexDiverTradeConfig(
     chart=Chart("XAUUSD!", TimeFrame.one_minute),

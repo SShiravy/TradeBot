@@ -1,7 +1,7 @@
-from custom_logger import CustomLogger
-import logging
+from custom_logger import build_logger, LoggerConfig
 
-CustomLogger(True, consol_log_level=logging.DEBUG)
+
+build_logger(LoggerConfig(name="root", log_file_name="Develop & Test"))
 
 
 async def divergence_test():

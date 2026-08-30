@@ -1,12 +1,11 @@
 from LocalBackTester.Database.create_db import create_db
 from DivergenceStrategy.diver_backtester import TwoChartDiverBacktester
-from custom_logger import CustomLogger
+from custom_logger import build_logger, LoggerConfig
 from config import settings
 import asyncio
-import logging
 
+build_logger(LoggerConfig(name="root", log_file_name="Develop & Test"))
 
-CustomLogger(True, consol_log_level=logging.DEBUG)
 
 if __name__ == "__main__":
     settings.METATRADER_TERMINAL_PATH = ""

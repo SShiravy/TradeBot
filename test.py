@@ -1,9 +1,8 @@
-from custom_logger import CustomLogger
+from custom_logger import build_logger, LoggerConfig
 import logging
 import asyncio
 
-
-CustomLogger(True, consol_log_level=logging.DEBUG)
+build_logger(LoggerConfig(name="root", log_file_name="test"))
 
 
 async def start_diver_backtest():

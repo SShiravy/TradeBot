@@ -1,117 +1,139 @@
 import logging
-from logging.handlers import RotatingFileHandler
 import colorlog
-import asyncio
-from telegram import Bot
+from dataclasses import dataclass, field
+from logging.handlers import RotatingFileHandler
+from typing import Optional
+from pathlib import Path
+import threading
+import requests
 
 
 class TelegramLogHandler(logging.Handler):
-    def __init__(self, bot_token: str, chat_id: int, level=logging.WARNING):
+    """Sends log records to a Telegram chat via bot API. Fire-and-forget, non-blocking."""
+
+    def __init__(self, bot_token: str, chat_id: int, level: int = logging.NOTSET):
         super().__init__(level)
-        self.chat_id = chat_id
-        self.bot = Bot(token=bot_token)
+        self._url = f"https://api.telegram.org/bot{bot_token}/sendMessage"
+        self._chat_id = chat_id
 
-    def emit(self, record: logging.LogRecord):
+    def emit(self, record: logging.LogRecord) -> None:
+        message = self.format(record)
+        threading.Thread(target=self._send, args=(message,), daemon=True).start()
+
+    def _send(self, message: str) -> None:
         try:
-            log_entry = self.format(record)
-            try:
-                asyncio.get_event_loop().create_task(self._send(log_entry))
-            except Exception as e:
-                logging.debug(e)
-
-        except Exception:
-            self.handleError(record)
-
-    async def _send(self, text: str):
-        try:
-            async with self.bot:
-                await self.bot.send_message(self.chat_id, text)
-        except Exception as e:
-            logging.debug(e)
+            requests.post(
+                self._url,
+                data={"chat_id": self._chat_id, "text": message},
+                timeout=5,
+            )
+        except requests.RequestException:
+            logger.warning("can not send log to channel")
 
 
-class CustomLogger:
-    def __new__(
-        cls,
-        consol_log: bool = True,
-        consol_log_level=logging.INFO,
-        log_file: bool = False,
-        file_log_level=logging.DEBUG,
-        file_log_name: str = "app",
-        telegram_report_channel=None,
-        telegram_bot_token=None,
-        telegram_report_log_level=logging.WARNING,
-    ):
-        if not hasattr(cls, "_instance"):
-            cls._instance = logging.getLogger()
-            cls._instance.setLevel(logging.DEBUG)
-            if consol_log:
-                cls._instance.addHandler(cls.__consol_handler(consol_log_level))
-            if log_file:
-                cls._instance.addHandler(
-                    cls.__file_handler(file_log_level, file_log_name)
-                )
-            if telegram_report_channel and telegram_bot_token:
-                cls._instance.addHandler(
-                    cls.__telegram_reporter(
-                        telegram_report_log_level,
-                        telegram_bot_token,
-                        telegram_report_channel,
-                    )
-                )
+def console_handler(level: int) -> logging.Handler:
+    formatter = colorlog.ColoredFormatter(
+        "{log_color}#{asctime}# {name}:\n --*{levelname}*->|[{message}]|\n",
+        style="{",
+        datefmt="%H:%M:%S",
+        log_colors={
+            "DEBUG": "white",
+            "INFO": "cyan",
+            "WARNING": "yellow",
+            "ERROR": "bold_red",
+            "CRITICAL": "bold_purple",
+        },
+    )
+    handler = logging.StreamHandler()
+    handler.setFormatter(formatter)
+    handler.setLevel(level)
+    return handler
 
-        return cls._instance
 
-    @classmethod
-    def __consol_handler(cls, log_level):
-        formatter = colorlog.ColoredFormatter(
-            "{log_color}#{asctime}# {name}:\n --*{levelname}*->|[{message}]|\n\n",
+def file_handler(level: int, name: str, dir: Path) -> logging.Handler:
+    dir.mkdir(parents=True, exist_ok=True)
+    formatter = logging.Formatter(
+        "#{asctime}#{name}# --*{levelname}*->|[{message}]|",
+        style="{",
+        datefmt="%D;%H:%M:%S",
+    )
+    handler = RotatingFileHandler(
+        filename=dir / f"{name}.log",
+        mode="a",
+        encoding="utf-8",
+        maxBytes=int(1e6),
+        backupCount=1,
+    )
+    handler.setFormatter(formatter)
+    handler.setLevel(level)
+    return handler
+
+
+class TelegramFormatter(logging.Formatter):
+    DEFAULT_STICKERS = {
+        "DEBUG": "🔍",
+        "INFO": "ℹ️",
+        "WARNING": "⚠️",
+        "ERROR": "🚫",
+        "CRITICAL": "🔥",
+    }
+
+    def __init__(self, stickers: dict | None = None):
+        super().__init__(
+            "{asctime}\n{levelname}\n{emoji}\n{message}",
             style="{",
-            datefmt='%H:%M:%S"',
-            log_colors={
-                "DEBUG": "white",
-                "INFO": "cyan",
-                "WARNING": "yellow",
-                "ERROR": "bold_red",
-                "CRITICAL": "bold_purple",
-            },
+            datefmt="%D;%H:%M:%S",
         )
-        consol_handler = logging.StreamHandler()
-        consol_handler.setFormatter(formatter)
-        consol_handler.setLevel(log_level)
-        return consol_handler
+        self.stickers = stickers or self.DEFAULT_STICKERS
 
-    @classmethod
-    def __file_handler(cls, log_level, file_log_name: str):
-        file_formatter = logging.Formatter(
-            "#{asctime}#{name}# --*{levelname}*->|[{message}]|",
-            style="{",
-            datefmt='%D;%H:%M:%S"',
-        )
-        file_handler = RotatingFileHandler(
-            filename=f"{file_log_name}.log",
-            mode="a",
-            encoding="utf-8",
-            maxBytes=int(1e6),
-            backupCount=1,
-        )
-        file_handler.setFormatter(file_formatter)
-        file_handler.setLevel(log_level)
-        return file_handler
+    def format(self, record: logging.LogRecord) -> str:
+        record.emoji = self.stickers.get(record.levelname, "📌")
+        return super().format(record)
 
-    @classmethod
-    def __telegram_reporter(cls, log_level, bot_token, channel_id):
-        tg_handler = TelegramLogHandler(
-            bot_token=bot_token, chat_id=channel_id, level=log_level
+
+def telegram_handler(level: int, bot_token: str, chat_id: int) -> logging.Handler:
+    handler = TelegramLogHandler(bot_token=bot_token, chat_id=chat_id, level=level)
+    handler.setFormatter(TelegramFormatter())
+    return handler
+
+
+@dataclass
+class LoggerConfig:
+    name: str = "app"
+    console: bool = True
+    console_level: int = logging.INFO
+    log_file_name: Optional[str] = None
+    log_dir: Path = Path("Logs")
+    file_level: int = logging.DEBUG
+    telegram_token: Optional[str] = None
+    telegram_channel: Optional[int] = None
+    telegram_level: int = logging.WARNING
+    extra_handlers: list = field(default_factory=list)
+
+
+def build_logger(config: LoggerConfig) -> logging.Logger:
+    logger = logging.getLogger(config.name)
+    if logger.handlers:
+        return logger
+
+    logger.setLevel(logging.DEBUG)
+
+    if config.console:
+        logger.addHandler(console_handler(config.console_level))
+    if config.log_file_name:
+        logger.addHandler(
+            file_handler(config.file_level, config.log_file_name, config.log_dir)
         )
-        tg_handler.setFormatter(
-            logging.Formatter(
-                "{asctime}\n{levelname}\n🚫🚫🚫\n{message}\n🚫🚫🚫",
-                style="{",
-                datefmt='%D;%H:%M:%S"',
+    if config.telegram_token and config.telegram_channel:
+        logger.addHandler(
+            telegram_handler(
+                config.telegram_level, config.telegram_token, config.telegram_channel
             )
         )
-        return tg_handler
+    for handler in config.extra_handlers:
+        logger.addHandler(handler)
+
+    return logger
 
 
 logging.getLogger("telegram").setLevel(logging.WARNING)
@@ -127,12 +149,22 @@ logging.getLogger("matplotlib.pyplot").setLevel(logging.WARNING)
 
 
 if __name__ == "__main__":
-    CustomLogger().debug("mio")
-    CustomLogger().info("mio")
-    CustomLogger().warning("mio")
-    CustomLogger().error("mio")
-    CustomLogger().critical("mio")
-    CustomLogger().exception("mio")
+    from config import settings
+
+    logger = build_logger(
+        LoggerConfig(
+            name="root",
+            log_file_name="test",
+            telegram_channel=settings.TELEGRAM_REPORT_CHANNEL,
+            telegram_token=settings.TELEGRAM_BOT_TOKEN,
+        )
+    )
+    logger.debug("mio")
+    logger.info("mio")
+    logger.warning("mio")
+    logger.error("mio")
+    logger.critical("mio")
+    logger.exception("mio")
 
     import logging
 
@@ -144,3 +176,6 @@ if __name__ == "__main__":
 
     other_logger = logging.getLogger("test_not_root")
     other_logger.error("not roooooottt")
+    import time
+
+    time.sleep(3)

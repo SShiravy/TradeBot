@@ -108,7 +108,7 @@ forex_rsi_diver_five_m = OscillatorDiverConfig(
             short_trade=False,
             trail_stop=True,
         )
-    ),,
+    ),
 )
 
 

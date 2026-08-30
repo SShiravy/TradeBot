@@ -15,14 +15,12 @@ from Forex import ForexAgent
 from ChartModule import Chart, TimeFrame
 from TradingModule.PositionHandlers.stepping_handler import SteppingHandlerForex
 from TradingModule.trader_bot import TraderBot
-from custom_logger import CustomLogger
+from custom_logger import LoggerConfig, build_logger
 import asyncio
-import logging
 
 
-CustomLogger(
-    log_file=True, file_log_name="Develop & Test", consol_log_level=logging.DEBUG
-)
+build_logger(LoggerConfig(name="root", log_file_name="Develop & Test"))
+
 
 xau_jpy_1m = ForexDiverTradeConfig(
     chart=Chart("XAUUSD!", TimeFrame.one_minute),
