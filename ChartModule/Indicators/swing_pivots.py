@@ -1,7 +1,7 @@
 from ChartModule.models import Candle, MarketSide, CandlesSource
 from ChartModule.Indicators.models import IndicatorBaseModel
 from ChartModule.plot import ChartPlot
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 
 
 @dataclass(slots=True, frozen=True)
@@ -37,6 +37,17 @@ class SwingPivots(IndicatorBaseModel):
         self._low_idx = 0
         self._low_last_update = 0
         self._low_price = 0.0
+
+        # `candles` passed into set()/update() is a SLIDING WINDOW (each
+        # call refetches the last `n_candle_check` candles), not an
+        # append-only array -- older candles keep falling off the front.
+        # All of `index`/`confirmed_index` above are positions WITHIN that
+        # window, so they go stale by exactly the number of candles that
+        # fell off the front since they were recorded. `_last_checked_index`
+        # remembers where `last_checked_candle` sat in the window as of the
+        # last call, so `update()` can measure that drift and `_rebase()`
+        # every stored index before doing anything else.
+        self._last_checked_index = 0
 
     def export_configs(self) -> dict:
         configs = super().export_configs()
@@ -145,6 +156,22 @@ class SwingPivots(IndicatorBaseModel):
             )
         return confirmed
 
+    def _rebase(self, shift: int):
+        """
+        The candles window shifted forward by `shift` bars (that many
+        candles fell off the front since the last call). Every previously
+        recorded position needs to move back by the same amount so it
+        still points at the same real candle in the new window.
+        """
+        self._raw_pivots = [
+            replace(p, index=p.index - shift, confirmed_index=p.confirmed_index - shift)
+            for p in self._raw_pivots
+        ]
+        self._high_idx -= shift
+        self._high_last_update -= shift
+        self._low_idx -= shift
+        self._low_last_update -= shift
+
     def _calculate(self) -> list[PivotPoint]:
         candles = self.candles
         self.live_pivots = []
@@ -160,6 +187,7 @@ class SwingPivots(IndicatorBaseModel):
         self._low_price = candles[0].low
 
         self._scan(1, len(candles))
+        self._last_checked_index = len(candles) - 1
         return self._finalize()
 
     def update(self, candles: list[Candle], *args, **kwargs) -> list[PivotPoint]:
@@ -170,10 +198,17 @@ class SwingPivots(IndicatorBaseModel):
         if start_index >= len(candles):
             return self.data
 
+        # position of `last_checked_candle` in the NEW window vs where it
+        # was recorded last time -> how far the window has slid forward
+        shift = self._last_checked_index - (start_index - 1)
+        if shift > 0:
+            self._rebase(shift)
+
         self.candles = candles
         self._scan(max(start_index, 1), len(candles))
         self.data = self._finalize()
         self.last_checked_candle = candles[-1]
+        self._last_checked_index = len(candles) - 1
         return self.data
 
     def _forcast(self) -> MarketSide:

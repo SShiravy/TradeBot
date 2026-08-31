@@ -3,7 +3,7 @@ from ChartModule.Indicators.models import IndicatorBaseModel
 from ChartModule.plot import ChartPlot
 from ChartModule.Indicators.swing_pivots import SwingPivots, PivotPoint
 from SRZoneModule.atr import ATR
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from statistics import median
 import logging
 import math
@@ -33,9 +33,28 @@ class ZoneModel:
     score_pct: float = field(default=0.0, init=False)
 
     invalidated_index: int | None = field(default=None, init=False)
+    # kept alongside invalidated_index: `self.candles` is a sliding window,
+    # so an index recorded now can point at the wrong candle (or even go
+    # negative/out of range) once the window has shifted by the time this
+    # zone is drawn. A direct Candle reference (like base_candle/
+    # last_touch_candle already are) stays correct no matter how the
+    # window moves.
+    invalidated_candle: Candle | None = field(default=None, init=False)
+
+    # role-reversal ("change of nature"): when `max_zone_breaks > 1`, a
+    # zone is allowed to survive a break instead of being invalidated by
+    # it -- and a support/resistance level that price has broken through
+    # conventionally flips role (broken support acts as resistance from
+    # then on, and vice versa). `polarity_segments` records that history:
+    # the candle at which each polarity started, paired with the polarity
+    # that was in effect from that candle onward. It always has at least
+    # one entry (the zone's original candle/polarity) and gets a new
+    # entry appended every time the zone flips.
+    polarity_segments: list[tuple[Candle, bool]] = field(default_factory=list, init=False)
 
     def __post_init__(self):
         self.sum_price = self.center
+        self.polarity_segments = [(self.base_candle, self.is_support)]
 
     @property
     def upper(self) -> float:
@@ -49,11 +68,16 @@ class ZoneModel:
     def broken(self) -> bool:
         return self.invalidated_index is not None
 
+    @property
+    def flipped(self) -> bool:
+        return len(self.polarity_segments) > 1
+
     def __str__(self) -> str:
         side = "Support" if self.is_support else "Resistance"
+        flip = f"|flips={len(self.polarity_segments) - 1}" if self.flipped else ""
         return (
             f"{side}|center={self.center:.5f}|touch={self.touch_count}"
-            f"|break={self.break_count}|broken={self.broken}|score={self.score_pct:.1f}"
+            f"|break={self.break_count}|broken={self.broken}{flip}|score={self.score_pct:.1f}"
         )
 
 
@@ -136,6 +160,23 @@ class SRZones(IndicatorBaseModel):
         # to only the ones this engine hasn't already committed to a zone.
         self._last_processed_confirm_index: int | None = None
 
+        # `candles` is a SLIDING WINDOW (each poll refetches the last
+        # `n_candle_check` candles), not an append-only array, so every
+        # index stored above (`base_index`, `last_touch_index`,
+        # `invalidated_index`, pivot indices in `_pivot_log`, etc.) goes
+        # stale by however many candles fell off the front since it was
+        # recorded. `_last_checked_index` remembers where the last-seen
+        # candle sat in the window last time, so `update()` can measure
+        # that drift and `_rebase()` everything before doing anything else.
+        # Without this, a fresh pivot's (correctly-based) index can end up
+        # SMALLER than a stale `_last_processed_confirm_index`, so the
+        # pivot gets silently filtered out and never turns into a new
+        # zone -- and stale `last_touch_index`/`invalidated_index` values
+        # make zones look younger than they are, so they never get broken
+        # or pruned and keep lingering (with their origin candle long
+        # outside any freshly plotted window).
+        self._last_checked_index: int = 0
+
     def export_configs(self) -> dict:
         configs = super().export_configs()
         configs.update(
@@ -216,6 +257,7 @@ class SRZones(IndicatorBaseModel):
                     zi.last_touch_index = zj.last_touch_index
                     zi.last_touch_candle = zj.last_touch_candle
                 zj.invalidated_index = bar_index
+                zj.invalidated_candle = self.candles[bar_index]
 
     def _prune_zones(self, bar_index: int):
         self._zones = [
@@ -226,17 +268,38 @@ class SRZones(IndicatorBaseModel):
         ]
 
     def _enforce_storage_cap(self):
-        if len(self._zones) <= self.max_stored_zones:
+        # FIFO cap: `self._zones` is chronologically ordered by creation
+        # (new zones are always appended in `_add_new_zone`), so once a
+        # new zone pushes the count over the cap, drop the oldest zone(s)
+        # from the front to make room and keep at most `max_stored_zones`
+        # in total.
+        excess = len(self._zones) - self.max_stored_zones
+        if excess <= 0:
             return
-        ranked = sorted(
-            self._zones,
-            key=lambda z: (z.invalidated_index is not None, -z.raw_score),
-        )
-        kept_ids = {id(z) for z in ranked[: self.max_stored_zones]}
-        # filter the ORIGINAL (chronologically ordered) list so relative
-        # creation order -- which `_process_new_pivot`/`_merge_overlapping_zones`
-        # both rely on -- is preserved.
-        self._zones = [z for z in self._zones if id(z) in kept_ids]
+        self._zones = self._zones[excess:]
+
+    def _rebase(self, shift: int):
+        """
+        The candles window shifted forward by `shift` bars (that many
+        candles fell off the front since the last call). Every previously
+        recorded position needs to move back by the same amount so it
+        still points at the same real candle in the new window.
+        """
+        for zone in self._zones:
+            zone.base_index -= shift
+            zone.last_touch_index -= shift
+            if zone.invalidated_index is not None:
+                zone.invalidated_index -= shift
+
+        self._pivot_log = [
+            replace(p, index=p.index - shift, confirmed_index=p.confirmed_index - shift)
+            for p in self._pivot_log
+        ]
+
+        if self._last_confirmed_bar_index is not None:
+            self._last_confirmed_bar_index -= shift
+        if self._last_processed_confirm_index is not None:
+            self._last_processed_confirm_index -= shift
 
     # --- PIVOT PROCESSING ------------------------------
 
@@ -259,6 +322,7 @@ class SRZones(IndicatorBaseModel):
                 break
             elif gap > self.max_bars_between_touches:
                 zone.invalidated_index = pivot.index
+                zone.invalidated_candle = pivot.candle
                 # not matched -> keep scanning other zones, or seed fresh below
                 continue
             else:
@@ -292,6 +356,7 @@ class SRZones(IndicatorBaseModel):
                 continue
             if (bar_index - zone.last_touch_index) > self.max_bars_between_touches:
                 zone.invalidated_index = bar_index
+                zone.invalidated_candle = candle
                 continue
 
             in_band = zone.lower <= candle.close <= zone.upper
@@ -308,6 +373,7 @@ class SRZones(IndicatorBaseModel):
                     pass
                 elif gap > self.max_bars_between_touches:
                     zone.invalidated_index = bar_index
+                    zone.invalidated_candle = candle
                 else:
                     zone.touch_count += 1
                     zone.last_touch_index = bar_index
@@ -324,6 +390,15 @@ class SRZones(IndicatorBaseModel):
                     or zone.touch_count >= self.max_zone_touches
                 ):
                     zone.invalidated_index = bar_index
+                    zone.invalidated_candle = candle
+                else:
+                    # zone survives this break: classic S/R role reversal
+                    # -- a broken support acts as resistance from here on
+                    # (and vice versa). Only reachable when
+                    # `max_zone_breaks > 1` lets a zone live past its
+                    # first break at all.
+                    zone.is_support = not zone.is_support
+                    zone.polarity_segments.append((candle, zone.is_support))
 
             if zone.invalidated_index is None and in_band and not zone.was_in_band:
                 gap = bar_index - zone.last_touch_index
@@ -331,12 +406,14 @@ class SRZones(IndicatorBaseModel):
                     pass
                 elif gap > self.max_bars_between_touches:
                     zone.invalidated_index = bar_index
+                    zone.invalidated_candle = candle
                 else:
                     zone.touch_count += 1
                     zone.last_touch_index = bar_index
                     zone.last_touch_candle = candle
                     if zone.touch_count >= self.max_zone_touches:
                         zone.invalidated_index = bar_index
+                        zone.invalidated_candle = candle
 
             zone.was_in_band = in_band
 
@@ -460,23 +537,13 @@ class SRZones(IndicatorBaseModel):
         for i, candle in enumerate(candles):
             self._process_bar(i, candle, pivots_by_confirm_index)
 
+        self._last_checked_index = n - 1
         return self._finalize(n - 1)
 
     def _forcast(self) -> MarketSide:
         return MarketSide.NEUTRAL
 
     # --- DISPLAY ---------------------------------------
-
-    def _nearest_zone(self, price: float, is_support: bool) -> ZoneModel | None:
-        best: ZoneModel | None = None
-        best_dist: float | None = None
-        for zone in self._zones:
-            if zone.invalidated_index is not None or zone.is_support != is_support:
-                continue
-            dist = abs(price - zone.center)
-            if best_dist is None or dist < best_dist:
-                best, best_dist = zone, dist
-        return best
 
     def plot(
         self,
@@ -486,6 +553,7 @@ class SRZones(IndicatorBaseModel):
         proximity_boost: float = 0.3,
         support_color: str = "#00808040",
         resist_color: str = "#ff000040",
+        flip_marker_color: str = "#ffff00d0",
         show_labels: bool = True,
         show_live: bool = True,
     ):
@@ -507,34 +575,85 @@ class SRZones(IndicatorBaseModel):
             candidates if max_zones_display is None else candidates[:max_zones_display]
         )
 
+        # `ChartPlot.plot()` trims its own candles down to `plot_n_candles`
+        # (default 100) the first time `plot.ax` is touched -- accessing it
+        # here (before drawing anything) guarantees that trim has already
+        # happened, so `plot.give_chartdata()` reflects the window that
+        # will actually be visible in the sent image.
+        _ = plot.ax
+        visible_candles = plot.give_chartdata().candles
+        earliest_visible_time = (
+            visible_candles[0].time if visible_candles else self.candles[0].time
+        )
+
         for rank, zone in enumerate(candidates):
-            color = support_color if zone.is_support else resist_color
             zone_end = (
-                self.candles[zone.invalidated_index].time
-                if zone.invalidated_index is not None
+                zone.invalidated_candle.time
+                if zone.invalidated_candle is not None
                 else end_time
             )
-            plot.draw_filled_rect(
-                zone.base_candle.time, zone_end, zone.upper, zone.lower, color
-            )
+
+            # A zone can flip role mid-life (`max_zone_breaks > 1` lets it
+            # survive a break instead of being invalidated by it, and a
+            # broken support conventionally starts acting as resistance
+            # from that point on, and vice versa). `polarity_segments`
+            # holds one (candle, is_support) entry per stretch of the
+            # zone's life; draw each stretch as its own rect in its own
+            # color so a flip actually shows up in the image, instead of
+            # silently drawing the whole box in whatever `is_support`
+            # happens to be right now.
+            for seg_index, (seg_candle, seg_is_support) in enumerate(zone.polarity_segments):
+                seg_end = (
+                    zone.polarity_segments[seg_index + 1][0].time
+                    if seg_index + 1 < len(zone.polarity_segments)
+                    else zone_end
+                )
+                # Same reasoning as the single-segment case used to have:
+                # don't draw past the left edge of the visible image.
+                seg_start = max(seg_candle.time, earliest_visible_time)
+                color = support_color if seg_is_support else resist_color
+                plot.draw_filled_rect(seg_start, seg_end, zone.upper, zone.lower, color)
+
+            # explicit marker at every flip point, so the role-reversal is
+            # visible even where the two segment colors are hard to tell
+            # apart at a glance (e.g. thumbnail size on a phone screen)
+            for seg_candle, _ in zone.polarity_segments[1:]:
+                flip_time = max(seg_candle.time, earliest_visible_time)
+                plot.draw_line(
+                    flip_time, zone.lower, flip_time, zone.upper,
+                    color=flip_marker_color, width=2,
+                )
 
             if show_labels and rank < 3:
                 status = " [INVALID]" if zone.broken else ""
+                flip_note = f" [FLIPPED x{len(zone.polarity_segments) - 1}]" if zone.flipped else ""
                 logger.info(
                     f"{'Support' if zone.is_support else 'Resist'} "
                     f"score:{zone.score_pct:.0f} touch:{zone.touch_count} "
-                    f"break:{zone.break_count}{status}"
+                    f"break:{zone.break_count}{status}{flip_note}"
                 )
 
         if show_live:
             for pivot in self.pivots.live_pivots:
                 is_support = not pivot.is_high
-                zone = self._nearest_zone(pivot.price, is_support)
+                # only draw the live-test line when price is genuinely
+                # inside a zone that's actually shown in this image --
+                # matching purely on "nearest zone of the right side" (the
+                # old behavior) picked whatever zone was geometrically
+                # closest even when price was nowhere near it, which is
+                # why a dashed line could show up cutting through the
+                # middle of an unrelated zone's box.
+                zone = next(
+                    (
+                        z for z in candidates
+                        if z.is_support == is_support and z.lower <= pivot.price <= z.upper
+                    ),
+                    None,
+                )
                 if zone is None:
                     continue
-                plot.draw_horizontal_line(
-                    zone.base_candle.time, end_time, zone.center, "#ffffff80"
-                )
+                zone_start = max(zone.base_candle.time, earliest_visible_time)
+                plot.draw_horizontal_line(zone_start, end_time, zone.center, "#ffffff80")
 
     def update(self, candles: list[Candle], *args, **kwargs) -> list[ZoneModel]:
         if self.last_checked_candle is None:
@@ -543,6 +662,15 @@ class SRZones(IndicatorBaseModel):
         start_index = self.find_new_candle_index(candles)
         if start_index >= len(candles):
             return self.data
+
+        # position of the last-seen candle in the NEW window vs where it
+        # was recorded last time -> how far the window has slid forward.
+        # Must rebase BEFORE touching self.pivots/self.atr or computing
+        # anything below, since everything downstream compares against
+        # these stored indices.
+        shift = self._last_checked_index - (start_index - 1)
+        if shift > 0:
+            self._rebase(shift)
 
         self.candles = candles
         self.pivots.update(candles)
@@ -555,4 +683,5 @@ class SRZones(IndicatorBaseModel):
 
         self.data = self._finalize(len(candles) - 1)
         self.last_checked_candle = candles[-1]
+        self._last_checked_index = len(candles) - 1
         return self.data

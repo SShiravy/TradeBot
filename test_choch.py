@@ -28,6 +28,7 @@ solusd = ForexChochQueueTradeConfig(
         retrace_fib=0.5,
         use_fibo_filter=False,
         name="Choch",
+        min_choch_candles=2
     ),
     bar_between_signals=2,
     consider_position=False,
@@ -57,6 +58,7 @@ audcad = ForexChochQueueTradeConfig(
         retrace_fib=0.5,
         use_fibo_filter=False,
         name="Choch",
+        min_choch_candles=2
     ),
     bar_between_signals=2,
     consider_position=False,
@@ -85,6 +87,7 @@ eurgbp = ForexChochQueueTradeConfig(
         retrace_fib=0.5,
         use_fibo_filter=False,
         name="Choch",
+        min_choch_candles=2
     ),
     bar_between_signals=2,
     consider_position=False,
@@ -114,6 +117,7 @@ usdjpy = ForexChochQueueTradeConfig(
         retrace_fib=0.5,
         use_fibo_filter=False,
         name="Choch",
+        min_choch_candles=2
     ),
     bar_between_signals=2,
     consider_position=False,
@@ -142,6 +146,7 @@ eurusd = ForexChochQueueTradeConfig(
         retrace_fib=0.5,
         use_fibo_filter=False,
         name="Choch",
+        min_choch_candles=2
     ),
     bar_between_signals=2,
     consider_position=False,
@@ -171,6 +176,7 @@ usdchf = ForexChochQueueTradeConfig(
         retrace_fib=0.5,
         use_fibo_filter=False,
         name="Choch",
+        min_choch_candles=2
     ),
     bar_between_signals=2,
     consider_position=False,
@@ -200,6 +206,7 @@ btc = ForexChochQueueTradeConfig(
         retrace_fib=0.5,
         use_fibo_filter=False,
         name="Choch",
+        min_choch_candles=2
     ),
     bar_between_signals=2,
     consider_position=False,
@@ -227,6 +234,7 @@ xau = ForexChochQueueTradeConfig(
         retrace_fib=0.5,
         use_fibo_filter=False,
         name="Choch",
+        min_choch_candles=2
     ),
     bar_between_signals=2,
     consider_position=False,

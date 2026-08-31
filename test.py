@@ -145,9 +145,7 @@ def test_choch_queue():
     if chart_data is None:
         raise ValueError
 
-    choch = ChochQueueFilter(
-        pivot_length=2, max_queue=30, retrace_fib=0.8, use_fibo_filter=False
-    )
+    choch = ChochQueueFilter(pivot_length=2, max_queue=30, retrace_fib=0.8, use_fibo_filter=False, plot_pivots=True)
     choch.check_signal(chart_data)
 
     validated_models = [model for model in choch.queue if model.validated]
@@ -162,6 +160,100 @@ def test_choch_queue():
     plot = ChartPlot(chart_data, len(chart_data.candles))
     plot.plot()
     choch.draw_all(plot)
+    plot.show()
+
+
+def test_ema_pivot_choch(n_ltf_candles: int = 120, n_htf_candles: int = 120, warm_up_candles: int = 10):
+    from ChartModule.models import Chart, TimeFrame
+    from ChartModule.plot import DoubleChartPlot
+    from EmaPivotChochStrategy.ema_pivot_choch import EmaPivotChochFilter
+    from Forex.agent import ForexAgent
+
+    ltf_chart = Chart("XAUUSD", TimeFrame.one_minute)
+    htf_chart = Chart("XAUUSD", TimeFrame.five_minutes)
+
+    ltf_chartdata = ForexAgent().get_chartdata(ltf_chart, n_ltf_candles)
+    htf_chartdata = ForexAgent().get_chartdata(htf_chart, n_htf_candles)
+    if ltf_chartdata is None or htf_chartdata is None:
+        raise ValueError
+
+    logging.info(
+        f"fetched LTF: {len(ltf_chartdata.candles)} candles, "
+        f"{ltf_chartdata.candles[0].time} -> {ltf_chartdata.candles[-1].time}"
+    )
+    logging.info(
+        f"fetched HTF: {len(htf_chartdata.candles)} candles, "
+        f"{htf_chartdata.candles[0].time} -> {htf_chartdata.candles[-1].time}"
+    )
+
+    ema_pivot_choch = EmaPivotChochFilter(
+        ema_periods=[20, 40, 60, 80],
+        htf_pivot_length=1,
+        htf_backstep=2,
+        atr_period=14,
+        atr_multiplier=1.0,
+        max_bars_after_pivot=100,
+        choch_pivot_length=2,
+        choch_backstep=2,
+        retrace_fib=0.5,
+        use_fibo_filter=False,
+        use_bos=False,
+        use_choch=False
+    )
+
+    signals = []
+    ltf_candles = ltf_chartdata.candles
+    htf_candles = htf_chartdata.candles
+    for i in range(warm_up_candles, len(ltf_candles)):
+        window = ltf_chartdata.give_sub_chartdata(ltf_candles[: i + 1])
+        last_time = window.candles[-1].time
+        htf_window_candles = [c for c in htf_candles if c.time <= last_time]
+        if len(htf_window_candles) < ema_pivot_choch.htf_pivot_length * 3:
+            continue
+        htf_window = htf_chartdata.give_sub_chartdata(htf_window_candles)
+        signal = ema_pivot_choch.check_signal(window, htf_window)
+        if signal is not None:
+            signals.append(signal)
+
+    logging.info(
+        f"found {len(signals)} EmaPivotChoch signals over {len(ltf_candles)} LTF candles:"
+    )
+    for s in signals:
+        logging.info(f"  {s}")
+
+    logging.info(f"funnel diagnostics (cumulative over the whole walk): {ema_pivot_choch.debug_counters}")
+    logging.info(f"diagnostics of the LAST check_signal() call: {ema_pivot_choch.debug_last_call}")
+
+    plot = DoubleChartPlot(ltf_chartdata, htf_chartdata, plot_n_candles=n_ltf_candles)
+    if signals:
+        ema_pivot_choch.draw_all(plot, signals, draw_indicators=True)
+    else:
+        logging.info("no signals found in this window, showing raw EMAs instead")
+        colors = ema_pivot_choch._ema_colors()
+        for period, ema_values in ema_pivot_choch._emas.items():
+            plot.second_plot.linear_plot(
+                ema_values.keys(), ema_values.values(),
+                color=colors[period],
+                legend=f"EMA{period}",
+            )
+
+    logging.info(f"marking {len(ema_pivot_choch._touch_events)} EMA-pivot touches on the LTF chart")
+    touch_debug = ema_pivot_choch.describe_touches()
+    suspicious = [t for t in touch_debug if t["suspicious"]]
+    out_of_range = [t for t in touch_debug if t["out_of_ltf_range"]]
+    logging.info(
+        f"touch alignment check: {len(suspicious)}/{len(touch_debug)} genuinely misaligned "
+        f"(landed more than one HTF bar away from their pivot's own candle - should be 0), "
+        f"{len(out_of_range)} pinned to LTF start because their pivot predates the fetched LTF window (expected)"
+    )
+    for t in touch_debug:
+        flag = " <-- SUSPICIOUS" if t["suspicious"] else (" (out of LTF range)" if t["out_of_ltf_range"] else "")
+        logging.info(
+            f"  pivot={t['pivot_time']} (is_high={t['pivot_is_high']}) -> "
+            f"ltf_marker={t['ltf_marker_time']}  delta={t['delta']}{flag}"
+        )
+    ema_pivot_choch.draw_touches(plot)
+
     plot.show()
 
 
@@ -269,7 +361,8 @@ if __name__ == "__main__":
     # asyncio.run(start_fich_diver_backtest())
 
     # test_choch_queue()
-    test_rsi()
+
+    test_ema_pivot_choch()
 
     # test_auto_trendlines()
 

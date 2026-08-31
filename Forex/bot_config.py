@@ -4,6 +4,7 @@ from ChartModule import Chart, ChartData
 from TradingModule import ExchangeAgent
 from DivergenceStrategy.two_chart_divergence import Divergence, TwoChartDiverTradeConfig
 from ChochQueueStrategy.choch_queue import ChochQueueFilter, ChochQueueTradeConfig
+from EmaPivotChochStrategy.ema_pivot_choch import EmaPivotChochFilter, EmaPivotChochTradeConfig
 from dataclasses import dataclass, field
 from datetime import timedelta
 
@@ -87,6 +88,30 @@ class ForexDiverTradeConfig(TwoChartDiverTradeConfig):
 class ForexChochQueueTradeConfig(ChochQueueTradeConfig):
     agent: ExchangeAgent = field(default=ForexAgent(), init=False)
     strategy: ChochQueueFilter  # type: ignore[override]
+
+    def give_delay(self, last_candle: Candle, jump=False) -> timedelta:
+        delay = self.chart.timeframe.time_delta
+        if jump:
+            delay *= self.bar_between_signals
+        last_candle_time = ForexAgent().get_chartdata(self.chart, n_bars=1).candles[0]  # type: ignore
+        next_timestamp = int(round(last_candle_time.timestamp) + delay.total_seconds())
+        sleep_time_based_on_timestamp = (
+            next_timestamp - ForexAgent().give_current_timestamp(self.chart)
+        )
+
+        return timedelta(seconds=sleep_time_based_on_timestamp + 1)
+
+    async def task(self):
+        wait_time = ForexAgent().check_market_open(self.chart)
+        if wait_time:
+            return timedelta(seconds=wait_time)
+        return await super().task()
+
+
+@dataclass(kw_only=True)
+class ForexEmaPivotChochTradeConfig(EmaPivotChochTradeConfig):
+    agent: ExchangeAgent = field(default=ForexAgent(), init=False)
+    strategy: EmaPivotChochFilter  # type: ignore[override]
 
     def give_delay(self, last_candle: Candle, jump=False) -> timedelta:
         delay = self.chart.timeframe.time_delta
