@@ -2,7 +2,7 @@ from TradingModule.PositionHandlers.riskfree_handlers import (
     RiskFreeCrypto,
     RiskFreeForex,
 )
-from TradingModule.models import ExchangeAgent, OrderSide, Position
+from TradingModule.models import ExchangeAgent, PositionSide, Position
 
 
 class SideDistinctCrypto(RiskFreeCrypto):
@@ -51,14 +51,14 @@ class SideDistinctCrypto(RiskFreeCrypto):
             "short_riskfree_trigger_percent": self.short_riskfree_trigger_percent,
         }
 
-    def init_stoploss(self, entry_price: float, side: OrderSide) -> float:
-        if side is OrderSide.BUY:
+    def init_stoploss(self, entry_price: float, side: PositionSide) -> float:
+        if side is PositionSide.LONG:
             return abs(self.long_stoploss_percent / 100 - 1) * entry_price
         else:
             return abs(self.short_stoploss_percent / 100 + 1) * entry_price
 
-    def init_takeprofit(self, entry_price: float, side: OrderSide) -> float:
-        if side is OrderSide.BUY:
+    def init_takeprofit(self, entry_price: float, side: PositionSide) -> float:
+        if side is PositionSide.LONG:
             return abs(self.long_takeprofit_percent / 100 + 1) * entry_price
         else:
             return abs(self.short_takeprofit_percent / 100 - 1) * entry_price
@@ -67,7 +67,7 @@ class SideDistinctCrypto(RiskFreeCrypto):
         if position.stoploss == position.entry_price:
             # when already riskfree triggered
             return position.takeprofit
-        if position.side is OrderSide.BUY:
+        if position.side is PositionSide.LONG:
             return (
                 abs(self.long_riskfree_trigger_percent / 100 + 1) * position.entry_price
             )
@@ -120,14 +120,14 @@ class SideDistinctForex(RiskFreeForex):
             "short_riskfree_trigger_pip": self.short_riskfree_trigger_pip,
         }
 
-    def init_stoploss(self, entry_price: float, side: OrderSide) -> float:
-        if side is OrderSide.BUY:
+    def init_stoploss(self, entry_price: float, side: PositionSide) -> float:
+        if side is PositionSide.LONG:
             return entry_price - self.long_stoploss_pip
         else:
             return entry_price + self.short_stoploss_pip
 
-    def init_takeprofit(self, entry_price: float, side: OrderSide) -> float:
-        if side is OrderSide.BUY:
+    def init_takeprofit(self, entry_price: float, side: PositionSide) -> float:
+        if side is PositionSide.LONG:
             return entry_price + self.long_takeprofit_pip
         else:
             return entry_price - self.short_takeprofit_pip
@@ -136,7 +136,7 @@ class SideDistinctForex(RiskFreeForex):
         if position.stoploss == position.entry_price:
             # when already riskfree triggered
             return position.takeprofit
-        if position.side is OrderSide.BUY:
+        if position.side is PositionSide.LONG:
             return position.entry_price + self.long_riskfree_trigger_pip
         else:
             return position.entry_price - self.short_riskfree_trigger_pip

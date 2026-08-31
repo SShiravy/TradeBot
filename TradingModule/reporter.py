@@ -1,5 +1,5 @@
 from ChartModule.models import MarketSide, Signal
-from TradingModule import Position, OrderSide
+from TradingModule import Position, PositionSide
 from config import settings
 from datetime import datetime, timedelta, timezone
 from telegram import Bot
@@ -65,7 +65,7 @@ class TelegramReporter:
         msg_list = [
             position.source,
             f"📊 {position.chart}",
-            "🟢 LONG" if position.side is OrderSide.BUY else "🔴 SHORT",
+            "🟢 LONG" if position.side is PositionSide.LONG else "🔴 SHORT",
             f"📣 Entry = {position.entry_price}",
         ]
 
@@ -106,10 +106,10 @@ class TelegramReporter:
 
         close_type_msg = "⭕ Flat Close"
         close_price = filled_price if filled_price else position.entry_price
-        if position.pnl > 0:
+        if position.pnl_dollar > 0:
             close_type_msg = "✅ TP Triggered"
             close_price = position.takeprofit
-        elif position.pnl < 0:
+        elif position.pnl_dollar < 0:
             close_type_msg = "⛔️ SL Triggered"
             close_price = position.stoploss
 
@@ -118,7 +118,7 @@ class TelegramReporter:
             position.source,
             f"📊 {position.chart}",
             f"💲 Close Price = {close_price}",
-            f"💵 PNL = {round(position.pnl, position.chart.precision)}",
+            f"💵 PNL = {round(position.pnl_dollar, position.chart.precision)}",
             f"⌛ Duration = {duration}",
         ]
         msg = "\n\n".join(msg_list)
@@ -168,7 +168,7 @@ class TelegramReporter:
             f"📊 {position.chart}",
             f"💲 Triggered Price = {trigger.price}",
             f"💰 Volume: {trigger.volume}",
-            f"💵 PNL = {round(position.pnl, position.chart.precision)}",
+            f"💵 PNL = {round(position.pnl_dollar, position.chart.precision)}",
             f"⌛ Duration = {duration}",
         ]
         msg = "\n\n".join(msg_list)

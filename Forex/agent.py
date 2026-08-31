@@ -1,7 +1,7 @@
 import numpy as np
 
 from ChartModule import Chart, Candle, ChartData, TimeFrame
-from TradingModule.models import ExchangeAgent, Position, OrderSide
+from TradingModule.models import ExchangeAgent, Position, PositionSide
 from datetime import datetime, timedelta, timezone
 from config import settings
 from enum import Enum
@@ -135,7 +135,7 @@ class ForexAgent(ExchangeAgent):
             logger.error(f"Forex Failed to get tick data for {position.chart.symbol}")
             return None
 
-        if position.side == OrderSide.BUY:
+        if position.side == PositionSide.LONG:
             price = tick.ask
             trade_side = mt5.ORDER_TYPE_BUY
         else:
@@ -201,7 +201,7 @@ class ForexAgent(ExchangeAgent):
         return True
 
     def partial_close(self, position: Position, volume) -> float | None:
-        if position.side == OrderSide.BUY:
+        if position.side == PositionSide.LONG:
             trade_side = mt5.ORDER_TYPE_BUY
         else:
             trade_side = mt5.ORDER_TYPE_SELL
@@ -223,7 +223,7 @@ class ForexAgent(ExchangeAgent):
         return result.price
 
     def close_position(self, position: Position) -> float | None:
-        if position.side == OrderSide.BUY:
+        if position.side == PositionSide.LONG:
             trade_side = mt5.ORDER_TYPE_BUY
         else:
             trade_side = mt5.ORDER_TYPE_SELL
@@ -247,9 +247,9 @@ class ForexAgent(ExchangeAgent):
     def mt5_trade_to_position(self, mt5_pos: mt5.TradePosition) -> Position:
         pos = Position(
             chart=Chart(mt5_pos.symbol, TimeFrame.one_minute),
-            side=OrderSide.BUY
+            side=PositionSide.LONG
             if mt5_pos.type == mt5.ORDER_TYPE_BUY
-            else OrderSide.SELL,
+            else PositionSide.SHORT,
             entry_price=mt5_pos.price_open,
             volume=mt5_pos.volume,
             stoploss=mt5_pos.sl,

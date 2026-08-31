@@ -1,6 +1,6 @@
 from LocalBackTester.StatisticalMethods.models import BasePnLDistribution
 from LocalBackTester.models import TickDataHandler
-from TradingModule.models import OrderSide, Position
+from TradingModule.models import PositionSide, Position
 from TradingModule.trader_bot import TradeConfig
 from matplotlib import pyplot as plt
 import numpy as np
@@ -33,11 +33,11 @@ class PercentPnlDistribution(BasePnLDistribution):
         )
 
         pos_ticks = ticks_handler.get_ticks_from_timstamp_range(
-            pos.open_timestamp,
-            pos.open_timestamp + seconds_check_range,
+            pos.defined_timestamp,
+            pos.defined_timestamp + seconds_check_range,
         )
 
-        if pos.side is OrderSide.BUY:
+        if pos.side is PositionSide.LONG:
             prices = pos_ticks["ask"].to_numpy()
 
             hit_indices = np.where(prices <= pos.stoploss)[0]
@@ -175,7 +175,7 @@ class PercentAfterSLDistribution(BasePnLDistribution):
             closed_time + seconds_check_range,
         )
 
-        if pos.side is OrderSide.BUY:
+        if pos.side is PositionSide.LONG:
             sl_tolerance = pos.stoploss * (1 + self.tolerance_percent / 100)
 
             prices = pos_ticks_after_sl["ask"].to_numpy()

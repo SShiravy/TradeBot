@@ -1,10 +1,10 @@
 from ChartModule.models import Signal
 from ChartModule.plot import Plot
-from TradingModule.PositionHandlers.model import PositionHandler
-from TradingModule.models import ExchangeAgent, OrderSide, Position
+from TradingModule.PositionHandlers.manager import PositionGenerator
+from TradingModule.models import ExchangeAgent, PositionSide, Position
 
 
-class SimpleCrypto(PositionHandler):
+class SimpleCrypto(PositionGenerator):
     def __init__(
         self,
         exchange_agent: ExchangeAgent,
@@ -31,14 +31,14 @@ class SimpleCrypto(PositionHandler):
         )
         return conf_dict
 
-    def init_stoploss(self, entry_price: float, side: OrderSide) -> float:
+    def init_stoploss(self, entry_price: float, side: PositionSide) -> float:
         return abs(self.stoploss_percent / 100 - side.factor()) * entry_price
 
-    def init_takeprofit(self, entry_price: float, side: OrderSide) -> float:
+    def init_takeprofit(self, entry_price: float, side: PositionSide) -> float:
         return abs(self.takeprofit_percent / 100 + side.factor()) * entry_price
 
 
-class SimpleForex(PositionHandler):
+class SimpleForex(PositionGenerator):
     def __init__(
         self,
         exchange_agent: ExchangeAgent,
@@ -60,13 +60,13 @@ class SimpleForex(PositionHandler):
         )
         return conf_dict
 
-    def init_stoploss(self, entry_price: float, side: OrderSide) -> float:
+    def init_stoploss(self, entry_price: float, side: PositionSide) -> float:
         return entry_price - side.factor() * self.stoploss_pip
 
-    def init_takeprofit(self, entry_price: float, side: OrderSide) -> float:
+    def init_takeprofit(self, entry_price: float, side: PositionSide) -> float:
         return entry_price + side.factor() * self.takeprofit_pip
 
-    async def generate_position(
+    async def generate(
         self,
         signal: Signal,
         entry_price: float | None = None,
@@ -74,7 +74,7 @@ class SimpleForex(PositionHandler):
         *args,
         **kwargs,
     ) -> Position:
-        pos = await super().generate_position(
+        pos = await super().generate(
             signal, entry_price, plot=plot, kwargs=kwargs, args=args
         )
         pos.in_forex = True

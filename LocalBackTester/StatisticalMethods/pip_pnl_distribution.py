@@ -1,6 +1,6 @@
 from LocalBackTester.StatisticalMethods.models import BasePnLDistribution
 from LocalBackTester.models import TickDataHandler
-from TradingModule.models import OrderSide, Position
+from TradingModule.models import PositionSide, Position
 from TradingModule.trader_bot import TradeConfig
 from matplotlib import pyplot as plt
 import numpy as np
@@ -32,10 +32,10 @@ class PipPnlDistribution(BasePnLDistribution):
             the_config.chart.timeframe.minutes * 60 * self.candles_range
         )
         pos_ticks = ticks_handler.get_ticks_from_timstamp_range(
-            pos.open_timestamp, pos.open_timestamp + seconds_check_range
+            pos.defined_timestamp, pos.defined_timestamp + seconds_check_range
         )
         # If pos is Buy, then you can sell in ask price & otherwise in bid price
-        if pos.side is OrderSide.BUY:
+        if pos.side is PositionSide.LONG:
             prices = pos_ticks["ask"].to_numpy()
             hit_indices = np.where(prices <= pos.stoploss)[0]
             if hit_indices.size == 0 or hit_indices[0] == 0:
@@ -192,7 +192,7 @@ class PipAfterSLDistribution(BasePnLDistribution):
             closed_time, closed_time + seconds_check_range
         )
         # If pos is Buy, then you can sell in ask price & otherwise in bid price
-        if pos.side is OrderSide.BUY:
+        if pos.side is PositionSide.LONG:
             sl_tolerance = pos.stoploss + self.tolerance_price
             prices = pos_ticks_after_sl["ask"].to_numpy()
             hit_indices = np.where(prices > sl_tolerance)[0]

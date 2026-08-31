@@ -421,7 +421,7 @@ class OscillatorDiverConfig(TradeConfig):
             else signal.main_chart_line.end_candle.low
         )  # TODO: change entry source to agent.get_current_tick
 
-        position = await self.position_handler.generate_position(
+        position = await self.position_handler.generate(
             signal, sl_base_price=entry_source, plot=plot
         )
         if not position:

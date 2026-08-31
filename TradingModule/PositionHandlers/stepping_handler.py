@@ -2,13 +2,13 @@ from datetime import timedelta
 from turtle import position
 from ChartModule.models import Chart, MarketSide, Signal
 from ChartModule.plot import Plot
-from TradingModule.PositionHandlers.model import PositionHandler
+from TradingModule.PositionHandlers.manager import PositionGenerator
 from TradingModule.PositionHandlers.ratio_handlers import (
     SlTpRatioCrypto,
 )
 from TradingModule.PositionHandlers.trading_constraints import TradingConstraint
-from TradingModule.models import ExchangeAgent, OrderSide, Position, Trigger
-from TradingModule.commands import TradeCommand
+from TradingModule.models import ExchangeAgent, PositionSide, Position, Trigger
+from TradingModule.commands import Command
 from TradingModule import commands
 import numpy as np
 import logging
@@ -17,7 +17,7 @@ import logging
 logger = logging.getLogger("PositionHandler")
 
 
-class SteppingHandlerForex(PositionHandler):
+class SteppingHandlerForex(PositionGenerator):
     def __init__(
         self,
         exchange_agent: ExchangeAgent,
@@ -145,14 +145,14 @@ class SteppingHandlerForex(PositionHandler):
             ).execute()
             pos.entry_price = step_position.entry_price
 
-    def init_stoploss(self, entry_price: float, side: OrderSide, chart: Chart) -> float:
+    def init_stoploss(self, entry_price: float, side: PositionSide, chart: Chart) -> float:
         return round(
             entry_price - side.factor() * self.stoploss_pip * chart.pip_factor,
             chart.precision,
         )
 
     def init_takeprofit(
-        self, entry_price: float, side: OrderSide, stoploss: float, chart: Chart
+        self, entry_price: float, side: PositionSide, stoploss: float, chart: Chart
     ) -> float:
         if self.targets_ratio:
             sl_pip = abs(entry_price - stoploss)
@@ -163,7 +163,7 @@ class SteppingHandlerForex(PositionHandler):
             )
         return round(tp, chart.precision)
 
-    async def generate_position(
+    async def generate(
         self,
         signal: Signal,
         entry_price: float | None = None,
@@ -174,11 +174,11 @@ class SteppingHandlerForex(PositionHandler):
     ) -> Position | None:
         real_trade = False
         if signal.side is MarketSide.BEARISH:
-            side = OrderSide.SELL
+            side = PositionSide.SHORT
             if self.short_trade:
                 real_trade = True
         else:  # signal.side is MarketSide.BULLISH:
-            side = OrderSide.BUY
+            side = PositionSide.LONG
             if self.long_trade:
                 real_trade = True
         if entry_price is None:
@@ -314,7 +314,7 @@ class SteppingHandlerForex(PositionHandler):
 
     def handler(
         self, position: Position, tick_prices: list[float]
-    ) -> TradeCommand | None:
+    ) -> Command | None:
         if not position.confiremed:
             self.modify_init_sl_tp(position)
         if position.confiremed and not position.sended:
@@ -406,7 +406,7 @@ class SteppingHandlerCrypto(SlTpRatioCrypto):
     async def open_steps_position(self, pos: Position):
         pass
 
-    async def generate_position(
+    async def generate(
         self,
         signal: Signal,
         entry_price: float | None = None,
@@ -417,11 +417,11 @@ class SteppingHandlerCrypto(SlTpRatioCrypto):
     ) -> Position | None:
         real_trade = False
         if signal.side is MarketSide.BEARISH:
-            side = OrderSide.SELL
+            side = PositionSide.SHORT
             if self.short_trade:
                 real_trade = True
         else:  # signal.side is MarketSide.BULLISH:
-            side = OrderSide.BUY
+            side = PositionSide.LONG
             if self.long_trade:
                 real_trade = True
         if entry_price is None:
@@ -479,7 +479,7 @@ class SteppingHandlerCrypto(SlTpRatioCrypto):
 
     def handler(
         self, position: Position, tick_prices: list[float]
-    ) -> TradeCommand | None:
+    ) -> Command | None:
         if not position.confiremed:
             self.modify_init_sl_tp(position)
         if position.confiremed and not position.sended:

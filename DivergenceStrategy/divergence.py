@@ -292,7 +292,7 @@ class DivergenceConfig(TradeConfig):
 
         entry_source = signal.main_chart_line.end_value
 
-        position = await self.position_handler.generate_position(
+        position = await self.position_handler.generate(
             signal, sl_base_price=entry_source, plot=plot
         )
         if position:

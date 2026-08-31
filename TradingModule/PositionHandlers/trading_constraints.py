@@ -1,5 +1,5 @@
 from ChartModule.models import Signal
-from TradingModule.models import OrderSide, Position
+from TradingModule.models import PositionSide, Position
 from abc import ABC, abstractmethod
 import logging
 
@@ -18,7 +18,7 @@ class TradingConstraint(ABC):
         pass
 
     def give_passed_candles(self, old_pos: Position, new_pos: Position):
-        passed_candle = (new_pos.candle_time - old_pos.candle_time).total_seconds() // (
+        passed_candle = (new_pos.defined_timestamp - old_pos.defined_timestamp)// (
             new_pos.chart.timeframe.minutes * 60
         )
         return passed_candle
@@ -106,7 +106,7 @@ class LoseInRowConstraint(TradingConstraint):
         lose_in_row_counter = 0
         constraint = (
             self.n_long_lose
-            if new_position.side is OrderSide.BUY
+            if new_position.side is PositionSide.LONG
             else self.n_short_lose
         )
         for pos in closed_positions[::-1]:
@@ -114,7 +114,7 @@ class LoseInRowConstraint(TradingConstraint):
             if passed_candle > self.n_bar:
                 continue
             if pos.side == new_position.side:
-                if pos.pnl >= 0:
+                if pos.pnl_dollar >= 0:
                     return True
                 lose_in_row_counter += 1
             if lose_in_row_counter >= constraint:

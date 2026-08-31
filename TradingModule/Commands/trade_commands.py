@@ -1,153 +1,12 @@
-from TradingModule import Position, ExchangeAgent
-from TradingModule.models import Trigger
-from TradingModule.reporter import TelegramReporter
-from datetime import datetime, timezone
-from abc import ABC, abstractmethod
-from enum import Enum
 import logging
-
-logger = logging.getLogger("TradeCommand")
-
-
-class TradeCommandStatus(Enum):
-    PENDING = "Pending"
-    EXECUTED = "Executed"
-    FAILED = "Failed"
+from TradingModule.models import Command
 
 
-class TradeCommand(ABC):
-    all_pending_commands = []
-    __recorded_executed_commands = {}
-    __recorded_failed_commands = {}
 
-    def __init__(
-        self,
-        position: Position,
-        exchange: ExchangeAgent,
-        n_attempts: int = 2,
-        report=True,
-    ):
-        self.position = position
-        self.exchange = exchange
-        self.n_attempts = n_attempts
-        self.failed_attempt: int = 0
-        self.__status = TradeCommandStatus.PENDING
-        self.report = report
-        self.bounded_command: TradeCommand | None = None
-        TradeCommand.all_pending_commands.append(self)
-
-        logger.debug(self)
-
-    def __str__(self) -> str:
-        return f"{self.__class__.__name__} {self.status.value} on {self.position.chart}| report:{self.report}"
-
-    def __record(self, command, record: dict):
-        n = record.get(command.__class__.__name__, 0)
-        record[command.__class__.__name__] = n + 1
-
-    @property
-    def status(self):
-        return self.__status
-
-    @status.setter
-    def status(self, value: TradeCommandStatus):
-        if value is TradeCommandStatus.EXECUTED:
-            TradeCommand.all_pending_commands.remove(self)
-            self.__record(self, TradeCommand.__recorded_executed_commands)
-        elif value is TradeCommandStatus.FAILED:
-            TradeCommand.all_pending_commands.remove(self)
-            self.__record(self, TradeCommand.__recorded_failed_commands)
-        self.__status = value
-
-    @abstractmethod
-    def command(self, time: datetime) -> bool:
-        """
-        Execute Command using proper methods in ExchangeAPI
-        change position obj if its neccessary
-        """
-        pass
-
-    async def execution_report(self):
-        """
-        report after successfull execution
-        """
-        pass
-
-    async def execute(self, time: datetime | None = None) -> bool:
-        """
-        Execute Command and handle status
-        """
-        if time is None:
-            time = datetime.now(timezone.utc)
-        if self.status is TradeCommandStatus.EXECUTED:
-            logger.warning(
-                f"attempt to execute already Executed {self.__class__.__name__} Command!"
-            )
-        if self.status is TradeCommandStatus.FAILED:
-            logger.warning(
-                f"attempt to execute already Failed {self.__class__.__name__} Command!"
-            )
-
-        if (
-            self.bounded_command
-            and self.bounded_command.status != TradeCommandStatus.EXECUTED
-        ):
-            return False
-
-        if self.command(time):
-            self.status = TradeCommandStatus.EXECUTED
-            logger.info(
-                str(self)
-                + f" for {self.position.exchange_id if self.position.exchange_id else self.position.id}"
-            )
-            if self.report:
-                try:
-                    await self.execution_report()
-                except Exception as e:
-                    logger.error(
-                        f"error in execution_report of {self.__class__.__name__} for {self.position}: {e}"
-                    )
-            return True
-
-        else:
-            self.failed_attempt += 1
-            if self.failed_attempt > self.n_attempts:
-                self.status = TradeCommandStatus.FAILED
-                if self.report:
-                    await TelegramReporter().log_report(
-                        f"{self} with {self.failed_attempt} failed attempts"
-                    )
-            logger.error(f"{self} with {self.failed_attempt} failed attempts")
-            return False
-
-    @classmethod
-    async def execute_pending_commands(cls, time: datetime | None = None, report=True):
-        if time is None:
-            time = datetime.now(timezone.utc)
-        all_commands = TradeCommand.all_pending_commands.copy()
-        for command in all_commands:
-            command.report = report
-            await command.execute(time)
-
-    @classmethod
-    def close_records(cls):
-        msg = [
-            "Trade Commands Summary:",
-            f"Executed: {cls.__recorded_executed_commands}",
-            f"Failed: {cls.__recorded_failed_commands}",
-            f"Pending: {len(cls.all_pending_commands)}",
-        ]
-
-        msg = "\n".join(msg)
-        cls.__recorded_failed_commands = {}
-        cls.__recorded_executed_commands = {}
-        return msg
+logger = logging.getLogger("Commands")
 
 
-# All Trade Commands Here ------------------
-
-
-class OpenPosition(TradeCommand):
+class OpenPosition(Command):
     def __init__(
         self,
         position: Position,
@@ -172,18 +31,7 @@ class OpenPosition(TradeCommand):
         return True
 
 
-class SendPositionSignal(TradeCommand):
-    async def execution_report(self):
-        await TelegramReporter().new_position(self.position)
-        self.position.plot = None
-
-    def command(self, time):
-        self.position.sended = True
-        self.position.last_update_timestamp = time
-        return True
-
-
-class TrailStoploss(TradeCommand):
+class TrailStoploss(Command):
     def __init__(
         self,
         position: Position,
@@ -208,7 +56,7 @@ class TrailStoploss(TradeCommand):
         return True
 
 
-class ChangeTakeProfit(TradeCommand):
+class ChangeTakeProfit(Command):
     def __init__(
         self,
         position: Position,
@@ -230,7 +78,7 @@ class ChangeTakeProfit(TradeCommand):
         return True
 
 
-class ParitalClose(TradeCommand):
+class ParitalClose(Command):
     def __init__(
         self,
         position: Position,
@@ -257,7 +105,7 @@ class ParitalClose(TradeCommand):
         return True
 
 
-class ClosePosition(TradeCommand):
+class ClosePosition(Command):
     def __init__(
         self,
         position: Position,
@@ -285,7 +133,7 @@ class ClosePosition(TradeCommand):
         return True
 
 
-class StopLoss(TradeCommand):
+class StopLoss(Command):
     def __init__(
         self,
         position: Position,
@@ -306,7 +154,7 @@ class StopLoss(TradeCommand):
         return True
 
 
-class TakeProfit(TradeCommand):
+class TakeProfit(Command):
     async def execution_report(self):
         await TelegramReporter().position_closed(self.position)
 
@@ -316,32 +164,7 @@ class TakeProfit(TradeCommand):
         return True
 
 
-class TriggerStep(TradeCommand):
-    def __init__(
-        self,
-        position: Position,
-        exchange: ExchangeAgent,
-        trigger: Trigger,
-        n_attempts: int = 2,
-        exec_price=None,
-        report=True,
-        pnl: float | None = None,
-    ):
-        super().__init__(position, exchange, n_attempts, report)
-        self.exec_price = exec_price
-        self.trigger = trigger
-        self.pnl = pnl
-
-    async def execution_report(self):
-        await TelegramReporter().triggered_step(self.position)
-
-    def command(self, time) -> bool:
-        self.position.update_pnl(self.trigger.price, self.trigger.volume, self.pnl)
-        self.position.go_next_step(time)
-        return True
-
-
-class TrailStoplossbyStep(TradeCommand):
+class TrailStoplossbyStep(Command):
     def __init__(
         self,
         position: Position,

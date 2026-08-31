@@ -2,9 +2,9 @@ import numpy as np
 from ChartModule.models import MarketSide, Signal
 from ChartModule.plot import Plot
 from TradingModule import commands
-from TradingModule.PositionHandlers.model import PositionHandler
-from TradingModule.commands import TradeCommand
-from TradingModule.models import ExchangeAgent, OrderSide, Position, Trigger
+from TradingModule.PositionHandlers.manager import PositionGenerator
+from TradingModule.commands import Command
+from TradingModule.models import ExchangeAgent, PositionSide, Position, Trigger
 from datetime import timedelta
 import logging
 
@@ -12,7 +12,7 @@ import logging
 logger = logging.getLogger("PositionHandler")
 
 
-class SlTpRatioCrypto(PositionHandler):
+class SlTpRatioCrypto(PositionGenerator):
     def __init__(
         self,
         exchange_agent: ExchangeAgent,
@@ -42,10 +42,10 @@ class SlTpRatioCrypto(PositionHandler):
         )
         return conf_dict
 
-    def init_stoploss(self, entry_price: float, side: OrderSide) -> float:
+    def init_stoploss(self, entry_price: float, side: PositionSide) -> float:
         return abs(self.stoploss_percent / 100 - side.factor()) * entry_price
 
-    def init_takeprofit(self, entry_price: float, side: OrderSide) -> float:
+    def init_takeprofit(self, entry_price: float, side: PositionSide) -> float:
         return (
             abs(self.stoploss_percent * self.ratio / 100 + side.factor()) * entry_price
         )
@@ -62,7 +62,7 @@ class SlTpRatioCrypto(PositionHandler):
         position.steps = [Trigger(trigger_price)]
         return trigger_price
 
-    async def generate_position(
+    async def generate(
         self,
         signal: Signal,
         entry_price: float | None = None,
@@ -71,11 +71,11 @@ class SlTpRatioCrypto(PositionHandler):
     ) -> Position | None:
         real_trade = False
         if signal.side is MarketSide.BEARISH:
-            side = OrderSide.SELL
+            side = PositionSide.SHORT
             if self.short_trade:
                 real_trade = True
         else:  # signal.side is MarketSide.BULLISH:
-            side = OrderSide.BUY
+            side = PositionSide.LONG
             if self.long_trade:
                 real_trade = True
         if entry_price is None:
@@ -130,7 +130,7 @@ class SlTpRatioCrypto(PositionHandler):
 
     def handler(
         self, position: Position, tick_prices: list[float]
-    ) -> TradeCommand | None:
+    ) -> Command | None:
         res = super().handler(position, tick_prices)
         if res:
             return res
@@ -158,7 +158,7 @@ class SlTpRatioCrypto(PositionHandler):
             )
 
 
-class SlTpRatioForex(PositionHandler):
+class SlTpRatioForex(PositionGenerator):
     def __init__(
         self,
         exchange_agent: ExchangeAgent,
@@ -186,10 +186,10 @@ class SlTpRatioForex(PositionHandler):
         )
         return conf_dict
 
-    def init_stoploss(self, entry_price: float, side: OrderSide) -> float:
+    def init_stoploss(self, entry_price: float, side: PositionSide) -> float:
         return entry_price - side.factor() * self.stoploss_pip
 
-    def init_takeprofit(self, entry_price: float, side: OrderSide) -> float:
+    def init_takeprofit(self, entry_price: float, side: PositionSide) -> float:
         # WARNING: Don't use this method!
         return entry_price + side.factor() * (self.stoploss_pip * self.ratio)
 
@@ -205,7 +205,7 @@ class SlTpRatioForex(PositionHandler):
         position.steps = [Trigger(trigger_price)]
         return trigger_price
 
-    async def generate_position(
+    async def generate(
         self,
         signal: Signal,
         entry_price: float | None = None,
@@ -214,11 +214,11 @@ class SlTpRatioForex(PositionHandler):
     ) -> Position | None:
         real_trade = False
         if signal.side is MarketSide.BEARISH:
-            side = OrderSide.SELL
+            side = PositionSide.SHORT
             if self.short_trade:
                 real_trade = True
         else:  # signal.side is MarketSide.BULLISH:
-            side = OrderSide.BUY
+            side = PositionSide.LONG
             if self.long_trade:
                 real_trade = True
         if entry_price is None:
@@ -268,7 +268,7 @@ class SlTpRatioForex(PositionHandler):
 
     def handler(
         self, position: Position, tick_prices: list[float]
-    ) -> TradeCommand | None:
+    ) -> Command | None:
         res = super().handler(position, tick_prices)
         if res:
             return res

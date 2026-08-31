@@ -1,6 +1,6 @@
 from sqlmodel import SQLModel, Field
 from LocalBackTester.Database.hashing import generate_hash
-from TradingModule.PositionHandlers.model import PositionHandler
+from TradingModule.PositionHandlers.manager import PositionGenerator
 from TradingModule.models import PositionsReport
 import json
 
@@ -35,14 +35,14 @@ class PositionsResult(SQLModel, table=True):
     source: int = Field(foreign_key="Divergence_Backtests.id", index=True)
 
     @classmethod
-    def give_handler_hash(cls, handler: PositionHandler, backtest_source: int):
+    def give_handler_hash(cls, handler: PositionGenerator, backtest_source: int):
         conf_dict = handler.export_config()
         conf_dict["backtest_source"] = backtest_source
         return generate_hash(conf_dict)
 
     @classmethod
     def generate_datapoint(
-        cls, handler: PositionHandler, commands_report: str, backtest_source: int
+        cls, handler: PositionGenerator, commands_report: str, backtest_source: int
     ):
         if handler.closed_positions == []:
             raise ValueError(

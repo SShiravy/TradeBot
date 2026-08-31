@@ -454,7 +454,7 @@ class ChochQueueTradeConfig(TradeConfig):
             plot = ChartPlot(chartdata)
             self.strategy.draw(plot, signal, draw_indicators=True)
 
-        position = await self.position_handler.generate_position(
+        position = await self.position_handler.generate(
             signal, sl_base_price=signal.choch_model.anchor, plot=plot
         )
         if not position:

@@ -141,7 +141,7 @@ class OscillatorDoubleDiverConfig(TradeConfig):
             if first_signal.side is MarketSide.BEARISH
             else first_signal.main_chart_line.end_candle.low
         )
-        position = await self.position_handler.generate_position(
+        position = await self.position_handler.generate(
             double_diver_signal, sl_base_price=entry_source, plot=plot
         )
         if not position:

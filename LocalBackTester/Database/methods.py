@@ -18,7 +18,7 @@ from LocalBackTester.Database.create_db import engine
 import logging
 
 from LocalBackTester.Database.hashing import give_config_hash
-from TradingModule.PositionHandlers.model import PositionHandler
+from TradingModule.PositionHandlers.manager import PositionGenerator
 
 
 logger = logging.getLogger("DB Methods")
@@ -228,7 +228,7 @@ def store_diver_signal(diver_signals: list[DiverSignal], source_id):
 # Position Result --------------
 
 
-def fetch_positions_result(handler: PositionHandler, backtest_source: int):
+def fetch_positions_result(handler: PositionGenerator, backtest_source: int):
     hash = PositionsResult.give_handler_hash(handler, backtest_source)
     with Session(engine) as session:
         statement = select(PositionsResult).where(PositionsResult.handler_hash == hash)
@@ -237,7 +237,7 @@ def fetch_positions_result(handler: PositionHandler, backtest_source: int):
 
 
 def store_positions_result(
-    handler: PositionHandler, commands_report: str, source_id: int
+    handler: PositionGenerator, commands_report: str, source_id: int
 ):
     if fetch_positions_result(handler, source_id):
         raise Exception("Same config already exists in db...")

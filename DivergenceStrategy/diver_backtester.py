@@ -7,7 +7,7 @@ from LocalBackTester.Database.methods import (
 from LocalBackTester.Database.methods import fetch_two_chart_diver_siganls
 from ChartModule.plot import ChartWithOscillatorPlot, DoubleChartPlot
 from ChartModule.models import ChartData, MarketSide
-from TradingModule.PositionHandlers.model import PositionHandler
+from TradingModule.PositionHandlers.manager import PositionGenerator
 from TradingModule.models import PositionsReport
 from LocalBackTester.Database.methods import (
     fetch_positions_result,
@@ -36,7 +36,7 @@ class TwoChartDiverBacktester:
         chartdata: ChartData,
         second_chartdata: ChartData,
         signals: list,
-        position_handler: PositionHandler,
+        position_handler: PositionGenerator,
     ):
         n_bar = self.diver_config.chart.total_bars_number  # type: ignore
         plot = DoubleChartPlot(chartdata, second_chartdata, n_bar)
@@ -98,7 +98,7 @@ class TwoChartDiverBacktester:
                     continue
                 position_handler.handler(pos, ticks)
 
-            await commands.TradeCommand.execute_pending_commands(
+            await commands.Command.execute_pending_commands(
                 candle.time, report=False
             )
             if signal is None:
@@ -114,7 +114,7 @@ class TwoChartDiverBacktester:
                 )
             # candle == signal.candle
             pos_candle = chartdata.candles[i + 1]
-            position = await position_handler.generate_position(
+            position = await position_handler.generate(
                 signal,
                 entry_price=pos_candle.open,
                 sl_base_price=entry_source,
@@ -131,7 +131,7 @@ class TwoChartDiverBacktester:
             )
 
         # Report ------------------
-        commands_report = commands.TradeCommand.close_records()
+        commands_report = commands.Command.close_records()
         if use_database:
             result = store_positions_result(
                 position_handler, commands_report, int(all_signals[0].source)
@@ -172,7 +172,7 @@ class OscilatorDiverBacktester:
         self,
         chartdata: ChartData,
         signals: list,
-        position_handler: PositionHandler,
+        position_handler: PositionGenerator,
     ):
         n_bar = self.diver_config.chart.total_bars_number  # type: ignore
         plot = ChartWithOscillatorPlot(
@@ -238,7 +238,7 @@ class OscilatorDiverBacktester:
                     continue
                 position_handler.handler(pos, ticks)
 
-            await commands.TradeCommand.execute_pending_commands(
+            await commands.Command.execute_pending_commands(
                 candle.time, report=False
             )
             if signal is None:
@@ -254,7 +254,7 @@ class OscilatorDiverBacktester:
                 )
             # candle == signal.candle
             pos_candle = chartdata.candles[i + 1]
-            position = await position_handler.generate_position(
+            position = await position_handler.generate(
                 signal,
                 entry_price=pos_candle.open,
                 sl_base_price=entry_source,
@@ -269,7 +269,7 @@ class OscilatorDiverBacktester:
             self.plot_double_chart(chartdata, all_signals, position_handler)
 
         # Report ------------------
-        commands_report = commands.TradeCommand.close_records()
+        commands_report = commands.Command.close_records()
         if use_database:
             result = store_positions_result(
                 position_handler, commands_report, int(all_signals[0].source)

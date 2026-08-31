@@ -1,4 +1,4 @@
-from TradingModule.PositionHandlers.model import PositionHandler
+from TradingModule.PositionHandlers.manager import PositionGenerator
 from TradingModule.PositionHandlers.simple_handlers import SimpleForex, SimpleCrypto
 from TradingModule.PositionHandlers.riskfree_handlers import (
     RiskFreeCrypto,
@@ -18,7 +18,7 @@ from TradingModule.PositionHandlers.stepping_handler import (
 )
 
 __all__ = [
-    "PositionHandler",
+    "PositionGenerator",
     "SimpleForex",
     "SimpleCrypto",
     "RiskFreeCrypto",

@@ -1,7 +1,7 @@
 from TradingModule import ExchangeAgent, Position, commands, PositionsReport
 from TradingModule.reporter import TelegramReporter
 from BacktestModule.dummy_models import DummyAgent, DummyPositionHanler
-from TradingModule.PositionHandlers.model import PositionHandler
+from TradingModule.PositionHandlers.manager import PositionGenerator
 from ChartModule.models import Chart, Candle, Signal, ChartData
 from TradingModule.models import Strategy
 from ChartModule.plot import ChartPlot
@@ -18,7 +18,7 @@ class TradeConfig:
     chart: Chart
     agent: ExchangeAgent
     strategy: Strategy
-    position_handler: PositionHandler
+    position_handler: PositionGenerator
 
     long_signal: bool = field(default=True)
     short_signal: bool = field(default=True)
@@ -79,7 +79,7 @@ class TradeConfig:
             if self.send_signal:
                 await TelegramReporter().new_signal(signal, plot)
             return signal
-        position = await self.position_handler.generate_position(signal)
+        position = await self.position_handler.generate(signal)
         if not position:
             return None
         return signal, position
@@ -135,7 +135,7 @@ class TradeConfig:
         while agent.index < len(agent.chartdata.candles) - 1:  # type: ignore
             if self.consider_position:
                 position_handler.manage_positions()
-                await commands.TradeCommand.execute_pending_commands(
+                await commands.Command.execute_pending_commands(
                     time=agent.get_chartdata(self.chart)[-1].time,  # type: ignore
                     report=False,
                 )
@@ -158,7 +158,7 @@ class TradeConfig:
                 continue
             pos.plot = plot
             pos.draw()
-        commands_report = commands.TradeCommand.close_records()
+        commands_report = commands.Command.close_records()
         all_reports = position_handler.report()
         logger.info("Result:\n\n" + commands_report)
         for poses_report in all_reports:
@@ -208,7 +208,7 @@ class TraderBot:
             try:
                 for config in self.configs:
                     config.position_handler.manage_positions()
-                await commands.TradeCommand.execute_pending_commands(
+                await commands.Command.execute_pending_commands(
                     report=self._commands_report
                 )
                 await asyncio.sleep(2)
@@ -286,7 +286,7 @@ class TraderBot:
         while True:
             logging.info(f"Next daily report in {sleep_time}")
             await asyncio.sleep(sleep_time.total_seconds())
-            commands_report = commands.TradeCommand.close_records()
+            commands_report = commands.Command.close_records()
             await TelegramReporter().log_report(f"{self.name}\n{commands_report}")
             overall_report = []
             for config in self.configs:

@@ -1,6 +1,6 @@
 from TradingModule.PositionHandlers.simple_handlers import SimpleCrypto, SimpleForex
 from TradingModule.models import ExchangeAgent, Position
-from TradingModule.commands import TradeCommand
+from TradingModule.commands import Command
 from TradingModule import commands
 import numpy as np
 
@@ -49,7 +49,7 @@ class RiskFreeCrypto(SimpleCrypto):
 
     def handler(
         self, position: Position, tick_prices: list[float]
-    ) -> TradeCommand | None:
+    ) -> Command | None:
         res = super().handler(position, tick_prices)
         if res:
             return res
@@ -104,7 +104,7 @@ class RiskFreeForex(SimpleForex):
 
     def handler(
         self, position: Position, tick_prices: list[float]
-    ) -> TradeCommand | None:
+    ) -> Command | None:
         direction = position.side.factor()
 
         res = super().handler(position, tick_prices)

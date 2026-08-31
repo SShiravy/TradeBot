@@ -22,9 +22,9 @@ class RiskAnalysis(BaseStatisticalAnalysis):
         current_consecutive_losses = 0
 
         for pos in self.positions:
-            self.pnl_series.append(self.pnl_series[-1] + pos.pnl)
+            self.pnl_series.append(self.pnl_series[-1] + pos.pnl_dollar)
             self.win_lose_series.append(
-                self.win_lose_series[-1] + (1 if pos.pnl > 0 else -1)
+                self.win_lose_series[-1] + (1 if pos.pnl_dollar > 0 else -1)
             )
             self.pnl_percentage_series.append(
                 self.pnl_percentage_series[-1] + pos.pnl_percent
@@ -36,14 +36,14 @@ class RiskAnalysis(BaseStatisticalAnalysis):
             self.drawdown_series.append(current_pnl - current_high_watermark)
 
             # Win Rate
-            if pos.pnl > 0:
+            if pos.pnl_dollar > 0:
                 win_count += 1
             self.win_rate_series.append(win_count / (len(self.win_rate_series)) * 100)
             self.average_trade_series.append(
                 current_pnl / (len(self.average_trade_series))
             )
 
-            if pos.pnl > 0:
+            if pos.pnl_dollar > 0:
                 current_consecutive_wins += 1
                 if current_consecutive_losses > 0:
                     self.loss_streak_distribution[current_consecutive_losses] = (

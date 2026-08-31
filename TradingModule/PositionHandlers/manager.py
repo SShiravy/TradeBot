@@ -1,0 +1,150 @@
+from ChartModule import Signal, MarketSide, Chart, TimeFrame
+from TradingModule import Position, PositionSide, ExchangeAgent
+from TradingModule.PositionHandlers.trading_constraints import TradingConstraint
+from TradingModule.models import Command, PositionType, Trigger
+from TradingModule.Commands import trade_commands
+from abc import ABC, abstractmethod
+import numpy as np
+import logging
+
+
+logger = logging.getLogger("PositionHandler")
+
+    
+class PositionGenerator(ABC):
+    def __init__(
+        self,
+        initial_volume: float = 0.0,
+        leverage: int = 1,
+    ) -> None:
+        self.initial_volume = initial_volume
+        self.leverage = leverage
+        
+    @abstractmethod
+    def init_stoploss(self, entry_price: float, side: PositionSide) -> Trigger:
+        pass
+
+    @abstractmethod
+    def generate_triggers(self,entry_price:float,side:PositionSide, *args, **kwargs)->list[Trigger]:
+        pass
+
+    @abstractmethod
+    def export_config(self) -> dict:
+        return {
+            "Handler": self.__class__.__name__,
+            "initial_volume": self.initial_volume,
+            "leverage": self.leverage,
+        }
+
+    async def generate(
+        self,
+        signal: Signal,
+        entry_price: float | None = None,
+        *args,
+        **kwargs,
+    ) -> Position | None:
+        side = PositionSide.convert_market_side(signal.side)
+
+        position = Position(
+            signal.chart,
+            side,
+            entry_price,
+            self.initial_volume,
+            self.generate_triggers(entry_price, side, signal.chart),
+            self.init_stoploss(entry_price, side),
+            self.leverage,
+            type=PositionType.MARKET,
+            source=signal.source,
+        )
+
+        logger.info(f"New Position on {position.chart}")
+        return position
+
+
+
+
+class PositionsManager(ABC):
+    def __init__(self,         
+                 exchange_agent: ExchangeAgent,
+                 generator:PositionGenerator,
+                 long_trade: bool = True,
+                 short_trade: bool = True,
+                 trading_constraints: list[TradingConstraint] = []):
+        
+        self.exchange_agent = exchange_agent
+        self.long_trade: bool = long_trade
+        self.short_trade: bool = short_trade
+        self.trading_constraints = trading_constraints
+        self.generator = generator
+        self.open_positions: list[Position] = []
+        self.closed_positions: list[Position] = []
+
+    def export_config(self) -> dict:
+        return {
+            "Handler": self.__class__.__name__,
+            "long_trade": self.long_trade,
+            "short_trade": self.short_trade,
+            "constraints": [c.export_config() for c in self.trading_constraints],
+        }
+
+
+    def modify_init_sl_tp(self, position: Position):
+        # TODO: implement here
+        # sl = self.init_stoploss(position.entry_price, position.side)
+        # if sl != position.stoploss:
+        #     trade_commands.TrailStoploss(position, self.exchange_agent, sl, report=False)
+        #     trade_commands.cha
+        # tp = self.init_takeprofit(position.entry_price, position.side)
+        # if tp != position.takeprofit:
+        #     position.takeprofit = tp
+        #     commands.ChangeTakeProfit(position, self.exchange_agent, tp, report=False)
+        # position.confiremed = True
+        # logger.info(f"Position Updated on {position.chart}")
+        pass
+
+    def triggers_handler(
+        self, position: Position, ticks: np.ndarray
+    ) -> Command | None:
+        if position.stoploss.check_cross(ticks):
+            return trade_commands.StopLoss(position, self.exchange_agent, report=self.send_report)
+        for trigger in position.steps:
+            if trigger.check(ticks):
+                continue
+            return
+                
+    def candles_check(self, position: Position) -> Command | None:
+        ticks = []
+        if position.previous_check is None:
+            position.previous_check = position.start_time
+
+        m_chart = Chart(position.chart.symbol, TimeFrame.one_minute)
+        candles = self.exchange_agent.get_chartdata(m_chart, 3)
+        if not candles:
+            logger.warning(f"getting candles failed for {position}")
+            return
+        for candle in candles:
+            if candle.time < position.previous_check:
+                continue
+            ticks += [candle.open, candle.low, candle.high, candle.close]
+            position.previous_check = candle.time
+        return self.handler(position, ticks)
+
+    def manage_positions(self):
+        all_pos = self.generator.open_positions.copy()
+        for pos in all_pos:
+            if pos.closed_timestamp:
+                self.generator.closed_positions.append(pos)
+                self.generator.open_positions.remove(pos)
+                continue
+            self.candles_check(pos)
+
+    async def generate_position(self,signal:Signal):
+        if signal.side is MarketSide.BEARISH:
+            if not self.short_trade:
+                return None
+        else:  # signal.side is MarketSide.BULLISH:
+            if not self.long_trade:
+                return None
+        # TODO: check constraints
+        entry_price = self.exchange_agent.get_current_tick(signal.chart)
+        await self.generator.generate(signal, entry_price)

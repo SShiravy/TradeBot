@@ -37,7 +37,7 @@ async def test_open_position():
         base_chartdata, second_chartdata, MarketSide.BULLISH
     )
     logging.info(f"dummy diver signal: {diver_signal}")
-    pos = await the_config.position_handler.generate_position(diver_signal)
+    pos = await the_config.position_handler.generate(diver_signal)
     logging.info(f"position created from the dummy signal: {pos}")
     logging.info(
         f"opoen position: {the_config.agent.get_open_positions(chart=the_config.chart, comment_filter='')}"

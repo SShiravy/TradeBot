@@ -1,6 +1,6 @@
 from ChartModule import ChartData, Chart
-from TradingModule.PositionHandlers.model import PositionHandler
-from TradingModule.models import ExchangeAgent, OrderSide, Position
+from TradingModule.PositionHandlers.manager import PositionGenerator
+from TradingModule.models import ExchangeAgent, PositionSide, Position
 from datetime import datetime
 import logging
 
@@ -60,18 +60,18 @@ class DummyAgent(ExchangeAgent):
         return True
 
 
-class DummyPositionHanler(PositionHandler):
+class DummyPositionHanler(PositionGenerator):
     def __init__(self) -> None:
         self.open_positions = []
         self.closed_positions = []
 
-    async def generate_position(self, signal, *args, **kwargs) -> Position:
+    async def generate(self, signal, *args, **kwargs) -> Position:
         return None  # type:ignore
 
-    def init_stoploss(self, entry_price: float, side: OrderSide, chart: Chart) -> float:
+    def init_stoploss(self, entry_price: float, side: PositionSide, chart: Chart) -> float:
         return 0.0
 
-    def init_takeprofit(self, entry_price: float, side: OrderSide) -> float:
+    def init_takeprofit(self, entry_price: float, side: PositionSide) -> float:
         return 0.0
 
     def export_config(self) -> dict:

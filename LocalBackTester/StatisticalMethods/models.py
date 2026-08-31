@@ -158,10 +158,10 @@ class BasePnLHistogram(BaseStatisticalAnalysis):
         wins = defaultdict(int)
 
         for pos in self.all_positions:
-            category = self.get_category(pos.open_timestamp)
-            pnl_data[category] += pos.pnl
+            category = self.get_category(pos.defined_timestamp)
+            pnl_data[category] += pos.pnl_dollar
             trade_count[category] += 1
-            if pos.pnl > 0:
+            if pos.pnl_dollar > 0:
                 wins[category] += 1
         self.pnl_data = pnl_data
         self.trade_count = trade_count

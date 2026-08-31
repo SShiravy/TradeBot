@@ -1,9 +1,9 @@
 from TradingModule.models import (
     Position,
-    OrderSide,
+    PositionSide,
     ExchangeAgent,
     PositionsReport,
     Trigger,
 )
 
-__all__ = ["Position", "OrderSide", "ExchangeAgent", "PositionsReport", "Trigger"]
+__all__ = ["Position", "PositionSide", "ExchangeAgent", "PositionsReport", "Trigger"]
