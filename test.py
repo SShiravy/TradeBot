@@ -145,7 +145,7 @@ def test_choch_queue():
     if chart_data is None:
         raise ValueError
 
-    choch = ChochQueueFilter(pivot_length=2, max_queue=30, retrace_fib=0.8, use_fibo_filter=False)
+    choch = ChochQueueFilter(pivot_length=2, max_queue=30, retrace_fib=0.8, use_fibo_filter=False, plot_pivots=True)
     choch.check_signal(chart_data)
 
     validated_models = [model for model in choch.queue if model.validated]
@@ -163,7 +163,7 @@ def test_choch_queue():
     plot.show()
 
 
-def test_ema_pivot_choch(n_ltf_candles: int = 1500, n_htf_candles: int = 300, warm_up_candles: int = 50):
+def test_ema_pivot_choch(n_ltf_candles: int = 120, n_htf_candles: int = 120, warm_up_candles: int = 10):
     from ChartModule.models import Chart, TimeFrame
     from ChartModule.plot import DoubleChartPlot
     from EmaPivotChochStrategy.ema_pivot_choch import EmaPivotChochFilter
@@ -187,11 +187,11 @@ def test_ema_pivot_choch(n_ltf_candles: int = 1500, n_htf_candles: int = 300, wa
     )
 
     ema_pivot_choch = EmaPivotChochFilter(
-        ema_periods=[20, 40, 60],
-        htf_pivot_length=2,
+        ema_periods=[20, 40, 60, 80],
+        htf_pivot_length=1,
         htf_backstep=2,
         atr_period=14,
-        atr_multiplier=0.5,
+        atr_multiplier=1.0,
         max_bars_after_pivot=100,
         choch_pivot_length=2,
         choch_backstep=2,
@@ -229,9 +229,12 @@ def test_ema_pivot_choch(n_ltf_candles: int = 1500, n_htf_candles: int = 300, wa
         ema_pivot_choch.draw_all(plot, signals, draw_indicators=True)
     else:
         logging.info("no signals found in this window, showing raw EMAs instead")
+        colors = ema_pivot_choch._ema_colors()
         for period, ema_values in ema_pivot_choch._emas.items():
             plot.second_plot.linear_plot(
-                ema_values.keys(), ema_values.values(), legend=f"EMA{period}"
+                ema_values.keys(), ema_values.values(),
+                color=colors[period],
+                legend=f"EMA{period}",
             )
 
     logging.info(f"marking {len(ema_pivot_choch._touch_events)} EMA-pivot touches on the LTF chart")

@@ -320,6 +320,7 @@ class DoubleChartPlot(BaseChartPlot):
         self.second_plot = ChartPlot(second_chartdata, plot_n_candles=plot_n_candles)
         self.plot_n_candles = plot_n_candles
 
+        fplt.axis_height_factor[0] = 1
         ax1, ax2 = fplt.create_plot(
             f"TimeFrame: {base_chartdata.chart.timeframe.value}", rows=2
         )

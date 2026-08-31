@@ -18,8 +18,8 @@ CustomLogger(
 xau_1m = ForexEmaPivotChochTradeConfig(
     chart=Chart("XAUUSD", TimeFrame.one_minute),
     htf_chart=Chart("XAUUSD", TimeFrame.five_minutes),
-    n_ltf_candle_check=1500,
-    n_htf_candle_check=300,
+    n_ltf_candle_check=120,
+    n_htf_candle_check=120,
     strategy=EmaPivotChochFilter(
         ema_periods=[20, 40, 60],
         htf_pivot_length=2,

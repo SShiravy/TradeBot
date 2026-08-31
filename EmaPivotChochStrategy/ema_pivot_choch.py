@@ -18,6 +18,7 @@ from ChochQueueStrategy.choch_queue import ChochQueueFilter, ChochSignal
 from datetime import datetime, timedelta
 from dataclasses import dataclass, field
 from copy import copy
+import colorsys
 import logging
 
 logger = logging.getLogger("EmaPivotChoch")
@@ -71,8 +72,8 @@ class EmaPivotChochFilter(Strategy):
             short_support_conditions,
             confirmation_indicators,
         )
-        if len(ema_periods) != 3:
-            raise ValueError("ema_periods must contain exactly 3 EMA lengths")
+        if len(ema_periods) < 1:
+            raise ValueError("ema_periods must contain at least 1 EMA length")
         self.ema_periods = ema_periods
         self.htf_pivot_length = htf_pivot_length
         self.htf_backstep = htf_backstep
@@ -132,6 +133,15 @@ class EmaPivotChochFilter(Strategy):
             name=f"{self.name}_inner",
         )
 
+    def _ema_colors(self) -> dict[int, str]:
+        n = len(self.ema_periods)
+        colors = {}
+        for i, period in enumerate(self.ema_periods):
+            hue = i / n
+            r, g, b = colorsys.hsv_to_rgb(hue, 0.65, 0.85)
+            colors[period] = f"#{int(r * 255):02x}{int(g * 255):02x}{int(b * 255):02x}"
+        return colors
+
     @staticmethod
     def _find_start_index(candles: list[Candle], from_time: datetime) -> int:
         lo, hi = (0, len(candles))
@@ -168,6 +178,7 @@ class EmaPivotChochFilter(Strategy):
         htf_chartdata: ChartData,
         check_long: bool = True,
         check_short: bool = True,
+        ema_htf_chartdata: ChartData | None = None,
         *args,
         **kwargs,
     ) -> EmaPivotChochSignal | None:
@@ -178,9 +189,12 @@ class EmaPivotChochFilter(Strategy):
         )
         pivot_detector.set(htf_chartdata.candles)
         self._pivots = pivot_detector.data
+        ema_source_candles = (
+            ema_htf_chartdata.candles if ema_htf_chartdata is not None else htf_chartdata.candles
+        )
         self._emas = {}
         for period in self.ema_periods:
-            self._emas[period] = EMA(period).set(htf_chartdata.candles)
+            self._emas[period] = EMA(period).set(ema_source_candles)
         self._atr = ATR(self.atr_period).set(htf_chartdata.candles) or {}
         ltf_candles = ltf_chartdata.candles
         last_ltf_candle = ltf_candles[-1]
@@ -334,8 +348,11 @@ class EmaPivotChochFilter(Strategy):
         **kwargs,
     ):
         if draw_emas:
+            colors = self._ema_colors()
             for period, ema_values in self._emas.items():
-                plot.second_plot.linear_plot(ema_values.keys(), ema_values.values())
+                plot.second_plot.linear_plot(
+                    ema_values.keys(), ema_values.values(), color=colors[period]
+                )
         pivot_color = "#ef5350" if signal.side is MarketSide.BEARISH else "#26a69a"
         pivot_source = CandlesSource.High if signal.pivot.is_high else CandlesSource.Low
         plot.second_plot.mark_candle(
@@ -357,8 +374,11 @@ class EmaPivotChochFilter(Strategy):
     ):
         if not signals:
             return
+        colors = self._ema_colors()
         for period, ema_values in self._emas.items():
-            plot.second_plot.linear_plot(ema_values.keys(), ema_values.values())
+            plot.second_plot.linear_plot(
+                ema_values.keys(), ema_values.values(), color=colors[period]
+            )
         model_pivot_points: dict[tuple, list] = {}
         retrace_points: dict[MarketSide, list] = {
             MarketSide.BULLISH: [],
@@ -445,6 +465,7 @@ class EmaPivotChochTradeConfig(TradeConfig):
     strategy: EmaPivotChochFilter
     n_ltf_candle_check: int = 1500
     n_htf_candle_check: int = 500
+    n_ema_htf_candle_check: int | None = None
 
     def export_config(self) -> dict:
         conf_dict = super().export_config()
@@ -467,15 +488,30 @@ class EmaPivotChochTradeConfig(TradeConfig):
             htf_chartdata = htf_chartdata.give_heikingashi_chartdata()
         return (ltf_chartdata, htf_chartdata)
 
+    def get_ema_htf_chartdata(self) -> ChartData | None:
+        if not self.n_ema_htf_candle_check:
+            return None
+        ema_htf_chartdata = self.agent.get_chartdata(self.htf_chart, self.n_ema_htf_candle_check)
+        if ema_htf_chartdata is None:
+            return None
+        if self.heikingashi_chartdata:
+            ema_htf_chartdata = ema_htf_chartdata.give_heikingashi_chartdata()
+        return ema_htf_chartdata
+
     def _make_plot(self, ltf_chartdata: ChartData, htf_chartdata: ChartData) -> DoubleChartPlot:
         plot_n_candles = max(len(ltf_chartdata.candles), len(htf_chartdata.candles))
         return DoubleChartPlot(ltf_chartdata, htf_chartdata, plot_n_candles=plot_n_candles)
 
     async def find_signal(
-        self, chartdata: ChartData, htf_chartdata: ChartData, *args, **kwargs
+        self,
+        chartdata: ChartData,
+        htf_chartdata: ChartData,
+        ema_htf_chartdata: ChartData | None = None,
+        *args,
+        **kwargs,
     ) -> None | tuple[EmaPivotChochSignal, Position] | EmaPivotChochSignal:
         signal = self.strategy.check_signal(
-            chartdata, htf_chartdata, self.long_signal, self.short_signal
+            chartdata, htf_chartdata, self.long_signal, self.short_signal, ema_htf_chartdata
         )
         if signal is None:
             return None
@@ -497,8 +533,9 @@ class EmaPivotChochTradeConfig(TradeConfig):
 
     async def send_touch_report(self, ltf_chartdata: ChartData, htf_chartdata: ChartData):
         plot = self._make_plot(ltf_chartdata, htf_chartdata)
+        colors = self.strategy._ema_colors()
         for period, ema_values in self.strategy._emas.items():
-            plot.second_plot.linear_plot(ema_values.keys(), ema_values.values())
+            plot.second_plot.linear_plot(ema_values.keys(), ema_values.values(), color=colors[period])
         self.strategy.draw_touches(plot)
         img_path = plot.save_image(f"{self.strategy.name}_{self.chart}")
         msg = f"{self.strategy.name}\n📈 {self.chart}\nEMA-pivot touch report"
@@ -511,8 +548,13 @@ class EmaPivotChochTradeConfig(TradeConfig):
         htf_data = copy(htf_chartdata)
         htf_data.candles = htf_data.candles[:-1]
 
+        ema_htf_data = self.get_ema_htf_chartdata()
+        if ema_htf_data is not None:
+            ema_htf_data = copy(ema_htf_data)
+            ema_htf_data.candles = ema_htf_data.candles[:-1]
+
         touch_count_before = len(self.strategy._touch_events)
-        res = await self.find_signal(ltf_data, htf_data)
+        res = await self.find_signal(ltf_data, htf_data, ema_htf_data)
         new_touch = len(self.strategy._touch_events) > touch_count_before
 
         if new_touch and not self.strategy.use_bos and not self.strategy.use_choch:
