@@ -49,7 +49,7 @@ xau_1m = ForexEmaPivotChochTradeConfig(
     heikingashi_chartdata=False,
 )
 
-TelegramReporter().main_channel = "@nader_support_resistance"
+TelegramReporter().main_channel = settings.TELEGRAM_CRYPTO_CHANNEL_ID
 TraderBot("Ema Pivot Choch Bot", [xau_1m], report_time={"h": 20, "m": 0})
 
 
