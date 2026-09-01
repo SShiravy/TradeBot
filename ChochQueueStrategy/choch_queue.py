@@ -125,7 +125,6 @@ class ChochQueueFilter(Strategy):
         )
         self.pivot_length = pivot_length
         self.backstep = backstep
-        self.pivots = SwingPivots(depth=pivot_length, backstep=backstep)
         self.retrace_fib = retrace_fib
         self.use_fibo_filter = use_fibo_filter
         self.use_bos = use_bos
@@ -463,7 +462,8 @@ class ChochQueueFilter(Strategy):
         return models
 
     def _simulate(self, candles: list[Candle]) -> list[ChochModel]:
-        self.pivots.set(candles)
+        pivots = SwingPivots(depth=self.pivot_length, backstep=self.backstep)
+        pivots.set(candles)
         self.choch_events = self._find_flip_candle_chochs(candles)
 
         events = [
@@ -473,7 +473,7 @@ class ChochQueueFilter(Strategy):
                 "price": p.price,
                 "type": "high" if p.is_high else "low",
             }
-            for p in self.pivots.data
+            for p in pivots.data
         ]
         self._pivot_events = [
             {

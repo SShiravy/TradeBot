@@ -322,11 +322,27 @@ class EmaPivotChochFilter(Strategy):
             )
         return sorted(out, key=lambda d: d["pivot_time"])
 
-    def draw_touches(self, plot: DoubleChartPlot, color: str = "#ffb300"):
+    def draw_touches(
+        self,
+        plot: DoubleChartPlot,
+        ltf_chartdata: ChartData,
+        htf_chartdata: ChartData,
+        color: str = "#ffb300",
+    ):
+        # self._touch_events accumulates forever and is never pruned, but the
+        # plot is built from the current rolling-window chartdata only - a
+        # touch recorded on a candle that has since scrolled out of that
+        # window can't be located by finplot on this chart, so skip it here
+        # rather than letting finplot raise a KeyError on an unknown time.
+        ltf_times = {c.time for c in ltf_chartdata.candles}
+        htf_times = {c.time for c in htf_chartdata.candles}
+
         ltf_points = []
         htf_bullish_points = []
         htf_bearish_points = []
         for pivot, touches, ltf_touch_candle in self._touch_events.values():
+            if ltf_touch_candle.time not in ltf_times or pivot.candle.time not in htf_times:
+                continue
             ltf_source = CandlesSource.High if pivot.is_high else CandlesSource.Low
             ltf_points.append((ltf_touch_candle.time, ltf_source(ltf_touch_candle)))
             htf_source = CandlesSource.High if pivot.is_high else CandlesSource.Low
@@ -536,7 +552,7 @@ class EmaPivotChochTradeConfig(TradeConfig):
         colors = self.strategy._ema_colors()
         for period, ema_values in self.strategy._emas.items():
             plot.second_plot.linear_plot(ema_values.keys(), ema_values.values(), color=colors[period])
-        self.strategy.draw_touches(plot)
+        self.strategy.draw_touches(plot, ltf_chartdata, htf_chartdata)
         img_path = plot.save_image(f"{self.strategy.name}_{self.chart}")
         msg = f"{self.strategy.name}\n📈 {self.chart}\nEMA-pivot touch report"
         await TelegramReporter().send_msg(TelegramReporter().main_channel, msg, img_path)
