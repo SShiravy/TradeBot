@@ -269,8 +269,9 @@ class TraderBot:
 
     async def heartbeat(self):
         while True:
-            await asyncio.sleep(3600)
+            await asyncio.sleep(60)
             current, peak = tracemalloc.get_traced_memory()
+            snapshot2 = tracemalloc.take_snapshot()
             elapsed_time = str(
                 datetime.now(tz=timezone.utc).replace(microsecond=0) - self._start_time
             )
@@ -279,6 +280,8 @@ class TraderBot:
                 f"👋🤖\nLifespan⌛:\n{elapsed_time}",
                 f"Memory📝:\n{current / 1024 / 1024:.2f} MB\npeak: {peak / 1024 / 1024:.2f} MB",
             ]
+            for stat in snapshot2.compare_to(self.snapshot1, "lineno")[:20]:
+                msg.append(str(stat))
             await TelegramReporter().log_report("\n".join(msg))
 
     async def report(self):
@@ -317,6 +320,7 @@ class TraderBot:
 
     async def start(self):
         tracemalloc.start()
+        self.snapshot1 = tracemalloc.take_snapshot()
         await TelegramReporter().log_report(
             f"--{self.name}--\n⚡⚡\nStart at\n{self._start_time} utc\n⚡⚡"
         )
