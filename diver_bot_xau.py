@@ -15,8 +15,8 @@ CustomLogger(
 )
 
 xau = ForexDiverTradeConfig(
-    chart=Chart("XAUUSD!", TimeFrame.five_minutes),
-    second_chart=Chart("USDJPY!", TimeFrame.five_minutes),
+    chart=Chart("XAUUSD", TimeFrame.five_minutes),
+    second_chart=Chart("USDJPY", TimeFrame.five_minutes),
     strategy=Divergence(5, 100, [], name="ForexDiver", inverse_diver_long=True),
     bar_between_signals=2,
     position_handler=SteppingHandlerForex(
@@ -38,6 +38,7 @@ xau = ForexDiverTradeConfig(
     ),
     merge_two_chart_time=False,
     heikingashi_chartdata=True,
+    send_signal=True
 )
 
 

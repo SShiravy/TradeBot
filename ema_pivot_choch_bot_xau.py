@@ -16,8 +16,8 @@ CustomLogger(
 
 
 xau_1m = ForexEmaPivotChochTradeConfig(
-    chart=Chart("XAUUSD", TimeFrame.one_minute),
-    htf_chart=Chart("XAUUSD", TimeFrame.five_minutes),
+    chart=Chart("XAUUSD!", TimeFrame.one_minute),
+    htf_chart=Chart("XAUUSD!", TimeFrame.five_minutes),
     n_ltf_candle_check=120,
     n_htf_candle_check=1000,
     strategy=EmaPivotChochFilter(
