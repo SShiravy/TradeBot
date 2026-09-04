@@ -6,7 +6,7 @@ from ChartModule.Indicators.models import IndicatorBaseModel, SupportCandleCondi
 from ChartModule.Indicators.moving_color import MovingColor, MovingCandleLength
 from ChartModule.Indicators.fibonacci import FibonacciRetracement, FiboLevels
 from ChartModule.Indicators.swing_pivots import SwingPivots, PivotPoint
-from AutoTrendlineModule.atr import ATR
+from ChartModule.Indicators.atr import ATR
 
 __all__ = [
     "IndicatorBaseModel",

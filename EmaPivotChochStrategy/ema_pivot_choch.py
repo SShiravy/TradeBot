@@ -9,8 +9,8 @@ from ChartModule.models import (
 from ChartModule.Indicators import IndicatorBaseModel, SupportCandleConditions
 from ChartModule.Indicators.swing_pivots import SwingPivots, PivotPoint
 from ChartModule.Indicators.moving_avg import EMA
-from AutoTrendlineModule.atr import ATR
-from ChartModule.plot import DoubleChartPlot
+from ChartModule.Indicators.atr import ATR
+from ChartModule.plot import DoubleChartPlot, ChartPlot
 from TradingModule.trader_bot import TradeConfig
 from TradingModule.reporter import TelegramReporter
 from TradingModule.models import Position, Strategy
@@ -103,6 +103,10 @@ class EmaPivotChochFilter(Strategy):
         self._touch_events: dict[
             tuple, tuple[PivotPoint, tuple["EmaTouch", ...], Candle]
         ] = {}
+        # touch_key(s) newly registered by the most recent check_signal() call
+        # only - used so a touch-report send reflects that fresh touch alone,
+        # not the whole accumulated history in _touch_events.
+        self._new_touch_keys: list[tuple] = []
 
     def export_config(self):
         conf_dict = super().export_config()
@@ -141,6 +145,40 @@ class EmaPivotChochFilter(Strategy):
             r, g, b = colorsys.hsv_to_rgb(hue, 0.65, 0.85)
             colors[period] = f"#{int(r * 255):02x}{int(g * 255):02x}{int(b * 255):02x}"
         return colors
+
+    @staticmethod
+    def _draw_pane_label(chart_plot: ChartPlot, chart: Chart) -> None:
+        """Write the chart's name near the top-left corner of a pane, so the
+        Telegram image is self-identifying like the other reporting bots."""
+        candles = chart_plot.chartdata.candles
+        if not candles:
+            return
+        highest = max(c.high for c in candles)
+        lowest = min(c.low for c in candles)
+        margin = (highest - lowest) * 0.03 or highest * 0.001
+        chart_plot.draw_label(
+            candles[0].time,
+            highest + margin,
+            str(chart),
+            color="#000000",
+            anchor=(0, 1),
+        )
+
+    def _draw_chart_labels(self, plot: DoubleChartPlot) -> None:
+        self._draw_pane_label(plot.base_plot, self.ltf_chart)
+        self._draw_pane_label(plot.second_plot, self.htf_chart)
+
+    def draw_emas(self, plot: DoubleChartPlot) -> None:
+        """Plot every configured EMA on the HTF pane, each with a legend
+        entry so the color-to-EMA mapping is visible next to the chart."""
+        colors = self._ema_colors()
+        for period, ema_values in self._emas.items():
+            plot.second_plot.linear_plot(
+                ema_values.keys(),
+                ema_values.values(),
+                color=colors[period],
+                legend=f"EMA{period}",
+            )
 
     @staticmethod
     def _find_start_index(candles: list[Candle], from_time: datetime) -> int:
@@ -184,6 +222,7 @@ class EmaPivotChochFilter(Strategy):
     ) -> EmaPivotChochSignal | None:
         self.ltf_chart = ltf_chartdata.chart
         self.htf_chart = htf_chartdata.chart
+        self._new_touch_keys = []
         pivot_detector = SwingPivots(
             depth=self.htf_pivot_length, backstep=self.htf_backstep
         )
@@ -230,7 +269,13 @@ class EmaPivotChochFilter(Strategy):
                 continue
             self.debug_counters["touched_by_ema"] += 1
             start_index = self._find_start_index(ltf_candles, pivot.candle.time)
-            if start_index < len(ltf_candles):
+            # Only register (and later report) a touch whose pivot candle
+            # actually falls inside the fetched LTF window - the HTF window
+            # covers far more history than the LTF one, so an older pivot
+            # would otherwise get pinned to ltf_candles[0] by
+            # _find_start_index and get reported as "new" even though it
+            # can't be meaningfully shown on the chart being sent.
+            if start_index < len(ltf_candles) and pivot.candle.time >= ltf_candles[0].time:
                 touch_key = (pivot.candle.time, pivot.is_high)
                 if touch_key not in self._touch_events:
                     self._touch_events[touch_key] = (
@@ -238,6 +283,7 @@ class EmaPivotChochFilter(Strategy):
                         tuple(touches),
                         ltf_candles[start_index],
                     )
+                    self._new_touch_keys.append(touch_key)
             if not self.use_choch:
                 continue
             if start_index >= len(ltf_candles):
@@ -328,19 +374,35 @@ class EmaPivotChochFilter(Strategy):
         ltf_chartdata: ChartData,
         htf_chartdata: ChartData,
         color: str = "#ffb300",
+        touch_keys: list[tuple] | None = None,
     ):
         # self._touch_events accumulates forever and is never pruned, but the
         # plot is built from the current rolling-window chartdata only - a
         # touch recorded on a candle that has since scrolled out of that
         # window can't be located by finplot on this chart, so skip it here
         # rather than letting finplot raise a KeyError on an unknown time.
+        #
+        # touch_keys restricts drawing to a specific subset of
+        # self._touch_events (e.g. only the touch(es) just registered by the
+        # latest check_signal() call) instead of the whole accumulated
+        # history - pass None to draw everything.
         ltf_times = {c.time for c in ltf_chartdata.candles}
         htf_times = {c.time for c in htf_chartdata.candles}
+
+        events = (
+            self._touch_events.values()
+            if touch_keys is None
+            else (
+                self._touch_events[key]
+                for key in touch_keys
+                if key in self._touch_events
+            )
+        )
 
         ltf_points = []
         htf_bullish_points = []
         htf_bearish_points = []
-        for pivot, touches, ltf_touch_candle in self._touch_events.values():
+        for pivot, touches, ltf_touch_candle in events:
             if ltf_touch_candle.time not in ltf_times or pivot.candle.time not in htf_times:
                 continue
             ltf_source = CandlesSource.High if pivot.is_high else CandlesSource.Low
@@ -364,11 +426,8 @@ class EmaPivotChochFilter(Strategy):
         **kwargs,
     ):
         if draw_emas:
-            colors = self._ema_colors()
-            for period, ema_values in self._emas.items():
-                plot.second_plot.linear_plot(
-                    ema_values.keys(), ema_values.values(), color=colors[period]
-                )
+            self.draw_emas(plot)
+        self._draw_chart_labels(plot)
         pivot_color = "#ef5350" if signal.side is MarketSide.BEARISH else "#26a69a"
         pivot_source = CandlesSource.High if signal.pivot.is_high else CandlesSource.Low
         plot.second_plot.mark_candle(
@@ -390,11 +449,8 @@ class EmaPivotChochFilter(Strategy):
     ):
         if not signals:
             return
-        colors = self._ema_colors()
-        for period, ema_values in self._emas.items():
-            plot.second_plot.linear_plot(
-                ema_values.keys(), ema_values.values(), color=colors[period]
-            )
+        self.draw_emas(plot)
+        self._draw_chart_labels(plot)
         model_pivot_points: dict[tuple, list] = {}
         retrace_points: dict[MarketSide, list] = {
             MarketSide.BULLISH: [],
@@ -549,10 +605,11 @@ class EmaPivotChochTradeConfig(TradeConfig):
 
     async def send_touch_report(self, ltf_chartdata: ChartData, htf_chartdata: ChartData):
         plot = self._make_plot(ltf_chartdata, htf_chartdata)
-        colors = self.strategy._ema_colors()
-        for period, ema_values in self.strategy._emas.items():
-            plot.second_plot.linear_plot(ema_values.keys(), ema_values.values(), color=colors[period])
-        self.strategy.draw_touches(plot, ltf_chartdata, htf_chartdata)
+        self.strategy.draw_emas(plot)
+        self.strategy._draw_chart_labels(plot)
+        self.strategy.draw_touches(
+            plot, ltf_chartdata, htf_chartdata, touch_keys=self.strategy._new_touch_keys
+        )
         img_path = plot.save_image(f"{self.strategy.name}_{self.chart}")
         msg = f"{self.strategy.name}\n📈 {self.chart}\nEMA-pivot touch report"
         await TelegramReporter().send_msg(TelegramReporter().main_channel, msg, img_path)
@@ -569,9 +626,10 @@ class EmaPivotChochTradeConfig(TradeConfig):
             ema_htf_data = copy(ema_htf_data)
             ema_htf_data.candles = ema_htf_data.candles[:-1]
 
-        touch_count_before = len(self.strategy._touch_events)
         res = await self.find_signal(ltf_data, htf_data, ema_htf_data)
-        new_touch = len(self.strategy._touch_events) > touch_count_before
+        # populated fresh by strategy.check_signal() (called from
+        # find_signal() above) with only the touch(es) registered THIS call
+        new_touch = bool(self.strategy._new_touch_keys)
 
         if new_touch and not self.strategy.use_bos and not self.strategy.use_choch:
             await self.send_touch_report(ltf_data, htf_data)

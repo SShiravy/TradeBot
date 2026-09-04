@@ -252,7 +252,7 @@ def test_ema_pivot_choch(n_ltf_candles: int = 120, n_htf_candles: int = 120, war
             f"  pivot={t['pivot_time']} (is_high={t['pivot_is_high']}) -> "
             f"ltf_marker={t['ltf_marker_time']}  delta={t['delta']}{flag}"
         )
-    ema_pivot_choch.draw_touches(plot)
+    ema_pivot_choch.draw_touches(plot, ltf_chartdata=ltf_chartdata, htf_chartdata=htf_chartdata)
 
     plot.show()
 

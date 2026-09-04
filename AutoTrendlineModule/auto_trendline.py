@@ -1,12 +1,10 @@
-from typing import Literal
-
 from ChartModule.models import Candle, MarketSide, CandlesSource, TimeFrame
 from ChartModule.Indicators.models import IndicatorBaseModel
 from ChartModule.Indicators.lines import Line
 from ChartModule.plot import ChartPlot
 from ChartModule.Indicators.swing_pivots import SwingPivots, PivotPoint
-from AutoTrendlineModule.atr import ATR
-from dataclasses import dataclass, field
+from ChartModule.Indicators.atr import ATR
+from dataclasses import dataclass, field, replace
 from enum import Enum
 import logging
 
@@ -15,6 +13,7 @@ logger = logging.getLogger("AutoTrendlines")
 
 
 class BreakLogicMode(Enum):
+
     ATR_DISTANCE = "ATR Distance"
     CANDLE_CLOSE = "Candle Close"
     CLOSE_CROSS = "Close Cross"
@@ -22,8 +21,9 @@ class BreakLogicMode(Enum):
 
 @dataclass(slots=True, frozen=True)
 class MTREvent:
+
     candle: Candle
-    side: Literal[MarketSide.BEARISH, MarketSide.BULLISH]
+    bullish: bool
     count: int
 
     @property
@@ -34,12 +34,13 @@ class MTREvent:
         return f"MTR{suffix}+" if suffix > 1 else "MTR+"
 
     def __str__(self) -> str:
-        return f"{self.text}|{self.side}|{self.candle.time}"
+        return f"{self.text}|{'bullish' if self.bullish else 'bearish'}|{self.candle.time}"
 
 
 @dataclass(slots=True)
 class TrendlineModel:
-    direction: Literal[MarketSide.BULLISH, MarketSide.BEARISH]
+
+    direction: MarketSide
     source: CandlesSource
     base_index: int
     base_candle: Candle
@@ -68,18 +69,19 @@ class TrendlineModel:
         return Line(self.source, self.base_candle, self.end_candle)
 
     @property
-    def side(self) -> Literal[MarketSide.BULLISH, MarketSide.BEARISH]:
+    def role(self) -> MarketSide:
+        
         if self.aligned_only:
             return self.direction
         return MarketSide.BULLISH if self.slope > 0 else MarketSide.BEARISH
 
     @property
     def is_support(self) -> bool:
-        return self.side is MarketSide.BULLISH
+        return self.role is MarketSide.BULLISH
 
     @property
     def is_resistance(self) -> bool:
-        return self.side is MarketSide.BEARISH
+        return self.role is MarketSide.BEARISH
 
     def __str__(self) -> str:
         return (
@@ -89,6 +91,7 @@ class TrendlineModel:
 
 
 class AutoTrendlines(IndicatorBaseModel):
+
     def __init__(
         self,
         depth: int = 12,
@@ -108,6 +111,7 @@ class AutoTrendlines(IndicatorBaseModel):
         keep_archived: bool = True,
         break_logic_mode: BreakLogicMode = BreakLogicMode.ATR_DISTANCE,
         candle_confirm_count: int = 2,
+        max_stored_mtr_events: int = 300,
     ) -> None:
         super().__init__()
         self.data: list[TrendlineModel]
@@ -130,10 +134,27 @@ class AutoTrendlines(IndicatorBaseModel):
         self.keep_archived = keep_archived
         self.break_logic_mode = break_logic_mode
         self.candle_confirm_count = candle_confirm_count
+        self.max_stored_mtr_events = max_stored_mtr_events
 
         self._pivot_highs: list[PivotPoint] = []
         self._pivot_lows: list[PivotPoint] = []
         self._lines: list[TrendlineModel] = []
+
+        # `candles` passed into set()/update() is a SLIDING WINDOW (each
+        # poll refetches the last `n_candle_check` candles), not an
+        # append-only array -- older candles keep falling off the front.
+        # `TrendlineModel.base_index`/`last_touch_index` and the indices
+        # stored on the pooled pivots in `_pivot_highs`/`_pivot_lows` are
+        # all positions WITHIN that window, so they go stale by exactly
+        # the number of candles that fell off the front since they were
+        # recorded -- and since they're never adjusted, they only ever
+        # grow relatively "too large", which is how `_merge_similar_lines`
+        # indexing `self.candles[ref_index]` with one of these can
+        # eventually run past the end of the (unchanged-length) window.
+        # `_last_checked_index` remembers where the last-seen candle sat
+        # in the window last time, so `update()` can measure that drift
+        # and `_rebase()` everything before doing anything else.
+        self._last_checked_index: int = 0
 
     def export_configs(self) -> dict:
         configs = super().export_configs()
@@ -202,38 +223,29 @@ class AutoTrendlines(IndicatorBaseModel):
 
     # ─── LINE POOL MANAGEMENT ───────────────────────
 
-    def _count_active(
-        self, direction: Literal[MarketSide.BEARISH, MarketSide.BULLISH]
-    ) -> int:
+    def _count_active(self, direction: MarketSide) -> int:
         return sum(
             1 for line in self._lines if not line.broken and line.direction is direction
         )
 
-    def _find_most_recent_active(
-        self, direction: Literal[MarketSide.BEARISH, MarketSide.BULLISH]
-    ) -> TrendlineModel | None:
+    def _find_most_recent_active(self, direction: MarketSide) -> TrendlineModel | None:
         candidates = [
-            line
-            for line in self._lines
-            if not line.broken and line.direction is direction
+            line for line in self._lines if not line.broken and line.direction is direction
         ]
         if not candidates:
             return None
         return max(candidates, key=lambda line: line.base_index)
 
-    def _find_weakest_active(
-        self, direction: Literal[MarketSide.BEARISH, MarketSide.BULLISH]
-    ) -> TrendlineModel | None:
+    def _find_weakest_active(self, direction: MarketSide) -> TrendlineModel | None:
         candidates = [
-            line
-            for line in self._lines
-            if not line.broken and line.direction is direction
+            line for line in self._lines if not line.broken and line.direction is direction
         ]
         if not candidates:
             return None
         return min(candidates, key=lambda line: line.score)
 
     def _enforce_max_total_lines(self):
+        
         while len(self._lines) > self.max_total_lines:
             for i, line in enumerate(self._lines):
                 if line.broken:
@@ -242,9 +254,41 @@ class AutoTrendlines(IndicatorBaseModel):
             else:
                 self._lines.pop(0)
 
+    def _enforce_max_mtr_events(self):
+        # `mtr_events` only ever grows via append in `_process_bar`, with
+        # no eviction anywhere -- over a long-running bot this list would
+        # otherwise accumulate forever. FIFO cap: keep the most recent
+        # `max_stored_mtr_events`, drop the oldest.
+        excess = len(self.mtr_events) - self.max_stored_mtr_events
+        if excess > 0:
+            del self.mtr_events[:excess]
+
+    def _rebase(self, shift: int):
+        """
+        The candles window shifted forward by `shift` bars (that many
+        candles fell off the front since the last call). Every previously
+        recorded position needs to move back by the same amount so it
+        still points at the same real candle in the new window.
+        """
+        for line in self._lines:
+            line.base_index -= shift
+            line.last_touch_index -= shift
+
+        self._pivot_highs = [
+            replace(p, index=p.index - shift, confirmed_index=p.confirmed_index - shift)
+            for p in self._pivot_highs
+        ]
+        self._pivot_lows = [
+            replace(p, index=p.index - shift, confirmed_index=p.confirmed_index - shift)
+            for p in self._pivot_lows
+        ]
+        # `mtr_events` only ever stores a direct Candle reference (like
+        # base_candle/last_touch_candle elsewhere), never a position
+        # index, so nothing there needs rebasing.
+
     def _add_new_line(
         self,
-        direction: Literal[MarketSide.BEARISH, MarketSide.BULLISH],
+        direction: MarketSide,
         base_index: int,
         base_candle: Candle,
         slope: float,
@@ -257,9 +301,7 @@ class AutoTrendlines(IndicatorBaseModel):
             if weakest is not None:
                 weakest.broken = True
 
-        source = (
-            CandlesSource.Low if direction is MarketSide.BULLISH else CandlesSource.High
-        )
+        source = CandlesSource.Low if direction is MarketSide.BULLISH else CandlesSource.High
         new_line = TrendlineModel(
             direction=direction,
             source=source,
@@ -278,7 +320,7 @@ class AutoTrendlines(IndicatorBaseModel):
 
     def _try_merge_or_add(
         self,
-        direction: Literal[MarketSide.BEARISH, MarketSide.BULLISH],
+        direction: MarketSide,
         base_index: int,
         base_candle: Candle,
         new_index: int,
@@ -293,8 +335,7 @@ class AutoTrendlines(IndicatorBaseModel):
 
         if merge_target is not None:
             divergence = (
-                abs(candidate_slope - merge_target.group_slope)
-                * merge_projection_seconds
+                abs(candidate_slope - merge_target.group_slope) * merge_projection_seconds
             )
             if divergence <= similar_tolerance:
                 new_slope = (
@@ -313,13 +354,7 @@ class AutoTrendlines(IndicatorBaseModel):
 
         if not merged:
             self._add_new_line(
-                direction,
-                base_index,
-                base_candle,
-                candidate_slope,
-                score,
-                new_index,
-                new_candle,
+                direction, base_index, base_candle, candidate_slope, score, new_index, new_candle
             )
 
     def _merge_similar_lines(self, current_candle: Candle, similar_tolerance: float):
@@ -445,7 +480,7 @@ class AutoTrendlines(IndicatorBaseModel):
 
     # ─── BREAK DETECTION ─────────────────────────────
 
-    def check_break(
+    def _check_break(
         self,
         line: TrendlineModel,
         candle: Candle,
@@ -477,6 +512,7 @@ class AutoTrendlines(IndicatorBaseModel):
     # ─── MAIN CALCULATION ────────────────────────────
 
     def _bar_seconds(self) -> float:
+        
         timeframe = self.candles[0].timeframe
         if isinstance(timeframe, TimeFrame):
             return timeframe.minutes * 60
@@ -488,9 +524,8 @@ class AutoTrendlines(IndicatorBaseModel):
         ]
         return min(diffs) if diffs else 60.0
 
-    def _prepare_run(
-        self, start_index: int
-    ) -> tuple[dict[int, list[PivotPoint]], float]:
+    def _prepare_run(self, start_index: int) -> tuple[dict[int, list[PivotPoint]], float]:
+        
         candles = self.candles
         self.pivots.set(candles)
         self.atr.set(candles)
@@ -500,9 +535,7 @@ class AutoTrendlines(IndicatorBaseModel):
         pivots_by_confirm_index: dict[int, list[PivotPoint]] = {}
         for pivot in self.pivots.data:
             if pivot.confirmed_index >= start_index:
-                pivots_by_confirm_index.setdefault(pivot.confirmed_index, []).append(
-                    pivot
-                )
+                pivots_by_confirm_index.setdefault(pivot.confirmed_index, []).append(pivot)
 
         return pivots_by_confirm_index, merge_projection_seconds
 
@@ -520,12 +553,7 @@ class AutoTrendlines(IndicatorBaseModel):
 
         for pivot in pivots_by_confirm_index.get(i, []):
             self._process_new_pivot(
-                pivot,
-                i,
-                touch_tol,
-                break_tol,
-                similar_tolerance,
-                merge_projection_seconds,
+                pivot, i, touch_tol, break_tol, similar_tolerance, merge_projection_seconds
             )
 
         resistance_breaks = 0
@@ -548,7 +576,7 @@ class AutoTrendlines(IndicatorBaseModel):
                 line.last_touch_index = i
                 line.last_touch_candle = candle
 
-            broke = self.check_break(line, candle, line_value, is_support, break_tol)
+            broke = self._check_break(line, candle, line_value, is_support, break_tol)
 
             mtr_eligible = not self.display_only_aligned or (
                 line.slope > 0 if is_support else line.slope < 0
@@ -563,18 +591,15 @@ class AutoTrendlines(IndicatorBaseModel):
 
             if broke or stale:
                 line.broken = True
-                logger.debug(
-                    f"trendline archived (broke={broke}, stale={stale}): {line}"
-                )
+                logger.debug(f"trendline archived (broke={broke}, stale={stale}): {line}")
                 if not self.keep_archived:
                     self._lines.remove(line)
 
         if resistance_breaks > 0:
-            self.mtr_events.append(
-                MTREvent(candle, MarketSide.BULLISH, resistance_breaks)
-            )
+            self.mtr_events.append(MTREvent(candle, True, resistance_breaks))
         if support_breaks > 0:
-            self.mtr_events.append(MTREvent(candle, MarketSide.BEARISH, support_breaks))
+            self.mtr_events.append(MTREvent(candle, False, support_breaks))
+        self._enforce_max_mtr_events()
 
         self._merge_similar_lines(candle, similar_tolerance)
         self._enforce_max_total_lines()
@@ -597,10 +622,9 @@ class AutoTrendlines(IndicatorBaseModel):
         pivots_by_confirm_index, merge_projection_seconds = self._prepare_run(0)
 
         for i, candle in enumerate(candles):
-            self._process_bar(
-                i, candle, pivots_by_confirm_index, merge_projection_seconds
-            )
+            self._process_bar(i, candle, pivots_by_confirm_index, merge_projection_seconds)
 
+        self._last_checked_index = len(candles) - 1
         return self._visible_lines()
 
     def _forcast(self) -> MarketSide:
@@ -633,7 +657,7 @@ class AutoTrendlines(IndicatorBaseModel):
             for event in self.mtr_events:
                 atr_value = self.atr.data.get(event.candle.timestamp, 0.0)
                 offset = atr_value * 0.6 if atr_value else event.candle.close * 0.001
-                if event.side == MarketSide.BULLISH:
+                if event.bullish:
                     # resistance broken -> bullish break, label below the low
                     plot.draw_label(
                         event.candle.time,
@@ -660,17 +684,23 @@ class AutoTrendlines(IndicatorBaseModel):
         if start_index >= len(candles):
             return self.data
 
+        # position of the last-seen candle in the NEW window vs where it
+        # was recorded last time -> how far the window has slid forward.
+        # Must rebase BEFORE `_prepare_run` (which touches self.pivots/
+        # self.atr) or any of the per-bar processing below, since
+        # everything downstream compares against these stored indices.
+        shift = self._last_checked_index - (start_index - 1)
+        if shift > 0:
+            self._rebase(shift)
+
         self.candles = candles
 
-        pivots_by_confirm_index, merge_projection_seconds = self._prepare_run(
-            start_index
-        )
+        pivots_by_confirm_index, merge_projection_seconds = self._prepare_run(start_index)
 
         for i in range(start_index, len(candles)):
-            self._process_bar(
-                i, candles[i], pivots_by_confirm_index, merge_projection_seconds
-            )
+            self._process_bar(i, candles[i], pivots_by_confirm_index, merge_projection_seconds)
 
         self.data = self._visible_lines()
         self.last_checked_candle = candles[-1]
+        self._last_checked_index = len(candles) - 1
         return self.data

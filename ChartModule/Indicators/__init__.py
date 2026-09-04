@@ -6,6 +6,7 @@ from ChartModule.Indicators.models import IndicatorBaseModel, SupportCandleCondi
 from ChartModule.Indicators.moving_color import MovingColor, MovingCandleLength
 from ChartModule.Indicators.fibonacci import FibonacciRetracement, FiboLevels
 from ChartModule.Indicators.rsi import RSI
+from ChartModule.Indicators.atr import ATR
 
 __all__ = [
     "IndicatorBaseModel",
@@ -16,6 +17,7 @@ __all__ = [
     "SMA",
     "EMA",
     "RSI",
+    "ATR",
     "SupportCandleConditions",
     "MovingColor",
     "MovingCandleLength",
