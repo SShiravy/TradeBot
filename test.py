@@ -234,7 +234,6 @@ def test_ema_pivot_choch(n_ltf_candles: int = 120, n_htf_candles: int = 120, war
             plot.second_plot.linear_plot(
                 ema_values.keys(), ema_values.values(),
                 color=colors[period],
-                legend=f"EMA{period}",
             )
 
     logging.info(f"marking {len(ema_pivot_choch._touch_events)} EMA-pivot touches on the LTF chart")

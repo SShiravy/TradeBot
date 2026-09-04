@@ -37,6 +37,15 @@ class ChartPlot(BaseChartPlot):
         self._y_max = 0
         self._y_min = 100000000
         self.plot_n_candles = plot_n_candles
+        self._used_legends: set[str] = set()
+
+    def _legend_for(self, legend: str | None) -> str | None:
+        if legend is None:
+            return None
+        if legend in self._used_legends:
+            return None
+        self._used_legends.add(legend)
+        return legend
 
     @property
     def ax(self):
@@ -70,6 +79,23 @@ class ChartPlot(BaseChartPlot):
         fplt.candlestick_ochl(df[["open", "close", "high", "low"]], ax=self.ax)
 
         self.set_y_range((float(df["high"].max()), float(df["low"].min())))
+        self._draw_chart_name()
+
+    def _draw_chart_name(self):
+        
+        candles = self.chartdata.candles
+        if not candles:
+            return
+        highest = max(c.high for c in candles)
+        lowest = min(c.low for c in candles)
+        margin = (highest - lowest) * 0.03 or highest * 0.001
+        self.draw_label(
+            candles[0].time,
+            highest + margin,
+            str(self.chartdata.chart),
+            color="#000000",
+            anchor=(0, 1),
+        )
 
     def show(self):
         if not self.ax:
@@ -270,9 +296,8 @@ class ChartPlot(BaseChartPlot):
             style="o",
             color=color,
             width=1,
-            legend=legend,
+            legend=self._legend_for(legend),
             ax=self.ax if not ax else ax,
-            # legend=legend,
         )
 
     def linear_plot(
@@ -290,7 +315,7 @@ class ChartPlot(BaseChartPlot):
             style="-",
             ax=self.ax if not ax else ax,
             color=color,
-            legend=legend,
+            legend=self._legend_for(legend),
             width=thickness,
         )
 
@@ -311,7 +336,7 @@ class ChartPlot(BaseChartPlot):
             style="o",
             ax=self.ax if not ax else ax,
             color=color,
-            legend=legend,
+            legend=self._legend_for(legend),
             width=1,
         )
 
