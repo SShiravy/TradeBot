@@ -5,10 +5,11 @@ from typing import Any
 
 
 class ATR(IndicatorBaseModel):
-    def __init__(self, n_bar: int = 14) -> None:
+    def __init__(self, n_bar: int = 14, max_stored: int = 2000) -> None:
         super().__init__()
         self.data: dict[int, float]
         self.n_bar = n_bar
+        self.max_stored = max_stored
         self.last_close: float
         self.avg_tr: float
 
@@ -50,7 +51,10 @@ class ATR(IndicatorBaseModel):
 
         self.last_close = self.candles[-1].close
 
-        return values
+        self.data = values
+        self._prune()
+
+        return self.data
 
     def update(self, candles: list[Candle], *args, **kwargs) -> Any:
         if self.last_checked_candle is None:
@@ -71,6 +75,23 @@ class ATR(IndicatorBaseModel):
 
         self.candles = candles
         self.last_checked_candle = candles[-1]
+        self._prune()
+
+    def _prune(self):
+        # `self.data` is keyed by real candle timestamps -- stable across
+        # window shifts, unlike a position index -- but every update()
+        # call only ever ADDS a key and never removes an old one. Nothing
+        # downstream ever needs an ATR value for a candle that fell out of
+        # the fetched window long ago (SRZones' median-ATR buffer keeps
+        # its own separately-capped rolling window), so left unchecked
+        # this dict grows forever over a long-running bot. Keep only the
+        # most recent `max_stored` entries (dicts preserve insertion
+        # order, so the oldest keys are simply the first ones).
+        excess = len(self.data) - self.max_stored
+        if excess <= 0:
+            return
+        for key in list(self.data.keys())[:excess]:
+            del self.data[key]
 
     def plot(self, plot: ChartPlot, ax=None):
         plot.linear_plot(self.data.keys(), self.data.values(), legend="ATR", ax=ax)
