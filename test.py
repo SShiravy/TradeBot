@@ -229,12 +229,7 @@ def test_ema_pivot_choch(n_ltf_candles: int = 120, n_htf_candles: int = 120, war
         ema_pivot_choch.draw_all(plot, signals, draw_indicators=True)
     else:
         logging.info("no signals found in this window, showing raw EMAs instead")
-        colors = ema_pivot_choch._ema_colors()
-        for period, ema_values in ema_pivot_choch._emas.items():
-            plot.second_plot.linear_plot(
-                ema_values.keys(), ema_values.values(),
-                color=colors[period],
-            )
+        ema_pivot_choch.draw_emas(plot)
 
     logging.info(f"marking {len(ema_pivot_choch._touch_events)} EMA-pivot touches on the LTF chart")
     touch_debug = ema_pivot_choch.describe_touches()

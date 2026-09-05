@@ -3,6 +3,7 @@ from datetime import datetime, timezone
 from typing import TypeAlias, Any
 from abc import ABC, abstractmethod
 import finplot as fplt
+import pyqtgraph as pg
 
 fplt.candle_bull_body_color = "#26a69a"
 fplt.candle_bull_color = "#26a69a"
@@ -37,6 +38,10 @@ class ChartPlot(BaseChartPlot):
         self._y_max = 0
         self._y_min = 100000000
         self.plot_n_candles = plot_n_candles
+        # labels already shown in this pane's legend box - lets every
+        # drawing method below silently skip re-adding a label that's
+        # already there, instead of every strategy having to track that
+        # itself and finplot showing repeated legend entries.
         self._used_legends: set[str] = set()
 
     def _legend_for(self, legend: str | None) -> str | None:
@@ -82,20 +87,19 @@ class ChartPlot(BaseChartPlot):
         self._draw_chart_name()
 
     def _draw_chart_name(self):
-        
-        candles = self.chartdata.candles
-        if not candles:
-            return
-        highest = max(c.high for c in candles)
-        lowest = min(c.low for c in candles)
-        margin = (highest - lowest) * 0.03 or highest * 0.001
-        self.draw_label(
-            candles[0].time,
-            highest + margin,
-            str(self.chartdata.chart),
-            color="#000000",
-            anchor=(0, 1),
-        )
+        """Show this pane's chart name (symbol + timeframe) as a legend row.
+
+        Must go through legend.addItem(), the same path finplot itself uses
+        for every other legend row (EMA lines, pivot markers, ATR, ...) -
+        fplt.add_legend() instead pokes the legend's Qt grid layout directly,
+        which doesn't update the row bookkeeping addItem() relies on, so any
+        legend row added afterwards silently collides with this one and
+        never renders. The item is fully transparent - it only exists to
+        carry the name text, no color swatch is shown for it.
+        """
+        fplt._create_legend(self.ax)
+        dummy_item = pg.PlotDataItem(pen=pg.mkPen(color=(0, 0, 0, 0)))
+        self.ax.legend.addItem(dummy_item, str(self.chartdata.chart))
 
     def show(self):
         if not self.ax:
