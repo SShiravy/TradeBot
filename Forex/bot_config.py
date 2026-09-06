@@ -4,7 +4,10 @@ from ChartModule import Chart, ChartData
 from TradingModule import ExchangeAgent
 from DivergenceStrategy.two_chart_divergence import Divergence, TwoChartDiverTradeConfig
 from ChochQueueStrategy.choch_queue import ChochQueueFilter, ChochQueueTradeConfig
-from EmaPivotChochStrategy.ema_pivot_choch import EmaPivotChochFilter, EmaPivotChochTradeConfig
+from EmaPivotChochStrategy.ema_pivot_choch import (
+    EmaPivotChochFilter,
+    EmaPivotChochTradeConfig,
+)
 from dataclasses import dataclass, field
 from datetime import timedelta
 

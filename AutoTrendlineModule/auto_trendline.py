@@ -13,7 +13,6 @@ logger = logging.getLogger("AutoTrendlines")
 
 
 class BreakLogicMode(Enum):
-
     ATR_DISTANCE = "ATR Distance"
     CANDLE_CLOSE = "Candle Close"
     CLOSE_CROSS = "Close Cross"
@@ -21,7 +20,6 @@ class BreakLogicMode(Enum):
 
 @dataclass(slots=True, frozen=True)
 class MTREvent:
-
     candle: Candle
     bullish: bool
     count: int
@@ -34,12 +32,13 @@ class MTREvent:
         return f"MTR{suffix}+" if suffix > 1 else "MTR+"
 
     def __str__(self) -> str:
-        return f"{self.text}|{'bullish' if self.bullish else 'bearish'}|{self.candle.time}"
+        return (
+            f"{self.text}|{'bullish' if self.bullish else 'bearish'}|{self.candle.time}"
+        )
 
 
 @dataclass(slots=True)
 class TrendlineModel:
-
     direction: MarketSide
     source: CandlesSource
     base_index: int
@@ -70,7 +69,6 @@ class TrendlineModel:
 
     @property
     def role(self) -> MarketSide:
-        
         if self.aligned_only:
             return self.direction
         return MarketSide.BULLISH if self.slope > 0 else MarketSide.BEARISH
@@ -91,7 +89,6 @@ class TrendlineModel:
 
 
 class AutoTrendlines(IndicatorBaseModel):
-
     def __init__(
         self,
         depth: int = 12,
@@ -230,7 +227,9 @@ class AutoTrendlines(IndicatorBaseModel):
 
     def _find_most_recent_active(self, direction: MarketSide) -> TrendlineModel | None:
         candidates = [
-            line for line in self._lines if not line.broken and line.direction is direction
+            line
+            for line in self._lines
+            if not line.broken and line.direction is direction
         ]
         if not candidates:
             return None
@@ -238,14 +237,15 @@ class AutoTrendlines(IndicatorBaseModel):
 
     def _find_weakest_active(self, direction: MarketSide) -> TrendlineModel | None:
         candidates = [
-            line for line in self._lines if not line.broken and line.direction is direction
+            line
+            for line in self._lines
+            if not line.broken and line.direction is direction
         ]
         if not candidates:
             return None
         return min(candidates, key=lambda line: line.score)
 
     def _enforce_max_total_lines(self):
-        
         while len(self._lines) > self.max_total_lines:
             for i, line in enumerate(self._lines):
                 if line.broken:
@@ -301,7 +301,9 @@ class AutoTrendlines(IndicatorBaseModel):
             if weakest is not None:
                 weakest.broken = True
 
-        source = CandlesSource.Low if direction is MarketSide.BULLISH else CandlesSource.High
+        source = (
+            CandlesSource.Low if direction is MarketSide.BULLISH else CandlesSource.High
+        )
         new_line = TrendlineModel(
             direction=direction,
             source=source,
@@ -335,7 +337,8 @@ class AutoTrendlines(IndicatorBaseModel):
 
         if merge_target is not None:
             divergence = (
-                abs(candidate_slope - merge_target.group_slope) * merge_projection_seconds
+                abs(candidate_slope - merge_target.group_slope)
+                * merge_projection_seconds
             )
             if divergence <= similar_tolerance:
                 new_slope = (
@@ -354,7 +357,13 @@ class AutoTrendlines(IndicatorBaseModel):
 
         if not merged:
             self._add_new_line(
-                direction, base_index, base_candle, candidate_slope, score, new_index, new_candle
+                direction,
+                base_index,
+                base_candle,
+                candidate_slope,
+                score,
+                new_index,
+                new_candle,
             )
 
     def _merge_similar_lines(self, current_candle: Candle, similar_tolerance: float):
@@ -512,7 +521,6 @@ class AutoTrendlines(IndicatorBaseModel):
     # ─── MAIN CALCULATION ────────────────────────────
 
     def _bar_seconds(self) -> float:
-        
         timeframe = self.candles[0].timeframe
         if isinstance(timeframe, TimeFrame):
             return timeframe.minutes * 60
@@ -524,8 +532,9 @@ class AutoTrendlines(IndicatorBaseModel):
         ]
         return min(diffs) if diffs else 60.0
 
-    def _prepare_run(self, start_index: int) -> tuple[dict[int, list[PivotPoint]], float]:
-        
+    def _prepare_run(
+        self, start_index: int
+    ) -> tuple[dict[int, list[PivotPoint]], float]:
         candles = self.candles
         self.pivots.set(candles)
         self.atr.set(candles)
@@ -535,7 +544,9 @@ class AutoTrendlines(IndicatorBaseModel):
         pivots_by_confirm_index: dict[int, list[PivotPoint]] = {}
         for pivot in self.pivots.data:
             if pivot.confirmed_index >= start_index:
-                pivots_by_confirm_index.setdefault(pivot.confirmed_index, []).append(pivot)
+                pivots_by_confirm_index.setdefault(pivot.confirmed_index, []).append(
+                    pivot
+                )
 
         return pivots_by_confirm_index, merge_projection_seconds
 
@@ -553,7 +564,12 @@ class AutoTrendlines(IndicatorBaseModel):
 
         for pivot in pivots_by_confirm_index.get(i, []):
             self._process_new_pivot(
-                pivot, i, touch_tol, break_tol, similar_tolerance, merge_projection_seconds
+                pivot,
+                i,
+                touch_tol,
+                break_tol,
+                similar_tolerance,
+                merge_projection_seconds,
             )
 
         resistance_breaks = 0
@@ -591,7 +607,9 @@ class AutoTrendlines(IndicatorBaseModel):
 
             if broke or stale:
                 line.broken = True
-                logger.debug(f"trendline archived (broke={broke}, stale={stale}): {line}")
+                logger.debug(
+                    f"trendline archived (broke={broke}, stale={stale}): {line}"
+                )
                 if not self.keep_archived:
                     self._lines.remove(line)
 
@@ -622,7 +640,9 @@ class AutoTrendlines(IndicatorBaseModel):
         pivots_by_confirm_index, merge_projection_seconds = self._prepare_run(0)
 
         for i, candle in enumerate(candles):
-            self._process_bar(i, candle, pivots_by_confirm_index, merge_projection_seconds)
+            self._process_bar(
+                i, candle, pivots_by_confirm_index, merge_projection_seconds
+            )
 
         self._last_checked_index = len(candles) - 1
         return self._visible_lines()
@@ -695,10 +715,14 @@ class AutoTrendlines(IndicatorBaseModel):
 
         self.candles = candles
 
-        pivots_by_confirm_index, merge_projection_seconds = self._prepare_run(start_index)
+        pivots_by_confirm_index, merge_projection_seconds = self._prepare_run(
+            start_index
+        )
 
         for i in range(start_index, len(candles)):
-            self._process_bar(i, candles[i], pivots_by_confirm_index, merge_projection_seconds)
+            self._process_bar(
+                i, candles[i], pivots_by_confirm_index, merge_projection_seconds
+            )
 
         self.data = self._visible_lines()
         self.last_checked_candle = candles[-1]

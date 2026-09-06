@@ -1,4 +1,5 @@
 from config import settings
+
 settings.METATRADER_TERMINAL_PATH = settings.SECOND_METATRADER_TERMINAL_PATH
 from Forex import ForexAgent, ForexDiverTradeConfig
 from ChartModule import Chart, TimeFrame
@@ -38,7 +39,7 @@ xau = ForexDiverTradeConfig(
     ),
     merge_two_chart_time=False,
     heikingashi_chartdata=True,
-    send_signal=True
+    send_signal=True,
 )
 
 
@@ -68,11 +69,11 @@ single_tp = ForexDiverTradeConfig(
     ),
     merge_two_chart_time=False,
     heikingashi_chartdata=True,
-    send_signal=False
+    send_signal=False,
 )
 
 
-TraderBot("Gold Diver Bot", [xau,single_tp], report_time={"h": 20, "m": 0})
+TraderBot("Gold Diver Bot", [xau, single_tp], report_time={"h": 20, "m": 0})
 
 
 if __name__ == "__main__":

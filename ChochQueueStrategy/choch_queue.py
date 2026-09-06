@@ -35,7 +35,9 @@ class ChochModel:
     touch_candle: Candle | None = field(default=None, init=False)
 
     def __post_init__(self):
-        self.extreme = float("-inf") if self.side is MarketSide.BULLISH else float("inf")
+        self.extreme = (
+            float("-inf") if self.side is MarketSide.BULLISH else float("inf")
+        )
 
     def __str__(self) -> str:
         kind = "CHoCH" if self.is_choch else "BOS"
@@ -175,9 +177,10 @@ class ChochQueueFilter(Strategy):
         )
         return conf_dict
 
-
     @staticmethod
-    def _pine_extreme(values: list[float], start: int, end: int, find_min: bool) -> tuple[float, int]:
+    def _pine_extreme(
+        values: list[float], start: int, end: int, find_min: bool
+    ) -> tuple[float, int]:
         """
         Mirrors Pine's:
             float lo = low  (or high)
@@ -246,17 +249,23 @@ class ChochQueueFilter(Strategy):
             # model is being validated on its own break bar
             if model.side is MarketSide.BULLISH:
                 leg_bot = model.anchor
-                leg_top = candle.high if model.extreme == float("-inf") else model.extreme
+                leg_top = (
+                    candle.high if model.extreme == float("-inf") else model.extreme
+                )
             else:
                 leg_top = model.anchor
                 leg_bot = candle.low if model.extreme == float("inf") else model.extreme
 
             if self.use_fibo_filter:
                 if model.side is MarketSide.BULLISH:
-                    retrace_level = leg_bot + (leg_top - leg_bot) * (1 - self.retrace_fib)
+                    retrace_level = leg_bot + (leg_top - leg_bot) * (
+                        1 - self.retrace_fib
+                    )
                     is_validated = candle.low <= retrace_level
                 else:
-                    retrace_level = leg_top - (leg_top - leg_bot) * (1 - self.retrace_fib)
+                    retrace_level = leg_top - (leg_top - leg_bot) * (
+                        1 - self.retrace_fib
+                    )
                     is_validated = candle.high >= retrace_level
             else:
                 retrace_level = model.break_level
@@ -369,7 +378,9 @@ class ChochQueueFilter(Strategy):
         bull_clusters: list[dict] = []
         last_side: MarketSide | None = None
 
-        def make_model(side: MarketSide, ref_price: float, ref_index: int, touch_index: int) -> ChochModel:
+        def make_model(
+            side: MarketSide, ref_price: float, ref_index: int, touch_index: int
+        ) -> ChochModel:
             if side is MarketSide.BEARISH:
                 anchor = max(c.high for c in candles[ref_index : touch_index + 1])
             else:
@@ -386,7 +397,9 @@ class ChochQueueFilter(Strategy):
             model.touch_candle = candles[touch_index]
             return model
 
-        def try_fallback_chain(clusters: list[dict], want_lower: bool, side: MarketSide, i: int, touches) -> bool:
+        def try_fallback_chain(
+            clusters: list[dict], want_lower: bool, side: MarketSide, i: int, touches
+        ) -> bool:
             """
             Walks backward from clusters[-2] (the one just before
             "current", already handled by the caller). Structurally
@@ -408,13 +421,19 @@ class ChochQueueFilter(Strategy):
                 if candidate["consumed"]:
                     continue
                 next_price = clusters[k + 1]["price"]
-                valid = (candidate["price"] < next_price) if want_lower else (candidate["price"] > next_price)
+                valid = (
+                    (candidate["price"] < next_price)
+                    if want_lower
+                    else (candidate["price"] > next_price)
+                )
                 if not valid:
                     continue
                 if candidate["index"] < i and touches(candidate["price"]):
                     candidate["consumed"] = True
                     if i - candidate["index"] >= self.min_choch_candles:
-                        models.append(make_model(side, candidate["price"], candidate["index"], i))
+                        models.append(
+                            make_model(side, candidate["price"], candidate["index"], i)
+                        )
                         for p in clusters:
                             p["consumed"] = True
                         return True
@@ -424,56 +443,98 @@ class ChochQueueFilter(Strategy):
 
         for i in range(1, n):
             if colors[i] == "green" and colors[i - 1] == "red":
-                bear_clusters.append({"price": candles[i].low, "index": i, "consumed": False})
+                bear_clusters.append(
+                    {"price": candles[i].low, "index": i, "consumed": False}
+                )
             if colors[i] == "red" and colors[i - 1] == "green":
-                bull_clusters.append({"price": candles[i].high, "index": i, "consumed": False})
+                bull_clusters.append(
+                    {"price": candles[i].high, "index": i, "consumed": False}
+                )
 
             # --- bearish CHoCH ---
             if bear_clusters:
                 current = bear_clusters[-1]
-                if not current["consumed"] and current["index"] < i and candles[i].low <= current["price"]:
+                if (
+                    not current["consumed"]
+                    and current["index"] < i
+                    and candles[i].low <= current["price"]
+                ):
                     current["consumed"] = True
                     if last_side is MarketSide.BEARISH:
                         pass  # alternation blocks it outright - no fallback either
                     elif i - current["index"] >= self.min_choch_candles:
-                        models.append(make_model(MarketSide.BEARISH, current["price"], current["index"], i))
+                        models.append(
+                            make_model(
+                                MarketSide.BEARISH,
+                                current["price"],
+                                current["index"],
+                                i,
+                            )
+                        )
                         last_side = MarketSide.BEARISH
                         for p in bear_clusters:
                             p["consumed"] = True
                     else:
                         fired = try_fallback_chain(
-                            bear_clusters, True, MarketSide.BEARISH, i, lambda price: candles[i].low <= price
+                            bear_clusters,
+                            True,
+                            MarketSide.BEARISH,
+                            i,
+                            lambda price: candles[i].low <= price,
                         )
                         if fired:
                             last_side = MarketSide.BEARISH
 
                 # Universal cleanup - see docstring.
                 for p in bear_clusters:
-                    if not p["consumed"] and p["index"] < i and candles[i].low <= p["price"]:
+                    if (
+                        not p["consumed"]
+                        and p["index"] < i
+                        and candles[i].low <= p["price"]
+                    ):
                         p["consumed"] = True
 
             # --- bullish CHoCH ---
             if bull_clusters:
                 current = bull_clusters[-1]
-                if not current["consumed"] and current["index"] < i and candles[i].high >= current["price"]:
+                if (
+                    not current["consumed"]
+                    and current["index"] < i
+                    and candles[i].high >= current["price"]
+                ):
                     current["consumed"] = True
                     if last_side is MarketSide.BULLISH:
                         pass
                     elif i - current["index"] >= self.min_choch_candles:
-                        models.append(make_model(MarketSide.BULLISH, current["price"], current["index"], i))
+                        models.append(
+                            make_model(
+                                MarketSide.BULLISH,
+                                current["price"],
+                                current["index"],
+                                i,
+                            )
+                        )
                         last_side = MarketSide.BULLISH
                         for p in bull_clusters:
                             p["consumed"] = True
                     else:
                         fired = try_fallback_chain(
-                            bull_clusters, False, MarketSide.BULLISH, i, lambda price: candles[i].high >= price
+                            bull_clusters,
+                            False,
+                            MarketSide.BULLISH,
+                            i,
+                            lambda price: candles[i].high >= price,
                         )
                         if fired:
                             last_side = MarketSide.BULLISH
 
                 # Universal cleanup - see docstring.
                 for p in bull_clusters:
-                    if not p["consumed"] and p["index"] < i and candles[i].high >= p["price"]:
+                    if (
+                        not p["consumed"]
+                        and p["index"] < i
+                        and candles[i].high >= p["price"]
+                    ):
                         p["consumed"] = True
 
         return models
@@ -611,7 +672,9 @@ class ChochQueueFilter(Strategy):
                         side=MarketSide.BULLISH,
                         break_candle=candle,
                         break_level=bull_sig_level,  # type: ignore[arg-type]
-                        pivot_candle=candles[bull_sig_index] if bull_sig_index is not None else candle,
+                        pivot_candle=candles[bull_sig_index]
+                        if bull_sig_index is not None
+                        else candle,
                         anchor=last_pl_price,
                         is_choch=bull_choch,
                     )
@@ -630,7 +693,9 @@ class ChochQueueFilter(Strategy):
                         side=MarketSide.BEARISH,
                         break_candle=candle,
                         break_level=bear_sig_level,  # type: ignore[arg-type]
-                        pivot_candle=candles[bear_sig_index] if bear_sig_index is not None else candle,
+                        pivot_candle=candles[bear_sig_index]
+                        if bear_sig_index is not None
+                        else candle,
                         anchor=last_ph_price,
                         is_choch=bear_choch,
                     )
@@ -681,7 +746,10 @@ class ChochQueueFilter(Strategy):
 
         self.last_reported_time = newest_validated.touch_candle.time  # type: ignore[union-attr]
         signal = ChochSignal(
-            self.chart, newest_validated.touch_candle, newest_validated.side, newest_validated  # type: ignore[arg-type]
+            self.chart,
+            newest_validated.touch_candle,
+            newest_validated.side,
+            newest_validated,  # type: ignore[arg-type]
         )
 
         if signal.side is MarketSide.BULLISH and not check_long:
@@ -718,11 +786,17 @@ class ChochQueueFilter(Strategy):
         )
 
         pivot_source = (
-            CandlesSource.High if model.side is MarketSide.BULLISH else CandlesSource.Low
+            CandlesSource.High
+            if model.side is MarketSide.BULLISH
+            else CandlesSource.Low
         )
         plot.mark_candle(model.pivot_candle, source=pivot_source, color=color)
 
-        if self.use_fibo_filter and model.retrace_level is not None and model.touch_candle is not None:
+        if (
+            self.use_fibo_filter
+            and model.retrace_level is not None
+            and model.touch_candle is not None
+        ):
             plot.draw_horizontal_line(
                 model.break_candle.time,
                 model.touch_candle.time,

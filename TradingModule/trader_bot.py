@@ -281,7 +281,7 @@ class TraderBot:
                 f"Memory📝:\n{current / 1024 / 1024:.2f} MB\npeak: {peak / 1024 / 1024:.2f} MB",
             ]
             for stat in snapshot2.compare_to(self.snapshot1, "lineno")[:20]:
-                msg.append("\n"+str(stat))
+                msg.append("\n" + str(stat))
             await TelegramReporter().log_report("\n".join(msg))
 
     async def report(self):

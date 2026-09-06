@@ -46,7 +46,6 @@ class EmaPivotChochSignal(Signal):
 
 
 class EmaPivotChochFilter(Strategy):
-
     def __init__(
         self,
         ema_periods: list[int],
@@ -171,7 +170,9 @@ class EmaPivotChochFilter(Strategy):
 
     def _touching_emas(self, pivot: PivotPoint) -> list[EmaTouch]:
         atr_value = self._atr.get(pivot.candle.timestamp)
-        max_distance = (atr_value * self.atr_multiplier) if atr_value is not None else 0.0
+        max_distance = (
+            (atr_value * self.atr_multiplier) if atr_value is not None else 0.0
+        )
         if pivot.is_high:
             zone_low = pivot.candle.low
             zone_high = pivot.candle.high + max_distance
@@ -207,7 +208,9 @@ class EmaPivotChochFilter(Strategy):
         pivot_detector.set(htf_chartdata.candles)
         self._pivots = pivot_detector.data
         ema_source_candles = (
-            ema_htf_chartdata.candles if ema_htf_chartdata is not None else htf_chartdata.candles
+            ema_htf_chartdata.candles
+            if ema_htf_chartdata is not None
+            else htf_chartdata.candles
         )
         self._emas = {}
         for period in self.ema_periods:
@@ -253,7 +256,10 @@ class EmaPivotChochFilter(Strategy):
             # would otherwise get pinned to ltf_candles[0] by
             # _find_start_index and get reported as "new" even though it
             # can't be meaningfully shown on the chart being sent.
-            if start_index < len(ltf_candles) and pivot.candle.time >= ltf_candles[0].time:
+            if (
+                start_index < len(ltf_candles)
+                and pivot.candle.time >= ltf_candles[0].time
+            ):
                 touch_key = (pivot.candle.time, pivot.is_high)
                 if touch_key not in self._touch_events:
                     self._touch_events[touch_key] = (
@@ -381,7 +387,10 @@ class EmaPivotChochFilter(Strategy):
         htf_bullish_points = []
         htf_bearish_points = []
         for pivot, touches, ltf_touch_candle in events:
-            if ltf_touch_candle.time not in ltf_times or pivot.candle.time not in htf_times:
+            if (
+                ltf_touch_candle.time not in ltf_times
+                or pivot.candle.time not in htf_times
+            ):
                 continue
             ltf_source = CandlesSource.High if pivot.is_high else CandlesSource.Low
             ltf_points.append((ltf_touch_candle.time, ltf_source(ltf_touch_candle)))
@@ -539,16 +548,22 @@ class EmaPivotChochTradeConfig(TradeConfig):
     def get_ema_htf_chartdata(self) -> ChartData | None:
         if not self.n_ema_htf_candle_check:
             return None
-        ema_htf_chartdata = self.agent.get_chartdata(self.htf_chart, self.n_ema_htf_candle_check)
+        ema_htf_chartdata = self.agent.get_chartdata(
+            self.htf_chart, self.n_ema_htf_candle_check
+        )
         if ema_htf_chartdata is None:
             return None
         if self.heikingashi_chartdata:
             ema_htf_chartdata = ema_htf_chartdata.give_heikingashi_chartdata()
         return ema_htf_chartdata
 
-    def _make_plot(self, ltf_chartdata: ChartData, htf_chartdata: ChartData) -> DoubleChartPlot:
+    def _make_plot(
+        self, ltf_chartdata: ChartData, htf_chartdata: ChartData
+    ) -> DoubleChartPlot:
         plot_n_candles = max(len(ltf_chartdata.candles), len(htf_chartdata.candles))
-        return DoubleChartPlot(ltf_chartdata, htf_chartdata, plot_n_candles=plot_n_candles)
+        return DoubleChartPlot(
+            ltf_chartdata, htf_chartdata, plot_n_candles=plot_n_candles
+        )
 
     async def find_signal(
         self,
@@ -559,7 +574,11 @@ class EmaPivotChochTradeConfig(TradeConfig):
         **kwargs,
     ) -> None | tuple[EmaPivotChochSignal, Position] | EmaPivotChochSignal:
         signal = self.strategy.check_signal(
-            chartdata, htf_chartdata, self.long_signal, self.short_signal, ema_htf_chartdata
+            chartdata,
+            htf_chartdata,
+            self.long_signal,
+            self.short_signal,
+            ema_htf_chartdata,
         )
         if signal is None:
             return None
@@ -579,7 +598,9 @@ class EmaPivotChochTradeConfig(TradeConfig):
             return None
         return (signal, position)
 
-    async def send_touch_report(self, ltf_chartdata: ChartData, htf_chartdata: ChartData):
+    async def send_touch_report(
+        self, ltf_chartdata: ChartData, htf_chartdata: ChartData
+    ):
         plot = self._make_plot(ltf_chartdata, htf_chartdata)
         self.strategy.draw_emas(plot)
         self.strategy.draw_touches(
@@ -587,7 +608,9 @@ class EmaPivotChochTradeConfig(TradeConfig):
         )
         img_path = plot.save_image(f"{self.strategy.name}_{self.chart}")
         msg = f"{self.strategy.name}\n📈 {self.chart}\nEMA-pivot touch report"
-        await TelegramReporter().send_msg(TelegramReporter().main_channel, msg, img_path)
+        await TelegramReporter().send_msg(
+            TelegramReporter().main_channel, msg, img_path
+        )
 
     async def task(self):
         ltf_chartdata, htf_chartdata = self.get_chartdata()
