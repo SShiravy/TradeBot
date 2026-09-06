@@ -10,7 +10,7 @@ from ChartModule.Indicators import IndicatorBaseModel, SupportCandleConditions
 from ChartModule.Indicators.swing_pivots import SwingPivots, PivotPoint
 from ChartModule.Indicators.moving_avg import EMA
 from ChartModule.Indicators.atr import ATR
-from ChartModule.plot import DoubleChartPlot, ChartPlot
+from ChartModule.plot import DoubleChartPlot
 from TradingModule.trader_bot import TradeConfig
 from TradingModule.reporter import TelegramReporter
 from TradingModule.models import Position, Strategy
@@ -145,28 +145,6 @@ class EmaPivotChochFilter(Strategy):
             r, g, b = colorsys.hsv_to_rgb(hue, 0.65, 0.85)
             colors[period] = f"#{int(r * 255):02x}{int(g * 255):02x}{int(b * 255):02x}"
         return colors
-
-    @staticmethod
-    def _draw_pane_label(chart_plot: ChartPlot, chart: Chart) -> None:
-        """Write the chart's name near the top-left corner of a pane, so the
-        Telegram image is self-identifying like the other reporting bots."""
-        candles = chart_plot.chartdata.candles
-        if not candles:
-            return
-        highest = max(c.high for c in candles)
-        lowest = min(c.low for c in candles)
-        margin = (highest - lowest) * 0.03 or highest * 0.001
-        chart_plot.draw_label(
-            candles[0].time,
-            highest + margin,
-            str(chart),
-            color="#000000",
-            anchor=(0, 1),
-        )
-
-    def _draw_chart_labels(self, plot: DoubleChartPlot) -> None:
-        self._draw_pane_label(plot.base_plot, self.ltf_chart)
-        self._draw_pane_label(plot.second_plot, self.htf_chart)
 
     def draw_emas(self, plot: DoubleChartPlot) -> None:
         """Plot every configured EMA on the HTF pane, each with a legend
@@ -427,7 +405,6 @@ class EmaPivotChochFilter(Strategy):
     ):
         if draw_emas:
             self.draw_emas(plot)
-        self._draw_chart_labels(plot)
         pivot_color = "#ef5350" if signal.side is MarketSide.BEARISH else "#26a69a"
         pivot_source = CandlesSource.High if signal.pivot.is_high else CandlesSource.Low
         plot.second_plot.mark_candle(
@@ -450,7 +427,6 @@ class EmaPivotChochFilter(Strategy):
         if not signals:
             return
         self.draw_emas(plot)
-        self._draw_chart_labels(plot)
         model_pivot_points: dict[tuple, list] = {}
         retrace_points: dict[MarketSide, list] = {
             MarketSide.BULLISH: [],
@@ -606,7 +582,6 @@ class EmaPivotChochTradeConfig(TradeConfig):
     async def send_touch_report(self, ltf_chartdata: ChartData, htf_chartdata: ChartData):
         plot = self._make_plot(ltf_chartdata, htf_chartdata)
         self.strategy.draw_emas(plot)
-        self.strategy._draw_chart_labels(plot)
         self.strategy.draw_touches(
             plot, ltf_chartdata, htf_chartdata, touch_keys=self.strategy._new_touch_keys
         )
