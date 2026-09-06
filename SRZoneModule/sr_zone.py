@@ -577,6 +577,16 @@ class SRZones(IndicatorBaseModel):
                 # Same reasoning as the single-segment case used to have:
                 # don't draw past the left edge of the visible image.
                 seg_start = max(seg_candle.time, earliest_visible_time)
+                # A segment that entirely predates the visible window (e.g.
+                # an old, already-invalidated zone whose invalidated_candle
+                # - or, for an earlier segment, whose next flip - happened
+                # before the earliest candle shown) would end up with
+                # seg_end <= seg_start after the clamp above: an inverted,
+                # zero/negative-width rectangle that finplot won't render.
+                # There's nothing meaningful left to draw for it, so skip
+                # it rather than pass bad geometry through.
+                if seg_end <= seg_start:
+                    continue
                 color = support_color if seg_is_support else resist_color
                 plot.draw_filled_rect(seg_start, seg_end, zone.upper, zone.lower, color)
 

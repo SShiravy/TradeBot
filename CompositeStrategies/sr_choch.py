@@ -105,7 +105,7 @@ class SR_ChochConfig(TradeConfig):
                 plot_n_candles=self.n_candle_check,
             )
 
-            self.static_sr_indicator.plot(plot)
+            self.static_sr_indicator.plot(plot, max_zones_display=None)
             plot.mark_signal(
                 self.last_sr_signal,
             )
