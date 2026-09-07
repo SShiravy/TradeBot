@@ -1,6 +1,7 @@
 from ChartModule import Signal, MarketSide, Chart, TimeFrame
 from TradingModule import Position, PositionSide, ExchangeAgent
 from TradingModule.PositionHandlers.trading_constraints import TradingConstraint
+from TradingModule.TimeHandler import TimeHandler
 from TradingModule.models import Command, PositionType, Trigger
 from TradingModule.Commands import trade_commands
 from abc import ABC, abstractmethod
@@ -39,7 +40,7 @@ class PositionGenerator(ABC):
     async def generate(
         self,
         signal: Signal,
-        entry_price: float | None = None,
+        entry_price: float,
         *args,
         **kwargs,
     ) -> Position | None:
@@ -76,7 +77,7 @@ class PositionsManager(ABC):
         self.short_trade: bool = short_trade
         self.trading_constraints = trading_constraints
         self.generator = generator
-        self.open_positions: list[Position] = []
+        self.current_positions: list[Position] = []
         self.closed_positions: list[Position] = []
 
     def export_config(self) -> dict:
@@ -86,6 +87,21 @@ class PositionsManager(ABC):
             "short_trade": self.short_trade,
             "constraints": [c.export_config() for c in self.trading_constraints],
         }
+
+    async def generate_position(self,signal:Signal,*args, **kwargs)->Position|None:
+        if signal.side is MarketSide.BEARISH:
+            if not self.short_trade:
+                return None
+        else:  # signal.side is MarketSide.BULLISH:
+            if not self.long_trade:
+                return None
+        # TODO: check constraints
+        entry_price = self.exchange_agent.get_current_tick(signal.chart)
+        pos = await self.generator.generate(signal, entry_price, *args, **kwargs)
+        if pos:
+            self.current_positions.append(pos)
+        return pos
+
 
 
     def modify_init_sl_tp(self, position: Position):
@@ -114,16 +130,16 @@ class PositionsManager(ABC):
                 
     def candles_check(self, position: Position) -> Command | None:
         ticks = []
-        if position.previous_check is None:
-            position.previous_check = position.start_time
+        if position.last_check_timestamp is None:
+            position.last_check_timestamp = TimeHandler.now()
 
-        m_chart = Chart(position.chart.symbol, TimeFrame.one_minute)
-        candles = self.exchange_agent.get_chartdata(m_chart, 3)
-        if not candles:
+        chart_1m = Chart(position.chart.symbol, TimeFrame.one_minute)
+        chartdata = self.exchange_agent.get_chartdata(chart_1m, 3)
+        if not chartdata:
             logger.warning(f"getting candles failed for {position}")
             return
-        for candle in candles:
-            if candle.time < position.previous_check:
+        for t in chartdata.timestamps:
+            if t < position.last_check_timestamp:
                 continue
             ticks += [candle.open, candle.low, candle.high, candle.close]
             position.previous_check = candle.time
@@ -137,14 +153,3 @@ class PositionsManager(ABC):
                 self.generator.open_positions.remove(pos)
                 continue
             self.candles_check(pos)
-
-    async def generate_position(self,signal:Signal):
-        if signal.side is MarketSide.BEARISH:
-            if not self.short_trade:
-                return None
-        else:  # signal.side is MarketSide.BULLISH:
-            if not self.long_trade:
-                return None
-        # TODO: check constraints
-        entry_price = self.exchange_agent.get_current_tick(signal.chart)
-        await self.generator.generate(signal, entry_price)
