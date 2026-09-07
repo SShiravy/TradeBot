@@ -40,8 +40,8 @@ xau = ForexEmaPivotChochTradeConfig(
 
 
 eurusd = ForexEmaPivotChochTradeConfig(
-    chart=Chart("EURUSD", TimeFrame.four_hours),
-    htf_chart=Chart("EURUSD", TimeFrame.one_hour),
+    chart=Chart("EURUSD!!", TimeFrame.four_hours),
+    htf_chart=Chart("EURUSD!!", TimeFrame.one_hour),
     n_ltf_candle_check=120,
     n_htf_candle_check=120,
     strategy=EmaPivotChochFilter(
@@ -74,8 +74,8 @@ eurusd = ForexEmaPivotChochTradeConfig(
 )
 
 usdjpy = ForexEmaPivotChochTradeConfig(
-    chart=Chart("USDJPY", TimeFrame.four_hours),
-    htf_chart=Chart("USDJPY", TimeFrame.one_hour),
+    chart=Chart("USDJPY!", TimeFrame.four_hours),
+    htf_chart=Chart("USDJPY!", TimeFrame.one_hour),
     n_ltf_candle_check=120,
     n_htf_candle_check=120,
     strategy=EmaPivotChochFilter(
@@ -108,8 +108,8 @@ usdjpy = ForexEmaPivotChochTradeConfig(
 )
 
 gbpusd = ForexEmaPivotChochTradeConfig(
-    chart=Chart("GBPUSD", TimeFrame.four_hours),
-    htf_chart=Chart("GBPUSD", TimeFrame.one_hour),
+    chart=Chart("GBPUSD!!", TimeFrame.four_hours),
+    htf_chart=Chart("GBPUSD!!", TimeFrame.one_hour),
     n_ltf_candle_check=120,
     n_htf_candle_check=120,
     strategy=EmaPivotChochFilter(
@@ -142,8 +142,8 @@ gbpusd = ForexEmaPivotChochTradeConfig(
 )
 
 usdchf = ForexEmaPivotChochTradeConfig(
-    chart=Chart("USDCHF", TimeFrame.four_hours),
-    htf_chart=Chart("USDCHF", TimeFrame.one_hour),
+    chart=Chart("USDCHF!", TimeFrame.four_hours),
+    htf_chart=Chart("USDCHF!", TimeFrame.one_hour),
     n_ltf_candle_check=120,
     n_htf_candle_check=120,
     strategy=EmaPivotChochFilter(
@@ -176,8 +176,8 @@ usdchf = ForexEmaPivotChochTradeConfig(
 )
 
 audusd = ForexEmaPivotChochTradeConfig(
-    chart=Chart("AUDUSD", TimeFrame.four_hours),
-    htf_chart=Chart("AUDUSD", TimeFrame.one_hour),
+    chart=Chart("AUDUSD!", TimeFrame.four_hours),
+    htf_chart=Chart("AUDUSD!", TimeFrame.one_hour),
     n_ltf_candle_check=120,
     n_htf_candle_check=120,
     strategy=EmaPivotChochFilter(
@@ -210,8 +210,8 @@ audusd = ForexEmaPivotChochTradeConfig(
 )
 
 usdcad = ForexEmaPivotChochTradeConfig(
-    chart=Chart("USDCAD", TimeFrame.four_hours),
-    htf_chart=Chart("USDCAD", TimeFrame.one_hour),
+    chart=Chart("USDCAD!", TimeFrame.four_hours),
+    htf_chart=Chart("USDCAD!", TimeFrame.one_hour),
     n_ltf_candle_check=120,
     n_htf_candle_check=120,
     strategy=EmaPivotChochFilter(
@@ -244,8 +244,8 @@ usdcad = ForexEmaPivotChochTradeConfig(
 )
 
 nzdusd = ForexEmaPivotChochTradeConfig(
-    chart=Chart("NZDUSD", TimeFrame.four_hours),
-    htf_chart=Chart("NZDUSD", TimeFrame.one_hour),
+    chart=Chart("NZDUSD!", TimeFrame.four_hours),
+    htf_chart=Chart("NZDUSD!", TimeFrame.one_hour),
     n_ltf_candle_check=120,
     n_htf_candle_check=120,
     strategy=EmaPivotChochFilter(

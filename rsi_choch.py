@@ -18,6 +18,8 @@ TelegramReporter().main_channel = "@three_push"
 TraderBot(
     "RSI_3Push_Choch",
     [
+        xau_5m_1m,
+        xau_15m_1m,
         eurusd_5m_1m,
         usdjpy_5m_1m,
         gbpusd_5m_1m,

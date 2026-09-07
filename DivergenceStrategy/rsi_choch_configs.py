@@ -8,7 +8,7 @@ from Forex.agent import ForexAgent
 from TradingModule.PositionHandlers.stepping_handler import SteppingHandlerForex
 
 
-xau = Rsi3PushChochConfig(
+xau_5m_1m = Rsi3PushChochConfig(
     rsi_chart=Chart("XAUUSD!", TimeFrame.five_minutes),
     chart=Chart("XAUUSD!", TimeFrame.one_minute),
     agent=ForexAgent(),
@@ -51,6 +51,52 @@ xau = Rsi3PushChochConfig(
     ),
     heikingashi_chartdata=False,
 )
+
+
+xau_15m_1m = Rsi3PushChochConfig(
+    rsi_chart=Chart("XAUUSD!", TimeFrame.fifteen_minutes),
+    chart=Chart("XAUUSD!", TimeFrame.one_minute),
+    agent=ForexAgent(),
+    strategy=OscillatorDivergence(
+        RSI(),
+        3,
+        100,
+        [],
+        name="RSI_Double_Diver",
+        long_support_conditions=SupportCandleConditions.RED_GREEN,
+        short_support_conditions=SupportCandleConditions.GREEN_RED,
+        body_candle=True,
+        ignore_shadow_cross=True,
+        inverse_diver_long=False,
+    ),
+    choch_strategy=ChochQueueFilter(
+        pivot_length=2,
+        backstep=2,
+        retrace_fib=0.5,
+        use_fibo_filter=True,
+        name="Choch",
+    ),
+    bar_between_signals=2,
+    same_line_source=True,
+    n_candle_confirmation=60,
+    n_candle_check=200,
+    consider_position=True,
+    position_handler=(
+        SteppingHandlerForex(
+            ForexAgent(),
+            targets_ratio=[],
+            targets_ratio_volumes=[],
+            stoploss_pip=30,
+            targets_in_pip=[20],
+            targets_in_pip_volumes=[0.01],
+            long_trade=True,
+            short_trade=True,
+            trail_stop=True,
+        )
+    ),
+    heikingashi_chartdata=False,
+)
+
 
 eurusd_5m_1m = Rsi3PushChochConfig(
     rsi_chart=Chart("EURUSD!", TimeFrame.five_minutes),
