@@ -26,7 +26,7 @@ xau_5m_1m = Rsi3PushChochConfig(
     ),
     choch_strategy=ChochQueueFilter(
         pivot_length=2,
-        backstep=2,
+        backstep=1,
         retrace_fib=0.5,
         use_fibo_filter=True,
         name="Choch",
@@ -71,7 +71,7 @@ xau_15m_1m = Rsi3PushChochConfig(
     ),
     choch_strategy=ChochQueueFilter(
         pivot_length=2,
-        backstep=2,
+        backstep=1,
         retrace_fib=0.5,
         use_fibo_filter=True,
         name="Choch",
@@ -116,7 +116,7 @@ eurusd_5m_1m = Rsi3PushChochConfig(
     ),
     choch_strategy=ChochQueueFilter(
         pivot_length=2,
-        backstep=2,
+        backstep=1,
         retrace_fib=0.5,
         use_fibo_filter=True,
         name="Choch",
@@ -160,7 +160,7 @@ usdjpy_5m_1m = Rsi3PushChochConfig(
     ),
     choch_strategy=ChochQueueFilter(
         pivot_length=2,
-        backstep=2,
+        backstep=1,
         retrace_fib=0.5,
         use_fibo_filter=True,
         name="Choch",
@@ -204,7 +204,7 @@ gbpusd_5m_1m = Rsi3PushChochConfig(
     ),
     choch_strategy=ChochQueueFilter(
         pivot_length=2,
-        backstep=2,
+        backstep=1,
         retrace_fib=0.5,
         use_fibo_filter=True,
         name="Choch",
@@ -248,7 +248,7 @@ usdchf_5m_1m = Rsi3PushChochConfig(
     ),
     choch_strategy=ChochQueueFilter(
         pivot_length=2,
-        backstep=2,
+        backstep=1,
         retrace_fib=0.5,
         use_fibo_filter=True,
         name="Choch",
@@ -292,7 +292,7 @@ audusd_5m_1m = Rsi3PushChochConfig(
     ),
     choch_strategy=ChochQueueFilter(
         pivot_length=2,
-        backstep=2,
+        backstep=1,
         retrace_fib=0.5,
         use_fibo_filter=True,
         name="Choch",
@@ -336,7 +336,7 @@ usdcad_5m_1m = Rsi3PushChochConfig(
     ),
     choch_strategy=ChochQueueFilter(
         pivot_length=2,
-        backstep=2,
+        backstep=1,
         retrace_fib=0.5,
         use_fibo_filter=True,
         name="Choch",
@@ -380,7 +380,7 @@ nzdusd_5m_1m = Rsi3PushChochConfig(
     ),
     choch_strategy=ChochQueueFilter(
         pivot_length=2,
-        backstep=2,
+        backstep=1,
         retrace_fib=0.5,
         use_fibo_filter=True,
         name="Choch",
@@ -425,7 +425,7 @@ eurusd_15m_1m = Rsi3PushChochConfig(
     ),
     choch_strategy=ChochQueueFilter(
         pivot_length=2,
-        backstep=2,
+        backstep=1,
         retrace_fib=0.5,
         use_fibo_filter=True,
         name="Choch",
@@ -469,7 +469,7 @@ usdjpy_15m_1m = Rsi3PushChochConfig(
     ),
     choch_strategy=ChochQueueFilter(
         pivot_length=2,
-        backstep=2,
+        backstep=1,
         retrace_fib=0.5,
         use_fibo_filter=True,
         name="Choch",
@@ -513,7 +513,7 @@ gbpusd_15m_1m = Rsi3PushChochConfig(
     ),
     choch_strategy=ChochQueueFilter(
         pivot_length=2,
-        backstep=2,
+        backstep=1,
         retrace_fib=0.5,
         use_fibo_filter=True,
         name="Choch",
@@ -557,7 +557,7 @@ usdchf_15m_1m = Rsi3PushChochConfig(
     ),
     choch_strategy=ChochQueueFilter(
         pivot_length=2,
-        backstep=2,
+        backstep=1,
         retrace_fib=0.5,
         use_fibo_filter=True,
         name="Choch",
@@ -601,7 +601,7 @@ audusd_15m_1m = Rsi3PushChochConfig(
     ),
     choch_strategy=ChochQueueFilter(
         pivot_length=2,
-        backstep=2,
+        backstep=1,
         retrace_fib=0.5,
         use_fibo_filter=True,
         name="Choch",
@@ -645,7 +645,7 @@ usdcad_15m_1m = Rsi3PushChochConfig(
     ),
     choch_strategy=ChochQueueFilter(
         pivot_length=2,
-        backstep=2,
+        backstep=1,
         retrace_fib=0.5,
         use_fibo_filter=True,
         name="Choch",
@@ -689,7 +689,7 @@ nzdusd_15m_1m = Rsi3PushChochConfig(
     ),
     choch_strategy=ChochQueueFilter(
         pivot_length=2,
-        backstep=2,
+        backstep=1,
         retrace_fib=0.5,
         use_fibo_filter=True,
         name="Choch",
@@ -738,7 +738,7 @@ adausd_1h_5m = Rsi3PushChochConfig(
     ),
     choch_strategy=ChochQueueFilter(
         pivot_length=2,
-        backstep=2,
+        backstep=1,
         retrace_fib=0.5,
         use_fibo_filter=True,
         name="Choch",
@@ -782,7 +782,7 @@ aveusd_1h_5m = Rsi3PushChochConfig(
     ),
     choch_strategy=ChochQueueFilter(
         pivot_length=2,
-        backstep=2,
+        backstep=1,
         retrace_fib=0.5,
         use_fibo_filter=True,
         name="Choch",
@@ -826,7 +826,7 @@ filusd_1h_5m = Rsi3PushChochConfig(
     ),
     choch_strategy=ChochQueueFilter(
         pivot_length=2,
-        backstep=2,
+        backstep=1,
         retrace_fib=0.5,
         use_fibo_filter=True,
         name="Choch",
@@ -870,7 +870,7 @@ atomusd_1h_5m = Rsi3PushChochConfig(
     ),
     choch_strategy=ChochQueueFilter(
         pivot_length=2,
-        backstep=2,
+        backstep=1,
         retrace_fib=0.5,
         use_fibo_filter=True,
         name="Choch",
@@ -914,7 +914,7 @@ apeusd_1h_5m = Rsi3PushChochConfig(
     ),
     choch_strategy=ChochQueueFilter(
         pivot_length=2,
-        backstep=2,
+        backstep=1,
         retrace_fib=0.5,
         use_fibo_filter=True,
         name="Choch",
@@ -958,7 +958,7 @@ zecusd_1h_5m = Rsi3PushChochConfig(
     ),
     choch_strategy=ChochQueueFilter(
         pivot_length=2,
-        backstep=2,
+        backstep=1,
         retrace_fib=0.5,
         use_fibo_filter=True,
         name="Choch",
@@ -1002,7 +1002,7 @@ neousd_1h_5m = Rsi3PushChochConfig(
     ),
     choch_strategy=ChochQueueFilter(
         pivot_length=2,
-        backstep=2,
+        backstep=1,
         retrace_fib=0.5,
         use_fibo_filter=True,
         name="Choch",
@@ -1046,7 +1046,7 @@ iotausd_1h_5m = Rsi3PushChochConfig(
     ),
     choch_strategy=ChochQueueFilter(
         pivot_length=2,
-        backstep=2,
+        backstep=1,
         retrace_fib=0.5,
         use_fibo_filter=True,
         name="Choch",
@@ -1090,7 +1090,7 @@ xtzusd_1h_5m = Rsi3PushChochConfig(
     ),
     choch_strategy=ChochQueueFilter(
         pivot_length=2,
-        backstep=2,
+        backstep=1,
         retrace_fib=0.5,
         use_fibo_filter=True,
         name="Choch",
@@ -1134,7 +1134,7 @@ xrpusd_1h_5m = Rsi3PushChochConfig(
     ),
     choch_strategy=ChochQueueFilter(
         pivot_length=2,
-        backstep=2,
+        backstep=1,
         retrace_fib=0.5,
         use_fibo_filter=True,
         name="Choch",
@@ -1178,7 +1178,7 @@ xmrusd_1h_5m = Rsi3PushChochConfig(
     ),
     choch_strategy=ChochQueueFilter(
         pivot_length=2,
-        backstep=2,
+        backstep=1,
         retrace_fib=0.5,
         use_fibo_filter=True,
         name="Choch",
@@ -1222,7 +1222,7 @@ xlmusd_1h_5m = Rsi3PushChochConfig(
     ),
     choch_strategy=ChochQueueFilter(
         pivot_length=2,
-        backstep=2,
+        backstep=1,
         retrace_fib=0.5,
         use_fibo_filter=True,
         name="Choch",
@@ -1266,7 +1266,7 @@ vetusd_1h_5m = Rsi3PushChochConfig(
     ),
     choch_strategy=ChochQueueFilter(
         pivot_length=2,
-        backstep=2,
+        backstep=1,
         retrace_fib=0.5,
         use_fibo_filter=True,
         name="Choch",
@@ -1310,7 +1310,7 @@ uniusd_1h_5m = Rsi3PushChochConfig(
     ),
     choch_strategy=ChochQueueFilter(
         pivot_length=2,
-        backstep=2,
+        backstep=1,
         retrace_fib=0.5,
         use_fibo_filter=True,
         name="Choch",
@@ -1354,7 +1354,7 @@ solusd_1h_5m = Rsi3PushChochConfig(
     ),
     choch_strategy=ChochQueueFilter(
         pivot_length=2,
-        backstep=2,
+        backstep=1,
         retrace_fib=0.5,
         use_fibo_filter=True,
         name="Choch",
@@ -1398,7 +1398,7 @@ mtcusd_1h_5m = Rsi3PushChochConfig(
     ),
     choch_strategy=ChochQueueFilter(
         pivot_length=2,
-        backstep=2,
+        backstep=1,
         retrace_fib=0.5,
         use_fibo_filter=True,
         name="Choch",
@@ -1442,7 +1442,7 @@ ltcusd_1h_5m = Rsi3PushChochConfig(
     ),
     choch_strategy=ChochQueueFilter(
         pivot_length=2,
-        backstep=2,
+        backstep=1,
         retrace_fib=0.5,
         use_fibo_filter=True,
         name="Choch",
@@ -1486,7 +1486,7 @@ lnkusd_1h_5m = Rsi3PushChochConfig(
     ),
     choch_strategy=ChochQueueFilter(
         pivot_length=2,
-        backstep=2,
+        backstep=1,
         retrace_fib=0.5,
         use_fibo_filter=True,
         name="Choch",
@@ -1530,7 +1530,7 @@ dshusd_1h_5m = Rsi3PushChochConfig(
     ),
     choch_strategy=ChochQueueFilter(
         pivot_length=2,
-        backstep=2,
+        backstep=1,
         retrace_fib=0.5,
         use_fibo_filter=True,
         name="Choch",
@@ -1574,7 +1574,7 @@ dotusd_1h_5m = Rsi3PushChochConfig(
     ),
     choch_strategy=ChochQueueFilter(
         pivot_length=2,
-        backstep=2,
+        backstep=1,
         retrace_fib=0.5,
         use_fibo_filter=True,
         name="Choch",
@@ -1618,7 +1618,7 @@ dogusd_1h_5m = Rsi3PushChochConfig(
     ),
     choch_strategy=ChochQueueFilter(
         pivot_length=2,
-        backstep=2,
+        backstep=1,
         retrace_fib=0.5,
         use_fibo_filter=True,
         name="Choch",
@@ -1662,7 +1662,7 @@ btcusd_1h_5m = Rsi3PushChochConfig(
     ),
     choch_strategy=ChochQueueFilter(
         pivot_length=2,
-        backstep=2,
+        backstep=1,
         retrace_fib=0.5,
         use_fibo_filter=True,
         name="Choch",
@@ -1706,7 +1706,7 @@ bsvusd_1h_5m = Rsi3PushChochConfig(
     ),
     choch_strategy=ChochQueueFilter(
         pivot_length=2,
-        backstep=2,
+        backstep=1,
         retrace_fib=0.5,
         use_fibo_filter=True,
         name="Choch",
@@ -1750,7 +1750,7 @@ bnbusd_1h_5m = Rsi3PushChochConfig(
     ),
     choch_strategy=ChochQueueFilter(
         pivot_length=2,
-        backstep=2,
+        backstep=1,
         retrace_fib=0.5,
         use_fibo_filter=True,
         name="Choch",
@@ -1794,7 +1794,7 @@ bchusd_1h_5m = Rsi3PushChochConfig(
     ),
     choch_strategy=ChochQueueFilter(
         pivot_length=2,
-        backstep=2,
+        backstep=1,
         retrace_fib=0.5,
         use_fibo_filter=True,
         name="Choch",
@@ -1838,7 +1838,7 @@ axsusd_1h_5m = Rsi3PushChochConfig(
     ),
     choch_strategy=ChochQueueFilter(
         pivot_length=2,
-        backstep=2,
+        backstep=1,
         retrace_fib=0.5,
         use_fibo_filter=True,
         name="Choch",
@@ -1882,7 +1882,7 @@ avxusd_1h_5m = Rsi3PushChochConfig(
     ),
     choch_strategy=ChochQueueFilter(
         pivot_length=2,
-        backstep=2,
+        backstep=1,
         retrace_fib=0.5,
         use_fibo_filter=True,
         name="Choch",
@@ -1927,7 +1927,7 @@ adausd_15m_1m = Rsi3PushChochConfig(
     ),
     choch_strategy=ChochQueueFilter(
         pivot_length=2,
-        backstep=2,
+        backstep=1,
         retrace_fib=0.5,
         use_fibo_filter=True,
         name="Choch",
@@ -1971,7 +1971,7 @@ aveusd_15m_1m = Rsi3PushChochConfig(
     ),
     choch_strategy=ChochQueueFilter(
         pivot_length=2,
-        backstep=2,
+        backstep=1,
         retrace_fib=0.5,
         use_fibo_filter=True,
         name="Choch",
@@ -2013,7 +2013,7 @@ filusd_15m_1m = Rsi3PushChochConfig(
     ),
     choch_strategy=ChochQueueFilter(
         pivot_length=2,
-        backstep=2,
+        backstep=1,
         retrace_fib=0.5,
         use_fibo_filter=True,
         name="Choch",
@@ -2055,7 +2055,7 @@ atomusd_15m_1m = Rsi3PushChochConfig(
     ),
     choch_strategy=ChochQueueFilter(
         pivot_length=2,
-        backstep=2,
+        backstep=1,
         retrace_fib=0.5,
         use_fibo_filter=True,
         name="Choch",
@@ -2097,7 +2097,7 @@ apeusd_15m_1m = Rsi3PushChochConfig(
     ),
     choch_strategy=ChochQueueFilter(
         pivot_length=2,
-        backstep=2,
+        backstep=1,
         retrace_fib=0.5,
         use_fibo_filter=True,
         name="Choch",
@@ -2139,7 +2139,7 @@ zecusd_15m_1m = Rsi3PushChochConfig(
     ),
     choch_strategy=ChochQueueFilter(
         pivot_length=2,
-        backstep=2,
+        backstep=1,
         retrace_fib=0.5,
         use_fibo_filter=True,
         name="Choch",
@@ -2181,7 +2181,7 @@ neousd_15m_1m = Rsi3PushChochConfig(
     ),
     choch_strategy=ChochQueueFilter(
         pivot_length=2,
-        backstep=2,
+        backstep=1,
         retrace_fib=0.5,
         use_fibo_filter=True,
         name="Choch",
@@ -2223,7 +2223,7 @@ iotausd_15m_1m = Rsi3PushChochConfig(
     ),
     choch_strategy=ChochQueueFilter(
         pivot_length=2,
-        backstep=2,
+        backstep=1,
         retrace_fib=0.5,
         use_fibo_filter=True,
         name="Choch",
@@ -2265,7 +2265,7 @@ xtzusd_15m_1m = Rsi3PushChochConfig(
     ),
     choch_strategy=ChochQueueFilter(
         pivot_length=2,
-        backstep=2,
+        backstep=1,
         retrace_fib=0.5,
         use_fibo_filter=True,
         name="Choch",
@@ -2307,7 +2307,7 @@ xrpusd_15m_1m = Rsi3PushChochConfig(
     ),
     choch_strategy=ChochQueueFilter(
         pivot_length=2,
-        backstep=2,
+        backstep=1,
         retrace_fib=0.5,
         use_fibo_filter=True,
         name="Choch",
@@ -2349,7 +2349,7 @@ xmrusd_15m_1m = Rsi3PushChochConfig(
     ),
     choch_strategy=ChochQueueFilter(
         pivot_length=2,
-        backstep=2,
+        backstep=1,
         retrace_fib=0.5,
         use_fibo_filter=True,
         name="Choch",
@@ -2391,7 +2391,7 @@ xlmusd_15m_1m = Rsi3PushChochConfig(
     ),
     choch_strategy=ChochQueueFilter(
         pivot_length=2,
-        backstep=2,
+        backstep=1,
         retrace_fib=0.5,
         use_fibo_filter=True,
         name="Choch",
@@ -2433,7 +2433,7 @@ vetusd_15m_1m = Rsi3PushChochConfig(
     ),
     choch_strategy=ChochQueueFilter(
         pivot_length=2,
-        backstep=2,
+        backstep=1,
         retrace_fib=0.5,
         use_fibo_filter=True,
         name="Choch",
@@ -2475,7 +2475,7 @@ uniusd_15m_1m = Rsi3PushChochConfig(
     ),
     choch_strategy=ChochQueueFilter(
         pivot_length=2,
-        backstep=2,
+        backstep=1,
         retrace_fib=0.5,
         use_fibo_filter=True,
         name="Choch",
@@ -2517,7 +2517,7 @@ solusd_15m_1m = Rsi3PushChochConfig(
     ),
     choch_strategy=ChochQueueFilter(
         pivot_length=2,
-        backstep=2,
+        backstep=1,
         retrace_fib=0.5,
         use_fibo_filter=True,
         name="Choch",
@@ -2559,7 +2559,7 @@ mtcusd_15m_1m = Rsi3PushChochConfig(
     ),
     choch_strategy=ChochQueueFilter(
         pivot_length=2,
-        backstep=2,
+        backstep=1,
         retrace_fib=0.5,
         use_fibo_filter=True,
         name="Choch",
@@ -2601,7 +2601,7 @@ ltcusd_15m_1m = Rsi3PushChochConfig(
     ),
     choch_strategy=ChochQueueFilter(
         pivot_length=2,
-        backstep=2,
+        backstep=1,
         retrace_fib=0.5,
         use_fibo_filter=True,
         name="Choch",
@@ -2643,7 +2643,7 @@ lnkusd_15m_1m = Rsi3PushChochConfig(
     ),
     choch_strategy=ChochQueueFilter(
         pivot_length=2,
-        backstep=2,
+        backstep=1,
         retrace_fib=0.5,
         use_fibo_filter=True,
         name="Choch",
@@ -2685,7 +2685,7 @@ dshusd_15m_1m = Rsi3PushChochConfig(
     ),
     choch_strategy=ChochQueueFilter(
         pivot_length=2,
-        backstep=2,
+        backstep=1,
         retrace_fib=0.5,
         use_fibo_filter=True,
         name="Choch",
@@ -2727,7 +2727,7 @@ dotusd_15m_1m = Rsi3PushChochConfig(
     ),
     choch_strategy=ChochQueueFilter(
         pivot_length=2,
-        backstep=2,
+        backstep=1,
         retrace_fib=0.5,
         use_fibo_filter=True,
         name="Choch",
@@ -2769,7 +2769,7 @@ dogusd_15m_1m = Rsi3PushChochConfig(
     ),
     choch_strategy=ChochQueueFilter(
         pivot_length=2,
-        backstep=2,
+        backstep=1,
         retrace_fib=0.5,
         use_fibo_filter=True,
         name="Choch",
@@ -2811,7 +2811,7 @@ btcusd_15m_1m = Rsi3PushChochConfig(
     ),
     choch_strategy=ChochQueueFilter(
         pivot_length=2,
-        backstep=2,
+        backstep=1,
         retrace_fib=0.5,
         use_fibo_filter=True,
         name="Choch",
@@ -2853,7 +2853,7 @@ bsvusd_15m_1m = Rsi3PushChochConfig(
     ),
     choch_strategy=ChochQueueFilter(
         pivot_length=2,
-        backstep=2,
+        backstep=1,
         retrace_fib=0.5,
         use_fibo_filter=True,
         name="Choch",
@@ -2895,7 +2895,7 @@ bnbusd_15m_1m = Rsi3PushChochConfig(
     ),
     choch_strategy=ChochQueueFilter(
         pivot_length=2,
-        backstep=2,
+        backstep=1,
         retrace_fib=0.5,
         use_fibo_filter=True,
         name="Choch",
@@ -2937,7 +2937,7 @@ bchusd_15m_1m = Rsi3PushChochConfig(
     ),
     choch_strategy=ChochQueueFilter(
         pivot_length=2,
-        backstep=2,
+        backstep=1,
         retrace_fib=0.5,
         use_fibo_filter=True,
         name="Choch",
@@ -2979,7 +2979,7 @@ axsusd_15m_1m = Rsi3PushChochConfig(
     ),
     choch_strategy=ChochQueueFilter(
         pivot_length=2,
-        backstep=2,
+        backstep=1,
         retrace_fib=0.5,
         use_fibo_filter=True,
         name="Choch",
@@ -3021,7 +3021,7 @@ avxusd_15m_1m = Rsi3PushChochConfig(
     ),
     choch_strategy=ChochQueueFilter(
         pivot_length=2,
-        backstep=2,
+        backstep=1,
         retrace_fib=0.5,
         use_fibo_filter=True,
         name="Choch",

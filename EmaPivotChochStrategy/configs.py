@@ -4,8 +4,8 @@ from TradingModule.PositionHandlers.stepping_handler import SteppingHandlerForex
 from EmaPivotChochStrategy.ema_pivot_choch import EmaPivotChochFilter
 
 
-xau = ForexEmaPivotChochTradeConfig(
-    chart=Chart("XAUUSD!", TimeFrame.four_hours),
+xau_1h = ForexEmaPivotChochTradeConfig(
+    chart=Chart("XAUUSD!", TimeFrame.five_minutes),
     htf_chart=Chart("XAUUSD!", TimeFrame.one_hour),
     n_ltf_candle_check=120,
     n_htf_candle_check=120,
@@ -39,8 +39,8 @@ xau = ForexEmaPivotChochTradeConfig(
 )
 
 
-eurusd = ForexEmaPivotChochTradeConfig(
-    chart=Chart("EURUSD!", TimeFrame.four_hours),
+eurusd_1h = ForexEmaPivotChochTradeConfig(
+    chart=Chart("EURUSD!", TimeFrame.five_minutes),
     htf_chart=Chart("EURUSD!", TimeFrame.one_hour),
     n_ltf_candle_check=120,
     n_htf_candle_check=120,
@@ -73,8 +73,8 @@ eurusd = ForexEmaPivotChochTradeConfig(
     heikingashi_chartdata=False,
 )
 
-usdjpy = ForexEmaPivotChochTradeConfig(
-    chart=Chart("USDJPY!", TimeFrame.four_hours),
+usdjpy_1h = ForexEmaPivotChochTradeConfig(
+    chart=Chart("USDJPY!", TimeFrame.five_minutes),
     htf_chart=Chart("USDJPY!", TimeFrame.one_hour),
     n_ltf_candle_check=120,
     n_htf_candle_check=120,
@@ -107,8 +107,8 @@ usdjpy = ForexEmaPivotChochTradeConfig(
     heikingashi_chartdata=False,
 )
 
-gbpusd = ForexEmaPivotChochTradeConfig(
-    chart=Chart("GBPUSD!", TimeFrame.four_hours),
+gbpusd_1h = ForexEmaPivotChochTradeConfig(
+    chart=Chart("GBPUSD!", TimeFrame.five_minutes),
     htf_chart=Chart("GBPUSD!", TimeFrame.one_hour),
     n_ltf_candle_check=120,
     n_htf_candle_check=120,
@@ -141,8 +141,8 @@ gbpusd = ForexEmaPivotChochTradeConfig(
     heikingashi_chartdata=False,
 )
 
-usdchf = ForexEmaPivotChochTradeConfig(
-    chart=Chart("USDCHF!", TimeFrame.four_hours),
+usdchf_1h = ForexEmaPivotChochTradeConfig(
+    chart=Chart("USDCHF!", TimeFrame.five_minutes),
     htf_chart=Chart("USDCHF!", TimeFrame.one_hour),
     n_ltf_candle_check=120,
     n_htf_candle_check=120,
@@ -175,8 +175,8 @@ usdchf = ForexEmaPivotChochTradeConfig(
     heikingashi_chartdata=False,
 )
 
-audusd = ForexEmaPivotChochTradeConfig(
-    chart=Chart("AUDUSD!", TimeFrame.four_hours),
+audusd_1h = ForexEmaPivotChochTradeConfig(
+    chart=Chart("AUDUSD!", TimeFrame.five_minutes),
     htf_chart=Chart("AUDUSD!", TimeFrame.one_hour),
     n_ltf_candle_check=120,
     n_htf_candle_check=120,
@@ -209,8 +209,8 @@ audusd = ForexEmaPivotChochTradeConfig(
     heikingashi_chartdata=False,
 )
 
-usdcad = ForexEmaPivotChochTradeConfig(
-    chart=Chart("USDCAD!", TimeFrame.four_hours),
+usdcad_1h = ForexEmaPivotChochTradeConfig(
+    chart=Chart("USDCAD!", TimeFrame.five_minutes),
     htf_chart=Chart("USDCAD!", TimeFrame.one_hour),
     n_ltf_candle_check=120,
     n_htf_candle_check=120,
@@ -243,8 +243,8 @@ usdcad = ForexEmaPivotChochTradeConfig(
     heikingashi_chartdata=False,
 )
 
-nzdusd = ForexEmaPivotChochTradeConfig(
-    chart=Chart("NZDUSD!", TimeFrame.four_hours),
+nzdusd_1h = ForexEmaPivotChochTradeConfig(
+    chart=Chart("NZDUSD!", TimeFrame.five_minutes),
     htf_chart=Chart("NZDUSD!", TimeFrame.one_hour),
     n_ltf_candle_check=120,
     n_htf_candle_check=120,
@@ -277,8 +277,8 @@ nzdusd = ForexEmaPivotChochTradeConfig(
     heikingashi_chartdata=False,
 )
 
-adausd = ForexEmaPivotChochTradeConfig(
-    chart=Chart("ADAUSD", TimeFrame.four_hours),
+adausd_1h = ForexEmaPivotChochTradeConfig(
+    chart=Chart("ADAUSD", TimeFrame.five_minutes),
     htf_chart=Chart("ADAUSD", TimeFrame.one_hour),
     n_ltf_candle_check=120,
     n_htf_candle_check=120,
@@ -311,8 +311,8 @@ adausd = ForexEmaPivotChochTradeConfig(
     heikingashi_chartdata=False,
 )
 
-aveusd = ForexEmaPivotChochTradeConfig(
-    chart=Chart("AVEUSD", TimeFrame.four_hours),
+aveusd_1h = ForexEmaPivotChochTradeConfig(
+    chart=Chart("AVEUSD", TimeFrame.five_minutes),
     htf_chart=Chart("AVEUSD", TimeFrame.one_hour),
     n_ltf_candle_check=120,
     n_htf_candle_check=120,
@@ -345,8 +345,8 @@ aveusd = ForexEmaPivotChochTradeConfig(
     heikingashi_chartdata=False,
 )
 
-filusd = ForexEmaPivotChochTradeConfig(
-    chart=Chart("FILUSD", TimeFrame.four_hours),
+filusd_1h = ForexEmaPivotChochTradeConfig(
+    chart=Chart("FILUSD", TimeFrame.five_minutes),
     htf_chart=Chart("FILUSD", TimeFrame.one_hour),
     n_ltf_candle_check=120,
     n_htf_candle_check=120,
@@ -379,8 +379,8 @@ filusd = ForexEmaPivotChochTradeConfig(
     heikingashi_chartdata=False,
 )
 
-atomusd = ForexEmaPivotChochTradeConfig(
-    chart=Chart("ATOMUSD", TimeFrame.four_hours),
+atomusd_1h = ForexEmaPivotChochTradeConfig(
+    chart=Chart("ATOMUSD", TimeFrame.five_minutes),
     htf_chart=Chart("ATOMUSD", TimeFrame.one_hour),
     n_ltf_candle_check=120,
     n_htf_candle_check=120,
@@ -413,8 +413,8 @@ atomusd = ForexEmaPivotChochTradeConfig(
     heikingashi_chartdata=False,
 )
 
-apeusd = ForexEmaPivotChochTradeConfig(
-    chart=Chart("APEUSD", TimeFrame.four_hours),
+apeusd_1h = ForexEmaPivotChochTradeConfig(
+    chart=Chart("APEUSD", TimeFrame.five_minutes),
     htf_chart=Chart("APEUSD", TimeFrame.one_hour),
     n_ltf_candle_check=120,
     n_htf_candle_check=120,
@@ -447,8 +447,8 @@ apeusd = ForexEmaPivotChochTradeConfig(
     heikingashi_chartdata=False,
 )
 
-zecusd = ForexEmaPivotChochTradeConfig(
-    chart=Chart("ZECUSD", TimeFrame.four_hours),
+zecusd_1h = ForexEmaPivotChochTradeConfig(
+    chart=Chart("ZECUSD", TimeFrame.five_minutes),
     htf_chart=Chart("ZECUSD", TimeFrame.one_hour),
     n_ltf_candle_check=120,
     n_htf_candle_check=120,
@@ -481,8 +481,8 @@ zecusd = ForexEmaPivotChochTradeConfig(
     heikingashi_chartdata=False,
 )
 
-neousd = ForexEmaPivotChochTradeConfig(
-    chart=Chart("NEOUSD", TimeFrame.four_hours),
+neousd_1h = ForexEmaPivotChochTradeConfig(
+    chart=Chart("NEOUSD", TimeFrame.five_minutes),
     htf_chart=Chart("NEOUSD", TimeFrame.one_hour),
     n_ltf_candle_check=120,
     n_htf_candle_check=120,
@@ -515,8 +515,8 @@ neousd = ForexEmaPivotChochTradeConfig(
     heikingashi_chartdata=False,
 )
 
-iotausd = ForexEmaPivotChochTradeConfig(
-    chart=Chart("IOTAUSD", TimeFrame.four_hours),
+iotausd_1h = ForexEmaPivotChochTradeConfig(
+    chart=Chart("IOTAUSD", TimeFrame.five_minutes),
     htf_chart=Chart("IOTAUSD", TimeFrame.one_hour),
     n_ltf_candle_check=120,
     n_htf_candle_check=120,
@@ -549,8 +549,8 @@ iotausd = ForexEmaPivotChochTradeConfig(
     heikingashi_chartdata=False,
 )
 
-xtzusd = ForexEmaPivotChochTradeConfig(
-    chart=Chart("XTZUSD", TimeFrame.four_hours),
+xtzusd_1h = ForexEmaPivotChochTradeConfig(
+    chart=Chart("XTZUSD", TimeFrame.five_minutes),
     htf_chart=Chart("XTZUSD", TimeFrame.one_hour),
     n_ltf_candle_check=120,
     n_htf_candle_check=120,
@@ -583,8 +583,8 @@ xtzusd = ForexEmaPivotChochTradeConfig(
     heikingashi_chartdata=False,
 )
 
-xrpusd = ForexEmaPivotChochTradeConfig(
-    chart=Chart("XRPUSD", TimeFrame.four_hours),
+xrpusd_1h = ForexEmaPivotChochTradeConfig(
+    chart=Chart("XRPUSD", TimeFrame.five_minutes),
     htf_chart=Chart("XRPUSD", TimeFrame.one_hour),
     n_ltf_candle_check=120,
     n_htf_candle_check=120,
@@ -617,8 +617,8 @@ xrpusd = ForexEmaPivotChochTradeConfig(
     heikingashi_chartdata=False,
 )
 
-xmrusd = ForexEmaPivotChochTradeConfig(
-    chart=Chart("XMRUSD", TimeFrame.four_hours),
+xmrusd_1h = ForexEmaPivotChochTradeConfig(
+    chart=Chart("XMRUSD", TimeFrame.five_minutes),
     htf_chart=Chart("XMRUSD", TimeFrame.one_hour),
     n_ltf_candle_check=120,
     n_htf_candle_check=120,
@@ -651,8 +651,8 @@ xmrusd = ForexEmaPivotChochTradeConfig(
     heikingashi_chartdata=False,
 )
 
-xlmusd = ForexEmaPivotChochTradeConfig(
-    chart=Chart("XLMUSD", TimeFrame.four_hours),
+xlmusd_1h = ForexEmaPivotChochTradeConfig(
+    chart=Chart("XLMUSD", TimeFrame.five_minutes),
     htf_chart=Chart("XLMUSD", TimeFrame.one_hour),
     n_ltf_candle_check=120,
     n_htf_candle_check=120,
@@ -685,8 +685,8 @@ xlmusd = ForexEmaPivotChochTradeConfig(
     heikingashi_chartdata=False,
 )
 
-vetusd = ForexEmaPivotChochTradeConfig(
-    chart=Chart("VETUSD", TimeFrame.four_hours),
+vetusd_1h = ForexEmaPivotChochTradeConfig(
+    chart=Chart("VETUSD", TimeFrame.five_minutes),
     htf_chart=Chart("VETUSD", TimeFrame.one_hour),
     n_ltf_candle_check=120,
     n_htf_candle_check=120,
@@ -719,8 +719,8 @@ vetusd = ForexEmaPivotChochTradeConfig(
     heikingashi_chartdata=False,
 )
 
-uniusd = ForexEmaPivotChochTradeConfig(
-    chart=Chart("UNIUSD", TimeFrame.four_hours),
+uniusd_1h = ForexEmaPivotChochTradeConfig(
+    chart=Chart("UNIUSD", TimeFrame.five_minutes),
     htf_chart=Chart("UNIUSD", TimeFrame.one_hour),
     n_ltf_candle_check=120,
     n_htf_candle_check=120,
@@ -753,8 +753,8 @@ uniusd = ForexEmaPivotChochTradeConfig(
     heikingashi_chartdata=False,
 )
 
-solusd = ForexEmaPivotChochTradeConfig(
-    chart=Chart("SOLUSD", TimeFrame.four_hours),
+solusd_1h = ForexEmaPivotChochTradeConfig(
+    chart=Chart("SOLUSD", TimeFrame.five_minutes),
     htf_chart=Chart("SOLUSD", TimeFrame.one_hour),
     n_ltf_candle_check=120,
     n_htf_candle_check=120,
@@ -787,8 +787,8 @@ solusd = ForexEmaPivotChochTradeConfig(
     heikingashi_chartdata=False,
 )
 
-mtcusd = ForexEmaPivotChochTradeConfig(
-    chart=Chart("MTCUSD", TimeFrame.four_hours),
+mtcusd_1h = ForexEmaPivotChochTradeConfig(
+    chart=Chart("MTCUSD", TimeFrame.five_minutes),
     htf_chart=Chart("MTCUSD", TimeFrame.one_hour),
     n_ltf_candle_check=120,
     n_htf_candle_check=120,
@@ -821,8 +821,8 @@ mtcusd = ForexEmaPivotChochTradeConfig(
     heikingashi_chartdata=False,
 )
 
-ltcusd = ForexEmaPivotChochTradeConfig(
-    chart=Chart("LTCUSD", TimeFrame.four_hours),
+ltcusd_1h = ForexEmaPivotChochTradeConfig(
+    chart=Chart("LTCUSD", TimeFrame.five_minutes),
     htf_chart=Chart("LTCUSD", TimeFrame.one_hour),
     n_ltf_candle_check=120,
     n_htf_candle_check=120,
@@ -855,8 +855,8 @@ ltcusd = ForexEmaPivotChochTradeConfig(
     heikingashi_chartdata=False,
 )
 
-lnkusd = ForexEmaPivotChochTradeConfig(
-    chart=Chart("LNKUSD", TimeFrame.four_hours),
+lnkusd_1h = ForexEmaPivotChochTradeConfig(
+    chart=Chart("LNKUSD", TimeFrame.five_minutes),
     htf_chart=Chart("LNKUSD", TimeFrame.one_hour),
     n_ltf_candle_check=120,
     n_htf_candle_check=120,
@@ -889,8 +889,8 @@ lnkusd = ForexEmaPivotChochTradeConfig(
     heikingashi_chartdata=False,
 )
 
-dshusd = ForexEmaPivotChochTradeConfig(
-    chart=Chart("DSHUSD", TimeFrame.four_hours),
+dshusd_1h = ForexEmaPivotChochTradeConfig(
+    chart=Chart("DSHUSD", TimeFrame.five_minutes),
     htf_chart=Chart("DSHUSD", TimeFrame.one_hour),
     n_ltf_candle_check=120,
     n_htf_candle_check=120,
@@ -923,8 +923,8 @@ dshusd = ForexEmaPivotChochTradeConfig(
     heikingashi_chartdata=False,
 )
 
-dotusd = ForexEmaPivotChochTradeConfig(
-    chart=Chart("DOTUSD", TimeFrame.four_hours),
+dotusd_1h = ForexEmaPivotChochTradeConfig(
+    chart=Chart("DOTUSD", TimeFrame.five_minutes),
     htf_chart=Chart("DOTUSD", TimeFrame.one_hour),
     n_ltf_candle_check=120,
     n_htf_candle_check=120,
@@ -957,8 +957,8 @@ dotusd = ForexEmaPivotChochTradeConfig(
     heikingashi_chartdata=False,
 )
 
-dogusd = ForexEmaPivotChochTradeConfig(
-    chart=Chart("DOGUSD", TimeFrame.four_hours),
+dogusd_1h = ForexEmaPivotChochTradeConfig(
+    chart=Chart("DOGUSD", TimeFrame.five_minutes),
     htf_chart=Chart("DOGUSD", TimeFrame.one_hour),
     n_ltf_candle_check=120,
     n_htf_candle_check=120,
@@ -991,8 +991,8 @@ dogusd = ForexEmaPivotChochTradeConfig(
     heikingashi_chartdata=False,
 )
 
-btcusd = ForexEmaPivotChochTradeConfig(
-    chart=Chart("BTCUSD", TimeFrame.four_hours),
+btcusd_1h = ForexEmaPivotChochTradeConfig(
+    chart=Chart("BTCUSD", TimeFrame.five_minutes),
     htf_chart=Chart("BTCUSD", TimeFrame.one_hour),
     n_ltf_candle_check=120,
     n_htf_candle_check=120,
@@ -1025,8 +1025,8 @@ btcusd = ForexEmaPivotChochTradeConfig(
     heikingashi_chartdata=False,
 )
 
-bsvusd = ForexEmaPivotChochTradeConfig(
-    chart=Chart("BSVUSD", TimeFrame.four_hours),
+bsvusd_1h = ForexEmaPivotChochTradeConfig(
+    chart=Chart("BSVUSD", TimeFrame.five_minutes),
     htf_chart=Chart("BSVUSD", TimeFrame.one_hour),
     n_ltf_candle_check=120,
     n_htf_candle_check=120,
@@ -1059,8 +1059,8 @@ bsvusd = ForexEmaPivotChochTradeConfig(
     heikingashi_chartdata=False,
 )
 
-bnbusd = ForexEmaPivotChochTradeConfig(
-    chart=Chart("BNBUSD", TimeFrame.four_hours),
+bnbusd_1h = ForexEmaPivotChochTradeConfig(
+    chart=Chart("BNBUSD", TimeFrame.five_minutes),
     htf_chart=Chart("BNBUSD", TimeFrame.one_hour),
     n_ltf_candle_check=120,
     n_htf_candle_check=120,
@@ -1093,8 +1093,8 @@ bnbusd = ForexEmaPivotChochTradeConfig(
     heikingashi_chartdata=False,
 )
 
-bchusd = ForexEmaPivotChochTradeConfig(
-    chart=Chart("BCHUSD", TimeFrame.four_hours),
+bchusd_1h = ForexEmaPivotChochTradeConfig(
+    chart=Chart("BCHUSD", TimeFrame.five_minutes),
     htf_chart=Chart("BCHUSD", TimeFrame.one_hour),
     n_ltf_candle_check=120,
     n_htf_candle_check=120,
@@ -1127,8 +1127,8 @@ bchusd = ForexEmaPivotChochTradeConfig(
     heikingashi_chartdata=False,
 )
 
-axsusd = ForexEmaPivotChochTradeConfig(
-    chart=Chart("AXSUSD", TimeFrame.four_hours),
+axsusd_1h = ForexEmaPivotChochTradeConfig(
+    chart=Chart("AXSUSD", TimeFrame.five_minutes),
     htf_chart=Chart("AXSUSD", TimeFrame.one_hour),
     n_ltf_candle_check=120,
     n_htf_candle_check=120,
@@ -1161,9 +1161,1200 @@ axsusd = ForexEmaPivotChochTradeConfig(
     heikingashi_chartdata=False,
 )
 
-avxusd = ForexEmaPivotChochTradeConfig(
-    chart=Chart("AVXUSD", TimeFrame.four_hours),
+avxusd_1h = ForexEmaPivotChochTradeConfig(
+    chart=Chart("AVXUSD", TimeFrame.five_minutes),
     htf_chart=Chart("AVXUSD", TimeFrame.one_hour),
+    n_ltf_candle_check=120,
+    n_htf_candle_check=120,
+    strategy=EmaPivotChochFilter(
+        ema_periods=[20, 40, 60],
+        htf_pivot_length=1,
+        htf_backstep=2,
+        atr_period=14,
+        atr_multiplier=1.0,
+        max_bars_after_pivot=100,
+        choch_pivot_length=2,
+        choch_backstep=2,
+        retrace_fib=0.5,
+        use_fibo_filter=False,
+        use_bos=False,
+        use_choch=False,
+        name="EmaPivotChoch",
+    ),
+    bar_between_signals=2,
+    consider_position=False,
+    position_handler=SteppingHandlerForex(
+        ForexAgent(),
+        stoploss_pip=1,
+        targets_ratio=[1],
+        targets_ratio_volumes=[0.01],
+        trail_stop=True,
+        long_trade=False,
+        short_trade=False,
+    ),
+    heikingashi_chartdata=False,
+)
+
+xau_4h = ForexEmaPivotChochTradeConfig(
+    chart=Chart("XAUUSD!", TimeFrame.five_minutes),
+    htf_chart=Chart("XAUUSD!", TimeFrame.four_hours),
+    n_ltf_candle_check=120,
+    n_htf_candle_check=120,
+    strategy=EmaPivotChochFilter(
+        ema_periods=[20, 40, 60],
+        htf_pivot_length=1,
+        htf_backstep=2,
+        atr_period=14,
+        atr_multiplier=1.0,
+        max_bars_after_pivot=100,
+        choch_pivot_length=2,
+        choch_backstep=2,
+        retrace_fib=0.5,
+        use_fibo_filter=False,
+        use_bos=False,
+        use_choch=False,
+        name="EmaPivotChoch",
+    ),
+    bar_between_signals=2,
+    consider_position=False,
+    position_handler=SteppingHandlerForex(
+        ForexAgent(),
+        stoploss_pip=1,
+        targets_ratio=[1],
+        targets_ratio_volumes=[0.01],
+        trail_stop=True,
+        long_trade=False,
+        short_trade=False,
+    ),
+    heikingashi_chartdata=False,
+)
+
+
+eurusd_4h = ForexEmaPivotChochTradeConfig(
+    chart=Chart("EURUSD!", TimeFrame.five_minutes),
+    htf_chart=Chart("EURUSD!", TimeFrame.four_hours),
+    n_ltf_candle_check=120,
+    n_htf_candle_check=120,
+    strategy=EmaPivotChochFilter(
+        ema_periods=[20, 40, 60],
+        htf_pivot_length=1,
+        htf_backstep=2,
+        atr_period=14,
+        atr_multiplier=1.0,
+        max_bars_after_pivot=100,
+        choch_pivot_length=2,
+        choch_backstep=2,
+        retrace_fib=0.5,
+        use_fibo_filter=False,
+        use_bos=False,
+        use_choch=False,
+        name="EmaPivotChoch",
+    ),
+    bar_between_signals=2,
+    consider_position=False,
+    position_handler=SteppingHandlerForex(
+        ForexAgent(),
+        stoploss_pip=1,
+        targets_ratio=[1],
+        targets_ratio_volumes=[0.01],
+        trail_stop=True,
+        long_trade=False,
+        short_trade=False,
+    ),
+    heikingashi_chartdata=False,
+)
+
+usdjpy_4h = ForexEmaPivotChochTradeConfig(
+    chart=Chart("USDJPY!", TimeFrame.five_minutes),
+    htf_chart=Chart("USDJPY!", TimeFrame.four_hours),
+    n_ltf_candle_check=120,
+    n_htf_candle_check=120,
+    strategy=EmaPivotChochFilter(
+        ema_periods=[20, 40, 60],
+        htf_pivot_length=1,
+        htf_backstep=2,
+        atr_period=14,
+        atr_multiplier=1.0,
+        max_bars_after_pivot=100,
+        choch_pivot_length=2,
+        choch_backstep=2,
+        retrace_fib=0.5,
+        use_fibo_filter=False,
+        use_bos=False,
+        use_choch=False,
+        name="EmaPivotChoch",
+    ),
+    bar_between_signals=2,
+    consider_position=False,
+    position_handler=SteppingHandlerForex(
+        ForexAgent(),
+        stoploss_pip=1,
+        targets_ratio=[1],
+        targets_ratio_volumes=[0.01],
+        trail_stop=True,
+        long_trade=False,
+        short_trade=False,
+    ),
+    heikingashi_chartdata=False,
+)
+
+gbpusd_4h = ForexEmaPivotChochTradeConfig(
+    chart=Chart("GBPUSD!", TimeFrame.five_minutes),
+    htf_chart=Chart("GBPUSD!", TimeFrame.four_hours),
+    n_ltf_candle_check=120,
+    n_htf_candle_check=120,
+    strategy=EmaPivotChochFilter(
+        ema_periods=[20, 40, 60],
+        htf_pivot_length=1,
+        htf_backstep=2,
+        atr_period=14,
+        atr_multiplier=1.0,
+        max_bars_after_pivot=100,
+        choch_pivot_length=2,
+        choch_backstep=2,
+        retrace_fib=0.5,
+        use_fibo_filter=False,
+        use_bos=False,
+        use_choch=False,
+        name="EmaPivotChoch",
+    ),
+    bar_between_signals=2,
+    consider_position=False,
+    position_handler=SteppingHandlerForex(
+        ForexAgent(),
+        stoploss_pip=1,
+        targets_ratio=[1],
+        targets_ratio_volumes=[0.01],
+        trail_stop=True,
+        long_trade=False,
+        short_trade=False,
+    ),
+    heikingashi_chartdata=False,
+)
+
+usdchf_4h = ForexEmaPivotChochTradeConfig(
+    chart=Chart("USDCHF!", TimeFrame.five_minutes),
+    htf_chart=Chart("USDCHF!", TimeFrame.four_hours),
+    n_ltf_candle_check=120,
+    n_htf_candle_check=120,
+    strategy=EmaPivotChochFilter(
+        ema_periods=[20, 40, 60],
+        htf_pivot_length=1,
+        htf_backstep=2,
+        atr_period=14,
+        atr_multiplier=1.0,
+        max_bars_after_pivot=100,
+        choch_pivot_length=2,
+        choch_backstep=2,
+        retrace_fib=0.5,
+        use_fibo_filter=False,
+        use_bos=False,
+        use_choch=False,
+        name="EmaPivotChoch",
+    ),
+    bar_between_signals=2,
+    consider_position=False,
+    position_handler=SteppingHandlerForex(
+        ForexAgent(),
+        stoploss_pip=1,
+        targets_ratio=[1],
+        targets_ratio_volumes=[0.01],
+        trail_stop=True,
+        long_trade=False,
+        short_trade=False,
+    ),
+    heikingashi_chartdata=False,
+)
+
+audusd_4h = ForexEmaPivotChochTradeConfig(
+    chart=Chart("AUDUSD!", TimeFrame.five_minutes),
+    htf_chart=Chart("AUDUSD!", TimeFrame.four_hours),
+    n_ltf_candle_check=120,
+    n_htf_candle_check=120,
+    strategy=EmaPivotChochFilter(
+        ema_periods=[20, 40, 60],
+        htf_pivot_length=1,
+        htf_backstep=2,
+        atr_period=14,
+        atr_multiplier=1.0,
+        max_bars_after_pivot=100,
+        choch_pivot_length=2,
+        choch_backstep=2,
+        retrace_fib=0.5,
+        use_fibo_filter=False,
+        use_bos=False,
+        use_choch=False,
+        name="EmaPivotChoch",
+    ),
+    bar_between_signals=2,
+    consider_position=False,
+    position_handler=SteppingHandlerForex(
+        ForexAgent(),
+        stoploss_pip=1,
+        targets_ratio=[1],
+        targets_ratio_volumes=[0.01],
+        trail_stop=True,
+        long_trade=False,
+        short_trade=False,
+    ),
+    heikingashi_chartdata=False,
+)
+
+usdcad_4h = ForexEmaPivotChochTradeConfig(
+    chart=Chart("USDCAD!", TimeFrame.five_minutes),
+    htf_chart=Chart("USDCAD!", TimeFrame.four_hours),
+    n_ltf_candle_check=120,
+    n_htf_candle_check=120,
+    strategy=EmaPivotChochFilter(
+        ema_periods=[20, 40, 60],
+        htf_pivot_length=1,
+        htf_backstep=2,
+        atr_period=14,
+        atr_multiplier=1.0,
+        max_bars_after_pivot=100,
+        choch_pivot_length=2,
+        choch_backstep=2,
+        retrace_fib=0.5,
+        use_fibo_filter=False,
+        use_bos=False,
+        use_choch=False,
+        name="EmaPivotChoch",
+    ),
+    bar_between_signals=2,
+    consider_position=False,
+    position_handler=SteppingHandlerForex(
+        ForexAgent(),
+        stoploss_pip=1,
+        targets_ratio=[1],
+        targets_ratio_volumes=[0.01],
+        trail_stop=True,
+        long_trade=False,
+        short_trade=False,
+    ),
+    heikingashi_chartdata=False,
+)
+
+nzdusd_4h = ForexEmaPivotChochTradeConfig(
+    chart=Chart("NZDUSD!", TimeFrame.five_minutes),
+    htf_chart=Chart("NZDUSD!", TimeFrame.four_hours),
+    n_ltf_candle_check=120,
+    n_htf_candle_check=120,
+    strategy=EmaPivotChochFilter(
+        ema_periods=[20, 40, 60],
+        htf_pivot_length=1,
+        htf_backstep=2,
+        atr_period=14,
+        atr_multiplier=1.0,
+        max_bars_after_pivot=100,
+        choch_pivot_length=2,
+        choch_backstep=2,
+        retrace_fib=0.5,
+        use_fibo_filter=False,
+        use_bos=False,
+        use_choch=False,
+        name="EmaPivotChoch",
+    ),
+    bar_between_signals=2,
+    consider_position=False,
+    position_handler=SteppingHandlerForex(
+        ForexAgent(),
+        stoploss_pip=1,
+        targets_ratio=[1],
+        targets_ratio_volumes=[0.01],
+        trail_stop=True,
+        long_trade=False,
+        short_trade=False,
+    ),
+    heikingashi_chartdata=False,
+)
+
+adausd_4h = ForexEmaPivotChochTradeConfig(
+    chart=Chart("ADAUSD", TimeFrame.five_minutes),
+    htf_chart=Chart("ADAUSD", TimeFrame.four_hours),
+    n_ltf_candle_check=120,
+    n_htf_candle_check=120,
+    strategy=EmaPivotChochFilter(
+        ema_periods=[20, 40, 60],
+        htf_pivot_length=1,
+        htf_backstep=2,
+        atr_period=14,
+        atr_multiplier=1.0,
+        max_bars_after_pivot=100,
+        choch_pivot_length=2,
+        choch_backstep=2,
+        retrace_fib=0.5,
+        use_fibo_filter=False,
+        use_bos=False,
+        use_choch=False,
+        name="EmaPivotChoch",
+    ),
+    bar_between_signals=2,
+    consider_position=False,
+    position_handler=SteppingHandlerForex(
+        ForexAgent(),
+        stoploss_pip=1,
+        targets_ratio=[1],
+        targets_ratio_volumes=[0.01],
+        trail_stop=True,
+        long_trade=False,
+        short_trade=False,
+    ),
+    heikingashi_chartdata=False,
+)
+
+aveusd_4h = ForexEmaPivotChochTradeConfig(
+    chart=Chart("AVEUSD", TimeFrame.five_minutes),
+    htf_chart=Chart("AVEUSD", TimeFrame.four_hours),
+    n_ltf_candle_check=120,
+    n_htf_candle_check=120,
+    strategy=EmaPivotChochFilter(
+        ema_periods=[20, 40, 60],
+        htf_pivot_length=1,
+        htf_backstep=2,
+        atr_period=14,
+        atr_multiplier=1.0,
+        max_bars_after_pivot=100,
+        choch_pivot_length=2,
+        choch_backstep=2,
+        retrace_fib=0.5,
+        use_fibo_filter=False,
+        use_bos=False,
+        use_choch=False,
+        name="EmaPivotChoch",
+    ),
+    bar_between_signals=2,
+    consider_position=False,
+    position_handler=SteppingHandlerForex(
+        ForexAgent(),
+        stoploss_pip=1,
+        targets_ratio=[1],
+        targets_ratio_volumes=[0.01],
+        trail_stop=True,
+        long_trade=False,
+        short_trade=False,
+    ),
+    heikingashi_chartdata=False,
+)
+
+filusd_4h = ForexEmaPivotChochTradeConfig(
+    chart=Chart("FILUSD", TimeFrame.five_minutes),
+    htf_chart=Chart("FILUSD", TimeFrame.four_hours),
+    n_ltf_candle_check=120,
+    n_htf_candle_check=120,
+    strategy=EmaPivotChochFilter(
+        ema_periods=[20, 40, 60],
+        htf_pivot_length=1,
+        htf_backstep=2,
+        atr_period=14,
+        atr_multiplier=1.0,
+        max_bars_after_pivot=100,
+        choch_pivot_length=2,
+        choch_backstep=2,
+        retrace_fib=0.5,
+        use_fibo_filter=False,
+        use_bos=False,
+        use_choch=False,
+        name="EmaPivotChoch",
+    ),
+    bar_between_signals=2,
+    consider_position=False,
+    position_handler=SteppingHandlerForex(
+        ForexAgent(),
+        stoploss_pip=1,
+        targets_ratio=[1],
+        targets_ratio_volumes=[0.01],
+        trail_stop=True,
+        long_trade=False,
+        short_trade=False,
+    ),
+    heikingashi_chartdata=False,
+)
+
+atomusd_4h = ForexEmaPivotChochTradeConfig(
+    chart=Chart("ATOMUSD", TimeFrame.five_minutes),
+    htf_chart=Chart("ATOMUSD", TimeFrame.four_hours),
+    n_ltf_candle_check=120,
+    n_htf_candle_check=120,
+    strategy=EmaPivotChochFilter(
+        ema_periods=[20, 40, 60],
+        htf_pivot_length=1,
+        htf_backstep=2,
+        atr_period=14,
+        atr_multiplier=1.0,
+        max_bars_after_pivot=100,
+        choch_pivot_length=2,
+        choch_backstep=2,
+        retrace_fib=0.5,
+        use_fibo_filter=False,
+        use_bos=False,
+        use_choch=False,
+        name="EmaPivotChoch",
+    ),
+    bar_between_signals=2,
+    consider_position=False,
+    position_handler=SteppingHandlerForex(
+        ForexAgent(),
+        stoploss_pip=1,
+        targets_ratio=[1],
+        targets_ratio_volumes=[0.01],
+        trail_stop=True,
+        long_trade=False,
+        short_trade=False,
+    ),
+    heikingashi_chartdata=False,
+)
+
+apeusd_4h = ForexEmaPivotChochTradeConfig(
+    chart=Chart("APEUSD", TimeFrame.five_minutes),
+    htf_chart=Chart("APEUSD", TimeFrame.four_hours),
+    n_ltf_candle_check=120,
+    n_htf_candle_check=120,
+    strategy=EmaPivotChochFilter(
+        ema_periods=[20, 40, 60],
+        htf_pivot_length=1,
+        htf_backstep=2,
+        atr_period=14,
+        atr_multiplier=1.0,
+        max_bars_after_pivot=100,
+        choch_pivot_length=2,
+        choch_backstep=2,
+        retrace_fib=0.5,
+        use_fibo_filter=False,
+        use_bos=False,
+        use_choch=False,
+        name="EmaPivotChoch",
+    ),
+    bar_between_signals=2,
+    consider_position=False,
+    position_handler=SteppingHandlerForex(
+        ForexAgent(),
+        stoploss_pip=1,
+        targets_ratio=[1],
+        targets_ratio_volumes=[0.01],
+        trail_stop=True,
+        long_trade=False,
+        short_trade=False,
+    ),
+    heikingashi_chartdata=False,
+)
+
+zecusd_4h = ForexEmaPivotChochTradeConfig(
+    chart=Chart("ZECUSD", TimeFrame.five_minutes),
+    htf_chart=Chart("ZECUSD", TimeFrame.four_hours),
+    n_ltf_candle_check=120,
+    n_htf_candle_check=120,
+    strategy=EmaPivotChochFilter(
+        ema_periods=[20, 40, 60],
+        htf_pivot_length=1,
+        htf_backstep=2,
+        atr_period=14,
+        atr_multiplier=1.0,
+        max_bars_after_pivot=100,
+        choch_pivot_length=2,
+        choch_backstep=2,
+        retrace_fib=0.5,
+        use_fibo_filter=False,
+        use_bos=False,
+        use_choch=False,
+        name="EmaPivotChoch",
+    ),
+    bar_between_signals=2,
+    consider_position=False,
+    position_handler=SteppingHandlerForex(
+        ForexAgent(),
+        stoploss_pip=1,
+        targets_ratio=[1],
+        targets_ratio_volumes=[0.01],
+        trail_stop=True,
+        long_trade=False,
+        short_trade=False,
+    ),
+    heikingashi_chartdata=False,
+)
+
+neousd_4h = ForexEmaPivotChochTradeConfig(
+    chart=Chart("NEOUSD", TimeFrame.five_minutes),
+    htf_chart=Chart("NEOUSD", TimeFrame.four_hours),
+    n_ltf_candle_check=120,
+    n_htf_candle_check=120,
+    strategy=EmaPivotChochFilter(
+        ema_periods=[20, 40, 60],
+        htf_pivot_length=1,
+        htf_backstep=2,
+        atr_period=14,
+        atr_multiplier=1.0,
+        max_bars_after_pivot=100,
+        choch_pivot_length=2,
+        choch_backstep=2,
+        retrace_fib=0.5,
+        use_fibo_filter=False,
+        use_bos=False,
+        use_choch=False,
+        name="EmaPivotChoch",
+    ),
+    bar_between_signals=2,
+    consider_position=False,
+    position_handler=SteppingHandlerForex(
+        ForexAgent(),
+        stoploss_pip=1,
+        targets_ratio=[1],
+        targets_ratio_volumes=[0.01],
+        trail_stop=True,
+        long_trade=False,
+        short_trade=False,
+    ),
+    heikingashi_chartdata=False,
+)
+
+iotausd_4h = ForexEmaPivotChochTradeConfig(
+    chart=Chart("IOTAUSD", TimeFrame.five_minutes),
+    htf_chart=Chart("IOTAUSD", TimeFrame.four_hours),
+    n_ltf_candle_check=120,
+    n_htf_candle_check=120,
+    strategy=EmaPivotChochFilter(
+        ema_periods=[20, 40, 60],
+        htf_pivot_length=1,
+        htf_backstep=2,
+        atr_period=14,
+        atr_multiplier=1.0,
+        max_bars_after_pivot=100,
+        choch_pivot_length=2,
+        choch_backstep=2,
+        retrace_fib=0.5,
+        use_fibo_filter=False,
+        use_bos=False,
+        use_choch=False,
+        name="EmaPivotChoch",
+    ),
+    bar_between_signals=2,
+    consider_position=False,
+    position_handler=SteppingHandlerForex(
+        ForexAgent(),
+        stoploss_pip=1,
+        targets_ratio=[1],
+        targets_ratio_volumes=[0.01],
+        trail_stop=True,
+        long_trade=False,
+        short_trade=False,
+    ),
+    heikingashi_chartdata=False,
+)
+
+xtzusd_4h = ForexEmaPivotChochTradeConfig(
+    chart=Chart("XTZUSD", TimeFrame.five_minutes),
+    htf_chart=Chart("XTZUSD", TimeFrame.four_hours),
+    n_ltf_candle_check=120,
+    n_htf_candle_check=120,
+    strategy=EmaPivotChochFilter(
+        ema_periods=[20, 40, 60],
+        htf_pivot_length=1,
+        htf_backstep=2,
+        atr_period=14,
+        atr_multiplier=1.0,
+        max_bars_after_pivot=100,
+        choch_pivot_length=2,
+        choch_backstep=2,
+        retrace_fib=0.5,
+        use_fibo_filter=False,
+        use_bos=False,
+        use_choch=False,
+        name="EmaPivotChoch",
+    ),
+    bar_between_signals=2,
+    consider_position=False,
+    position_handler=SteppingHandlerForex(
+        ForexAgent(),
+        stoploss_pip=1,
+        targets_ratio=[1],
+        targets_ratio_volumes=[0.01],
+        trail_stop=True,
+        long_trade=False,
+        short_trade=False,
+    ),
+    heikingashi_chartdata=False,
+)
+
+xrpusd_4h = ForexEmaPivotChochTradeConfig(
+    chart=Chart("XRPUSD", TimeFrame.five_minutes),
+    htf_chart=Chart("XRPUSD", TimeFrame.four_hours),
+    n_ltf_candle_check=120,
+    n_htf_candle_check=120,
+    strategy=EmaPivotChochFilter(
+        ema_periods=[20, 40, 60],
+        htf_pivot_length=1,
+        htf_backstep=2,
+        atr_period=14,
+        atr_multiplier=1.0,
+        max_bars_after_pivot=100,
+        choch_pivot_length=2,
+        choch_backstep=2,
+        retrace_fib=0.5,
+        use_fibo_filter=False,
+        use_bos=False,
+        use_choch=False,
+        name="EmaPivotChoch",
+    ),
+    bar_between_signals=2,
+    consider_position=False,
+    position_handler=SteppingHandlerForex(
+        ForexAgent(),
+        stoploss_pip=1,
+        targets_ratio=[1],
+        targets_ratio_volumes=[0.01],
+        trail_stop=True,
+        long_trade=False,
+        short_trade=False,
+    ),
+    heikingashi_chartdata=False,
+)
+
+xmrusd_4h = ForexEmaPivotChochTradeConfig(
+    chart=Chart("XMRUSD", TimeFrame.five_minutes),
+    htf_chart=Chart("XMRUSD", TimeFrame.four_hours),
+    n_ltf_candle_check=120,
+    n_htf_candle_check=120,
+    strategy=EmaPivotChochFilter(
+        ema_periods=[20, 40, 60],
+        htf_pivot_length=1,
+        htf_backstep=2,
+        atr_period=14,
+        atr_multiplier=1.0,
+        max_bars_after_pivot=100,
+        choch_pivot_length=2,
+        choch_backstep=2,
+        retrace_fib=0.5,
+        use_fibo_filter=False,
+        use_bos=False,
+        use_choch=False,
+        name="EmaPivotChoch",
+    ),
+    bar_between_signals=2,
+    consider_position=False,
+    position_handler=SteppingHandlerForex(
+        ForexAgent(),
+        stoploss_pip=1,
+        targets_ratio=[1],
+        targets_ratio_volumes=[0.01],
+        trail_stop=True,
+        long_trade=False,
+        short_trade=False,
+    ),
+    heikingashi_chartdata=False,
+)
+
+xlmusd_4h = ForexEmaPivotChochTradeConfig(
+    chart=Chart("XLMUSD", TimeFrame.five_minutes),
+    htf_chart=Chart("XLMUSD", TimeFrame.four_hours),
+    n_ltf_candle_check=120,
+    n_htf_candle_check=120,
+    strategy=EmaPivotChochFilter(
+        ema_periods=[20, 40, 60],
+        htf_pivot_length=1,
+        htf_backstep=2,
+        atr_period=14,
+        atr_multiplier=1.0,
+        max_bars_after_pivot=100,
+        choch_pivot_length=2,
+        choch_backstep=2,
+        retrace_fib=0.5,
+        use_fibo_filter=False,
+        use_bos=False,
+        use_choch=False,
+        name="EmaPivotChoch",
+    ),
+    bar_between_signals=2,
+    consider_position=False,
+    position_handler=SteppingHandlerForex(
+        ForexAgent(),
+        stoploss_pip=1,
+        targets_ratio=[1],
+        targets_ratio_volumes=[0.01],
+        trail_stop=True,
+        long_trade=False,
+        short_trade=False,
+    ),
+    heikingashi_chartdata=False,
+)
+
+vetusd_4h = ForexEmaPivotChochTradeConfig(
+    chart=Chart("VETUSD", TimeFrame.five_minutes),
+    htf_chart=Chart("VETUSD", TimeFrame.four_hours),
+    n_ltf_candle_check=120,
+    n_htf_candle_check=120,
+    strategy=EmaPivotChochFilter(
+        ema_periods=[20, 40, 60],
+        htf_pivot_length=1,
+        htf_backstep=2,
+        atr_period=14,
+        atr_multiplier=1.0,
+        max_bars_after_pivot=100,
+        choch_pivot_length=2,
+        choch_backstep=2,
+        retrace_fib=0.5,
+        use_fibo_filter=False,
+        use_bos=False,
+        use_choch=False,
+        name="EmaPivotChoch",
+    ),
+    bar_between_signals=2,
+    consider_position=False,
+    position_handler=SteppingHandlerForex(
+        ForexAgent(),
+        stoploss_pip=1,
+        targets_ratio=[1],
+        targets_ratio_volumes=[0.01],
+        trail_stop=True,
+        long_trade=False,
+        short_trade=False,
+    ),
+    heikingashi_chartdata=False,
+)
+
+uniusd_4h = ForexEmaPivotChochTradeConfig(
+    chart=Chart("UNIUSD", TimeFrame.five_minutes),
+    htf_chart=Chart("UNIUSD", TimeFrame.four_hours),
+    n_ltf_candle_check=120,
+    n_htf_candle_check=120,
+    strategy=EmaPivotChochFilter(
+        ema_periods=[20, 40, 60],
+        htf_pivot_length=1,
+        htf_backstep=2,
+        atr_period=14,
+        atr_multiplier=1.0,
+        max_bars_after_pivot=100,
+        choch_pivot_length=2,
+        choch_backstep=2,
+        retrace_fib=0.5,
+        use_fibo_filter=False,
+        use_bos=False,
+        use_choch=False,
+        name="EmaPivotChoch",
+    ),
+    bar_between_signals=2,
+    consider_position=False,
+    position_handler=SteppingHandlerForex(
+        ForexAgent(),
+        stoploss_pip=1,
+        targets_ratio=[1],
+        targets_ratio_volumes=[0.01],
+        trail_stop=True,
+        long_trade=False,
+        short_trade=False,
+    ),
+    heikingashi_chartdata=False,
+)
+
+solusd_4h = ForexEmaPivotChochTradeConfig(
+    chart=Chart("SOLUSD", TimeFrame.five_minutes),
+    htf_chart=Chart("SOLUSD", TimeFrame.four_hours),
+    n_ltf_candle_check=120,
+    n_htf_candle_check=120,
+    strategy=EmaPivotChochFilter(
+        ema_periods=[20, 40, 60],
+        htf_pivot_length=1,
+        htf_backstep=2,
+        atr_period=14,
+        atr_multiplier=1.0,
+        max_bars_after_pivot=100,
+        choch_pivot_length=2,
+        choch_backstep=2,
+        retrace_fib=0.5,
+        use_fibo_filter=False,
+        use_bos=False,
+        use_choch=False,
+        name="EmaPivotChoch",
+    ),
+    bar_between_signals=2,
+    consider_position=False,
+    position_handler=SteppingHandlerForex(
+        ForexAgent(),
+        stoploss_pip=1,
+        targets_ratio=[1],
+        targets_ratio_volumes=[0.01],
+        trail_stop=True,
+        long_trade=False,
+        short_trade=False,
+    ),
+    heikingashi_chartdata=False,
+)
+
+mtcusd_4h = ForexEmaPivotChochTradeConfig(
+    chart=Chart("MTCUSD", TimeFrame.five_minutes),
+    htf_chart=Chart("MTCUSD", TimeFrame.four_hours),
+    n_ltf_candle_check=120,
+    n_htf_candle_check=120,
+    strategy=EmaPivotChochFilter(
+        ema_periods=[20, 40, 60],
+        htf_pivot_length=1,
+        htf_backstep=2,
+        atr_period=14,
+        atr_multiplier=1.0,
+        max_bars_after_pivot=100,
+        choch_pivot_length=2,
+        choch_backstep=2,
+        retrace_fib=0.5,
+        use_fibo_filter=False,
+        use_bos=False,
+        use_choch=False,
+        name="EmaPivotChoch",
+    ),
+    bar_between_signals=2,
+    consider_position=False,
+    position_handler=SteppingHandlerForex(
+        ForexAgent(),
+        stoploss_pip=1,
+        targets_ratio=[1],
+        targets_ratio_volumes=[0.01],
+        trail_stop=True,
+        long_trade=False,
+        short_trade=False,
+    ),
+    heikingashi_chartdata=False,
+)
+
+ltcusd_4h = ForexEmaPivotChochTradeConfig(
+    chart=Chart("LTCUSD", TimeFrame.five_minutes),
+    htf_chart=Chart("LTCUSD", TimeFrame.four_hours),
+    n_ltf_candle_check=120,
+    n_htf_candle_check=120,
+    strategy=EmaPivotChochFilter(
+        ema_periods=[20, 40, 60],
+        htf_pivot_length=1,
+        htf_backstep=2,
+        atr_period=14,
+        atr_multiplier=1.0,
+        max_bars_after_pivot=100,
+        choch_pivot_length=2,
+        choch_backstep=2,
+        retrace_fib=0.5,
+        use_fibo_filter=False,
+        use_bos=False,
+        use_choch=False,
+        name="EmaPivotChoch",
+    ),
+    bar_between_signals=2,
+    consider_position=False,
+    position_handler=SteppingHandlerForex(
+        ForexAgent(),
+        stoploss_pip=1,
+        targets_ratio=[1],
+        targets_ratio_volumes=[0.01],
+        trail_stop=True,
+        long_trade=False,
+        short_trade=False,
+    ),
+    heikingashi_chartdata=False,
+)
+
+lnkusd_4h = ForexEmaPivotChochTradeConfig(
+    chart=Chart("LNKUSD", TimeFrame.five_minutes),
+    htf_chart=Chart("LNKUSD", TimeFrame.four_hours),
+    n_ltf_candle_check=120,
+    n_htf_candle_check=120,
+    strategy=EmaPivotChochFilter(
+        ema_periods=[20, 40, 60],
+        htf_pivot_length=1,
+        htf_backstep=2,
+        atr_period=14,
+        atr_multiplier=1.0,
+        max_bars_after_pivot=100,
+        choch_pivot_length=2,
+        choch_backstep=2,
+        retrace_fib=0.5,
+        use_fibo_filter=False,
+        use_bos=False,
+        use_choch=False,
+        name="EmaPivotChoch",
+    ),
+    bar_between_signals=2,
+    consider_position=False,
+    position_handler=SteppingHandlerForex(
+        ForexAgent(),
+        stoploss_pip=1,
+        targets_ratio=[1],
+        targets_ratio_volumes=[0.01],
+        trail_stop=True,
+        long_trade=False,
+        short_trade=False,
+    ),
+    heikingashi_chartdata=False,
+)
+
+dshusd_4h = ForexEmaPivotChochTradeConfig(
+    chart=Chart("DSHUSD", TimeFrame.five_minutes),
+    htf_chart=Chart("DSHUSD", TimeFrame.four_hours),
+    n_ltf_candle_check=120,
+    n_htf_candle_check=120,
+    strategy=EmaPivotChochFilter(
+        ema_periods=[20, 40, 60],
+        htf_pivot_length=1,
+        htf_backstep=2,
+        atr_period=14,
+        atr_multiplier=1.0,
+        max_bars_after_pivot=100,
+        choch_pivot_length=2,
+        choch_backstep=2,
+        retrace_fib=0.5,
+        use_fibo_filter=False,
+        use_bos=False,
+        use_choch=False,
+        name="EmaPivotChoch",
+    ),
+    bar_between_signals=2,
+    consider_position=False,
+    position_handler=SteppingHandlerForex(
+        ForexAgent(),
+        stoploss_pip=1,
+        targets_ratio=[1],
+        targets_ratio_volumes=[0.01],
+        trail_stop=True,
+        long_trade=False,
+        short_trade=False,
+    ),
+    heikingashi_chartdata=False,
+)
+
+dotusd_4h = ForexEmaPivotChochTradeConfig(
+    chart=Chart("DOTUSD", TimeFrame.five_minutes),
+    htf_chart=Chart("DOTUSD", TimeFrame.four_hours),
+    n_ltf_candle_check=120,
+    n_htf_candle_check=120,
+    strategy=EmaPivotChochFilter(
+        ema_periods=[20, 40, 60],
+        htf_pivot_length=1,
+        htf_backstep=2,
+        atr_period=14,
+        atr_multiplier=1.0,
+        max_bars_after_pivot=100,
+        choch_pivot_length=2,
+        choch_backstep=2,
+        retrace_fib=0.5,
+        use_fibo_filter=False,
+        use_bos=False,
+        use_choch=False,
+        name="EmaPivotChoch",
+    ),
+    bar_between_signals=2,
+    consider_position=False,
+    position_handler=SteppingHandlerForex(
+        ForexAgent(),
+        stoploss_pip=1,
+        targets_ratio=[1],
+        targets_ratio_volumes=[0.01],
+        trail_stop=True,
+        long_trade=False,
+        short_trade=False,
+    ),
+    heikingashi_chartdata=False,
+)
+
+dogusd_4h = ForexEmaPivotChochTradeConfig(
+    chart=Chart("DOGUSD", TimeFrame.five_minutes),
+    htf_chart=Chart("DOGUSD", TimeFrame.four_hours),
+    n_ltf_candle_check=120,
+    n_htf_candle_check=120,
+    strategy=EmaPivotChochFilter(
+        ema_periods=[20, 40, 60],
+        htf_pivot_length=1,
+        htf_backstep=2,
+        atr_period=14,
+        atr_multiplier=1.0,
+        max_bars_after_pivot=100,
+        choch_pivot_length=2,
+        choch_backstep=2,
+        retrace_fib=0.5,
+        use_fibo_filter=False,
+        use_bos=False,
+        use_choch=False,
+        name="EmaPivotChoch",
+    ),
+    bar_between_signals=2,
+    consider_position=False,
+    position_handler=SteppingHandlerForex(
+        ForexAgent(),
+        stoploss_pip=1,
+        targets_ratio=[1],
+        targets_ratio_volumes=[0.01],
+        trail_stop=True,
+        long_trade=False,
+        short_trade=False,
+    ),
+    heikingashi_chartdata=False,
+)
+
+btcusd_4h = ForexEmaPivotChochTradeConfig(
+    chart=Chart("BTCUSD", TimeFrame.five_minutes),
+    htf_chart=Chart("BTCUSD", TimeFrame.four_hours),
+    n_ltf_candle_check=120,
+    n_htf_candle_check=120,
+    strategy=EmaPivotChochFilter(
+        ema_periods=[20, 40, 60],
+        htf_pivot_length=1,
+        htf_backstep=2,
+        atr_period=14,
+        atr_multiplier=1.0,
+        max_bars_after_pivot=100,
+        choch_pivot_length=2,
+        choch_backstep=2,
+        retrace_fib=0.5,
+        use_fibo_filter=False,
+        use_bos=False,
+        use_choch=False,
+        name="EmaPivotChoch",
+    ),
+    bar_between_signals=2,
+    consider_position=False,
+    position_handler=SteppingHandlerForex(
+        ForexAgent(),
+        stoploss_pip=1,
+        targets_ratio=[1],
+        targets_ratio_volumes=[0.01],
+        trail_stop=True,
+        long_trade=False,
+        short_trade=False,
+    ),
+    heikingashi_chartdata=False,
+)
+
+bsvusd_4h = ForexEmaPivotChochTradeConfig(
+    chart=Chart("BSVUSD", TimeFrame.five_minutes),
+    htf_chart=Chart("BSVUSD", TimeFrame.four_hours),
+    n_ltf_candle_check=120,
+    n_htf_candle_check=120,
+    strategy=EmaPivotChochFilter(
+        ema_periods=[20, 40, 60],
+        htf_pivot_length=1,
+        htf_backstep=2,
+        atr_period=14,
+        atr_multiplier=1.0,
+        max_bars_after_pivot=100,
+        choch_pivot_length=2,
+        choch_backstep=2,
+        retrace_fib=0.5,
+        use_fibo_filter=False,
+        use_bos=False,
+        use_choch=False,
+        name="EmaPivotChoch",
+    ),
+    bar_between_signals=2,
+    consider_position=False,
+    position_handler=SteppingHandlerForex(
+        ForexAgent(),
+        stoploss_pip=1,
+        targets_ratio=[1],
+        targets_ratio_volumes=[0.01],
+        trail_stop=True,
+        long_trade=False,
+        short_trade=False,
+    ),
+    heikingashi_chartdata=False,
+)
+
+bnbusd_4h = ForexEmaPivotChochTradeConfig(
+    chart=Chart("BNBUSD", TimeFrame.five_minutes),
+    htf_chart=Chart("BNBUSD", TimeFrame.four_hours),
+    n_ltf_candle_check=120,
+    n_htf_candle_check=120,
+    strategy=EmaPivotChochFilter(
+        ema_periods=[20, 40, 60],
+        htf_pivot_length=1,
+        htf_backstep=2,
+        atr_period=14,
+        atr_multiplier=1.0,
+        max_bars_after_pivot=100,
+        choch_pivot_length=2,
+        choch_backstep=2,
+        retrace_fib=0.5,
+        use_fibo_filter=False,
+        use_bos=False,
+        use_choch=False,
+        name="EmaPivotChoch",
+    ),
+    bar_between_signals=2,
+    consider_position=False,
+    position_handler=SteppingHandlerForex(
+        ForexAgent(),
+        stoploss_pip=1,
+        targets_ratio=[1],
+        targets_ratio_volumes=[0.01],
+        trail_stop=True,
+        long_trade=False,
+        short_trade=False,
+    ),
+    heikingashi_chartdata=False,
+)
+
+bchusd_4h = ForexEmaPivotChochTradeConfig(
+    chart=Chart("BCHUSD", TimeFrame.five_minutes),
+    htf_chart=Chart("BCHUSD", TimeFrame.four_hours),
+    n_ltf_candle_check=120,
+    n_htf_candle_check=120,
+    strategy=EmaPivotChochFilter(
+        ema_periods=[20, 40, 60],
+        htf_pivot_length=1,
+        htf_backstep=2,
+        atr_period=14,
+        atr_multiplier=1.0,
+        max_bars_after_pivot=100,
+        choch_pivot_length=2,
+        choch_backstep=2,
+        retrace_fib=0.5,
+        use_fibo_filter=False,
+        use_bos=False,
+        use_choch=False,
+        name="EmaPivotChoch",
+    ),
+    bar_between_signals=2,
+    consider_position=False,
+    position_handler=SteppingHandlerForex(
+        ForexAgent(),
+        stoploss_pip=1,
+        targets_ratio=[1],
+        targets_ratio_volumes=[0.01],
+        trail_stop=True,
+        long_trade=False,
+        short_trade=False,
+    ),
+    heikingashi_chartdata=False,
+)
+
+axsusd_4h = ForexEmaPivotChochTradeConfig(
+    chart=Chart("AXSUSD", TimeFrame.five_minutes),
+    htf_chart=Chart("AXSUSD", TimeFrame.four_hours),
+    n_ltf_candle_check=120,
+    n_htf_candle_check=120,
+    strategy=EmaPivotChochFilter(
+        ema_periods=[20, 40, 60],
+        htf_pivot_length=1,
+        htf_backstep=2,
+        atr_period=14,
+        atr_multiplier=1.0,
+        max_bars_after_pivot=100,
+        choch_pivot_length=2,
+        choch_backstep=2,
+        retrace_fib=0.5,
+        use_fibo_filter=False,
+        use_bos=False,
+        use_choch=False,
+        name="EmaPivotChoch",
+    ),
+    bar_between_signals=2,
+    consider_position=False,
+    position_handler=SteppingHandlerForex(
+        ForexAgent(),
+        stoploss_pip=1,
+        targets_ratio=[1],
+        targets_ratio_volumes=[0.01],
+        trail_stop=True,
+        long_trade=False,
+        short_trade=False,
+    ),
+    heikingashi_chartdata=False,
+)
+
+avxusd_4h = ForexEmaPivotChochTradeConfig(
+    chart=Chart("AVXUSD", TimeFrame.five_minutes),
+    htf_chart=Chart("AVXUSD", TimeFrame.four_hours),
     n_ltf_candle_check=120,
     n_htf_candle_check=120,
     strategy=EmaPivotChochFilter(
