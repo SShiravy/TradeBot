@@ -1,3 +1,5 @@
+from typing import Literal
+
 from ChartModule.models import Candle, MarketSide, CandlesSource, TimeFrame
 from ChartModule.Indicators.models import IndicatorBaseModel
 from ChartModule.Indicators.lines import Line
@@ -39,7 +41,7 @@ class MTREvent:
 
 @dataclass(slots=True)
 class TrendlineModel:
-    direction: MarketSide
+    side: Literal[MarketSide.BEARISH,MarketSide.BULLISH]
     source: CandlesSource
     base_index: int
     base_candle: Candle
@@ -70,7 +72,7 @@ class TrendlineModel:
     @property
     def role(self) -> MarketSide:
         if self.aligned_only:
-            return self.direction
+            return self.side
         return MarketSide.BULLISH if self.slope > 0 else MarketSide.BEARISH
 
     @property
@@ -83,7 +85,7 @@ class TrendlineModel:
 
     def __str__(self) -> str:
         return (
-            f"{self.direction}|base={self.base_candle.time}"
+            f"{self.side}|base={self.base_candle.time}"
             f"|broken={self.broken}|score={self.score}"
         )
 
@@ -222,14 +224,14 @@ class AutoTrendlines(IndicatorBaseModel):
 
     def _count_active(self, direction: MarketSide) -> int:
         return sum(
-            1 for line in self._lines if not line.broken and line.direction is direction
+            1 for line in self._lines if not line.broken and line.side is direction
         )
 
     def _find_most_recent_active(self, direction: MarketSide) -> TrendlineModel | None:
         candidates = [
             line
             for line in self._lines
-            if not line.broken and line.direction is direction
+            if not line.broken and line.side is direction
         ]
         if not candidates:
             return None
@@ -239,7 +241,7 @@ class AutoTrendlines(IndicatorBaseModel):
         candidates = [
             line
             for line in self._lines
-            if not line.broken and line.direction is direction
+            if not line.broken and line.side is direction
         ]
         if not candidates:
             return None
@@ -288,7 +290,7 @@ class AutoTrendlines(IndicatorBaseModel):
 
     def _add_new_line(
         self,
-        direction: MarketSide,
+        direction: Literal[MarketSide.BEARISH,MarketSide.BULLISH],
         base_index: int,
         base_candle: Candle,
         slope: float,
@@ -305,7 +307,7 @@ class AutoTrendlines(IndicatorBaseModel):
             CandlesSource.Low if direction is MarketSide.BULLISH else CandlesSource.High
         )
         new_line = TrendlineModel(
-            direction=direction,
+            side=direction,
             source=source,
             base_index=base_index,
             base_candle=base_candle,
@@ -322,7 +324,7 @@ class AutoTrendlines(IndicatorBaseModel):
 
     def _try_merge_or_add(
         self,
-        direction: MarketSide,
+        direction: Literal[MarketSide.BEARISH,MarketSide.BULLISH],
         base_index: int,
         base_candle: Candle,
         new_index: int,
@@ -373,7 +375,7 @@ class AutoTrendlines(IndicatorBaseModel):
             line_i = active[i]
             for j in range(i + 1, len(active)):
                 line_j = active[j]
-                if line_i.direction is not line_j.direction:
+                if line_i.side is not line_j.side:
                     continue
 
                 ref_index = max(line_i.base_index, line_j.base_index)
@@ -581,7 +583,7 @@ class AutoTrendlines(IndicatorBaseModel):
 
             line.end_candle = candle
             line_value = line.value_at(candle.timestamp)
-            is_support = line.direction is MarketSide.BULLISH
+            is_support = line.side is MarketSide.BULLISH
 
             touched = (
                 abs(candle.low - line_value) <= touch_tol
@@ -663,7 +665,7 @@ class AutoTrendlines(IndicatorBaseModel):
             for line in self.data:
                 if line.broken and not show_archived:
                     continue
-                color = "#26a69a" if line.direction is MarketSide.BULLISH else "#e53935"
+                color = "#26a69a" if line.side is MarketSide.BULLISH else "#e53935"
                 plot.draw_line(
                     line.base_candle.time,
                     line.base_price,
