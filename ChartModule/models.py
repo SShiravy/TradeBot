@@ -4,7 +4,8 @@ from typing import Iterator, Literal, overload
 from enum import Enum
 import pandas as pd
 import numpy as np
-from copy import copy, replace
+from copy import replace
+from ChartModule.timing import TimeHandler
 
 
 class TimeFrame(Enum):
@@ -195,26 +196,7 @@ class ChartData:
     close: np.ndarray = field(default_factory=lambda: np.array([]))
     volume: np.ndarray = field(default_factory=lambda: np.array([]))
     timestamps: np.ndarray = field(default_factory=lambda: np.array([], dtype=np.int64))
-
-    _MS_THRESHOLD = (
-        10**12
-    )  # timestamps above this are almost certainly milliseconds, not seconds
-
-    def validate_timestamps(self, auto_fix: bool = False) -> None:
-        """
-        Ensure self.timestamps are second-precision Unix timestamps.
-        Raises ValueError if millisecond-precision values are detected (unless auto_fix=True).
-        """
-        if len(self.timestamps) == 0:
-            return
-
-        if self.timestamps.max() >= self._MS_THRESHOLD:
-            if not auto_fix:
-                raise ValueError(
-                    "Timestamps appear to be in milliseconds, not seconds. "
-                    "Call with auto_fix=True to convert automatically, or fix the data source."
-                )
-            self.timestamps = (self.timestamps // 1000).astype(self.timestamps.dtype)
+    indices: np.ndarray = field(init=False)
 
     def __len__(self):
         return self.timestamps.shape[0]
@@ -249,7 +231,7 @@ class ChartData:
         raise TypeError(f"Invalid index type: {type(key)}")
 
     def __iter__(self) -> Iterator[Candle]:
-        for i in range(len(self)):
+        for i in self.indices:
             yield self.candle(i)
 
     def __str__(self):
@@ -370,7 +352,7 @@ class ChartData:
         )
 
     def __post_init__(self):
-        self.validate_timestamps(auto_fix=True)
+        self.timestamps = TimeHandler.validate_timestamps(self.timestamps,auto_fix=True)
         if self.chart.chart_type is ChartType.Heikinashi:
             ha_open, ha_high, ha_low, ha_close = self._compute_heikinashi(
                 self.open, self.high, self.low, self.close
@@ -381,6 +363,8 @@ class ChartData:
                 ha_low,
                 ha_close,
             )
+        self.indices = np.arange(len(self), dtype=np.int64)
+
 
     # TODO: cache these methods to avoid repeated calculations
     @property

@@ -1,7 +1,9 @@
 from __future__ import annotations
 import time
 from datetime import datetime, timezone
-from typing import Optional, Union
+from typing import Optional, Union, overload
+
+import numpy as np
 
 TimeInput = Union[int, float, str, datetime]
 
@@ -10,6 +12,10 @@ class TimeHandler:
     """In backtest mode, set_time() freezes/advances time for every caller"""
     _override: Optional[int] = None
     _tz = timezone.utc
+    
+    _MS_THRESHOLD = 10**12
+    _US_THRESHOLD = 10**15
+    _NS_THRESHOLD = 10**18
 
     @classmethod
     def now(cls) -> int:
@@ -37,15 +43,58 @@ class TimeHandler:
     @classmethod
     def is_backtest(cls) -> bool:
         return cls._override is not None
+    
+    @classmethod
+    @overload
+    def validate_timestamps(cls, timestamps: int | float, auto_fix: bool = True) -> int:...
+    @classmethod
+    @overload
+    def validate_timestamps(cls, timestamps: np.ndarray, auto_fix: bool = True) -> np.ndarray:...
+
+    @classmethod
+    def validate_timestamps(
+        cls, timestamps: int | float | np.ndarray, auto_fix: bool = True
+    ) -> int | np.ndarray:
+        """
+        Ensure timestamp(s) are integer Unix seconds. Detects millisecond/
+        microsecond/nanosecond precision by magnitude and converts down to
+        seconds. Accepts a scalar or an np.ndarray; returns the same shape.
+        Raises ValueError if precision looks wrong and auto_fix=False.
+        """
+        is_scalar = not isinstance(timestamps, np.ndarray)
+        arr = np.atleast_1d(np.asarray(timestamps, dtype=np.float64))
+
+        if arr.size == 0:
+            return arr.astype(np.int64) if not is_scalar else 0
+
+        sample = arr[0]
+
+        divisor = 1
+        if sample >= cls._NS_THRESHOLD:
+            divisor = 1_000_000_000
+        elif sample >= cls._US_THRESHOLD:
+            divisor = 1_000_000
+        elif sample >= cls._MS_THRESHOLD:
+            divisor = 1_000
+
+        if divisor != 1:
+            if not auto_fix:
+                raise ValueError(
+                    f"Timestamp(s) do not appear to be in seconds (sample: {sample}). "
+                    "Call with auto_fix=True to convert automatically."
+                )
+            arr = arr // divisor
+
+        arr = arr.astype(np.int64)
+        return int(arr[0]) if is_scalar else arr
 
     @classmethod
     def to_timestamp(cls, value: TimeInput) -> int:
-        """Normalize datetime/str/int/float -> integer unix seconds"""
         if isinstance(value, datetime):
             dt = value if value.tzinfo else value.replace(tzinfo=cls._tz)
             return int(dt.timestamp())
         if isinstance(value, (int, float)):
-            return int(value)
+            return cls.validate_timestamps(value) 
         if isinstance(value, str):
             return int(cls.parse(value).timestamp())
         raise TypeError(f"Unsupported time type: {type(value)}")

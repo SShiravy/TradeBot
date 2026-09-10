@@ -3,12 +3,12 @@ from copy import copy
 from dataclasses import dataclass, field
 from datetime import timedelta
 from ChartModule.models import Chart
-from TradingModule.timing import TimeHandler
+from ChartModule.timing import TimeHandler
 from TradingModule.models import Position, PositionSide
 
 
 @dataclass(slots=True)
-class PositionsSummary:
+class TradesReport:
     chart: Chart
     side: PositionSide
     source: str
@@ -53,14 +53,14 @@ class PositionsSummary:
     def __add__(self, other):
         if isinstance(other, (int, float)):
             return self
-        if isinstance(other, PositionsSummary):
+        if isinstance(other, TradesReport):
             if self.forex_report != other.forex_report:
                 raise ValueError(
                     f"two report must be on forex or both not: {self.forex_report} and {other.forex_report}"
                 )
             first_time = min(self.first_time, other.first_time)
             last_time = max(self.last_time, other.last_time)
-            report = PositionsSummary(
+            report = TradesReport(
                 self.chart, self.side, self.source, first_time, last_time
             )
             report.pnl = self.pnl + other.pnl
@@ -153,7 +153,7 @@ class PositionsSummary:
         """
         return list of reports with uniqe identifier(chart and side)
         """
-        reports_dict: dict[str, PositionsSummary] = {}
+        reports_dict: dict[str, TradesReport] = {}
         for pos in all_positions:
             report = cls.generate_position_report(pos)
             if not reports_dict.get(report.identifier):
@@ -164,7 +164,7 @@ class PositionsSummary:
         return list(reports_dict.values())
 
     @classmethod
-    def give_overall_report(cls, all_reports: list) -> "PositionsSummary":
+    def give_overall_report(cls, all_reports: list) -> "TradesReport":
         report = sum(all_reports)
         return report  # type: ignore
 

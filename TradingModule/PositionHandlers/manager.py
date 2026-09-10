@@ -1,7 +1,7 @@
 from ChartModule import Signal, MarketSide, Chart, TimeFrame
 from TradingModule import Position, PositionSide, ExchangeAgent
 from TradingModule.PositionHandlers.trading_constraints import TradingConstraint
-from TradingModule.TimeHandler import TimeHandler
+from ChartModule.timing import TimeHandler
 from TradingModule.models import Command, PositionType, Trigger
 from TradingModule.Commands import trade_commands
 from abc import ABC, abstractmethod
@@ -62,21 +62,24 @@ class PositionGenerator(ABC):
         return position
 
 
-
-
 class PositionsManager(ABC):
     def __init__(self,         
                  exchange_agent: ExchangeAgent,
                  generator:PositionGenerator,
                  long_trade: bool = True,
                  short_trade: bool = True,
-                 trading_constraints: list[TradingConstraint] = []):
+                 trading_constraints: list[TradingConstraint] = [],
+                 send_report: bool = True,
+                 agent_check: bool = False
+                ):
         
         self.exchange_agent = exchange_agent
         self.long_trade: bool = long_trade
         self.short_trade: bool = short_trade
         self.trading_constraints = trading_constraints
+        self.send_report = send_report
         self.generator = generator
+        self.agent_check = agent_check
         self.current_positions: list[Position] = []
         self.closed_positions: list[Position] = []
 
@@ -95,10 +98,12 @@ class PositionsManager(ABC):
         else:  # signal.side is MarketSide.BULLISH:
             if not self.long_trade:
                 return None
-        # TODO: check constraints
         entry_price = self.exchange_agent.get_current_tick(signal.chart)
         pos = await self.generator.generate(signal, entry_price, *args, **kwargs)
         if pos:
+            for constraint in self.trading_constraints:
+                if not constraint.check(signal,pos,self.current_positions,self.closed_positions):
+                    return None
             self.current_positions.append(pos)
         return pos
 
@@ -127,8 +132,12 @@ class PositionsManager(ABC):
             if trigger.check(ticks):
                 continue
             return
-                
-    def candles_check(self, position: Position) -> Command | None:
+        
+    def agent_handler(self, position: Position)->Command | None:
+        # TODO: complete here
+        pass
+
+    def ochl_handler(self, position: Position) -> Command | None:
         ticks = []
         if position.last_check_timestamp is None:
             position.last_check_timestamp = TimeHandler.now()
@@ -138,18 +147,20 @@ class PositionsManager(ABC):
         if not chartdata:
             logger.warning(f"getting candles failed for {position}")
             return
-        for t in chartdata.timestamps:
-            if t < position.last_check_timestamp:
+        for candle in chartdata:
+            if candle.timestamp < position.last_check_timestamp:
                 continue
             ticks += [candle.open, candle.low, candle.high, candle.close]
-            position.previous_check = candle.time
-        return self.handler(position, ticks)
+        position.last_check_timestamp = chartdata[-1].timestamp
+        return self.triggers_handler(position, np.ndarray(ticks))
 
     def manage_positions(self):
-        all_pos = self.generator.open_positions.copy()
+        all_pos = self.current_positions.copy()
         for pos in all_pos:
+            if self.agent_handler:
+                self.agent_handler(pos)
+            else:
+                self.ochl_handler(pos)
             if pos.closed_timestamp:
-                self.generator.closed_positions.append(pos)
-                self.generator.open_positions.remove(pos)
-                continue
-            self.candles_check(pos)
+                self.closed_positions.append(pos)
+                self.current_positions.remove(pos)

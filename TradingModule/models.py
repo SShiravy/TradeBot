@@ -1,4 +1,3 @@
-from copy import copy
 import numpy as np
 from ChartModule.models import (
     Chart,
@@ -7,13 +6,12 @@ from ChartModule.models import (
     Candle,
     Signal,
 )
-from TradingModule.timing import TimeHandler
+from ChartModule.timing import TimeHandler
 from ChartModule.Indicators import IndicatorBaseModel, SupportCandleConditions
-from ChartModule.plot import Plot
 from dataclasses import asdict, dataclass, field
 from datetime import datetime
 from abc import ABC, abstractmethod
-from datetime import timezone, timedelta
+from datetime import timezone
 from typing import Any, Literal, Optional
 from enum import Enum
 import hashlib
