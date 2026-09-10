@@ -2,10 +2,8 @@ from BitUnix import BitUnixAgent
 from ChartModule import Chart, ChartData, Candle
 from DivergenceStrategy.divergence import Divergence, DivergenceTradeConfig
 from ChochQueueStrategy.choch_queue import ChochQueueFilter, ChochQueueTradeConfig
-from EmaPivotChochStrategy.ema_pivot_choch import (
-    EmaPivotChochFilter,
-    EmaPivotChochTradeConfig,
-)
+from EmaPivotChochStrategy.ema_pivot_choch import EmaPivotChochFilter, EmaPivotChochTradeConfig
+from EmaTouchStrategy.ema_touch import EmaTouchFilter, EmaTouchTradeConfig
 from datetime import datetime, timezone, timedelta
 from dataclasses import dataclass
 import logging
@@ -96,6 +94,29 @@ class BitUnixChochQueueTradeConfig(ChochQueueTradeConfig):
 class BitUnixEmaPivotChochTradeConfig(EmaPivotChochTradeConfig):
     agent: BitUnixAgent  # type: ignore[override]
     strategy: EmaPivotChochFilter  # type: ignore[override]
+
+    def give_delay(self, last_candle: Candle, jump=False) -> timedelta:
+        delay = (
+            self.chart.timeframe.time_delta * 2
+        )  # bitunix does'nt give the current not closed candle
+        if jump:
+            delay *= self.bar_between_signals
+        next_timestamp = int(
+            round(last_candle.time.astimezone(tz=timezone.utc).timestamp())
+            + delay.total_seconds()
+        )
+        now_timestamp = round(datetime.now(tz=timezone.utc).timestamp())
+        sleep_time_based_on_timestamp = next_timestamp - now_timestamp
+        logging.debug(
+            f"{next_timestamp=} | {last_candle.time.astimezone(tz=timezone.utc).timestamp()} | {now_timestamp} | {sleep_time_based_on_timestamp=}"
+        )
+        return timedelta(seconds=sleep_time_based_on_timestamp + 1)
+
+
+@dataclass(kw_only=True)
+class BitUnixEmaTouchTradeConfig(EmaTouchTradeConfig):
+    agent: BitUnixAgent  # type: ignore[override]
+    strategy: EmaTouchFilter  # type: ignore[override]
 
     def give_delay(self, last_candle: Candle, jump=False) -> timedelta:
         delay = (

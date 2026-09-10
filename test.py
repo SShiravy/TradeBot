@@ -158,7 +158,7 @@ def test_choch_queue():
         )
 
     plot = ChartPlot(chart_data, len(chart_data.candles))
-    plot.plot()
+    _ = plot.ax
     choch.draw_all(plot)
     plot.show()
 
@@ -287,7 +287,7 @@ def test_auto_trendlines():
         logging.info(line)
 
     plot = ChartPlot(chart_data, len(chart_data.candles))
-    plot.plot()
+    _ = plot.ax
     auto_trendlines.plot(plot)
     plot.show()
 
@@ -331,7 +331,7 @@ def test_sr_zones():
         logging.info(zone)
 
     plot = ChartPlot(chart_data, len(chart_data.candles))
-    plot.plot()
+    _ = plot.ax
     sr_zones.plot(
         plot,
         min_score_percentile=0,
@@ -340,6 +340,63 @@ def test_sr_zones():
         show_labels=True,
         show_live=True,
     )
+    plot.show()
+
+
+def test_ema_touch(n_candles: int = 1000, warm_up_candles: int = 30):
+    from ChartModule.models import Chart, TimeFrame
+    from ChartModule.plot import ChartPlot
+    from ChartModule.Indicators.moving_avg import EMA
+    from EmaTouchStrategy.ema_touch import EmaTouchFilter
+    from Forex.agent import ForexAgent
+
+    chart = Chart("XAUUSD", TimeFrame.five_minutes)
+    chartdata = ForexAgent().get_chartdata(chart, n_candles)
+    if chartdata is None:
+        raise ValueError
+
+    logging.info(
+        f"fetched: {len(chartdata.candles)} candles, "
+        f"{chartdata.candles[0].time} -> {chartdata.candles[-1].time}"
+    )
+
+    ema_touch = EmaTouchFilter(
+        ema_periods=[20],
+        min_candles_between_touches=15,
+        max_candles_between_touches=200,
+        reanchor_invalid_touch=False,
+    )
+
+    signals = []
+    candles = chartdata.candles
+    for i in range(warm_up_candles, len(candles)):
+        window = chartdata.give_sub_chartdata(candles[: i + 1])
+        signal = ema_touch.check_signal(window)
+        if signal is not None:
+            signals.append(signal)
+
+    logging.info(f"found {len(signals)} EmaTouch signals over {len(candles)} LTF candles:")
+    for s in signals:
+        logging.info(f"  {s}")
+
+    plot = ChartPlot(chartdata, len(chartdata.candles))
+    _ = plot.ax
+    # always show every configured EMA, regardless of whether a signal
+    # happened to form on it in this window, so the chart is useful even
+    # when `signals` is empty.
+    colors = ema_touch._ema_colors()
+    for period in ema_touch.ema_periods:
+        ema_values = EMA(period).set(candles)
+        plot.linear_plot(
+            list(ema_values.keys()),
+            list(ema_values.values()),
+            color=colors[period],
+            legend=f"EMA{period}",
+        )
+    if not signals:
+        logging.info("no signals found in this window, showing raw EMAs instead")
+    else:
+        ema_touch.draw_all(plot, signals, draw_indicators=True)
     plot.show()
 
 
@@ -356,11 +413,13 @@ if __name__ == "__main__":
 
     # test_choch_queue()
 
-    test_ema_pivot_choch()
+    # test_ema_pivot_choch()
 
     # test_auto_trendlines()
 
     # test_sr_zones()
+
+    test_ema_touch()
 
     # new_backtest()
 

@@ -4,6 +4,7 @@ from BitUnix.bot_configs import (
     BitUnixDiverTradeConfig,
     BitUnixChochQueueTradeConfig,
     BitUnixEmaPivotChochTradeConfig,
+    BitUnixEmaTouchTradeConfig,
 )
 
 __all__ = [
@@ -12,4 +13,5 @@ __all__ = [
     "BitUnixDiverTradeConfig",
     "BitUnixChochQueueTradeConfig",
     "BitUnixEmaPivotChochTradeConfig",
+    "BitUnixEmaTouchTradeConfig",
 ]

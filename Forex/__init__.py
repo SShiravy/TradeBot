@@ -3,6 +3,7 @@ from Forex.bot_config import (
     ForexDiverTradeConfig,
     ForexChochQueueTradeConfig,
     ForexEmaPivotChochTradeConfig,
+    ForexEmaTouchTradeConfig,
 )
 
 
@@ -11,4 +12,5 @@ __all__ = [
     "ForexDiverTradeConfig",
     "ForexChochQueueTradeConfig",
     "ForexEmaPivotChochTradeConfig",
+    "ForexEmaTouchTradeConfig",
 ]
