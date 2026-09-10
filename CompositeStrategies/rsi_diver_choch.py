@@ -8,9 +8,11 @@ from ChartModule.models import (
     Candle,
     Chart,
     ChartData,
+    MarketSide,
 )
 from ChartModule.plot import ChartPlot, ChartWithOscillatorPlot
 from DivergenceStrategy.oscillator_divergence import (
+    OscillatorDiverSignal,
     OscillatorDivergence,
 )
 from DivergenceStrategy.oscillator_double_divergence import OscillatorDoubleDiverSignal
@@ -27,14 +29,15 @@ logger = CustomLogger(
 
 
 @dataclass(kw_only=True)
-class Rsi3PushChochConfig(TradeConfig):
+class RsiDiverChochConfig(TradeConfig):
     strategy: OscillatorDivergence  # type: ignore[override]
     choch_strategy: ChochQueueFilter  # type: ignore[override]
     rsi_chart: Chart
     same_line_source: bool = True
+    double_diver: bool = True
     mtr_indicator: AutoTrendlines | None = None
     n_candle_confirmation: int = 100
-    last_3push_signal: OscillatorDoubleDiverSignal | None = field(
+    last_diver_signal: OscillatorDoubleDiverSignal | OscillatorDiverSignal | None = field(
         default=None, init=False
     )
     last_signal_msg_id: int | None = field(default=None, init=False)
@@ -54,6 +57,23 @@ class Rsi3PushChochConfig(TradeConfig):
         )
         if first_signal is None:
             return None
+        if not self.double_diver:
+            logger.info(f"OscillatorDiver Signal:{first_signal}")
+            if self.send_signal:
+                self.strategy.oscillator_indicator.set(candles=chartdata.candles)
+                plot = ChartWithOscillatorPlot(
+                    chartdata,
+                    self.strategy.oscillator_indicator.data,
+                    plot_n_candles=self.n_candle_check,
+                )
+                self.strategy.draw(plot, first_signal, draw_indicators=True)
+                self.strategy.oscillator_indicator.plot(plot, plot.oscillator_ax)
+                self.last_diver_signal = first_signal
+                self.last_signal_msg_id = await TelegramReporter().new_signal(
+                    first_signal, plot
+                )
+
+
         left_index = chartdata.candles.index(first_signal.main_chart_line.start_candle)
         second_sub_chart = copy(chartdata)
         second_sub_chart.candles = chartdata.candles[: left_index + 2]
@@ -84,7 +104,7 @@ class Rsi3PushChochConfig(TradeConfig):
                 plot, second_signal, draw_indicators=False, mark_signal=False
             )
             self.strategy.oscillator_indicator.plot(plot, plot.oscillator_ax)
-            self.last_3push_signal = double_diver_signal
+            self.last_diver_signal = double_diver_signal
             self.last_signal_msg_id = await TelegramReporter().new_signal(
                 double_diver_signal, plot
             )
@@ -105,8 +125,9 @@ class Rsi3PushChochConfig(TradeConfig):
             and self.mtr_indicator.mtr_events[-1].candle == chartdata.candles[-1]
         ):
             mtr = self.mtr_indicator.mtr_events[-1]
+            side = MarketSide.BULLISH if mtr.bullish else MarketSide.BEARISH
             self.last_mtr_signal = MTRSignal(
-                chartdata.chart, chartdata.candles[-1], mtr.side, "MTR", mtr
+                chartdata.chart, chartdata.candles[-1], side, "MTR", mtr
             )
             if self.send_signal:
                 plot = ChartPlot(chartdata, self.n_candle_check)
@@ -131,20 +152,20 @@ class Rsi3PushChochConfig(TradeConfig):
     ) -> None | ChochSignal | tuple[ChochSignal, Position]:
         # Check for 3-push signal
         await self._check_rsi(chartdata)
-        if self.last_3push_signal is None:
+        if self.last_diver_signal is None:
             return None
 
         # Check if the last 3-push signal is too old
         elapsed_time = (
             choch_chartdata.candles[-1].time
-            - self.last_3push_signal.main_chart_line.end_candle.time
+            - self.last_diver_signal.main_chart_line.end_candle.time
         ).total_seconds()
         time_condition = (
             self.n_candle_confirmation
             * choch_chartdata.chart.timeframe.time_delta.total_seconds()
         )
         if elapsed_time > time_condition:
-            self.last_3push_signal = None
+            self.last_diver_signal = None
             self.last_signal_msg_id = None
             logging.warning(f"rsi3push was too old {elapsed_time=} > {time_condition}")
             return None
@@ -157,9 +178,9 @@ class Rsi3PushChochConfig(TradeConfig):
             return None
 
         # Check if the CHoCH signal is in the same direction as the last 3-push signal
-        if choch_signal.side != self.last_3push_signal.side:
+        if choch_signal.side != self.last_diver_signal.side:
             logging.warning(
-                f"different side for rsi3push & choch: {self.last_3push_signal.side} | {choch_signal.side}"
+                f"different side for rsi3push & choch: {self.last_diver_signal.side} | {choch_signal.side}"
             )
             return None
 
@@ -183,7 +204,7 @@ class Rsi3PushChochConfig(TradeConfig):
             return None
         logger.info("RSI 3push & CHoCH Signal")
         position.reply_msg_id = self.last_signal_msg_id
-        self.last_3push_signal = None
+        self.last_diver_signal = None
         self.last_signal_msg_id = None
         return choch_signal, position
 

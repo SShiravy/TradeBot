@@ -2,13 +2,13 @@ from ChartModule.Indicators.models import SupportCandleConditions
 from ChartModule.Indicators.rsi import RSI
 from ChartModule.models import Chart, TimeFrame
 from ChochQueueStrategy.choch_queue import ChochQueueFilter
-from CompositeStrategies.rsi_3push_choch import Rsi3PushChochConfig
+from CompositeStrategies.rsi_diver_choch import RsiDiverChochConfig
 from DivergenceStrategy.oscillator_divergence import OscillatorDivergence
 from Forex.agent import ForexAgent
 from TradingModule.PositionHandlers.stepping_handler import SteppingHandlerForex
 
 
-xau_5m_1m = Rsi3PushChochConfig(
+xau_5m_1m = RsiDiverChochConfig(
     rsi_chart=Chart("XAUUSD!", TimeFrame.five_minutes),
     chart=Chart("XAUUSD!", TimeFrame.one_minute),
     agent=ForexAgent(),
@@ -54,7 +54,7 @@ xau_5m_1m = Rsi3PushChochConfig(
 )
 
 
-xau_15m_1m = Rsi3PushChochConfig(
+xau_15m_1m = RsiDiverChochConfig(
     rsi_chart=Chart("XAUUSD!", TimeFrame.fifteen_minutes),
     chart=Chart("XAUUSD!", TimeFrame.one_minute),
     agent=ForexAgent(),
@@ -100,7 +100,7 @@ xau_15m_1m = Rsi3PushChochConfig(
 )
 
 
-eurusd_5m_1m = Rsi3PushChochConfig(
+eurusd_5m_1m = RsiDiverChochConfig(
     rsi_chart=Chart("EURUSD!", TimeFrame.five_minutes),
     chart=Chart("EURUSD!", TimeFrame.one_minute),
     agent=ForexAgent(),
@@ -145,7 +145,7 @@ eurusd_5m_1m = Rsi3PushChochConfig(
     heikingashi_chartdata=False,
 )
 
-usdjpy_5m_1m = Rsi3PushChochConfig(
+usdjpy_5m_1m = RsiDiverChochConfig(
     rsi_chart=Chart("USDJPY!", TimeFrame.five_minutes),
     chart=Chart("USDJPY!", TimeFrame.one_minute),
     agent=ForexAgent(),
@@ -190,7 +190,7 @@ usdjpy_5m_1m = Rsi3PushChochConfig(
     heikingashi_chartdata=False,
 )
 
-gbpusd_5m_1m = Rsi3PushChochConfig(
+gbpusd_5m_1m = RsiDiverChochConfig(
     rsi_chart=Chart("GBPUSD!", TimeFrame.five_minutes),
     chart=Chart("GBPUSD!", TimeFrame.one_minute),
     agent=ForexAgent(),
@@ -235,7 +235,7 @@ gbpusd_5m_1m = Rsi3PushChochConfig(
     heikingashi_chartdata=False,
 )
 
-usdchf_5m_1m = Rsi3PushChochConfig(
+usdchf_5m_1m = RsiDiverChochConfig(
     rsi_chart=Chart("USDCHF!", TimeFrame.five_minutes),
     chart=Chart("USDCHF!", TimeFrame.one_minute),
     agent=ForexAgent(),
@@ -280,7 +280,7 @@ usdchf_5m_1m = Rsi3PushChochConfig(
     heikingashi_chartdata=False,
 )
 
-audusd_5m_1m = Rsi3PushChochConfig(
+audusd_5m_1m = RsiDiverChochConfig(
     rsi_chart=Chart("AUDUSD!", TimeFrame.five_minutes),
     chart=Chart("AUDUSD!", TimeFrame.one_minute),
     agent=ForexAgent(),
@@ -325,7 +325,7 @@ audusd_5m_1m = Rsi3PushChochConfig(
     heikingashi_chartdata=False,
 )
 
-usdcad_5m_1m = Rsi3PushChochConfig(
+usdcad_5m_1m = RsiDiverChochConfig(
     rsi_chart=Chart("USDCAD!", TimeFrame.five_minutes),
     chart=Chart("USDCAD!", TimeFrame.one_minute),
     agent=ForexAgent(),
@@ -370,7 +370,7 @@ usdcad_5m_1m = Rsi3PushChochConfig(
     heikingashi_chartdata=False,
 )
 
-nzdusd_5m_1m = Rsi3PushChochConfig(
+nzdusd_5m_1m = RsiDiverChochConfig(
     rsi_chart=Chart("NZDUSD!", TimeFrame.five_minutes),
     chart=Chart("NZDUSD!", TimeFrame.one_minute),
     agent=ForexAgent(),
@@ -416,7 +416,7 @@ nzdusd_5m_1m = Rsi3PushChochConfig(
 )
 
 
-eurusd_15m_1m = Rsi3PushChochConfig(
+eurusd_15m_1m = RsiDiverChochConfig(
     rsi_chart=Chart("EURUSD!", TimeFrame.fifteen_minutes),
     chart=Chart("EURUSD!", TimeFrame.five_minutes),
     agent=ForexAgent(),
@@ -461,7 +461,7 @@ eurusd_15m_1m = Rsi3PushChochConfig(
     heikingashi_chartdata=False,
 )
 
-usdjpy_15m_1m = Rsi3PushChochConfig(
+usdjpy_15m_1m = RsiDiverChochConfig(
     rsi_chart=Chart("USDJPY!", TimeFrame.fifteen_minutes),
     chart=Chart("USDJPY!", TimeFrame.five_minutes),
     agent=ForexAgent(),
@@ -506,7 +506,7 @@ usdjpy_15m_1m = Rsi3PushChochConfig(
     heikingashi_chartdata=False,
 )
 
-gbpusd_15m_1m = Rsi3PushChochConfig(
+gbpusd_15m_1m = RsiDiverChochConfig(
     rsi_chart=Chart("GBPUSD!", TimeFrame.fifteen_minutes),
     chart=Chart("GBPUSD!", TimeFrame.five_minutes),
     agent=ForexAgent(),
@@ -551,7 +551,7 @@ gbpusd_15m_1m = Rsi3PushChochConfig(
     heikingashi_chartdata=False,
 )
 
-usdchf_15m_1m = Rsi3PushChochConfig(
+usdchf_15m_1m = RsiDiverChochConfig(
     rsi_chart=Chart("USDCHF!", TimeFrame.fifteen_minutes),
     chart=Chart("USDCHF!", TimeFrame.five_minutes),
     agent=ForexAgent(),
@@ -596,7 +596,7 @@ usdchf_15m_1m = Rsi3PushChochConfig(
     heikingashi_chartdata=False,
 )
 
-audusd_15m_1m = Rsi3PushChochConfig(
+audusd_15m_1m = RsiDiverChochConfig(
     rsi_chart=Chart("AUDUSD!", TimeFrame.fifteen_minutes),
     chart=Chart("AUDUSD!", TimeFrame.five_minutes),
     agent=ForexAgent(),
@@ -641,7 +641,7 @@ audusd_15m_1m = Rsi3PushChochConfig(
     heikingashi_chartdata=False,
 )
 
-usdcad_15m_1m = Rsi3PushChochConfig(
+usdcad_15m_1m = RsiDiverChochConfig(
     rsi_chart=Chart("USDCAD!", TimeFrame.fifteen_minutes),
     chart=Chart("USDCAD!", TimeFrame.five_minutes),
     agent=ForexAgent(),
@@ -686,7 +686,7 @@ usdcad_15m_1m = Rsi3PushChochConfig(
     heikingashi_chartdata=False,
 )
 
-nzdusd_15m_1m = Rsi3PushChochConfig(
+nzdusd_15m_1m = RsiDiverChochConfig(
     rsi_chart=Chart("NZDUSD!", TimeFrame.fifteen_minutes),
     chart=Chart("NZDUSD!", TimeFrame.five_minutes),
     agent=ForexAgent(),
@@ -736,7 +736,7 @@ nzdusd_15m_1m = Rsi3PushChochConfig(
 # CRYPTO ---------------------------------------------------------
 
 
-adausd_1h_5m = Rsi3PushChochConfig(
+adausd_1h_5m = RsiDiverChochConfig(
     rsi_chart=Chart("ADAUSD", TimeFrame.one_hour),
     chart=Chart("ADAUSD", TimeFrame.five_minutes),
     agent=ForexAgent(),
@@ -781,7 +781,7 @@ adausd_1h_5m = Rsi3PushChochConfig(
     heikingashi_chartdata=False,
 )
 
-aveusd_1h_5m = Rsi3PushChochConfig(
+aveusd_1h_5m = RsiDiverChochConfig(
     rsi_chart=Chart("AVEUSD", TimeFrame.one_hour),
     chart=Chart("AVEUSD", TimeFrame.five_minutes),
     agent=ForexAgent(),
@@ -826,7 +826,7 @@ aveusd_1h_5m = Rsi3PushChochConfig(
     heikingashi_chartdata=False,
 )
 
-filusd_1h_5m = Rsi3PushChochConfig(
+filusd_1h_5m = RsiDiverChochConfig(
     rsi_chart=Chart("FILUSD", TimeFrame.one_hour),
     chart=Chart("FILUSD", TimeFrame.five_minutes),
     agent=ForexAgent(),
@@ -871,7 +871,7 @@ filusd_1h_5m = Rsi3PushChochConfig(
     heikingashi_chartdata=False,
 )
 
-atomusd_1h_5m = Rsi3PushChochConfig(
+atomusd_1h_5m = RsiDiverChochConfig(
     rsi_chart=Chart("ATOMUSD", TimeFrame.one_hour),
     chart=Chart("ATOMUSD", TimeFrame.five_minutes),
     agent=ForexAgent(),
@@ -916,7 +916,7 @@ atomusd_1h_5m = Rsi3PushChochConfig(
     heikingashi_chartdata=False,
 )
 
-apeusd_1h_5m = Rsi3PushChochConfig(
+apeusd_1h_5m = RsiDiverChochConfig(
     rsi_chart=Chart("APEUSD", TimeFrame.one_hour),
     chart=Chart("APEUSD", TimeFrame.five_minutes),
     agent=ForexAgent(),
@@ -961,7 +961,7 @@ apeusd_1h_5m = Rsi3PushChochConfig(
     heikingashi_chartdata=False,
 )
 
-zecusd_1h_5m = Rsi3PushChochConfig(
+zecusd_1h_5m = RsiDiverChochConfig(
     rsi_chart=Chart("ZECUSD", TimeFrame.one_hour),
     chart=Chart("ZECUSD", TimeFrame.five_minutes),
     agent=ForexAgent(),
@@ -1006,7 +1006,7 @@ zecusd_1h_5m = Rsi3PushChochConfig(
     heikingashi_chartdata=False,
 )
 
-neousd_1h_5m = Rsi3PushChochConfig(
+neousd_1h_5m = RsiDiverChochConfig(
     rsi_chart=Chart("NEOUSD", TimeFrame.one_hour),
     chart=Chart("NEOUSD", TimeFrame.five_minutes),
     agent=ForexAgent(),
@@ -1051,7 +1051,7 @@ neousd_1h_5m = Rsi3PushChochConfig(
     heikingashi_chartdata=False,
 )
 
-iotausd_1h_5m = Rsi3PushChochConfig(
+iotausd_1h_5m = RsiDiverChochConfig(
     rsi_chart=Chart("IOTAUSD", TimeFrame.one_hour),
     chart=Chart("IOTAUSD", TimeFrame.five_minutes),
     agent=ForexAgent(),
@@ -1096,7 +1096,7 @@ iotausd_1h_5m = Rsi3PushChochConfig(
     heikingashi_chartdata=False,
 )
 
-xtzusd_1h_5m = Rsi3PushChochConfig(
+xtzusd_1h_5m = RsiDiverChochConfig(
     rsi_chart=Chart("XTZUSD", TimeFrame.one_hour),
     chart=Chart("XTZUSD", TimeFrame.five_minutes),
     agent=ForexAgent(),
@@ -1141,7 +1141,7 @@ xtzusd_1h_5m = Rsi3PushChochConfig(
     heikingashi_chartdata=False,
 )
 
-xrpusd_1h_5m = Rsi3PushChochConfig(
+xrpusd_1h_5m = RsiDiverChochConfig(
     rsi_chart=Chart("XRPUSD", TimeFrame.one_hour),
     chart=Chart("XRPUSD", TimeFrame.five_minutes),
     agent=ForexAgent(),
@@ -1186,7 +1186,7 @@ xrpusd_1h_5m = Rsi3PushChochConfig(
     heikingashi_chartdata=False,
 )
 
-xmrusd_1h_5m = Rsi3PushChochConfig(
+xmrusd_1h_5m = RsiDiverChochConfig(
     rsi_chart=Chart("XMRUSD", TimeFrame.one_hour),
     chart=Chart("XMRUSD", TimeFrame.five_minutes),
     agent=ForexAgent(),
@@ -1231,7 +1231,7 @@ xmrusd_1h_5m = Rsi3PushChochConfig(
     heikingashi_chartdata=False,
 )
 
-xlmusd_1h_5m = Rsi3PushChochConfig(
+xlmusd_1h_5m = RsiDiverChochConfig(
     rsi_chart=Chart("XLMUSD", TimeFrame.one_hour),
     chart=Chart("XLMUSD", TimeFrame.five_minutes),
     agent=ForexAgent(),
@@ -1276,7 +1276,7 @@ xlmusd_1h_5m = Rsi3PushChochConfig(
     heikingashi_chartdata=False,
 )
 
-vetusd_1h_5m = Rsi3PushChochConfig(
+vetusd_1h_5m = RsiDiverChochConfig(
     rsi_chart=Chart("VETUSD", TimeFrame.one_hour),
     chart=Chart("VETUSD", TimeFrame.five_minutes),
     agent=ForexAgent(),
@@ -1321,7 +1321,7 @@ vetusd_1h_5m = Rsi3PushChochConfig(
     heikingashi_chartdata=False,
 )
 
-uniusd_1h_5m = Rsi3PushChochConfig(
+uniusd_1h_5m = RsiDiverChochConfig(
     rsi_chart=Chart("UNIUSD", TimeFrame.one_hour),
     chart=Chart("UNIUSD", TimeFrame.five_minutes),
     agent=ForexAgent(),
@@ -1366,7 +1366,7 @@ uniusd_1h_5m = Rsi3PushChochConfig(
     heikingashi_chartdata=False,
 )
 
-solusd_1h_5m = Rsi3PushChochConfig(
+solusd_1h_5m = RsiDiverChochConfig(
     rsi_chart=Chart("SOLUSD", TimeFrame.one_hour),
     chart=Chart("SOLUSD", TimeFrame.five_minutes),
     agent=ForexAgent(),
@@ -1411,7 +1411,7 @@ solusd_1h_5m = Rsi3PushChochConfig(
     heikingashi_chartdata=False,
 )
 
-mtcusd_1h_5m = Rsi3PushChochConfig(
+mtcusd_1h_5m = RsiDiverChochConfig(
     rsi_chart=Chart("MTCUSD", TimeFrame.one_hour),
     chart=Chart("MTCUSD", TimeFrame.five_minutes),
     agent=ForexAgent(),
@@ -1456,7 +1456,7 @@ mtcusd_1h_5m = Rsi3PushChochConfig(
     heikingashi_chartdata=False,
 )
 
-ltcusd_1h_5m = Rsi3PushChochConfig(
+ltcusd_1h_5m = RsiDiverChochConfig(
     rsi_chart=Chart("LTCUSD", TimeFrame.one_hour),
     chart=Chart("LTCUSD", TimeFrame.five_minutes),
     agent=ForexAgent(),
@@ -1501,7 +1501,7 @@ ltcusd_1h_5m = Rsi3PushChochConfig(
     heikingashi_chartdata=False,
 )
 
-lnkusd_1h_5m = Rsi3PushChochConfig(
+lnkusd_1h_5m = RsiDiverChochConfig(
     rsi_chart=Chart("LNKUSD", TimeFrame.one_hour),
     chart=Chart("LNKUSD", TimeFrame.five_minutes),
     agent=ForexAgent(),
@@ -1546,7 +1546,7 @@ lnkusd_1h_5m = Rsi3PushChochConfig(
     heikingashi_chartdata=False,
 )
 
-dshusd_1h_5m = Rsi3PushChochConfig(
+dshusd_1h_5m = RsiDiverChochConfig(
     rsi_chart=Chart("DSHUSD", TimeFrame.one_hour),
     chart=Chart("DSHUSD", TimeFrame.five_minutes),
     agent=ForexAgent(),
@@ -1591,7 +1591,7 @@ dshusd_1h_5m = Rsi3PushChochConfig(
     heikingashi_chartdata=False,
 )
 
-dotusd_1h_5m = Rsi3PushChochConfig(
+dotusd_1h_5m = RsiDiverChochConfig(
     rsi_chart=Chart("DOTUSD", TimeFrame.one_hour),
     chart=Chart("DOTUSD", TimeFrame.five_minutes),
     agent=ForexAgent(),
@@ -1636,7 +1636,7 @@ dotusd_1h_5m = Rsi3PushChochConfig(
     heikingashi_chartdata=False,
 )
 
-dogusd_1h_5m = Rsi3PushChochConfig(
+dogusd_1h_5m = RsiDiverChochConfig(
     rsi_chart=Chart("DOGUSD", TimeFrame.one_hour),
     chart=Chart("DOGUSD", TimeFrame.five_minutes),
     agent=ForexAgent(),
@@ -1681,7 +1681,7 @@ dogusd_1h_5m = Rsi3PushChochConfig(
     heikingashi_chartdata=False,
 )
 
-btcusd_1h_5m = Rsi3PushChochConfig(
+btcusd_1h_5m = RsiDiverChochConfig(
     rsi_chart=Chart("BTCUSD", TimeFrame.one_hour),
     chart=Chart("BTCUSD", TimeFrame.five_minutes),
     agent=ForexAgent(),
@@ -1726,7 +1726,7 @@ btcusd_1h_5m = Rsi3PushChochConfig(
     heikingashi_chartdata=False,
 )
 
-bsvusd_1h_5m = Rsi3PushChochConfig(
+bsvusd_1h_5m = RsiDiverChochConfig(
     rsi_chart=Chart("BSVUSD", TimeFrame.one_hour),
     chart=Chart("BSVUSD", TimeFrame.five_minutes),
     agent=ForexAgent(),
@@ -1771,7 +1771,7 @@ bsvusd_1h_5m = Rsi3PushChochConfig(
     heikingashi_chartdata=False,
 )
 
-bnbusd_1h_5m = Rsi3PushChochConfig(
+bnbusd_1h_5m = RsiDiverChochConfig(
     rsi_chart=Chart("BNBUSD", TimeFrame.one_hour),
     chart=Chart("BNBUSD", TimeFrame.five_minutes),
     agent=ForexAgent(),
@@ -1816,7 +1816,7 @@ bnbusd_1h_5m = Rsi3PushChochConfig(
     heikingashi_chartdata=False,
 )
 
-bchusd_1h_5m = Rsi3PushChochConfig(
+bchusd_1h_5m = RsiDiverChochConfig(
     rsi_chart=Chart("BCHUSD", TimeFrame.one_hour),
     chart=Chart("BCHUSD", TimeFrame.five_minutes),
     agent=ForexAgent(),
@@ -1861,7 +1861,7 @@ bchusd_1h_5m = Rsi3PushChochConfig(
     heikingashi_chartdata=False,
 )
 
-axsusd_1h_5m = Rsi3PushChochConfig(
+axsusd_1h_5m = RsiDiverChochConfig(
     rsi_chart=Chart("AXSUSD", TimeFrame.one_hour),
     chart=Chart("AXSUSD", TimeFrame.five_minutes),
     agent=ForexAgent(),
@@ -1906,7 +1906,7 @@ axsusd_1h_5m = Rsi3PushChochConfig(
     heikingashi_chartdata=False,
 )
 
-avxusd_1h_5m = Rsi3PushChochConfig(
+avxusd_1h_5m = RsiDiverChochConfig(
     rsi_chart=Chart("AVXUSD", TimeFrame.one_hour),
     chart=Chart("AVXUSD", TimeFrame.five_minutes),
     agent=ForexAgent(),
@@ -1952,7 +1952,7 @@ avxusd_1h_5m = Rsi3PushChochConfig(
 )
 
 
-adausd_15m_1m = Rsi3PushChochConfig(
+adausd_15m_1m = RsiDiverChochConfig(
     rsi_chart=Chart("ADAUSD", TimeFrame.fifteen_minutes),
     chart=Chart("ADAUSD", TimeFrame.one_minute),
     agent=ForexAgent(),
@@ -1997,7 +1997,7 @@ adausd_15m_1m = Rsi3PushChochConfig(
     heikingashi_chartdata=False,
 )
 
-aveusd_15m_1m = Rsi3PushChochConfig(
+aveusd_15m_1m = RsiDiverChochConfig(
     rsi_chart=Chart("AVEUSD", TimeFrame.fifteen_minutes),
     chart=Chart("AVEUSD", TimeFrame.one_minute),
     agent=ForexAgent(),
@@ -2040,7 +2040,7 @@ aveusd_15m_1m = Rsi3PushChochConfig(
     heikingashi_chartdata=False,
 )
 
-filusd_15m_1m = Rsi3PushChochConfig(
+filusd_15m_1m = RsiDiverChochConfig(
     rsi_chart=Chart("FILUSD", TimeFrame.fifteen_minutes),
     chart=Chart("FILUSD", TimeFrame.one_minute),
     agent=ForexAgent(),
@@ -2083,7 +2083,7 @@ filusd_15m_1m = Rsi3PushChochConfig(
     heikingashi_chartdata=False,
 )
 
-atomusd_15m_1m = Rsi3PushChochConfig(
+atomusd_15m_1m = RsiDiverChochConfig(
     rsi_chart=Chart("ATOMUSD", TimeFrame.fifteen_minutes),
     chart=Chart("ATOMUSD", TimeFrame.one_minute),
     agent=ForexAgent(),
@@ -2126,7 +2126,7 @@ atomusd_15m_1m = Rsi3PushChochConfig(
     heikingashi_chartdata=False,
 )
 
-apeusd_15m_1m = Rsi3PushChochConfig(
+apeusd_15m_1m = RsiDiverChochConfig(
     rsi_chart=Chart("APEUSD", TimeFrame.fifteen_minutes),
     chart=Chart("APEUSD", TimeFrame.one_minute),
     agent=ForexAgent(),
@@ -2169,7 +2169,7 @@ apeusd_15m_1m = Rsi3PushChochConfig(
     heikingashi_chartdata=False,
 )
 
-zecusd_15m_1m = Rsi3PushChochConfig(
+zecusd_15m_1m = RsiDiverChochConfig(
     rsi_chart=Chart("ZECUSD", TimeFrame.fifteen_minutes),
     chart=Chart("ZECUSD", TimeFrame.one_minute),
     agent=ForexAgent(),
@@ -2212,7 +2212,7 @@ zecusd_15m_1m = Rsi3PushChochConfig(
     heikingashi_chartdata=False,
 )
 
-neousd_15m_1m = Rsi3PushChochConfig(
+neousd_15m_1m = RsiDiverChochConfig(
     rsi_chart=Chart("NEOUSD", TimeFrame.fifteen_minutes),
     chart=Chart("NEOUSD", TimeFrame.one_minute),
     agent=ForexAgent(),
@@ -2255,7 +2255,7 @@ neousd_15m_1m = Rsi3PushChochConfig(
     heikingashi_chartdata=False,
 )
 
-iotausd_15m_1m = Rsi3PushChochConfig(
+iotausd_15m_1m = RsiDiverChochConfig(
     rsi_chart=Chart("IOTAUSD", TimeFrame.fifteen_minutes),
     chart=Chart("IOTAUSD", TimeFrame.one_minute),
     agent=ForexAgent(),
@@ -2298,7 +2298,7 @@ iotausd_15m_1m = Rsi3PushChochConfig(
     heikingashi_chartdata=False,
 )
 
-xtzusd_15m_1m = Rsi3PushChochConfig(
+xtzusd_15m_1m = RsiDiverChochConfig(
     rsi_chart=Chart("XTZUSD", TimeFrame.fifteen_minutes),
     chart=Chart("XTZUSD", TimeFrame.one_minute),
     agent=ForexAgent(),
@@ -2341,7 +2341,7 @@ xtzusd_15m_1m = Rsi3PushChochConfig(
     heikingashi_chartdata=False,
 )
 
-xrpusd_15m_1m = Rsi3PushChochConfig(
+xrpusd_15m_1m = RsiDiverChochConfig(
     rsi_chart=Chart("XRPUSD", TimeFrame.fifteen_minutes),
     chart=Chart("XRPUSD", TimeFrame.one_minute),
     agent=ForexAgent(),
@@ -2384,7 +2384,7 @@ xrpusd_15m_1m = Rsi3PushChochConfig(
     heikingashi_chartdata=False,
 )
 
-xmrusd_15m_1m = Rsi3PushChochConfig(
+xmrusd_15m_1m = RsiDiverChochConfig(
     rsi_chart=Chart("XMRUSD", TimeFrame.fifteen_minutes),
     chart=Chart("XMRUSD", TimeFrame.one_minute),
     agent=ForexAgent(),
@@ -2427,7 +2427,7 @@ xmrusd_15m_1m = Rsi3PushChochConfig(
     heikingashi_chartdata=False,
 )
 
-xlmusd_15m_1m = Rsi3PushChochConfig(
+xlmusd_15m_1m = RsiDiverChochConfig(
     rsi_chart=Chart("XLMUSD", TimeFrame.fifteen_minutes),
     chart=Chart("XLMUSD", TimeFrame.one_minute),
     agent=ForexAgent(),
@@ -2470,7 +2470,7 @@ xlmusd_15m_1m = Rsi3PushChochConfig(
     heikingashi_chartdata=False,
 )
 
-vetusd_15m_1m = Rsi3PushChochConfig(
+vetusd_15m_1m = RsiDiverChochConfig(
     rsi_chart=Chart("VETUSD", TimeFrame.fifteen_minutes),
     chart=Chart("VETUSD", TimeFrame.one_minute),
     agent=ForexAgent(),
@@ -2513,7 +2513,7 @@ vetusd_15m_1m = Rsi3PushChochConfig(
     heikingashi_chartdata=False,
 )
 
-uniusd_15m_1m = Rsi3PushChochConfig(
+uniusd_15m_1m = RsiDiverChochConfig(
     rsi_chart=Chart("UNIUSD", TimeFrame.fifteen_minutes),
     chart=Chart("UNIUSD", TimeFrame.one_minute),
     agent=ForexAgent(),
@@ -2556,7 +2556,7 @@ uniusd_15m_1m = Rsi3PushChochConfig(
     heikingashi_chartdata=False,
 )
 
-solusd_15m_1m = Rsi3PushChochConfig(
+solusd_15m_1m = RsiDiverChochConfig(
     rsi_chart=Chart("SOLUSD", TimeFrame.fifteen_minutes),
     chart=Chart("SOLUSD", TimeFrame.one_minute),
     agent=ForexAgent(),
@@ -2599,7 +2599,7 @@ solusd_15m_1m = Rsi3PushChochConfig(
     heikingashi_chartdata=False,
 )
 
-mtcusd_15m_1m = Rsi3PushChochConfig(
+mtcusd_15m_1m = RsiDiverChochConfig(
     rsi_chart=Chart("MTCUSD", TimeFrame.fifteen_minutes),
     chart=Chart("MTCUSD", TimeFrame.one_minute),
     agent=ForexAgent(),
@@ -2642,7 +2642,7 @@ mtcusd_15m_1m = Rsi3PushChochConfig(
     heikingashi_chartdata=False,
 )
 
-ltcusd_15m_1m = Rsi3PushChochConfig(
+ltcusd_15m_1m = RsiDiverChochConfig(
     rsi_chart=Chart("LTCUSD", TimeFrame.fifteen_minutes),
     chart=Chart("LTCUSD", TimeFrame.one_minute),
     agent=ForexAgent(),
@@ -2685,7 +2685,7 @@ ltcusd_15m_1m = Rsi3PushChochConfig(
     heikingashi_chartdata=False,
 )
 
-lnkusd_15m_1m = Rsi3PushChochConfig(
+lnkusd_15m_1m = RsiDiverChochConfig(
     rsi_chart=Chart("LNKUSD", TimeFrame.fifteen_minutes),
     chart=Chart("LNKUSD", TimeFrame.one_minute),
     agent=ForexAgent(),
@@ -2728,7 +2728,7 @@ lnkusd_15m_1m = Rsi3PushChochConfig(
     heikingashi_chartdata=False,
 )
 
-dshusd_15m_1m = Rsi3PushChochConfig(
+dshusd_15m_1m = RsiDiverChochConfig(
     rsi_chart=Chart("DSHUSD", TimeFrame.fifteen_minutes),
     chart=Chart("DSHUSD", TimeFrame.one_minute),
     agent=ForexAgent(),
@@ -2771,7 +2771,7 @@ dshusd_15m_1m = Rsi3PushChochConfig(
     heikingashi_chartdata=False,
 )
 
-dotusd_15m_1m = Rsi3PushChochConfig(
+dotusd_15m_1m = RsiDiverChochConfig(
     rsi_chart=Chart("DOTUSD", TimeFrame.fifteen_minutes),
     chart=Chart("DOTUSD", TimeFrame.one_minute),
     agent=ForexAgent(),
@@ -2814,7 +2814,7 @@ dotusd_15m_1m = Rsi3PushChochConfig(
     heikingashi_chartdata=False,
 )
 
-dogusd_15m_1m = Rsi3PushChochConfig(
+dogusd_15m_1m = RsiDiverChochConfig(
     rsi_chart=Chart("DOGUSD", TimeFrame.fifteen_minutes),
     chart=Chart("DOGUSD", TimeFrame.one_minute),
     agent=ForexAgent(),
@@ -2857,7 +2857,7 @@ dogusd_15m_1m = Rsi3PushChochConfig(
     heikingashi_chartdata=False,
 )
 
-btcusd_15m_1m = Rsi3PushChochConfig(
+btcusd_15m_1m = RsiDiverChochConfig(
     rsi_chart=Chart("BTCUSD", TimeFrame.fifteen_minutes),
     chart=Chart("BTCUSD", TimeFrame.one_minute),
     agent=ForexAgent(),
@@ -2900,7 +2900,7 @@ btcusd_15m_1m = Rsi3PushChochConfig(
     heikingashi_chartdata=False,
 )
 
-bsvusd_15m_1m = Rsi3PushChochConfig(
+bsvusd_15m_1m = RsiDiverChochConfig(
     rsi_chart=Chart("BSVUSD", TimeFrame.fifteen_minutes),
     chart=Chart("BSVUSD", TimeFrame.one_minute),
     agent=ForexAgent(),
@@ -2943,7 +2943,7 @@ bsvusd_15m_1m = Rsi3PushChochConfig(
     heikingashi_chartdata=False,
 )
 
-bnbusd_15m_1m = Rsi3PushChochConfig(
+bnbusd_15m_1m = RsiDiverChochConfig(
     rsi_chart=Chart("BNBUSD", TimeFrame.fifteen_minutes),
     chart=Chart("BNBUSD", TimeFrame.one_minute),
     agent=ForexAgent(),
@@ -2986,7 +2986,7 @@ bnbusd_15m_1m = Rsi3PushChochConfig(
     heikingashi_chartdata=False,
 )
 
-bchusd_15m_1m = Rsi3PushChochConfig(
+bchusd_15m_1m = RsiDiverChochConfig(
     rsi_chart=Chart("BCHUSD", TimeFrame.fifteen_minutes),
     chart=Chart("BCHUSD", TimeFrame.one_minute),
     agent=ForexAgent(),
@@ -3029,7 +3029,7 @@ bchusd_15m_1m = Rsi3PushChochConfig(
     heikingashi_chartdata=False,
 )
 
-axsusd_15m_1m = Rsi3PushChochConfig(
+axsusd_15m_1m = RsiDiverChochConfig(
     rsi_chart=Chart("AXSUSD", TimeFrame.fifteen_minutes),
     chart=Chart("AXSUSD", TimeFrame.one_minute),
     agent=ForexAgent(),
@@ -3072,7 +3072,7 @@ axsusd_15m_1m = Rsi3PushChochConfig(
     heikingashi_chartdata=False,
 )
 
-avxusd_15m_1m = Rsi3PushChochConfig(
+avxusd_15m_1m = RsiDiverChochConfig(
     rsi_chart=Chart("AVXUSD", TimeFrame.fifteen_minutes),
     chart=Chart("AVXUSD", TimeFrame.one_minute),
     agent=ForexAgent(),

@@ -1,4 +1,6 @@
 from config import settings
+settings.TELEGRAM_BOT_TOKEN = "8470075659:AAHxX4BDBiUeKB85REsL8RB7jpe8XeubDbc"
+
 from TradingModule.reporter import TelegramReporter
 from Forex import ForexAgent, ForexEmaTouchTradeConfig
 from ChartModule import Chart, TimeFrame
@@ -15,8 +17,8 @@ CustomLogger(
 )
 
 
-xau_5m = ForexEmaTouchTradeConfig(
-    chart=Chart("XAUUSD", TimeFrame.five_minutes),
+xau_1h = ForexEmaTouchTradeConfig(
+    chart=Chart("XAUUSD!", TimeFrame.one_hour),
     n_candle_check=500,
     strategy=EmaTouchFilter(
         ema_periods=[20],
@@ -39,8 +41,33 @@ xau_5m = ForexEmaTouchTradeConfig(
     heikingashi_chartdata=False,
 )
 
-TelegramReporter().main_channel = settings.TELEGRAM_CRYPTO_CHANNEL_ID
-TraderBot("Ema Touch Bot", [xau_5m], report_time={"h": 20, "m": 0})
+xau_4h = ForexEmaTouchTradeConfig(
+    chart=Chart("XAUUSD!", TimeFrame.four_hours),
+    n_candle_check=500,
+    strategy=EmaTouchFilter(
+        ema_periods=[20],
+        min_candles_between_touches=15,
+        max_candles_between_touches=200,
+        reanchor_invalid_touch=False,
+        name="EmaTouch",
+    ),
+    bar_between_signals=2,
+    consider_position=False,
+    position_handler=SteppingHandlerForex(
+        ForexAgent(),
+        stoploss_pip=1,
+        targets_ratio=[1],
+        targets_ratio_volumes=[0.01],
+        trail_stop=True,
+        long_trade=False,
+        short_trade=False,
+    ),
+    heikingashi_chartdata=False,
+)
+
+
+TelegramReporter().main_channel = "@crypto_result_1"
+TraderBot("Ema Touch Bot", [xau_1h,xau_4h], report_time={"h": 20, "m": 12})
 
 
 if __name__ == "__main__":
