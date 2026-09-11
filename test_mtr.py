@@ -284,7 +284,6 @@ TraderBot("MTR Bot",
             eur,
             usdchf,
             btc,
-            xau
         ], report_time={"h": 20, "m": 0})
 
 

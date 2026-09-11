@@ -1,5 +1,5 @@
 from config import settings
-settings.TELEGRAM_BOT_TOKEN = "8470075659:AAHxX4BDBiUeKB85REsL8RB7jpe8XeubDbc"
+settings.TELEGRAM_BOT_TOKEN = "8937168160:AAHtl4qXCSKXgT6YTSZEvYYDSHs3UcVqD5Y"
 
 from TradingModule.reporter import TelegramReporter
 from Forex import ForexAgent, ForexEmaTouchTradeConfig

@@ -16,6 +16,7 @@ TelegramReporter().main_channel = settings.TELEGRAM_CRYPTO_CHANNEL_ID
 TraderBot(
     "Ema Pivot Choch Bot",
     [
+        xau_3m,
         eurusd_1h,eurusd_4h,
         usdjpy_1h,usdjpy_4h,
         gbpusd_1h,gbpusd_4h,

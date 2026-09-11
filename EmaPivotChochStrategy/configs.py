@@ -4,6 +4,42 @@ from TradingModule.PositionHandlers.stepping_handler import SteppingHandlerForex
 from EmaPivotChochStrategy.ema_pivot_choch import EmaPivotChochFilter
 
 
+
+xau_3m = ForexEmaPivotChochTradeConfig(
+    chart=Chart("XAUUSD!", TimeFrame.one_minute),
+    htf_chart=Chart("XAUUSD!", TimeFrame.three_minutes),
+    n_ltf_candle_check=120,
+    n_htf_candle_check=120,
+    strategy=EmaPivotChochFilter(
+        ema_periods=[20, 40, 60],
+        htf_pivot_length=12,
+        htf_backstep=2,
+        atr_period=14,
+        atr_multiplier=1.0,
+        max_bars_after_pivot=100,
+        choch_pivot_length=2,
+        choch_backstep=2,
+        retrace_fib=0.5,
+        use_fibo_filter=False,
+        use_bos=False,
+        use_choch=False,
+        name="EmaPivotChoch",
+    ),
+    bar_between_signals=2,
+    consider_position=False,
+    position_handler=SteppingHandlerForex(
+        ForexAgent(),
+        stoploss_pip=1,
+        targets_ratio=[1],
+        targets_ratio_volumes=[0.01],
+        trail_stop=True,
+        long_trade=False,
+        short_trade=False,
+    ),
+    heikingashi_chartdata=False,
+)
+
+
 xau_1h = ForexEmaPivotChochTradeConfig(
     chart=Chart("XAUUSD!", TimeFrame.five_minutes),
     htf_chart=Chart("XAUUSD!", TimeFrame.one_hour),
