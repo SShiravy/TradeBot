@@ -34,7 +34,7 @@ xau_double_diver_five_m = OscillatorDoubleDiverConfig(
     ),
     bar_between_signals=2,
     same_line_source=True,
-    position_handler=(
+    position_generator=(
         SteppingHandlerForex(
             ForexAgent(),
             targets_ratio=[],
@@ -67,7 +67,7 @@ audcad_double_diver_five_m = OscillatorDoubleDiverConfig(
     ),
     bar_between_signals=2,
     same_line_source=True,
-    position_handler=(
+    position_generator=(
         SteppingHandlerForex(
             ForexAgent(),
             targets_ratio=[],
@@ -100,7 +100,7 @@ usdjpy_double_diver_five_m = OscillatorDoubleDiverConfig(
     ),
     bar_between_signals=2,
     same_line_source=True,
-    position_handler=(
+    position_generator=(
         SteppingHandlerForex(
             ForexAgent(),
             targets_ratio=[],
@@ -132,7 +132,7 @@ eurgbp_double_diver_five_m = OscillatorDoubleDiverConfig(
     ),
     bar_between_signals=2,
     same_line_source=True,
-    position_handler=(
+    position_generator=(
         SteppingHandlerForex(
             ForexAgent(),
             targets_ratio=[],
@@ -146,7 +146,7 @@ eurgbp_double_diver_five_m = OscillatorDoubleDiverConfig(
         )
     ),
 )
-TelegramReporter().main_channel = "@three_push"
+TelegramReporter().signal_channel = "@three_push"
 TraderBot(
     "3 Push RSI",
     [

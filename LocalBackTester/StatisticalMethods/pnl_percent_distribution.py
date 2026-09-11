@@ -1,7 +1,7 @@
 from LocalBackTester.StatisticalMethods.models import BasePnLDistribution
 from LocalBackTester.models import TickDataHandler
 from TradingModule.models import PositionSide, Position
-from TradingModule.trader_bot import TradeConfig
+from TradingModule.trader_bot import TraderBot
 from matplotlib import pyplot as plt
 import numpy as np
 import logging
@@ -22,7 +22,7 @@ class PercentPnlDistribution(BasePnLDistribution):
 
     def _calculate(
         self,
-        the_config: TradeConfig,
+        the_config: TraderBot,
         pos: Position,
         ticks_handler: TickDataHandler,
         *args,
@@ -155,7 +155,7 @@ class PercentAfterSLDistribution(BasePnLDistribution):
 
     def _calculate(
         self,
-        the_config: TradeConfig,
+        the_config: TraderBot,
         pos: Position,
         ticks_handler: TickDataHandler,
         *args,

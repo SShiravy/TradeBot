@@ -22,7 +22,7 @@ one_m = ForexDiverTradeConfig(
         5, 100, [], name="ForexDiver(Single TP)", inverse_diver_long=True
     ),
     bar_between_signals=2,
-    position_handler=SteppingHandlerForex(
+    position_generator=SteppingHandlerForex(
         ForexAgent(),
         stoploss_pip=5,
         targets_ratio=[],

@@ -162,7 +162,7 @@ class Chart:
     chart_type: ChartType = field(default=ChartType.Simple)
     precision: int = field(default=3, init=False)
     pip_factor: float = field(default=1, init=False)
-    contract_size: float | int = field(default=100000, init=False)
+    contract_size: float | int = field(default=1, init=False)
 
     def __str__(self) -> str:
         return f"{self.symbol} {self.timeframe.value}"
@@ -173,6 +173,8 @@ class Chart:
             "timeframe": self.timeframe.value,
             "precision": self.precision,
             "chart_type": self.chart_type,
+            "pip_factor": self.pip_factor,
+            "contract_size": self.contract_size,
         }
 
 

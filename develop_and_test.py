@@ -27,7 +27,7 @@ xau_jpy_1m = ForexDiverTradeConfig(
     second_chart=Chart("USDJPY!", TimeFrame.one_minute),
     strategy=Divergence(5, 100, [], name="ForexDiver", inverse_diver_long=True),
     bar_between_signals=2,
-    position_handler=SteppingHandlerForex(
+    position_generator=SteppingHandlerForex(
         ForexAgent(),
         stoploss_pip=30,
         targets_ratio=[1, 2, 3],
@@ -51,7 +51,7 @@ xau_dxy_1m = ForexDiverTradeConfig(
     second_chart=Chart("DXY!", TimeFrame.one_minute),
     strategy=Divergence(5, 100, [], name="DXY_divergence"),
     bar_between_signals=2,
-    position_handler=SteppingHandlerForex(
+    position_generator=SteppingHandlerForex(
         ForexAgent(),
         stoploss_pip=5,
         targets_ratio=[],
@@ -84,7 +84,7 @@ xau_double_diver_rsi_1m = OscillatorDoubleDiverConfig(
     ),
     bar_between_signals=2,
     same_line_source=True,
-    position_handler=(
+    position_generator=(
         SteppingHandlerForex(
             ForexAgent(),
             targets_ratio=[],
@@ -117,7 +117,7 @@ audcad_double_diver_rsi_1m = OscillatorDoubleDiverConfig(
     ),
     bar_between_signals=2,
     same_line_source=True,
-    position_handler=(
+    position_generator=(
         SteppingHandlerForex(
             ForexAgent(),
             targets_ratio=[],
@@ -150,7 +150,7 @@ usdjpy_double_diver_rsi_1m = OscillatorDoubleDiverConfig(
     ),
     bar_between_signals=2,
     same_line_source=True,
-    position_handler=(
+    position_generator=(
         SteppingHandlerForex(
             ForexAgent(),
             targets_ratio=[],
@@ -182,7 +182,7 @@ eurgbp_double_diver_rsi_1m = OscillatorDoubleDiverConfig(
     ),
     bar_between_signals=2,
     same_line_source=True,
-    position_handler=(
+    position_generator=(
         SteppingHandlerForex(
             ForexAgent(),
             targets_ratio=[],
@@ -214,7 +214,7 @@ xau_rsi_1m = OscillatorDiverConfig(
         inverse_diver_long=False,
     ),
     bar_between_signals=2,
-    position_handler=(
+    position_generator=(
         SteppingHandlerForex(
             ForexAgent(),
             targets_ratio=[],
@@ -228,7 +228,7 @@ xau_rsi_1m = OscillatorDiverConfig(
         )
     ),
 )
-TelegramReporter().main_channel = "@result_forex_crypto"
+TelegramReporter().signal_channel = "@result_forex_crypto"
 TraderBot(
     "Develop & Test",
     [

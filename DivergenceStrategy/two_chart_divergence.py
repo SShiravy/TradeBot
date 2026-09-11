@@ -13,7 +13,7 @@ from ChartModule.Indicators import (
 )
 from ChartModule.plot import DoubleChartPlot
 from TradingModule.reporter import TelegramReporter
-from TradingModule.trader_bot import TradeConfig, Position
+from TradingModule.trader_bot import TraderBot, Position
 from TradingModule.models import Strategy
 from dataclasses import dataclass, field
 from typing import Literal
@@ -258,7 +258,7 @@ class Divergence(Strategy):
 
 
 @dataclass(kw_only=True)
-class TwoChartDiverTradeConfig(TradeConfig):
+class TwoChartDiverTradeConfig(TraderBot):
     second_chart: Chart
     strategy: Divergence  # type: ignore[override]
     merge_two_chart_time: bool = field(default=True)
@@ -293,12 +293,12 @@ class TwoChartDiverTradeConfig(TradeConfig):
         logger.info(f"Two Chart Divergence Signal:{signal}")
 
         plot = None
-        if self.send_signal:
+        if self.send_signal_msg:
             plot = DoubleChartPlot(chartdata, second_chartdata)
             self.strategy.draw(plot, signal, draw_indicators=True)
 
         if not self.consider_position:
-            if self.send_signal:
+            if self.send_signal_msg:
                 await TelegramReporter().new_signal(signal, plot)
             return signal
 
@@ -308,7 +308,7 @@ class TwoChartDiverTradeConfig(TradeConfig):
             else signal.main_chart_line.end_candle.low
         )
 
-        position = await self.position_handler.generate(
+        position = await self.position_generator.generate(
             signal, sl_base_price=entry_source, plot=plot
         )
         if position:
@@ -340,7 +340,7 @@ class TwoChartDiverTradeConfig(TradeConfig):
         len_sub_data=100,
         show_image=True,
     ):
-        self.send_signal = False
+        self.send_signal_msg = False
 
         all_signals: list[Signal | DivergenceSignal] = []
 

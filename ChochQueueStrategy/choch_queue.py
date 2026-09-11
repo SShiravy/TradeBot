@@ -9,7 +9,7 @@ from ChartModule.models import (
 from ChartModule.Indicators import IndicatorBaseModel, SupportCandleConditions
 from ChartModule.Indicators.swing_pivots import SwingPivots
 from ChartModule.plot import ChartPlot
-from TradingModule.trader_bot import TradeConfig
+from TradingModule.trader_bot import TraderBot
 from TradingModule.models import Position, Strategy
 from datetime import datetime
 from dataclasses import dataclass, field
@@ -437,7 +437,7 @@ class ChochQueueFilter(Strategy):
         return ChochSignal(base_chartdata.chart, touch_candle, side, dummy_model)
 
 
-class ChochQueueTradeConfig(TradeConfig):
+class ChochQueueTradeConfig(TraderBot):
     strategy: ChochQueueFilter  # type: ignore[override]
 
     async def find_signal(
@@ -450,11 +450,11 @@ class ChochQueueTradeConfig(TradeConfig):
             return None
 
         plot = None
-        if self.send_signal:
+        if self.send_signal_msg:
             plot = ChartPlot(chartdata)
             self.strategy.draw(plot, signal, draw_indicators=True)
 
-        position = await self.position_handler.generate(
+        position = await self.position_generator.generate(
             signal, sl_base_price=signal.choch_model.anchor, plot=plot
         )
         if not position:

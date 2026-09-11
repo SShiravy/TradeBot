@@ -1,188 +1,120 @@
+from typing import Any
+from abc import ABC, abstractmethod
 from ChartModule.models import MarketSide, Signal
+from ChartModule.timing import TimeHandler
 from TradingModule import Position, PositionSide
-from config import settings
-from datetime import datetime, timedelta, timezone
-from telegram import Bot
+from datetime import timedelta
 import logging
 
+from TradingModule.models import Trigger
 
-logger = logging.getLogger("TelegramReporter")
 
+logger = logging.getLogger("Reporter")
 
-class TelegramReporter:
-    def __new__(cls):
-        if not hasattr(cls, "_instance"):
-            cls._instance = object.__new__(cls)
-            cls.bot = Bot(settings.TELEGRAM_BOT_TOKEN)
-            cls.main_channel = settings.TELEGRAM_CHANNEL_ID
-            cls._log_channel = settings.TELEGRAM_REPORT_CHANNEL
-            cls._reporting = True
-        return cls._instance
-
+class Reporter(ABC):
+    def __init__(self, name:str, signal_channel, report_channel):
+        self.name = name
+        self.signal_channel = signal_channel
+        self.report_channel = report_channel
+        self._reporting = True
+    
     def disable_reporting(self):
-        self._reporting = False
-        logger.info("⚠️ Telegram Reporting Disabled")
-
+            self._reporting = False
+            logger.info(f"⚠️ {self.name} Reporting Disabled")
+    
     def enable_reporting(self):
         self._reporting = True
-        logger.info("👍 Telegram Reporting Enabled")
+        logger.info(f"👍 {self.name} Reporting Enabled")
 
+    @abstractmethod
     async def send_msg(
-        self, channel_id, msg, img_path: str | None = None, reply_id: None | int = None
-    ):
-        if not self._reporting:
-            return False
-
-        if img_path:
-            img = open(img_path, "rb")
-            res = await self.bot.send_photo(
-                chat_id=channel_id, photo=img, caption=msg, reply_to_message_id=reply_id
-            )
-            img.close()
-            logger.debug(
-                f"response from telegram for new position: {res} , id: {res.message_id if res else None}"
-            )
-            return res
-        else:
-            try:
-                res = await self.bot.send_message(
-                    chat_id=channel_id, text=msg, reply_to_message_id=reply_id
-                )
-                logger.debug(
-                    f"response from telegram for new position: {res} , id: {res.message_id if res else None}"
-                )
-                return res
-            except Exception as e:
-                logger.error(f"Error occurred while sending {msg=}: {e}")
-
-    async def log_report(self, msg):
-        if not self._reporting:
-            return True
-
-        await self.send_msg(self._log_channel, msg)
-
-    async def new_position(self, position: Position):
+            self, msg, file_path: str | None = None, img_path: str | None = None, channel_id: Any = None, *args, **kwargs
+        )-> Any:...
+    
+    async def new_position(self, position: Position, img_path:str|None=None):
         msg_list = [
             position.source,
             f"📊 {position.chart}",
-            "🟢 LONG" if position.side is PositionSide.LONG else "🔴 SHORT",
+            "🟢 Long" if position.side is PositionSide.LONG else "🔴 Short",
+            f"🧾 {position.type.value}"
             f"📣 Entry = {position.entry_price}",
+            f"💰 Entry Volume: {position.entry_volume}",
+            f"⛔️ SL = {position.stoploss}"
         ]
-
-        if len(position.steps) > 2:
-            i = 1
-            for trigger in position.steps[1:]:
-                msg_list.append(f"🎯 TP {i} =  {trigger.price} with {trigger.volume}💰")
-                i += 1
-        else:
-            msg_list.append(f"🎯 TP =  {position.takeprofit}")
-
-        msg_list.append(f"⛔️ SL = {position.stoploss}")
-        msg_list.append(f"💰 Volume: {round(position.volume, 4)}")
+        if position.triggers:
+            msg_list.append("🎯Triggers:")
+            for trigger in position.steps:
+                tgr_msg = f"  {trigger.type} {trigger.price}"
+                if trigger.volume:
+                    tgr_msg += f"|{trigger.volume}💰"
+                msg_list.append(tgr_msg)
 
         if position.leverage not in [1, 0]:
             msg_list.append(f"⚡Leverage: {position.leverage}")
 
-        if position.spread:
-            msg_list.append(f"🧾 Spread = {position.spread}")
-
-        img_path = None
-        if position.plot:
-            position.draw()
-            img_path = position.plot.save_image(position.source + str(position.chart))
-
         msg = "\n\n".join(msg_list)
-        res = await self.send_msg(self.main_channel, msg, img_path)
+        res = await self.send_msg(msg=msg,img_path=img_path)
         position.msg_id = res.message_id if res else 0
 
-    async def position_closed(self, position: Position, filled_price=None):
-        end_timestamp = datetime.now(timezone.utc).timestamp()
-        duration = timedelta(
-            seconds=int(end_timestamp) - int(position.initial_timestamp)
-        )
-        logger.debug(
-            f"Duration in reporter position close: {duration=} | {end_timestamp=} | {position.initial_timestamp=}"
-        )
+    async def position_closed(self, position: Position):
+        duration = timedelta(seconds=(TimeHandler.elapsed_since(position.defined_timestamp)))
 
         close_type_msg = "⭕ Flat Close"
-        close_price = filled_price if filled_price else position.entry_price
         if position.pnl_dollar > 0:
             close_type_msg = "✅ TP Triggered"
-            close_price = position.takeprofit
         elif position.pnl_dollar < 0:
             close_type_msg = "⛔️ SL Triggered"
-            close_price = position.stoploss
 
         msg_list = [
             close_type_msg,
             position.source,
             f"📊 {position.chart}",
-            f"💲 Close Price = {close_price}",
-            f"💵 PNL = {round(position.pnl_dollar, position.chart.precision)}",
+            f"💵 PNL = {position.pnl_dollar}",
             f"⌛ Duration = {duration}",
         ]
         msg = "\n\n".join(msg_list)
-        await self.send_msg(self.main_channel, msg, reply_id=position.msg_id)
+        await self.send_msg(msg=msg, reply_id=position.msg_id)
 
-    async def trailing_sl(self, position: Position):
+    async def sl_trailed(self, position: Position):
         trail_type_msg = (
             "📝 Risk Free"
             if position.stoploss == position.entry_price
             else "📝 Trailing Stop"
         )
         msg_list = [
-            trail_type_msg,
             position.source,
+            trail_type_msg,
             f"📊 {position.chart}",
             f"💲 New SL = {position.stoploss}",
         ]
         msg = "\n\n".join(msg_list)
+        await self.send_msg(msg, reply_id=position.msg_id)
 
-        await self.send_msg(self.main_channel, msg, reply_id=position.msg_id)
-
-    async def public_report(self, msg: str):
-        await self.send_msg(self.main_channel, msg)
-
-    async def triggered_step(self, position: Position):
-        if position.closed_timestamp:
-            trigger = position.steps[-1]
-            triggered_id = len(position.steps) - 1
-        else:
-            trigger = position.previous_step
-            triggered_id = position._current_step_index - 1
-        end_timestamp = (
-            trigger.triggered_timestamp
-            if trigger.triggered_timestamp
-            else datetime.now(tz=timezone.utc)
-        ).timestamp()
+    async def triggered_step(self, position: Position, trigger:Trigger):
         duration = timedelta(
-            seconds=int(end_timestamp) - int(trigger.defined_timestamp.timestamp())
-        )
-        logger.debug(
-            f"Duration in reporter Trigger step: {duration=} | {end_timestamp=} | {trigger.defined_timestamp.timestamp()=}"
-        )
+            seconds=TimeHandler.elapsed_since(Trigger.defined_timestamp))
 
         msg_list = [
-            f"✅ TP {triggered_id} Triggered",
             position.source,
             f"📊 {position.chart}",
+            f"✅ {Trigger.type} Triggered",
             f"💲 Triggered Price = {trigger.price}",
-            f"💰 Volume: {trigger.volume}",
-            f"💵 PNL = {round(position.pnl_dollar, position.chart.precision)}",
             f"⌛ Duration = {duration}",
         ]
+        if trigger.volume:
+            msg_list.insert(-2,f"💰 Volume: {trigger.volume}")
         msg = "\n\n".join(msg_list)
-        await self.send_msg(self.main_channel, msg, reply_id=position.msg_id)
+        await self.send_msg(msg, reply_id=position.msg_id)
 
-    async def new_signal(self, signal: Signal, plot):
+    async def new_signal(self, signal: Signal, img_path:str|None=None):
         msg_list = [
             signal.source,
             f"📊 {signal.chart}",
             "🟢 Bullish" if signal.side is MarketSide.BULLISH else "🔴 Bearish",
         ]
-
-        img_path = None
-        if plot:
-            img_path = plot.save_image(signal.source + str(signal.chart))
         msg = "\n\n".join(msg_list)
-        await self.send_msg(self.main_channel, msg, img_path)
+        await self.send_msg(msg, img_path=img_path)
+
+    async def report(self, msg, file_path: str | None = None):
+        await self.send_msg(msg,channel_id=self.report_channel, file_path=file_path)
+

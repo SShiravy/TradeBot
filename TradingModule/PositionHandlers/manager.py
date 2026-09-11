@@ -3,13 +3,12 @@ from TradingModule import Position, PositionSide, ExchangeAgent
 from TradingModule.PositionHandlers.trading_constraints import TradingConstraint
 from ChartModule.timing import TimeHandler
 from TradingModule.models import Command, PositionType, Trigger
-from TradingModule.Commands import trade_commands
 from abc import ABC, abstractmethod
 import numpy as np
 import logging
 
 
-logger = logging.getLogger("PositionHandler")
+logger = logging.getLogger("PositionManager")
 
     
 class PositionGenerator(ABC):
@@ -62,7 +61,7 @@ class PositionGenerator(ABC):
         return position
 
 
-class PositionsManager(ABC):
+class PositionsManager:
     def __init__(self,         
                  exchange_agent: ExchangeAgent,
                  generator:PositionGenerator,
@@ -125,9 +124,9 @@ class PositionsManager(ABC):
 
     def triggers_handler(
         self, position: Position, ticks: np.ndarray
-    ) -> Command | None:
-        if position.stoploss.check_cross(ticks):
-            return trade_commands.StopLoss(position, self.exchange_agent, report=self.send_report)
+    ):
+        if position.stoploss.check(ticks):
+            return
         for trigger in position.steps:
             if trigger.check(ticks):
                 continue

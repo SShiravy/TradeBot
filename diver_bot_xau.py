@@ -18,7 +18,7 @@ one_m = ForexDiverTradeConfig(
     second_chart=Chart("USDJPY!", TimeFrame.one_minute),
     strategy=Divergence(5, 100, [], name="ForexDiver", inverse_diver_long=True),
     bar_between_signals=2,
-    position_handler=SteppingHandlerForex(
+    position_generator=SteppingHandlerForex(
         ForexAgent(),
         stoploss_pip=30,
         targets_ratio=[1, 2, 3],
@@ -42,7 +42,7 @@ dxy_1m = ForexDiverTradeConfig(
     second_chart=Chart("DXY!", TimeFrame.one_minute),
     strategy=Divergence(5, 100, [], name="DXY_divergence"),
     bar_between_signals=2,
-    position_handler=SteppingHandlerForex(
+    position_generator=SteppingHandlerForex(
         ForexAgent(),
         stoploss_pip=5,
         targets_ratio=[],

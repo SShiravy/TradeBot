@@ -1,20 +1,93 @@
-from datetime import timedelta
-from turtle import position
 from ChartModule.models import Chart, MarketSide, Signal
 from ChartModule.plot import Plot
 from TradingModule.PositionHandlers.manager import PositionGenerator
-from TradingModule.PositionHandlers.ratio_handlers import (
-    SlTpRatioCrypto,
-)
 from TradingModule.PositionHandlers.trading_constraints import TradingConstraint
-from TradingModule.models import ExchangeAgent, PositionSide, Position, Trigger
-from TradingModule.commands import Command
-from TradingModule import commands
+from TradingModule.models import ExchangeAgent, PositionSide, Position, PositionType, Trigger
 import numpy as np
 import logging
 
 
-logger = logging.getLogger("PositionHandler")
+logger = logging.getLogger("PositionManager")
+
+
+class Mt5MultiStepGenerator(PositionGenerator):
+    def __init__(
+        self,
+        leverage: int = 1,
+        stoploss_pip: int = 3,
+        targets_ratio: list[float] = [1, 1.5, 2],
+        targets_ratio_volumes: float | list[float] = 0.01,
+        targets_pip: list[float] = [],
+        targets_pip_volumes: float | list[float] = [],
+        trail_stop: bool = True,
+
+    ) -> None:
+        if isinstance(targets_ratio_volumes, float | int):
+            targets_ratio_volumes = [float(targets_ratio_volumes)] * len(targets_ratio)
+
+        if len(targets_ratio) != len(targets_ratio_volumes):
+            raise ValueError(
+                f"targets_volumes_lot param must be \
+                             float or list[float] with same size as targets_pip\
+                             {len(targets_ratio_volumes)} != {len(targets_ratio)}"
+            )
+
+        if isinstance(targets_in_pip_volumes, float | int):
+            # make it list with same size as targets_pip if it's not
+            targets_in_pip_volumes = [float(targets_in_pip_volumes)] * len(
+                targets_in_pip
+            )
+
+        if len(targets_in_pip) != len(targets_in_pip_volumes):
+            raise ValueError(
+                f"targets_volumes_lot param must be {targets_in_pip}\
+                             float or list[float] with same size as targets_pip\
+                             {len(targets_in_pip_volumes)} != {len(targets_in_pip)}"
+            )
+
+        initial_volume = sum(targets_ratio_volumes) + sum(targets_in_pip_volumes)
+        self.initial_volume = initial_volume
+        self.leverage = leverage
+        
+    def init_stoploss(self, entry_price: float, side: PositionSide) -> Trigger:
+        pass
+
+    def generate_triggers(self,entry_price:float,side:PositionSide, *args, **kwargs)->list[Trigger]:
+        pass
+
+    def export_config(self) -> dict:
+        return {
+            "Handler": self.__class__.__name__,
+            "initial_volume": self.initial_volume,
+            "leverage": self.leverage,
+        }
+
+    async def generate(
+        self,
+        signal: Signal,
+        entry_price: float,
+        *args,
+        **kwargs,
+    ) -> Position | None:
+        side = PositionSide.convert_market_side(signal.side)
+
+        position = Position(
+            signal.chart,
+            side,
+            entry_price,
+            self.initial_volume,
+            self.generate_triggers(entry_price, side, signal.chart),
+            self.init_stoploss(entry_price, side),
+            self.leverage,
+            type=PositionType.MARKET,
+            source=signal.source,
+        )
+
+        logger.info(f"New Position on {position.chart}")
+        return position
+
+
+
 
 
 class SteppingHandlerForex(PositionGenerator):
@@ -332,193 +405,3 @@ class SteppingHandlerForex(PositionGenerator):
             return self.agent_handler(position, step)
 
         return self.tick_prices_handler(position, step, tick_prices)
-
-
-class SteppingHandlerCrypto(SlTpRatioCrypto):
-    def __init__(
-        self,
-        exchange_agent: ExchangeAgent,
-        leverage: int = 1,
-        stoploss_percent: float = 3,
-        targets_ratio: list[float] = [1, 1.5, 2],
-        initial_volume: float | list[float] = 0.5,
-        trail_stop: bool = True,
-        long_trade=True,
-        short_trade=True,
-        trading_constraints: list[TradingConstraint] = [],
-    ) -> None:
-        if isinstance(initial_volume, float | int):
-            # make it list with same size as targets_ratio if it's not
-            initial_volume = [float(initial_volume)] * len(targets_ratio)
-
-        if len(targets_ratio) != len(initial_volume):
-            raise ValueError(
-                f"targets_volumes_lot param must be \
-                             float or list[float] with same size as targets_pip\
-                             {len(initial_volume)} != {len(targets_ratio)}"
-            )
-
-        super().__init__(
-            exchange_agent,
-            targets_ratio[-1],
-            sum(initial_volume),
-            leverage=leverage,
-            stoploss_percent=stoploss_percent,
-            long_trade=long_trade,
-            short_trade=short_trade,
-        )
-
-        self.targets_ratio = targets_ratio
-        self.targets_volumes_lot = initial_volume
-        self.trail_stop = trail_stop
-        self.trading_constraints = trading_constraints
-
-    def export_config(self) -> dict:
-        conf_dict = super().export_config()
-        conf_dict.pop("riskfree_trigger_ratio")
-        conf_dict.pop("ratio")
-        conf_dict.update(
-            {
-                "targets_ratio": self.targets_ratio,
-                "targets_volumes_lot": self.targets_volumes_lot,
-                "trail_stop": self.trail_stop,
-            }
-        )
-        return conf_dict
-
-    def set_steps(self, pos: Position):
-        steps = []
-        sl_percent = abs(pos.stoploss / pos.entry_price - 1) * 100
-        for ratio, volume in zip(self.targets_ratio, self.targets_volumes_lot):
-            steps.append(
-                Trigger(
-                    price=round(
-                        abs(sl_percent * ratio / 100 + pos.side.factor())
-                        * pos.entry_price,
-                        pos.chart.precision,
-                    ),
-                    volume=volume,
-                )
-            )
-        logger.debug(f"steps for position set to: {steps}")
-        pos.steps = steps
-
-    async def open_steps_position(self, pos: Position):
-        pass
-
-    async def generate(
-        self,
-        signal: Signal,
-        entry_price: float | None = None,
-        plot: Plot | None = None,
-        sl_base_price: float | None = None,
-        *args,
-        **kwargs,
-    ) -> Position | None:
-        real_trade = False
-        if signal.side is MarketSide.BEARISH:
-            side = PositionSide.SHORT
-            if self.short_trade:
-                real_trade = True
-        else:  # signal.side is MarketSide.BULLISH:
-            side = PositionSide.LONG
-            if self.long_trade:
-                real_trade = True
-        if entry_price is None:
-            entry_price = signal.candle.close
-
-        if sl_base_price is None:
-            sl_base_price = entry_price
-
-        precision = signal.chart.precision
-        sl = round(self.init_stoploss(sl_base_price, side), precision)
-        # sl_percent = abs(entry_price - sl) / entry_price
-        # tp = round(
-        #     abs(sl_percent * self.ratio + side.factor()) * entry_price, precision
-        # )
-
-        position = Position(
-            signal.chart,
-            side,
-            entry_price,
-            self.initial_volume,
-            sl,
-            0,
-            self.leverage,
-            signal.candle.timestamp + 2,
-            signal.source,
-            real_trade=real_trade,
-            plot=plot,
-        )
-        for constraint in self.trading_constraints:
-            res = constraint.check(
-                signal, position, self.open_positions, self.closed_positions
-            )
-            if res is False:
-                logger.info(f"Opening New Position Denied due to the: {constraint}")
-                logger.debug(
-                    f"open_pos: {self.open_positions=} | closed_pos: {self.closed_positions} | new_pos: {position}"
-                )
-                return None
-
-        self.open_positions.append(position)
-        logger.info(f"New Position on {position.chart}")
-        logger.debug(f"The New Position {position}")
-
-        self.set_steps(position)
-        if real_trade:
-            await commands.OpenPosition(
-                position, self.exchange_agent, report=self.send_report
-            ).execute()
-        return position
-
-    def modify_init_sl_tp(self, position: Position):
-        position.confiremed = True
-        # update positions if needed
-        logger.info(f"Position Updated on {position.chart}")
-
-    def handler(
-        self, position: Position, tick_prices: list[float]
-    ) -> Command | None:
-        if not position.confiremed:
-            self.modify_init_sl_tp(position)
-        if position.confiremed and not position.sended:
-            position.takeprofit = position.steps[-1].price
-            commands.SendPositionSignal(
-                position, self.exchange_agent, report=self.send_report
-            )
-
-        step = position.current_step
-        if step is None:
-            logger.warning(f"checking position that its next step is None! {position=}")
-            step = position.steps[-1]
-            position._current_step_index = len(position.steps) - 1
-            # TODO: check above line!!!
-        direction = position.side.factor()
-        ticks = np.array(tick_prices) * direction
-        sl = position.stoploss * direction
-        tp = step.price * direction
-        cross = np.logical_or(ticks <= sl, ticks >= tp)
-        if not cross.any():
-            return None
-        idx = np.argmax(cross)
-        if ticks[idx] <= sl:
-            return commands.StopLoss(
-                position, self.exchange_agent, report=self.send_report
-            )
-
-        logger.info(
-            f"Step hit for position {position.id} on {position.chart} with price {step.price} and volume {step.volume}"
-        )
-        trigger_command = commands.TriggerStep(
-            position=position,
-            exchange=self.exchange_agent,
-            trigger=step,
-            report=self.send_report,
-        )
-        if self.trail_stop:
-            trailstop = commands.TrailStoplossbyStep(
-                position=position, exchange=self.exchange_agent, report=self.send_report
-            )
-            trailstop.bounded_command = trigger_command
-        return trigger_command

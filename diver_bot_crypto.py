@@ -31,7 +31,7 @@ diver_five_m_sol = BitUnixDiverTradeConfig(
 )
 
 
-TelegramReporter().main_channel = settings.TELEGRAM_CRYPTO_CHANNEL_ID
+TelegramReporter().signal_channel = settings.TELEGRAM_CRYPTO_CHANNEL_ID
 TraderBot(
     "BitUnix Diver Bot",
     [diver_five_m_sol],

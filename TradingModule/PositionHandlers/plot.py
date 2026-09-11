@@ -1,47 +1,44 @@
+from TradingModule.models import Position
 
 
-
-def draw(self):
-        if not self.plot:
-            return
-        plot = self.plot.chart_plot
-        if self.closed_timestamp:
-            end_of_line = self.closed_timestamp
+def plot_position(plot,position:Position):
+        if position.closed_timestamp:
+            end_of_line = position.closed_timestamp
             start_of_line = (
-                self.last_update_timestamp
-                if self.last_update_timestamp
-                else self.start_time
+                position.last_update_timestamp
+                if position.last_update_timestamp
+                else position.start_time
             )
             plot.draw_line(
-                self.start_time,
-                self.entry_price,
+                position.start_time,
+                position.entry_price,
                 start_of_line,
-                self.stoploss,
+                position.stoploss,
                 "#FFD562",
             )
             plot.draw_line(
-                self.start_time,
-                self.entry_price,
+                position.start_time,
+                position.entry_price,
                 start_of_line,
-                self.takeprofit,
+                position.takeprofit,
                 "#7fff86",
             )
         else:
-            end_of_line = self.plot.give_chartdata()[-1].timestamp
-            start_of_line = end_of_line - self.chart.timeframe.minutes * 60 * 10
+            end_of_line = position.plot.give_chartdata()[-1].timestamp
+            start_of_line = end_of_line - position.chart.timeframe.minutes * 60 * 10
 
         plot.draw_sl_tp_lines(
             start_of_line,
             end_of_line,
-            self.takeprofit,
-            self.stoploss,
+            position.takeprofit,
+            position.stoploss,
         )
-        if not self.closed_timestamp:
-            start_of_step = end_of_line - self.chart.timeframe.minutes * 60 * 10
+        if not position.closed_timestamp:
+            start_of_step = end_of_line - position.chart.timeframe.minutes * 60 * 10
         else:
-            start_of_step = self.start_time
+            start_of_step = position.start_time
 
-        for step in self.steps[1:]:
+        for step in position.steps[1:]:
             plot.draw_line(
                 start_of_step,
                 step.price,
@@ -52,10 +49,10 @@ def draw(self):
             )
         plot.draw_line(
             start_of_step,
-            self.initial_stoploss,
+            position.initial_stoploss,
             end_of_line,
-            self.initial_stoploss,
+            position.initial_stoploss,
             "#FF2200",
             width=2,
         )
-        plot.set_y_range((self.stoploss, self.takeprofit))
+        plot.set_y_range((position.stoploss, position.takeprofit))

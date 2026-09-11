@@ -25,7 +25,7 @@ one_m = ForexChochQueueTradeConfig(
         name="ChochQueue",
     ),
     bar_between_signals=2,
-    position_handler=SteppingHandlerForex(
+    position_generator=SteppingHandlerForex(
         ForexAgent(),
         stoploss_pip=15,
         targets_ratio=[1],
@@ -36,7 +36,7 @@ one_m = ForexChochQueueTradeConfig(
     ),
 )
 
-TelegramReporter().main_channel = "@nader_support_resistance"
+TelegramReporter().signal_channel = "@nader_support_resistance"
 TraderBot("Choch Queue Bot", [one_m], report_time={"h": 20, "m": 0})
 
 

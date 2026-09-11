@@ -50,7 +50,7 @@ class TwoChartDiverBacktester:
         del plot
 
     async def positions_backtest(self, use_database=True, show_plots=True):
-        position_handler = self.diver_config.position_handler
+        position_handler = self.diver_config.position_generator
         n_bar = self.diver_config.chart.total_bars_number  # type: ignore
 
         if use_database:
@@ -190,7 +190,7 @@ class OscilatorDiverBacktester:
         del plot
 
     async def positions_backtest(self, use_database=True, show_plots=True):
-        position_handler = self.diver_config.position_handler
+        position_handler = self.diver_config.position_generator
         n_bar = self.diver_config.chart.total_bars_number  # type: ignore
 
         if use_database:

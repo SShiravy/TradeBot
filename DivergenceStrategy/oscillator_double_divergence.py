@@ -16,7 +16,7 @@ from DivergenceStrategy.oscillator_divergence import (
 )
 from Forex.agent import ForexAgent
 from TradingModule.reporter import TelegramReporter
-from TradingModule.trader_bot import TradeConfig, Position
+from TradingModule.trader_bot import TraderBot, Position
 from dataclasses import dataclass
 from copy import copy
 import logging
@@ -71,7 +71,7 @@ class OscillatorDoubleDiverSignal(Signal):
 
 
 @dataclass(kw_only=True)
-class OscillatorDoubleDiverConfig(TradeConfig):
+class OscillatorDoubleDiverConfig(TraderBot):
     strategy: OscillatorDivergence  # type: ignore[override]
     same_line_source: bool = True
 
@@ -120,7 +120,7 @@ class OscillatorDoubleDiverConfig(TradeConfig):
         logger.info(f"OscillatorDiver Signal:{double_diver_signal}")
         # TODO: change entry source to agent.get_current_tick
         plot = None
-        if self.send_signal:
+        if self.send_signal_msg:
             self.strategy.oscillator_indicator.set(candles=chartdata.candles)
             plot = ChartWithOscillatorPlot(
                 chartdata, self.strategy.oscillator_indicator.data
@@ -132,7 +132,7 @@ class OscillatorDoubleDiverConfig(TradeConfig):
             self.strategy.oscillator_indicator.plot(plot, plot.oscillator_ax)
 
         if not self.consider_position:
-            if self.send_signal:
+            if self.send_signal_msg:
                 await TelegramReporter().new_signal(double_diver_signal, plot)
             return double_diver_signal
 
@@ -141,7 +141,7 @@ class OscillatorDoubleDiverConfig(TradeConfig):
             if first_signal.side is MarketSide.BEARISH
             else first_signal.main_chart_line.end_candle.low
         )
-        position = await self.position_handler.generate(
+        position = await self.position_generator.generate(
             double_diver_signal, sl_base_price=entry_source, plot=plot
         )
         if not position:
@@ -171,7 +171,7 @@ class OscillatorDoubleDiverConfig(TradeConfig):
         len_sub_data=100,
         show_image=True,
     ):
-        self.send_signal = False
+        self.send_signal_msg = False
         all_signals: list[OscillatorDoubleDiverSignal] = []
         default_consider_positions = self.consider_position
         self.consider_position = False

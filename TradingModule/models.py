@@ -21,23 +21,6 @@ import logging
 
 
 
-class PositionSide(Enum):
-    LONG = "Long"
-    SHORT = "Short"
-
-    @classmethod
-    def convert_market_side(cls, market_side: MarketSide):
-        match market_side:
-            case MarketSide.BEARISH:
-                return cls.SHORT
-            case MarketSide.BULLISH:
-                return cls.LONG
-            case MarketSide.NEUTRAL:
-                raise TypeError(f"Can not convert market side {market_side} to position side")
-
-    @property
-    def factor(self):
-        return 1 if self is PositionSide.LONG else -1
 
 
 command_logger = logging.getLogger("Commands")
@@ -153,13 +136,19 @@ class Command(ABC):
         return msg
 
 
+class TriggerType(Enum):
+    SL = "Stoploss"
+    TP = "Takeprofit"
+    TRAILING_STOPLOSS = "Trailing Stoploss"
+    OTHER = "Other"
+
 @dataclass(slots=True)
 class Trigger:
     price: float
     volume: float = field(default=0.0)
     cross_direction: Literal[1,-1] = 1
-    priority_number: int = field(default=0)
     command: Command | None = field(default=None)
+    type: TriggerType = field(default=TriggerType.OTHER)
     defined_timestamp: int = TimeHandler.now()
     triggered_timestamp: int | None = field(default=None)
     exchange_id: str = field(default="", init=False)
@@ -167,7 +156,7 @@ class Trigger:
     def __str__(self) -> str:
         return f"{asdict(self)}"
 
-    def check_cross(self, ticks: np.ndarray):
+    def _check_cross(self, ticks: np.ndarray):
         res = (ticks - self.price) * self.cross_direction
         if np.any(res > 0):
             return True
@@ -182,7 +171,7 @@ class Trigger:
     def check(self,ticks:np.ndarray)->bool:
         if self.triggered_timestamp:
             return True
-        if self.check_cross(ticks):
+        if self._check_cross(ticks):
             self.execute()
             return True
         return False
@@ -192,6 +181,23 @@ class PositionType(Enum):
     LIMIT = "Limit"
     MARKET = "Market"
 
+class PositionSide(Enum):
+    LONG = "Long"
+    SHORT = "Short"
+
+    @classmethod
+    def convert_market_side(cls, market_side: MarketSide):
+        match market_side:
+            case MarketSide.BEARISH:
+                return cls.SHORT
+            case MarketSide.BULLISH:
+                return cls.LONG
+            case MarketSide.NEUTRAL:
+                raise TypeError(f"Can not convert market side {market_side} to position side")
+
+    @property
+    def factor(self):
+        return 1 if self is PositionSide.LONG else -1
 @dataclass(slots=True)
 class Position:
     id: uuid.UUID | str = field(
@@ -207,32 +213,31 @@ class Position:
     leverage: int = 1
     type:PositionType = field(default=PositionType.MARKET)
     source: str = field(default="Unknown")
+
     defined_timestamp: int = field(default_factory=lambda: TimeHandler.now(), init=False)
     last_check_timestamp: int | None = field(default=None, init=False)
     open_timestamp: int | None = field(default=None, init=False)
     closed_timestamp: int | None = field(default=None, init=False)
 
     initial_stoploss: Trigger = field(init=False)
-
     exchange_id: str = field(default="", init=False)
-    spread: float = field(default=0.0, init=False)
-    msg_id: Any = field(default=None, init=False)
-    pnl_dollar: float = field(default=0.0, init=False)
-    pnl_percent: float = field(default=0.0, init=False)
-    in_forex: bool = field(default=False, init=False)
-    pnl_in_pip: float = field(default=0.0, init=False)
+
+    _steps_cache: list[Trigger] | None = field(default=None, init=False, repr=False, compare=False)
 
     def __post_init__(self):
         self.initial_stoploss = self.stoploss
 
     @property
     def steps(self):
-        self.triggers.sort(key=lambda Trigger: Trigger.priority_number)       
-        return self.triggers
+        if self._steps_cache is None:
+            self._steps_cache = sorted(
+                self.triggers, key=lambda t: t.price, reverse=self.side == PositionSide.SHORT
+            )
+        return self._steps_cache
 
    
     def __str__(self):
-        return f"{self.side}|{self.source}|{self.chart}|{self.open_timestamp}|{self.spread}"
+        return f"{self.side}|{self.source}|{self.chart}|{self.open_timestamp}"
 
     def __hash__(self):
         raw = json.dumps(

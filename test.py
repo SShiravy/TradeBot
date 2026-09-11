@@ -29,15 +29,15 @@ async def test_open_position():
 
     TelegramReporter().disable_reporting()
     the_config = forex_diver_one_m
-    the_config.position_handler.short_trade = True
-    the_config.position_handler.long_trade = True
+    the_config.position_generator.short_trade = True
+    the_config.position_generator.long_trade = True
 
     base_chartdata, second_chartdata = the_config.get_chartdata(100)
     diver_signal = the_config.strategy.generate_dummy_signal(
         base_chartdata, second_chartdata, MarketSide.BULLISH
     )
     logging.info(f"dummy diver signal: {diver_signal}")
-    pos = await the_config.position_handler.generate(diver_signal)
+    pos = await the_config.position_generator.generate(diver_signal)
     logging.info(f"position created from the dummy signal: {pos}")
     logging.info(
         f"opoen position: {the_config.agent.get_open_positions(chart=the_config.chart, comment_filter='')}"
@@ -91,7 +91,7 @@ async def test_BitUnix_open_position():
 def test_handler_export_config():
     from DivergenceStrategy.backtest_configs import forex_diver_one_m
 
-    logging.info(forex_diver_one_m.position_handler.export_config())
+    logging.info(forex_diver_one_m.position_generator.export_config())
 
 
 def store_mt5_data():

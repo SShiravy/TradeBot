@@ -10,7 +10,7 @@ xau_jpy_1m = DivergenceConfig(
     agent=ForexAgent(),
     strategy=Divergence(5, 100, [], name="ForexDiver", inverse_diver_long=True),
     bar_between_signals=2,
-    position_handler=SteppingHandlerForex(
+    position_generator=SteppingHandlerForex(
         ForexAgent(),
         stoploss_pip=5,
         targets_ratio=[],

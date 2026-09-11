@@ -1,6 +1,6 @@
 from LocalBackTester.models import CsvChart
 from TradingModule.models import Position
-from TradingModule.trader_bot import TradeConfig
+from TradingModule.trader_bot import TraderBot
 from abc import ABC, abstractmethod
 from collections import defaultdict
 import matplotlib.pyplot as plt
@@ -18,7 +18,7 @@ class BaseStatisticalAnalysis(ABC):
     def analyze(
         self,
         all_positions: list[Position],
-        the_config: TradeConfig | None,
+        the_config: TraderBot | None,
         *args,
         **kwargs,
     ) -> Any:
@@ -255,7 +255,7 @@ class BasePnLDistribution(BaseStatisticalAnalysis):
     def analyze(
         self,
         positions: list[Position],
-        the_config: TradeConfig,
+        the_config: TraderBot,
     ):
         if not isinstance(the_config.chart, CsvChart):
             raise ValueError(

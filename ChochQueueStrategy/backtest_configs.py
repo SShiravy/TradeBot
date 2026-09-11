@@ -18,7 +18,7 @@ choch_queue_xau_one_m = ForexChochQueueTradeConfig(
         name="ChochQueue",
     ),
     bar_between_signals=2,
-    position_handler=SteppingHandlerForex(
+    position_generator=SteppingHandlerForex(
         ForexAgent(),
         targets_ratio=[1, 2, 3],
         stoploss_pip=15,
@@ -44,7 +44,7 @@ choch_queue_five_m_sol = BitUnixChochQueueTradeConfig(
         use_fibo_filter=True,
         name="ChochQueue",
     ),
-    position_handler=SteppingHandlerCrypto(
+    position_generator=SteppingHandlerCrypto(
         bitunix_agent,
         leverage=30,
         stoploss_percent=0.7,

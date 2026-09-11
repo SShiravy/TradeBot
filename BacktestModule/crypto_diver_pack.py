@@ -49,7 +49,7 @@ async def start_diver_crypto_backtest_pack(send_report=False):
                 inverse_diver_long=True,
                 body_candle=params_set["body_candle"],
             ),
-            position_handler=SlTpRatioCrypto(
+            position_generator=SlTpRatioCrypto(
                 coinex_agent,
                 ratio=params_set["ratio"],
                 stoploss_percent=params_set["sl_percent"],

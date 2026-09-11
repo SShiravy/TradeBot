@@ -68,7 +68,7 @@ forex_diver_one_m = ForexDiverTradeConfig(
     second_chart=Chart("SOLUSD", TimeFrame.one_minute),
     strategy=Divergence(5, 200, [], name="ForexDiver", body_candle=True),
     bar_between_signals=2,
-    position_handler=SteppingHandlerForex(
+    position_generator=SteppingHandlerForex(
         ForexAgent(),
         targets_ratio=[1, 2, 3],
         stoploss_pip=15,
@@ -97,7 +97,7 @@ forex_rsi_diver_five_m = OscillatorDiverConfig(
         inverse_diver_long=False,
     ),
     bar_between_signals=2,
-    position_handler=(
+    position_generator=(
         SteppingHandlerForex(
             ForexAgent(),
             targets_ratio=[1, 2, 3],
@@ -129,7 +129,7 @@ forex_rsi_double_diver_five_m = OscillatorDoubleDiverConfig(
     ),
     bar_between_signals=2,
     same_line_source=False,
-    position_handler=(
+    position_generator=(
         SteppingHandlerForex(
             ForexAgent(),
             targets_ratio=[1, 2, 3],

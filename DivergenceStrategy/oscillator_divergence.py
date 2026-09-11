@@ -12,7 +12,7 @@ from ChartModule.Indicators import (
 )
 from ChartModule.plot import ChartWithOscillatorPlot
 from TradingModule.reporter import TelegramReporter
-from TradingModule.trader_bot import TradeConfig, Position
+from TradingModule.trader_bot import TraderBot, Position
 from TradingModule.models import Strategy
 from dataclasses import dataclass
 from typing import Literal
@@ -388,7 +388,7 @@ class OscillatorDivergence(Strategy):
 
 
 @dataclass(kw_only=True)
-class OscillatorDiverConfig(TradeConfig):
+class OscillatorDiverConfig(TraderBot):
     strategy: OscillatorDivergence  # type: ignore[override]
 
     async def find_signal(
@@ -402,7 +402,7 @@ class OscillatorDiverConfig(TradeConfig):
         logger.info(f"Oscillator Divergence Signal:{signal}")
 
         plot = None
-        if self.send_signal:
+        if self.send_signal_msg:
             self.strategy.oscillator_indicator.set(candles=chartdata)
             plot = ChartWithOscillatorPlot(
                 chartdata, self.strategy.oscillator_indicator.data
@@ -411,7 +411,7 @@ class OscillatorDiverConfig(TradeConfig):
             self.strategy.oscillator_indicator.plot(plot, plot.oscillator_ax)
 
         if not self.consider_position:
-            if self.send_signal:
+            if self.send_signal_msg:
                 await TelegramReporter().new_signal(signal, plot)
             return signal
 
@@ -421,7 +421,7 @@ class OscillatorDiverConfig(TradeConfig):
             else signal.main_chart_line.end_candle.low
         )  # TODO: change entry source to agent.get_current_tick
 
-        position = await self.position_handler.generate(
+        position = await self.position_generator.generate(
             signal, sl_base_price=entry_source, plot=plot
         )
         if not position:
@@ -451,7 +451,7 @@ class OscillatorDiverConfig(TradeConfig):
         len_sub_data=100,
         show_image=True,
     ):
-        self.send_signal = False
+        self.send_signal_msg = False
         all_signals: list[OscillatorDiverSignal] = []
 
         jump = 0
