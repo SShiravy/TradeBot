@@ -195,11 +195,16 @@ class SwingPivots(IndicatorBaseModel):
             raise ValueError("last_checked_candle is None")
 
         start_index = self.find_new_candle_index(candles)
-        if start_index >= len(candles):
-            return self.data
 
         # position of `last_checked_candle` in the NEW window vs where it
-        # was recorded last time -> how far the window has slid forward
+        # was recorded last time -> how far the window has slid forward.
+        # This can be positive even when no brand-new candle has closed
+        # yet (start_index >= len(candles)) - e.g. the caller fetches a
+        # smaller batch than last time while the tail candle is still the
+        # same one. Rebasing must not be skipped in that case, or every
+        # already-recorded pivot's `.index` keeps pointing at a position
+        # from the old, larger window - out of range against the new,
+        # shorter `candles` list passed in here.
         shift = self._last_checked_index - (start_index - 1)
         if shift > 0:
             self._rebase(shift)

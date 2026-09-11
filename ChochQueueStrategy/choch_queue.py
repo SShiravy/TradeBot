@@ -554,6 +554,15 @@ class ChochQueueFilter(Strategy):
                 "type": "high" if p.is_high else "low",
             }
             for p in self.pivots.data
+            # a pivot's index is only rebased relative to the *current*
+            # candles window when SwingPivots sees a genuinely new tail
+            # candle; if this window is smaller than the one that formed
+            # an old pivot (e.g. the caller fetched fewer candles than
+            # last time while the tail candle is unchanged), that pivot's
+            # rebased index can still fall outside [0, len(candles)) -
+            # skip it rather than index into the wrong candle (negative
+            # index) or crash (index >= len(candles)).
+            if 0 <= p.index < len(candles)
         ]
         self._pivot_events = [
             {

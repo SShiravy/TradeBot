@@ -417,9 +417,9 @@ if __name__ == "__main__":
 
     # test_auto_trendlines()
 
-    # test_sr_zones()
+    test_sr_zones()
 
-    test_ema_touch()
+    # test_ema_touch()
 
     # new_backtest()
 
