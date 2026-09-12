@@ -1,6 +1,6 @@
 from ChartModule.models import Candle, Chart, ChartData
 from LocalBackTester.models import CsvChart
-from TradingModule.models import ExchangeAgent, Position
+from TraderBot.models import ExchangeAgent, Position
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any

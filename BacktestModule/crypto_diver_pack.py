@@ -1,9 +1,9 @@
-from Coinex import CoinexAgent, CoinexDiverTradeConfig
+from ExchangeAgents.Coinex import CoinexAgent, CoinexDiverTradeConfig
 from ChartModule import Chart, TimeFrame
-from DivergenceStrategy.divergence import Divergence
-from TradingModule.PositionHandlers import SlTpRatioCrypto
-from TradingModule.models import PositionsReport
-from TradingModule.reporter import TelegramReporter
+from Bots.DivergenceStrategy.divergence import Divergence
+from TraderBot.PositionHandlers import SlTpRatioCrypto
+from TraderBot.models import PositionsReport
+from TraderBot.reporter import TelegramReporter
 from itertools import product
 from config import settings
 from datetime import datetime

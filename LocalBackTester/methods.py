@@ -1,5 +1,5 @@
-from Forex.agent import forex_timeframe_mapper
-from DivergenceStrategy import TwoChartDiverTradeConfig
+from ExchangeAgents.MT5.agent import forex_timeframe_mapper
+from Bots.DivergenceStrategy import TwoChartDiverTradeConfig
 from LocalBackTester.Database.methods import fetch_two_chart_diver_siganls
 from ChartModule.plot import DoubleChartPlot
 from LocalBackTester.agent import LocalAgent

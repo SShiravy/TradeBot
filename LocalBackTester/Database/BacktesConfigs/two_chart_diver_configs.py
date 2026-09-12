@@ -1,9 +1,9 @@
 from ChartModule.Indicators.moving_avg import EMA
 from LocalBackTester.agent import LocalAgent
-from Forex.bot_config import ForexDiverTradeConfig
-from DivergenceStrategy import Divergence
-from Coinex.bot_config import CoinexDiverTradeConfig
-from TradingModule.PositionHandlers import (
+from ExchangeAgents.MT5.bot_config import ForexDiverTradeConfig
+from Bots.DivergenceStrategy import Divergence
+from ExchangeAgents.Coinex.bot_config import CoinexDiverTradeConfig
+from TraderBot.PositionHandlers import (
     SteppingHandlerForex,
     SteppingHandlerCrypto,
 )
@@ -36,7 +36,7 @@ from LocalBackTester.all_charts import (
     XAUUSD_1m_99000_28_6,
     XAUUSD_3m_99000,
 )
-from TradingModule.PositionHandlers.trading_constraints import (
+from TraderBot.PositionHandlers.trading_constraints import (
     LoseInRowConstraint,
     SideConstraint,
 )

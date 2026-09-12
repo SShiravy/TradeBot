@@ -354,7 +354,9 @@ class ChartData:
         )
 
     def __post_init__(self):
-        self.timestamps = TimeHandler.validate_timestamps(self.timestamps,auto_fix=True)
+        self.timestamps = TimeHandler.validate_timestamps(
+            self.timestamps, auto_fix=True
+        )
         if self.chart.chart_type is ChartType.Heikinashi:
             ha_open, ha_high, ha_low, ha_close = self._compute_heikinashi(
                 self.open, self.high, self.low, self.close
@@ -366,7 +368,6 @@ class ChartData:
                 ha_close,
             )
         self.indices = np.arange(len(self), dtype=np.int64)
-
 
     # TODO: cache these methods to avoid repeated calculations
     @property

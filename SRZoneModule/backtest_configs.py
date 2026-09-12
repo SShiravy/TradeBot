@@ -1,7 +1,7 @@
 from ChartModule import Chart, TimeFrame
 from SRZoneModule.sr_zone import SRZones
-from Forex import ForexAgent
-from BitUnix import BitUnixAgent
+from ExchangeAgents.MT5 import MT5Agent
+from ExchangeAgents.BitUnix import BitUnixAgent
 from config import settings
 
 # Forex / Gold ------------------------------------------------------------
@@ -23,7 +23,7 @@ forex_sr_zones_one_m = SRZones(
 
 def run_forex_sr_zones_example():
     chart = Chart("XAUUSD!", TimeFrame.one_minute)
-    chartdata = ForexAgent().get_chartdata(chart, 1000)
+    chartdata = MT5Agent().get_chartdata(chart, 1000)
     if chartdata is None:
         raise ValueError(f"{chartdata=}")
 

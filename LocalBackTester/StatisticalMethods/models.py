@@ -1,6 +1,6 @@
 from LocalBackTester.models import CsvChart
-from TradingModule.models import Position
-from TradingModule.trader_bot import TraderBot
+from TraderBot.models import Position
+from TraderBot.trader_bot import TraderBot
 from abc import ABC, abstractmethod
 from collections import defaultdict
 import matplotlib.pyplot as plt

@@ -1,5 +1,5 @@
 from LocalBackTester.StatisticalMethods.models import BaseStatisticalAnalysis
-from TradingModule.models import Position
+from TraderBot.models import Position
 
 
 class RiskAnalysis(BaseStatisticalAnalysis):

@@ -10,9 +10,10 @@ TimeInput = Union[int, float, str, datetime]
 
 class TimeHandler:
     """In backtest mode, set_time() freezes/advances time for every caller"""
+
     _override: Optional[int] = None
     _tz = timezone.utc
-    
+
     _MS_THRESHOLD = 10**12
     _US_THRESHOLD = 10**15
     _NS_THRESHOLD = 10**18
@@ -43,13 +44,17 @@ class TimeHandler:
     @classmethod
     def is_backtest(cls) -> bool:
         return cls._override is not None
-    
+
     @classmethod
     @overload
-    def validate_timestamps(cls, timestamps: int | float, auto_fix: bool = True) -> int:...
+    def validate_timestamps(
+        cls, timestamps: int | float, auto_fix: bool = True
+    ) -> int: ...
     @classmethod
     @overload
-    def validate_timestamps(cls, timestamps: np.ndarray, auto_fix: bool = True) -> np.ndarray:...
+    def validate_timestamps(
+        cls, timestamps: np.ndarray, auto_fix: bool = True
+    ) -> np.ndarray: ...
 
     @classmethod
     def validate_timestamps(
@@ -94,7 +99,7 @@ class TimeHandler:
             dt = value if value.tzinfo else value.replace(tzinfo=cls._tz)
             return int(dt.timestamp())
         if isinstance(value, (int, float)):
-            return cls.validate_timestamps(value) 
+            return cls.validate_timestamps(value)
         if isinstance(value, str):
             return int(cls.parse(value).timestamp())
         raise TypeError(f"Unsupported time type: {type(value)}")
@@ -118,7 +123,9 @@ class TimeHandler:
             return False
 
     @classmethod
-    def format(cls, value: Optional[TimeInput] = None, fmt: str = "%Y-%m-%d %H:%M:%S") -> str:
+    def format(
+        cls, value: Optional[TimeInput] = None, fmt: str = "%Y-%m-%d %H:%M:%S"
+    ) -> str:
         """Format `value` (default: current time) as a string."""
         ts = cls.now() if value is None else cls.to_timestamp(value)
         return cls.to_datetime(ts).strftime(fmt)
@@ -129,11 +136,12 @@ class TimeHandler:
         return cls.now() - cls.to_timestamp(value)
 
     @classmethod
-    def is_between(cls, start: TimeInput, end: TimeInput, value: Optional[TimeInput] = None) -> bool:
+    def is_between(
+        cls, start: TimeInput, end: TimeInput, value: Optional[TimeInput] = None
+    ) -> bool:
         """Whether `value` (default: now) falls within [start, end], inclusive."""
         v = cls.now() if value is None else cls.to_timestamp(value)
         return cls.to_timestamp(start) <= v <= cls.to_timestamp(end)
-
 
     def __init__(self, when: TimeInput):
         self._temp_time = self.to_timestamp(when)
@@ -146,4 +154,3 @@ class TimeHandler:
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         TimeHandler._override = self._previous
-

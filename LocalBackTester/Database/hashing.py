@@ -1,4 +1,4 @@
-from TradingModule.trader_bot import TraderBot
+from TraderBot.trader_bot import TraderBot
 import json
 import hashlib
 

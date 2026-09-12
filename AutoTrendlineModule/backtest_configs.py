@@ -1,7 +1,7 @@
 from ChartModule import Chart, TimeFrame
 from AutoTrendlineModule.auto_trendline import AutoTrendlines
-from Forex import ForexAgent
-from BitUnix import BitUnixAgent
+from ExchangeAgents.MT5 import MT5Agent
+from ExchangeAgents.BitUnix import BitUnixAgent
 from config import settings
 
 # Forex / Gold ------------------------------------------------------------
@@ -26,7 +26,7 @@ forex_auto_trendlines_one_m = AutoTrendlines(
 
 def run_forex_auto_trendlines_example():
     chart = Chart("XAUUSD!", TimeFrame.one_minute)
-    chartdata = ForexAgent().get_chartdata(chart, 1000)
+    chartdata = MT5Agent().get_chartdata(chart, 1000)
     if chartdata is None:
         raise ValueError(f"{chartdata=}")
 

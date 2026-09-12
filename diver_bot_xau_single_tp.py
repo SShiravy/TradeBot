@@ -1,15 +1,15 @@
 from config import settings
 
 settings.METATRADER_TERMINAL_PATH = settings.SECOND_METATRADER_TERMINAL_PATH
-from Forex import ForexAgent, ForexDiverTradeConfig
+from ExchangeAgents.MT5 import MT5Agent, ForexDiverTradeConfig
 from ChartModule import Chart, TimeFrame
-from TradingModule.PositionHandlers.stepping_handler import SteppingHandlerForex
-from TradingModule.PositionHandlers.trading_constraints import (
+from TraderBot.PositionHandlers.stepping_handler import SteppingHandlerForex
+from TraderBot.PositionHandlers.trading_constraints import (
     LoseInRowConstraint,
     SideConstraint,
 )
-from TradingModule.trader_bot import TraderBot
-from DivergenceStrategy import Divergence
+from TraderBot.trader_bot import TraderBot
+from Bots.DivergenceStrategy import Divergence
 from custom_logger import build_logger, LoggerConfig
 import asyncio
 
@@ -23,7 +23,7 @@ one_m = ForexDiverTradeConfig(
     ),
     bar_between_signals=2,
     position_generator=SteppingHandlerForex(
-        ForexAgent(),
+        MT5Agent(),
         stoploss_pip=5,
         targets_ratio=[],
         targets_ratio_volumes=[],

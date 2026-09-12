@@ -1,12 +1,12 @@
-from Forex import ForexAgent, ForexDiverTradeConfig
+from ExchangeAgents.MT5 import MT5Agent, ForexDiverTradeConfig
 from ChartModule import Chart, TimeFrame
-from TradingModule.PositionHandlers.stepping_handler import SteppingHandlerForex
-from TradingModule.PositionHandlers.trading_constraints import (
+from TraderBot.PositionHandlers.stepping_handler import SteppingHandlerForex
+from TraderBot.PositionHandlers.trading_constraints import (
     LoseInRowConstraint,
     SideConstraint,
 )
-from TradingModule.trader_bot import TraderBot
-from DivergenceStrategy import Divergence
+from TraderBot.trader_bot import TraderBot
+from Bots.DivergenceStrategy import Divergence
 from custom_logger import LoggerConfig, build_logger
 import asyncio
 
@@ -19,7 +19,7 @@ one_m = ForexDiverTradeConfig(
     strategy=Divergence(5, 100, [], name="ForexDiver", inverse_diver_long=True),
     bar_between_signals=2,
     position_generator=SteppingHandlerForex(
-        ForexAgent(),
+        MT5Agent(),
         stoploss_pip=30,
         targets_ratio=[1, 2, 3],
         targets_ratio_volumes=[0.01, 0.01, 0.01],
@@ -43,7 +43,7 @@ dxy_1m = ForexDiverTradeConfig(
     strategy=Divergence(5, 100, [], name="DXY_divergence"),
     bar_between_signals=2,
     position_generator=SteppingHandlerForex(
-        ForexAgent(),
+        MT5Agent(),
         stoploss_pip=5,
         targets_ratio=[],
         targets_ratio_volumes=[],

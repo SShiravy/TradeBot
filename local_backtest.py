@@ -1,5 +1,5 @@
 from LocalBackTester.Database.create_db import create_db
-from DivergenceStrategy.diver_backtester import TwoChartDiverBacktester
+from Bots.DivergenceStrategy.diver_backtester import TwoChartDiverBacktester
 from custom_logger import build_logger, LoggerConfig
 from config import settings
 import asyncio

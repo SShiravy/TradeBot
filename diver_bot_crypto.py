@@ -1,10 +1,10 @@
-from BitUnix.agent import BitUnixAgent
-from BitUnix.bot_configs import BitUnixDiverTradeConfig
+from ExchangeAgents.BitUnix.agent import BitUnixAgent
+from ExchangeAgents.BitUnix.bot_configs import BitUnixDiverTradeConfig
 from ChartModule import Chart, TimeFrame
-from TradingModule.PositionHandlers.stepping_handler import SteppingHandlerCrypto
-from TradingModule.reporter import TelegramReporter
-from TradingModule.trader_bot import TraderBot
-from DivergenceStrategy import Divergence
+from TraderBot.PositionHandlers.stepping_handler import SteppingHandlerCrypto
+from TraderBot.reporter import TelegramReporter
+from TraderBot.trader_bot import TraderBot
+from Bots.DivergenceStrategy import Divergence
 from custom_logger import build_logger, LoggerConfig
 from config import settings
 import asyncio

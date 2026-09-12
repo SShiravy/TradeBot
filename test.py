@@ -6,7 +6,7 @@ build_logger(LoggerConfig(name="root", log_file_name="test"))
 
 
 async def start_diver_backtest():
-    from DivergenceStrategy.backtest_configs import (
+    from Bots.DivergenceStrategy.backtest_configs import (
         forex_diver_one_m,
     )
 
@@ -20,10 +20,10 @@ async def start_diver_crypto_backtest_pack():
 
 
 async def test_open_position():
-    from TradingModule.trader_bot import TraderBot
-    from TradingModule.reporter import TelegramReporter
+    from TraderBot.trader_bot import TraderBot
+    from TraderBot.reporter import TelegramReporter
     from ChartModule.models import MarketSide
-    from DivergenceStrategy.backtest_configs import (
+    from Bots.DivergenceStrategy.backtest_configs import (
         forex_diver_one_m,
     )
 
@@ -48,15 +48,15 @@ async def test_open_position():
 
 
 async def test_BitUnix_open_position():
-    from TradingModule.trader_bot import TraderBot
+    from TraderBot.trader_bot import TraderBot
     from config import settings
-    from TradingModule.reporter import TelegramReporter
+    from TraderBot.reporter import TelegramReporter
     from ChartModule.models import MarketSide
-    from DivergenceStrategy.backtest_configs import (
+    from Bots.DivergenceStrategy.backtest_configs import (
         crypto_diver_five_m_sol,
         crypto_diver_five_m_near,
     )
-    from BitUnix import BitUnixAgent
+    from ExchangeAgents.BitUnix import BitUnixAgent
 
     agent = BitUnixAgent(settings.BITUNIX_API_KEY, settings.BITUNIX_API_SECRET_KEY)
 
@@ -89,7 +89,7 @@ async def test_BitUnix_open_position():
 
 
 def test_handler_export_config():
-    from DivergenceStrategy.backtest_configs import forex_diver_one_m
+    from Bots.DivergenceStrategy.backtest_configs import forex_diver_one_m
 
     logging.info(forex_diver_one_m.position_generator.export_config())
 
@@ -119,10 +119,10 @@ def test_rsi():
     from ChartModule.Indicators.rsi import RSI
     from ChartModule.models import Chart, TimeFrame
     from ChartModule.plot import ChartWithOscillatorPlot
-    from Forex.agent import ForexAgent
+    from ExchangeAgents.MT5.agent import MT5Agent
 
     chart = Chart("XAUUSD!", TimeFrame.one_minute)
-    chart_data = ForexAgent().get_chartdata(chart, 200)
+    chart_data = MT5Agent().get_chartdata(chart, 200)
     if chart_data is None:
         raise ValueError
 
@@ -136,11 +136,11 @@ def test_rsi():
 def test_choch_queue():
     from ChartModule.models import Chart, TimeFrame
     from ChartModule.plot import ChartPlot
-    from ChochQueueStrategy.choch_queue import ChochQueueFilter
-    from Forex.agent import ForexAgent
+    from Bots.ChochStrategy.choch_queue import ChochQueueFilter
+    from ExchangeAgents.MT5.agent import MT5Agent
 
     chart = Chart("XAUUSD", TimeFrame.one_minute)
-    chart_data = ForexAgent().get_chartdata(chart, 500)
+    chart_data = MT5Agent().get_chartdata(chart, 500)
     if chart_data is None:
         raise ValueError
 
@@ -166,10 +166,10 @@ def test_auto_trendlines():
     from ChartModule.models import Chart, TimeFrame
     from ChartModule.plot import ChartPlot
     from AutoTrendlineModule import AutoTrendlines
-    from Forex.agent import ForexAgent
+    from ExchangeAgents.MT5.agent import MT5Agent
 
     chart = Chart("XAUUSD", TimeFrame.one_minute)
-    chart_data = ForexAgent().get_chartdata(chart, 1000)
+    chart_data = MT5Agent().get_chartdata(chart, 1000)
     if chart_data is None:
         raise ValueError
 
@@ -207,10 +207,10 @@ def test_sr_zones():
     from ChartModule.models import Chart, TimeFrame
     from ChartModule.plot import ChartPlot
     from SRZoneModule import SRZones
-    from Forex.agent import ForexAgent
+    from ExchangeAgents.MT5.agent import MT5Agent
 
     chart = Chart("XAUUSD", TimeFrame.one_minute)
-    chart_data = ForexAgent().get_chartdata(chart, 1000)
+    chart_data = MT5Agent().get_chartdata(chart, 1000)
     if chart_data is None:
         raise ValueError
 

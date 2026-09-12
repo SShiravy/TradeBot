@@ -1,6 +1,6 @@
 from ChartModule import ChartData, Chart
-from TradingModule.PositionHandlers.manager import PositionGenerator
-from TradingModule.models import ExchangeAgent, PositionSide, Position
+from TraderBot.PositionHandlers.manager import PositionGenerator
+from TraderBot.models import ExchangeAgent, PositionSide, Position
 from datetime import datetime
 import logging
 
@@ -68,7 +68,9 @@ class DummyPositionHanler(PositionGenerator):
     async def generate(self, signal, *args, **kwargs) -> Position:
         return None  # type:ignore
 
-    def init_stoploss(self, entry_price: float, side: PositionSide, chart: Chart) -> float:
+    def init_stoploss(
+        self, entry_price: float, side: PositionSide, chart: Chart
+    ) -> float:
         return 0.0
 
     def init_takeprofit(self, entry_price: float, side: PositionSide) -> float:

@@ -2,12 +2,12 @@ from config import settings
 
 settings.METATRADER_TERMINAL_PATH = settings.SECOND_METATRADER_TERMINAL_PATH
 settings.TELEGRAM_BOT_TOKEN = "8750919120:AAGwJ6n7_iE9twPx1464Ez8gac4_rxHn-l4"
-from TradingModule.reporter import TelegramReporter
-from Forex import ForexAgent, ForexChochQueueTradeConfig
+from TraderBot.reporter import TelegramReporter
+from ExchangeAgents.MT5 import MT5Agent, ForexChochQueueTradeConfig
 from ChartModule import Chart, TimeFrame
-from TradingModule.PositionHandlers.stepping_handler import SteppingHandlerForex
-from TradingModule.trader_bot import TraderBot
-from ChochQueueStrategy.choch_queue import ChochQueueFilter
+from TraderBot.PositionHandlers.stepping_handler import SteppingHandlerForex
+from TraderBot.trader_bot import TraderBot
+from Bots.ChochStrategy.choch_queue import ChochQueueFilter
 from custom_logger import LoggerConfig, build_logger
 import asyncio
 
@@ -26,7 +26,7 @@ one_m = ForexChochQueueTradeConfig(
     ),
     bar_between_signals=2,
     position_generator=SteppingHandlerForex(
-        ForexAgent(),
+        MT5Agent(),
         stoploss_pip=15,
         targets_ratio=[1],
         targets_ratio_volumes=[0.01],

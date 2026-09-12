@@ -1,20 +1,22 @@
 from config import settings
 
 settings.TELEGRAM_BOT_TOKEN = "8937168160:AAHtl4qXCSKXgT6YTSZEvYYDSHs3UcVqD5Y"
-from DivergenceStrategy.two_chart_divergence import Divergence
-from Forex.bot_config import ForexDiverTradeConfig
-from TradingModule.reporter import TelegramReporter
+from Bots.DivergenceStrategy.two_chart_divergence import Divergence
+from ExchangeAgents.MT5.bot_config import ForexDiverTradeConfig
+from TraderBot.reporter import TelegramReporter
 from ChartModule.Indicators.models import SupportCandleConditions
 from ChartModule.Indicators.rsi import RSI
-from DivergenceStrategy.oscillator_divergence import (
+from Bots.DivergenceStrategy.oscillator_divergence import (
     OscillatorDiverConfig,
     OscillatorDivergence,
 )
-from DivergenceStrategy.oscillator_double_divergence import OscillatorDoubleDiverConfig
-from Forex import ForexAgent
+from Bots.DivergenceStrategy.oscillator_double_divergence import (
+    OscillatorDoubleDiverConfig,
+)
+from ExchangeAgents.MT5 import MT5Agent
 from ChartModule import Chart, TimeFrame
-from TradingModule.PositionHandlers.stepping_handler import SteppingHandlerForex
-from TradingModule.trader_bot import TraderBot
+from TraderBot.PositionHandlers.stepping_handler import SteppingHandlerForex
+from TraderBot.trader_bot import TraderBot
 from custom_logger import LoggerConfig, build_logger
 import asyncio
 
@@ -28,7 +30,7 @@ xau_jpy_1m = ForexDiverTradeConfig(
     strategy=Divergence(5, 100, [], name="ForexDiver", inverse_diver_long=True),
     bar_between_signals=2,
     position_generator=SteppingHandlerForex(
-        ForexAgent(),
+        MT5Agent(),
         stoploss_pip=30,
         targets_ratio=[1, 2, 3],
         targets_ratio_volumes=[0.01, 0.01, 0.01],
@@ -52,7 +54,7 @@ xau_dxy_1m = ForexDiverTradeConfig(
     strategy=Divergence(5, 100, [], name="DXY_divergence"),
     bar_between_signals=2,
     position_generator=SteppingHandlerForex(
-        ForexAgent(),
+        MT5Agent(),
         stoploss_pip=5,
         targets_ratio=[],
         targets_ratio_volumes=[],
@@ -69,7 +71,7 @@ xau_dxy_1m = ForexDiverTradeConfig(
 xau_double_diver_rsi_1m = OscillatorDoubleDiverConfig(
     chart=Chart("XAUUSD!", TimeFrame.one_minute),
     consider_position=False,
-    agent=ForexAgent(),
+    agent=MT5Agent(),
     strategy=OscillatorDivergence(
         RSI(),
         3,
@@ -86,7 +88,7 @@ xau_double_diver_rsi_1m = OscillatorDoubleDiverConfig(
     same_line_source=True,
     position_generator=(
         SteppingHandlerForex(
-            ForexAgent(),
+            MT5Agent(),
             targets_ratio=[],
             targets_ratio_volumes=[],
             stoploss_pip=30,
@@ -102,7 +104,7 @@ xau_double_diver_rsi_1m = OscillatorDoubleDiverConfig(
 audcad_double_diver_rsi_1m = OscillatorDoubleDiverConfig(
     chart=Chart("AUDCAD!", TimeFrame.one_minute),
     consider_position=False,
-    agent=ForexAgent(),
+    agent=MT5Agent(),
     strategy=OscillatorDivergence(
         RSI(),
         3,
@@ -119,7 +121,7 @@ audcad_double_diver_rsi_1m = OscillatorDoubleDiverConfig(
     same_line_source=True,
     position_generator=(
         SteppingHandlerForex(
-            ForexAgent(),
+            MT5Agent(),
             targets_ratio=[],
             targets_ratio_volumes=[],
             stoploss_pip=10,
@@ -135,7 +137,7 @@ audcad_double_diver_rsi_1m = OscillatorDoubleDiverConfig(
 usdjpy_double_diver_rsi_1m = OscillatorDoubleDiverConfig(
     chart=Chart("USDJPY!", TimeFrame.one_minute),
     consider_position=False,
-    agent=ForexAgent(),
+    agent=MT5Agent(),
     strategy=OscillatorDivergence(
         RSI(),
         3,
@@ -152,7 +154,7 @@ usdjpy_double_diver_rsi_1m = OscillatorDoubleDiverConfig(
     same_line_source=True,
     position_generator=(
         SteppingHandlerForex(
-            ForexAgent(),
+            MT5Agent(),
             targets_ratio=[],
             targets_ratio_volumes=[],
             stoploss_pip=9,
@@ -167,7 +169,7 @@ usdjpy_double_diver_rsi_1m = OscillatorDoubleDiverConfig(
 eurgbp_double_diver_rsi_1m = OscillatorDoubleDiverConfig(
     chart=Chart("EURGBP!", TimeFrame.one_minute),
     consider_position=False,
-    agent=ForexAgent(),
+    agent=MT5Agent(),
     strategy=OscillatorDivergence(
         RSI(),
         3,
@@ -184,7 +186,7 @@ eurgbp_double_diver_rsi_1m = OscillatorDoubleDiverConfig(
     same_line_source=True,
     position_generator=(
         SteppingHandlerForex(
-            ForexAgent(),
+            MT5Agent(),
             targets_ratio=[],
             targets_ratio_volumes=[],
             stoploss_pip=5,
@@ -200,7 +202,7 @@ eurgbp_double_diver_rsi_1m = OscillatorDoubleDiverConfig(
 xau_rsi_1m = OscillatorDiverConfig(
     chart=Chart("XAUUSD!", TimeFrame.one_minute),
     consider_position=False,
-    agent=ForexAgent(),
+    agent=MT5Agent(),
     strategy=OscillatorDivergence(
         RSI(),
         3,
@@ -216,7 +218,7 @@ xau_rsi_1m = OscillatorDiverConfig(
     bar_between_signals=2,
     position_generator=(
         SteppingHandlerForex(
-            ForexAgent(),
+            MT5Agent(),
             targets_ratio=[],
             targets_ratio_volumes=[],
             stoploss_pip=30,

@@ -1,24 +1,26 @@
 from typing import TypeAlias
 
 from ChartModule.models import CandlesSource, MarketSide
-from DivergenceStrategy import TwoChartDiverTradeConfig, DivergenceSignal
+from Bots.DivergenceStrategy import TwoChartDiverTradeConfig, DivergenceSignal
 from ChartModule.Indicators import Line
 from sqlmodel import Session, select
-from DivergenceStrategy.divergence_db_models import (
+from Bots.DivergenceStrategy.divergence_db_models import (
     DiverBacktestRow,
     DiverSignalRow,
     OscillatorDiverBacktestRow,
     OscillatorDiverSignalRow,
     OscillatorDoubleDiverSignalRow,
 )
-from DivergenceStrategy.oscillator_divergence import OscillatorDiverConfig
-from DivergenceStrategy.oscillator_double_divergence import OscillatorDoubleDiverConfig
+from Bots.DivergenceStrategy.oscillator_divergence import OscillatorDiverConfig
+from Bots.DivergenceStrategy.oscillator_double_divergence import (
+    OscillatorDoubleDiverConfig,
+)
 from LocalBackTester.Database.backtest_models import PositionsResult
 from LocalBackTester.Database.create_db import engine
 import logging
 
 from LocalBackTester.Database.hashing import give_config_hash
-from TradingModule.PositionHandlers.manager import PositionGenerator
+from TraderBot.PositionHandlers.manager import PositionGenerator
 
 
 logger = logging.getLogger("DB Methods")
