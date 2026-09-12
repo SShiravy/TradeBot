@@ -4,7 +4,6 @@ from TradingModule.PositionHandlers.stepping_handler import SteppingHandlerForex
 from EmaPivotChochStrategy.ema_pivot_choch import EmaPivotChochFilter
 
 
-
 xau_3m = ForexEmaPivotChochTradeConfig(
     chart=Chart("XAUUSD!", TimeFrame.one_minute),
     htf_chart=Chart("XAUUSD!", TimeFrame.three_minutes),

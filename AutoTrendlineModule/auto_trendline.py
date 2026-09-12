@@ -41,7 +41,7 @@ class MTREvent:
 
 @dataclass(slots=True)
 class TrendlineModel:
-    side: Literal[MarketSide.BEARISH,MarketSide.BULLISH]
+    side: Literal[MarketSide.BEARISH, MarketSide.BULLISH]
     source: CandlesSource
     base_index: int
     base_candle: Candle
@@ -229,9 +229,7 @@ class AutoTrendlines(IndicatorBaseModel):
 
     def _find_most_recent_active(self, direction: MarketSide) -> TrendlineModel | None:
         candidates = [
-            line
-            for line in self._lines
-            if not line.broken and line.side is direction
+            line for line in self._lines if not line.broken and line.side is direction
         ]
         if not candidates:
             return None
@@ -239,9 +237,7 @@ class AutoTrendlines(IndicatorBaseModel):
 
     def _find_weakest_active(self, direction: MarketSide) -> TrendlineModel | None:
         candidates = [
-            line
-            for line in self._lines
-            if not line.broken and line.side is direction
+            line for line in self._lines if not line.broken and line.side is direction
         ]
         if not candidates:
             return None
@@ -290,7 +286,7 @@ class AutoTrendlines(IndicatorBaseModel):
 
     def _add_new_line(
         self,
-        direction: Literal[MarketSide.BEARISH,MarketSide.BULLISH],
+        direction: Literal[MarketSide.BEARISH, MarketSide.BULLISH],
         base_index: int,
         base_candle: Candle,
         slope: float,
@@ -324,7 +320,7 @@ class AutoTrendlines(IndicatorBaseModel):
 
     def _try_merge_or_add(
         self,
-        direction: Literal[MarketSide.BEARISH,MarketSide.BULLISH],
+        direction: Literal[MarketSide.BEARISH, MarketSide.BULLISH],
         base_index: int,
         base_candle: Candle,
         new_index: int,

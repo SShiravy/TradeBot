@@ -35,7 +35,6 @@ class EmaTouchSignal(Signal):
 
 
 class EmaTouchFilter(Strategy):
-
     def __init__(
         self,
         ema_periods: list[int],
@@ -217,7 +216,10 @@ class EmaTouchFilter(Strategy):
                         <= self.max_candles_between_touches
                     ):
                         if candle.time == last_candle.time:
-                            assert break_candle is not None and first_touch_candle is not None
+                            assert (
+                                break_candle is not None
+                                and first_touch_candle is not None
+                            )
                             result = EmaTouchSignal(
                                 self.chart,
                                 candle,
@@ -271,9 +273,11 @@ class EmaTouchFilter(Strategy):
         super().draw(plot, signal, draw_indicators)
         ema_values = self._emas.get(signal.ema_period)
         if ema_values:
+            len_ema = len(ema_values)
+            n = plot.plot_n_candles if len_ema > plot.plot_n_candles else len_ema
             plot.linear_plot(
-                list(ema_values.keys()),
-                list(ema_values.values()),
+                list(ema_values.keys())[-n:],
+                list(ema_values.values())[-n:],
                 color=self._ema_colors()[signal.ema_period],
                 legend=f"EMA{signal.ema_period}",
             )
@@ -282,10 +286,15 @@ class EmaTouchFilter(Strategy):
         # from below (its high); an up-break/BULLISH setup is touched by
         # a candle reaching DOWN from above (its low).
         touch_source = (
-            CandlesSource.Low if signal.side is MarketSide.BULLISH else CandlesSource.High
+            CandlesSource.Low
+            if signal.side is MarketSide.BULLISH
+            else CandlesSource.High
         )
         plot.mark_candle(
-            signal.break_candle, source=CandlesSource.Close, color="#ff9800", legend="Break"
+            signal.break_candle,
+            source=CandlesSource.Close,
+            color="#ff9800",
+            legend="Break",
         )
         plot.mark_candle(
             signal.first_touch_candle,

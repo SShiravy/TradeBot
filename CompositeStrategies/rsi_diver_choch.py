@@ -37,8 +37,8 @@ class RsiDiverChochConfig(TradeConfig):
     double_diver: bool = True
     mtr_indicator: AutoTrendlines | None = None
     n_candle_confirmation: int = 100
-    last_diver_signal: OscillatorDoubleDiverSignal | OscillatorDiverSignal | None = field(
-        default=None, init=False
+    last_diver_signal: OscillatorDoubleDiverSignal | OscillatorDiverSignal | None = (
+        field(default=None, init=False)
     )
     last_signal_msg_id: int | None = field(default=None, init=False)
     last_3push_checked_candle: Candle | None = field(default=None, init=False)
@@ -72,7 +72,6 @@ class RsiDiverChochConfig(TradeConfig):
                 self.last_signal_msg_id = await TelegramReporter().new_signal(
                     first_signal, plot
                 )
-
 
         left_index = chartdata.candles.index(first_signal.main_chart_line.start_candle)
         second_sub_chart = copy(chartdata)

@@ -1,13 +1,20 @@
-from ChartModule.models import Candle
+from ChartModule.models import Candle, Signal
+from ChartModule.plot import ChartPlot
 from Forex.agent import ForexAgent
 from ChartModule import Chart, ChartData
 from TradingModule import ExchangeAgent
 from DivergenceStrategy.two_chart_divergence import Divergence, TwoChartDiverTradeConfig
 from ChochQueueStrategy.choch_queue import ChochQueueFilter, ChochQueueTradeConfig
-from EmaPivotChochStrategy.ema_pivot_choch import EmaPivotChochFilter, EmaPivotChochTradeConfig
+from EmaPivotChochStrategy.ema_pivot_choch import (
+    EmaPivotChochFilter,
+    EmaPivotChochTradeConfig,
+)
 from EmaTouchStrategy.ema_touch import EmaTouchFilter, EmaTouchTradeConfig
 from dataclasses import dataclass, field
 from datetime import timedelta
+
+from TradingModule.models import Position
+from TradingModule.reporter import TelegramReporter
 
 
 @dataclass(kw_only=True)

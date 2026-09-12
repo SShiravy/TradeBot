@@ -2,7 +2,10 @@ from BitUnix import BitUnixAgent
 from ChartModule import Chart, ChartData, Candle
 from DivergenceStrategy.divergence import Divergence, DivergenceTradeConfig
 from ChochQueueStrategy.choch_queue import ChochQueueFilter, ChochQueueTradeConfig
-from EmaPivotChochStrategy.ema_pivot_choch import EmaPivotChochFilter, EmaPivotChochTradeConfig
+from EmaPivotChochStrategy.ema_pivot_choch import (
+    EmaPivotChochFilter,
+    EmaPivotChochTradeConfig,
+)
 from EmaTouchStrategy.ema_touch import EmaTouchFilter, EmaTouchTradeConfig
 from datetime import datetime, timezone, timedelta
 from dataclasses import dataclass
