@@ -74,7 +74,7 @@ class EMA(IndicatorBaseModel):
     def _calculate(self) -> dict:
         source_values = [self.source(c) for c in self.candles]
         ema_values = (
-            pd.Series(source_values).ewm(com=self.n_bar, adjust=False).mean().to_numpy()
+            pd.Series(source_values).ewm(span=self.n_bar, adjust=False).mean().to_numpy()
         )
         return {candle.timestamp: ema for candle, ema in zip(self.candles, ema_values)}
 
