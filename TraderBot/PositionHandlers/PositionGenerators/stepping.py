@@ -2,7 +2,6 @@ from ChartModule.models import Signal
 from TraderBot.PositionHandlers.manager import PositionGenerator
 import TraderBot.Commands as commands
 from TraderBot.models import (
-    ExchangeAgent,
     PositionSide,
     Position,
     PositionType,

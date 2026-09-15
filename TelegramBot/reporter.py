@@ -155,4 +155,4 @@ class TelegramReporter(ReporterBot):
                 logger.error(f"Error occurred while sending {msg=}: {e}")
 
         logger.debug(f"telegram response: {res}")
-        return res
+        return res.message_id if res else None

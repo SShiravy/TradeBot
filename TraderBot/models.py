@@ -235,6 +235,7 @@ class Position:
 
     initial_stoploss: Trigger = field(init=False)
     exchange_id: str = field(default="", init=False)
+    report_id: Any = field(default=None, init=False)
 
     _steps_cache: list[Trigger] | None = field(
         default=None, init=False, repr=False, compare=False
@@ -502,6 +503,10 @@ class ReporterBot(ABC):
         file_path: str | None = None,
         img_path: str | None = None,
         channel_id: Any = None,
+        reply_id: None | int = None,
         *args,
         **kwargs,
-    ) -> Any: ...
+    ) -> Any:
+        """
+        return message_id if successful otherwise None
+        """

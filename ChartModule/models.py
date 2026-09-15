@@ -184,6 +184,7 @@ class Signal:
     candle: Candle
     side: Literal[MarketSide.BEARISH, MarketSide.BULLISH]
     source: str
+    report_id: int | None = field(default=None, init=False)
 
     def __str__(self) -> str:
         return f"{self.chart} {self.side} at {datetime.fromtimestamp(self.candle.timestamp, tz=timezone.utc)} from {self.source}"

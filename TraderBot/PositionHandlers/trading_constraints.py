@@ -1,5 +1,5 @@
 from ChartModule.models import Signal
-from TraderBot.PositionHandlers.trades_pnl import PnLCalculator, PnLReportGenerator
+from TraderBot.PositionHandlers.trades_pnl import PnLReportGenerator
 from TraderBot.models import PositionSide, Position
 from abc import ABC, abstractmethod
 import logging
