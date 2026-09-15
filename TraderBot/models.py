@@ -9,7 +9,7 @@ from ChartModule.models import (
 from ChartModule.timing import TimeHandler
 from ChartModule.Indicators import IndicatorBaseModel, SupportCandleConditions
 from dataclasses import asdict, dataclass, field
-from datetime import datetime
+from datetime import datetime, timedelta
 from abc import ABC, abstractmethod
 from datetime import timezone
 from typing import Any, Literal, Optional
@@ -34,27 +34,26 @@ class Command(ABC):
     pending_commands = []
     __executed_record = {}
     __failed_record = {}
+    N_ATTEMPTS = 2
 
-    def __init__(
-        self,
-        n_attempts: int = 2,
-    ):
-        self.n_attempts = n_attempts
+    def __init__(self, bounded_command: "Command|None" = None):
         self.failed_attempt: int = 0
         self.__status = CommandStatus.DEFINED
-        self.next_command: Command | None = None
+        self.next_command = bounded_command
+        self.position: Position
+        self.exchange_agent: ExchangeAgent
         self.define_timestamp: int = TimeHandler.now()
         self.send_timestamp: Optional[int] = None
-        self.result_timestamp: Optional[int] = None
+        self.execution_timestamp: Optional[int] = None
+        self.reporter: ReporterBot | None = None
         command_logger.debug(self)
-        # TODO: add times to str
 
     @property
     def name(self):
         return self.__class__.__name__
 
     def __str__(self) -> str:
-        return f"{self.name} {self.status.value}"
+        return f"{self.name} {self.status.value}| define:{self.define_timestamp}, send:{self.send_timestamp}, execution:{self.execution_timestamp}  "
 
     def __record(self, command, record: dict):
         n = record.get(command.name, 0)
@@ -66,17 +65,20 @@ class Command(ABC):
 
     @status.setter
     def status(self, value: CommandStatus):
+        if self.__status == value:
+            return
         if value is CommandStatus.PENDING:
-            Command.pending_commands.append(self)
+            self.pending_commands.append(self)
         elif value is CommandStatus.EXECUTED:
-            Command.pending_commands.remove(self)
-            self.__record(self, Command.__executed_record)
+            self.execution_timestamp = TimeHandler.now()
+            self.pending_commands.remove(self)
+            self.__record(self, self.__executed_record)
         elif value is CommandStatus.FAILED:
-            Command.pending_commands.remove(self)
-            self.__record(self, Command.__failed_record)
+            self.pending_commands.remove(self)
+            self.__record(self, self.__failed_record)
         self.__status = value
 
-    def send(self):
+    def send(self, *args, **kwargs):
         self.status = CommandStatus.PENDING
 
     @abstractmethod
@@ -100,7 +102,9 @@ class Command(ABC):
             self.status = CommandStatus.EXECUTED
             if self.next_command:
                 if self.next_command.status == CommandStatus.DEFINED:
-                    self.next_command.send()
+                    self.next_command.send(
+                        self.position, self.exchange_agent, self.reporter
+                    )
                     command_logger.debug(
                         f"next command {self.next_command.name} sended"
                     )
@@ -112,7 +116,7 @@ class Command(ABC):
 
         else:
             self.failed_attempt += 1
-            if self.failed_attempt > self.n_attempts:
+            if self.failed_attempt > self.N_ATTEMPTS:
                 self.status = CommandStatus.FAILED
             command_logger.error(
                 f"{self.name} with {self.failed_attempt} failed attempts"
@@ -169,9 +173,7 @@ class Trigger:
 
     def execute(self):
         self.triggered_timestamp = TimeHandler.now()
-        if self.command:
-            self.command.send()
-            return self.command
+        return self.command
 
     def check(self, ticks: np.ndarray) -> bool:
         if self.triggered_timestamp:
@@ -217,7 +219,7 @@ class Position:
     chart: Chart
     side: PositionSide
     entry_price: float
-    entry_volume: float
+    volume: float
     triggers: list[Trigger]
     stoploss: Trigger
     leverage: int = 1
@@ -383,3 +385,123 @@ class Strategy(ABC):
             "short_support_conditions": self.short_support_conditions.value,
             "indicators": indicators_configs,
         }
+
+
+@dataclass(slots=True)
+class PnLReport:
+    chart: Chart
+    side: PositionSide
+    source: str
+    first_time: int
+    last_time: int
+
+    pnl_dollar: float = field(default=0.0, init=False)
+    pnl_percent: float = field(default=0.0, init=False)
+    pnl_pips: float = field(default=0.0, init=False)
+
+    wins: int = field(default=0, init=False)
+    flats: int = field(default=0, init=False)
+    loses: int = field(default=0, init=False)
+
+    triggered_steps: dict[int, int] = field(default_factory=dict, init=False)
+
+    max_win_in_a_row: int = field(default=0, init=False)
+    max_lose_in_a_row: int = field(default=0, init=False)
+
+    total_positions: int = field(default=1, init=False)
+    overall_report: bool = field(default=False, init=False)
+
+    @property
+    def identifier(self) -> str:
+        return f"{self.source}_{self.side}_{self.chart}"
+
+    def duration(self):
+        return timedelta(seconds=self.last_time - self.first_time)
+
+    def __add__(self, other: "PnLReport | int | float") -> "PnLReport":
+        if isinstance(other, (int, float)):
+            return self
+        if not isinstance(other, PnLReport):
+            return NotImplemented
+
+        merged = PnLReport(
+            chart=self.chart,
+            side=self.side,
+            source=self.source,
+            first_time=min(self.first_time, other.first_time),
+            last_time=max(self.last_time, other.last_time),
+        )
+        merged.pnl_dollar = self.pnl_dollar + other.pnl_dollar
+        merged.pnl_percent = self.pnl_percent + other.pnl_percent
+        merged.pnl_pips = self.pnl_pips + other.pnl_pips
+        merged.wins = self.wins + other.wins
+        merged.flats = self.flats + other.flats
+        merged.loses = self.loses + other.loses
+
+        merged.triggered_steps = dict(self.triggered_steps)
+        for k, v in other.triggered_steps.items():
+            merged.triggered_steps[k] = merged.triggered_steps.get(k, 0) + v
+
+        merged.max_win_in_a_row = max(self.max_win_in_a_row, other.max_win_in_a_row)
+        merged.max_lose_in_a_row = max(self.max_lose_in_a_row, other.max_lose_in_a_row)
+        merged.total_positions = self.total_positions + other.total_positions
+        merged.overall_report = (
+            self.identifier != other.identifier
+            or self.overall_report
+            or other.overall_report
+        )
+        return merged
+
+    __radd__ = __add__
+
+
+class ReportMsgFormater(ABC):
+    @abstractmethod
+    def new_position(self, position: Position) -> str:
+        pass
+
+    @abstractmethod
+    def position_closed(self, position: Position, pnl_report: PnLReport) -> str:
+        pass
+
+    @abstractmethod
+    def sl_trailed(self, position: Position) -> str:
+        pass
+
+    @abstractmethod
+    def trigger_hit(self, position: Position, pnl_report: PnLReport) -> str:
+        pass
+
+    @abstractmethod
+    def new_signal(self, signal: Signal) -> str:
+        pass
+
+
+class ReporterBot(ABC):
+    def __init__(
+        self, name: str, signal_channel, report_channel, msg_formater: ReportMsgFormater
+    ):
+        self.name = name
+        self.signal_channel = signal_channel
+        self.report_channel = report_channel
+        self._reporting = True
+        self.msg_formater = msg_formater
+
+    def disable_reporting(self):
+        self._reporting = False
+        logging.info(f"⚠️ {self.name} Reporting Disabled")
+
+    def enable_reporting(self):
+        self._reporting = True
+        logging.info(f"👍 {self.name} Reporting Enabled")
+
+    @abstractmethod
+    async def send_msg(
+        self,
+        msg,
+        file_path: str | None = None,
+        img_path: str | None = None,
+        channel_id: Any = None,
+        *args,
+        **kwargs,
+    ) -> Any: ...

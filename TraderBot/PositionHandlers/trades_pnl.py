@@ -1,7 +1,7 @@
 from dataclasses import dataclass, field
 from ChartModule.models import Chart
 from ChartModule.timing import TimeHandler
-from TraderBot.models import Position, PositionSide, TriggerType
+from TraderBot.models import PnLReport, Position, PositionSide, TriggerType
 
 
 class PnLCalculator:
@@ -30,71 +30,6 @@ class PnLCalculator:
         chart: Chart, side: PositionSide, entry_price: float, executed_price: float
     ) -> float:
         return (executed_price - entry_price) * side.factor / chart.pip_factor
-
-
-@dataclass(slots=True)
-class PnLReport:
-    chart: Chart
-    side: PositionSide
-    source: str
-    first_time: int
-    last_time: int
-
-    pnl_dollar: float = field(default=0.0, init=False)
-    pnl_percent: float = field(default=0.0, init=False)
-    pnl_pips: float = field(default=0.0, init=False)
-
-    wins: int = field(default=0, init=False)
-    flats: int = field(default=0, init=False)
-    loses: int = field(default=0, init=False)
-
-    triggered_steps: dict[int, int] = field(default_factory=dict, init=False)
-
-    max_win_in_a_row: int = field(default=0, init=False)
-    max_lose_in_a_row: int = field(default=0, init=False)
-
-    total_positions: int = field(default=1, init=False)
-    overall_report: bool = field(default=False, init=False)
-
-    @property
-    def identifier(self) -> str:
-        return f"{self.source}_{self.side}_{self.chart}"
-
-    def __add__(self, other: "PnLReport | int | float") -> "PnLReport":
-        if isinstance(other, (int, float)):
-            return self
-        if not isinstance(other, PnLReport):
-            return NotImplemented
-
-        merged = PnLReport(
-            chart=self.chart,
-            side=self.side,
-            source=self.source,
-            first_time=min(self.first_time, other.first_time),
-            last_time=max(self.last_time, other.last_time),
-        )
-        merged.pnl_dollar = self.pnl_dollar + other.pnl_dollar
-        merged.pnl_percent = self.pnl_percent + other.pnl_percent
-        merged.pnl_pips = self.pnl_pips + other.pnl_pips
-        merged.wins = self.wins + other.wins
-        merged.flats = self.flats + other.flats
-        merged.loses = self.loses + other.loses
-
-        merged.triggered_steps = dict(self.triggered_steps)
-        for k, v in other.triggered_steps.items():
-            merged.triggered_steps[k] = merged.triggered_steps.get(k, 0) + v
-
-        merged.max_win_in_a_row = max(self.max_win_in_a_row, other.max_win_in_a_row)
-        merged.max_lose_in_a_row = max(self.max_lose_in_a_row, other.max_lose_in_a_row)
-        merged.total_positions = self.total_positions + other.total_positions
-        merged.overall_report = (
-            self.identifier != other.identifier
-            or self.overall_report
-            or other.overall_report
-        )
-        return merged
-
-    __radd__ = __add__
 
 
 class PnLReportGenerator:
@@ -146,7 +81,7 @@ class PnLReportGenerator:
             report.triggered_steps[i] = report.triggered_steps.get(i, 0) + 1
 
         # stoploss, closing whatever volume remains after all TP closes
-        remaining_volume = position.entry_volume - closed_volume
+        remaining_volume = position.volume - closed_volume
         if position.stoploss.triggered_timestamp is not None and remaining_volume > 0:
             sl_price = position.stoploss.price
             event_pnl = PnLCalculator.dollar(

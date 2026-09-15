@@ -1,13 +1,21 @@
 from ChartModule.models import Signal
 from TraderBot.PositionHandlers.manager import PositionGenerator
-from TraderBot.models import PositionSide, Position, PositionType, Trigger, TriggerType
+import TraderBot.Commands as commands
+from TraderBot.models import (
+    ExchangeAgent,
+    PositionSide,
+    Position,
+    PositionType,
+    Trigger,
+    TriggerType,
+)
 import logging
 
 
 logger = logging.getLogger("PositionManager")
 
 
-class ForexMultiTP(PositionGenerator):
+class ForexStepping(PositionGenerator):
     def __init__(
         self,
         leverage: int = 1,
@@ -49,36 +57,61 @@ class ForexMultiTP(PositionGenerator):
             price=entry_price - side.factor * self.sl_pip * pip_factor,
             volume=self.initial_volume,
             cross_direction=side.factor,
-            command=StopLossCommand(),
+            command=commands.StopLoss(bounded_command=commands.StoplossHitReport()),
             type=TriggerType.SL,
         )
 
+    def give_tp_trailstop_command(self, new_sl: float):
+        return commands.TakeProfit(
+            commands.TrailStoploss(
+                new_stoploss=new_sl,
+                bounded_command=commands.TriggerHitReport(trail_stop=True),
+            )
+        )
+
+    def give_tp_command(self):
+        return commands.TakeProfit(
+            bounded_command=commands.TriggerHitReport(trail_stop=False)
+        )
+
     def generate_triggers(
-        self, entry_price: float, side: PositionSide, sl_price: float, pip_factor: float
+        self,
+        entry_price: float,
+        side: PositionSide,
+        sl_price: float,
+        pip_factor: float,
     ) -> list[Trigger]:
-        steps = []
+        steps: list[Trigger] = []
         for pip, volume in zip(self.tp_pip, self.tp_pip_volumes):
             steps.append(
                 Trigger(
                     price=entry_price + pip * side.factor * pip_factor,
                     volume=volume,
                     cross_direction=side.factor,
-                    command=TakeProfitCommand(),  # TODO: Add a command for trail stop if needed
                     type=TriggerType.TP,
                 )
             )
 
-        sl_pip = abs(sl_price - entry_price)
+        sl_distance = abs(sl_price - entry_price)
         for ratio, volume in zip(self.tp_ratio, self.tp_ratio_volumes):
             steps.append(
                 Trigger(
-                    price=entry_price + sl_pip * ratio * side.factor,
+                    price=entry_price + sl_distance * ratio * side.factor,
                     volume=volume,
                     cross_direction=side.factor,
-                    command=TakeProfitCommand(),  # TODO: Add a command for trail stop if needed
                     type=TriggerType.TP,
                 )
             )
+
+        steps.sort(key=lambda t: t.price * side.factor)
+
+        for i, step in enumerate(steps):
+            if self.trail_stop:
+                previous_price = steps[i - 1].price if i > 0 else entry_price
+                step.command = self.give_tp_trailstop_command(previous_price)
+            else:
+                step.command = self.give_tp_command()
+
         return steps
 
     def export_config(self) -> dict:
@@ -86,6 +119,11 @@ class ForexMultiTP(PositionGenerator):
             "Handler": self.__class__.__name__,
             "initial_volume": self.initial_volume,
             "leverage": self.leverage,
+            "sl_pip": self.sl_pip,
+            "tp_ratio": self.tp_ratio,
+            "tp_ratio_volumes": self.tp_ratio_volumes,
+            "tp_pip": self.tp_pip,
+            "tp_pip_volumes": self.tp_pip_volumes,
         }
 
     async def generate(
@@ -94,6 +132,9 @@ class ForexMultiTP(PositionGenerator):
         entry_price: float,
         **kwargs,
     ) -> Position | None:
+        """
+        set sl_base_price parameter if needed
+        """
         side = PositionSide.convert_market_side(signal.side)
         sl_base_price = kwargs.get("sl_base_price", entry_price)
         sl = self.init_stoploss(sl_base_price, side, signal.chart.pip_factor)

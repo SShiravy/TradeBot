@@ -2,7 +2,7 @@ from ChartModule import Signal, MarketSide, Chart, TimeFrame
 from TraderBot import Position, PositionSide, ExchangeAgent
 from TraderBot.PositionHandlers.trading_constraints import TradingConstraint
 from ChartModule.timing import TimeHandler
-from TraderBot.models import Command, PositionType, Trigger
+from TraderBot.models import Command, PositionType, ReporterBot, Trigger
 from abc import ABC, abstractmethod
 import numpy as np
 import logging
@@ -21,7 +21,9 @@ class PositionGenerator(ABC):
         self.leverage = leverage
 
     @abstractmethod
-    def init_stoploss(self, entry_price: float, side: PositionSide) -> Trigger:
+    def init_stoploss(
+        self, entry_price: float, side: PositionSide, *args, **kwargs
+    ) -> Trigger:
         pass
 
     @abstractmethod
@@ -63,7 +65,7 @@ class PositionGenerator(ABC):
         return position
 
 
-class PositionsManager:
+class TradesManager:
     def __init__(
         self,
         exchange_agent: ExchangeAgent,
@@ -71,14 +73,14 @@ class PositionsManager:
         long_trade: bool = True,
         short_trade: bool = True,
         trading_constraints: list[TradingConstraint] = [],
-        send_report: bool = True,
+        reporter: ReporterBot | None = None,
         agent_check: bool = False,
     ):
         self.exchange_agent = exchange_agent
         self.long_trade: bool = long_trade
         self.short_trade: bool = short_trade
         self.trading_constraints = trading_constraints
-        self.send_report = send_report
+        self.reporter = reporter
         self.generator = generator
         self.agent_check = agent_check
         self.current_positions: list[Position] = []
@@ -131,6 +133,8 @@ class PositionsManager:
             return
         for trigger in position.steps:
             if trigger.check(ticks):
+                if trigger.command:
+                    trigger.command.send(position, self.exchange_agent, self.reporter)
                 continue
             return
 

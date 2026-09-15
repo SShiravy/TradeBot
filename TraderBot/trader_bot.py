@@ -1,7 +1,7 @@
 from TraderBot import ExchangeAgent, Position, commands, PositionsReport
 from TraderBot.reporter import TelegramReporter
 from BacktestModule.dummy_models import DummyAgent, DummyPositionHanler
-from TraderBot.PositionHandlers.manager import PositionGenerator, PositionsManager
+from TraderBot.PositionHandlers.manager import PositionGenerator, TradesManager
 from ChartModule.models import Chart, Candle, Signal, ChartData
 from TraderBot.models import Strategy
 from ChartModule.plot import ChartPlot
@@ -17,7 +17,7 @@ class TraderBot:
     agent: ExchangeAgent
     strategy: Strategy
     position_generator: PositionGenerator
-    position_manager: PositionsManager
+    position_manager: TradesManager
 
     bar_between_signals: int = field(default=2)
     signal_msg_sender: bool = field(default=True)
