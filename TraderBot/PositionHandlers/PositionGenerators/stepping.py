@@ -125,7 +125,7 @@ class ForexStepping(PositionGenerator):
             "tp_pip_volumes": self.tp_pip_volumes,
         }
 
-    async def generate(
+    def generate(
         self,
         signal: Signal,
         entry_price: float,

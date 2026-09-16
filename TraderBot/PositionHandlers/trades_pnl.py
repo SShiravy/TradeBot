@@ -1,5 +1,5 @@
 from ChartModule.models import Chart
-from ChartModule.timing import TimeHandler
+from Settings.timing import TimeHandler
 from TraderBot.models import PnLReport, Position, PositionSide, TriggerType
 
 

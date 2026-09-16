@@ -1,9 +1,9 @@
 from ChartModule.models import MarketSide
-from ChartModule.Indicators.models import IndicatorBaseModel
+from ChartModule.Indicators.models import Indicator
 import finplot as fplt
 
 
-class MovingColor(IndicatorBaseModel):
+class MovingColor(Indicator):
     """
     Sum on number of (Red - Green), 0 is the same number of red green on previous n bar
     """
@@ -49,7 +49,7 @@ class MovingColor(IndicatorBaseModel):
         )
 
 
-class MovingCandleLength(IndicatorBaseModel):
+class MovingCandleLength(Indicator):
     """
     Sum on number of (Red - Green), 0 is the same number of red green on previous n bar
     """

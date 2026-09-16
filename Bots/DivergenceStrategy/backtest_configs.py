@@ -18,7 +18,7 @@ from TraderBot.PositionHandlers import (
     SteppingHandlerForex,
     SteppingHandlerCrypto,
 )
-from config import settings
+from Settings.config import settings
 
 # Crypto ----------------------------------------------------------------
 

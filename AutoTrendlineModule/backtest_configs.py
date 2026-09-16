@@ -2,7 +2,7 @@ from ChartModule import Chart, TimeFrame
 from AutoTrendlineModule.auto_trendline import AutoTrendlines
 from ExchangeAgents.MT5 import MT5Agent
 from ExchangeAgents.BitUnix import BitUnixAgent
-from config import settings
+from Settings.config import settings
 
 # Forex / Gold ------------------------------------------------------------
 

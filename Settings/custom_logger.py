@@ -149,7 +149,7 @@ logging.getLogger("matplotlib.pyplot").setLevel(logging.WARNING)
 
 
 if __name__ == "__main__":
-    from config import settings
+    from Settings.config import settings
 
     logger = build_logger(
         LoggerConfig(

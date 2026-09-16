@@ -5,7 +5,7 @@ from enum import Enum
 import pandas as pd
 import numpy as np
 from copy import replace
-from ChartModule.timing import TimeHandler
+from Settings.timing import TimeHandler
 
 
 class TimeFrame(Enum):
@@ -54,10 +54,6 @@ class TimeFrame(Enum):
             TimeFrame.one_month: 43200,
         }
         return mapping[self]
-
-    @property
-    def time_delta(self) -> timedelta:
-        return timedelta(minutes=self.minutes)
 
     def __str__(self):
         return self.value

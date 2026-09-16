@@ -1,5 +1,5 @@
 from ChartModule.models import TickPrice, MarketSide
-from ChartModule.Indicators.models import IndicatorBaseModel
+from ChartModule.Indicators.models import Indicator
 from ChartModule.plot import ChartPlot
 from datetime import datetime
 from enum import Enum
@@ -40,7 +40,7 @@ class FiboLevels(Enum):
                 return "#9C0000"
 
 
-class FibonacciRetracement(IndicatorBaseModel):
+class FibonacciRetracement(Indicator):
     def __init__(
         self,
         start_tick: TickPrice,

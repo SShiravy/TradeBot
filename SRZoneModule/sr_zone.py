@@ -1,5 +1,5 @@
 from ChartModule.models import Candle, MarketSide
-from ChartModule.Indicators.models import IndicatorBaseModel
+from ChartModule.Indicators.models import Indicator
 from ChartModule.plot import ChartPlot
 from SRZoneModule.swing_pivots import SwingPivots, PivotPoint
 from SRZoneModule.atr import ATR
@@ -57,7 +57,7 @@ class ZoneModel:
         )
 
 
-class SRZones(IndicatorBaseModel):
+class SRZones(Indicator):
     """
     Support & Resistance Zone Engine (ATR Adaptive)
 

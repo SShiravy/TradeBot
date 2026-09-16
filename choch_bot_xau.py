@@ -1,4 +1,4 @@
-from config import settings
+from Settings.config import settings
 
 settings.METATRADER_TERMINAL_PATH = settings.SECOND_METATRADER_TERMINAL_PATH
 settings.TELEGRAM_BOT_TOKEN = "8750919120:AAGwJ6n7_iE9twPx1464Ez8gac4_rxHn-l4"
@@ -8,7 +8,7 @@ from ChartModule import Chart, TimeFrame
 from TraderBot.PositionHandlers.stepping_handler import SteppingHandlerForex
 from TraderBot.trader_bot import TraderBot
 from Bots.ChochStrategy.choch_queue import ChochQueueFilter
-from custom_logger import LoggerConfig, build_logger
+from Settings.custom_logger import LoggerConfig, build_logger
 import asyncio
 
 build_logger(LoggerConfig(name="root", log_file_name="ChochQueueBot"))

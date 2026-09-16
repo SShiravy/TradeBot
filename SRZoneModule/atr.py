@@ -1,10 +1,10 @@
-from ChartModule.Indicators.models import IndicatorBaseModel
+from ChartModule.Indicators.models import Indicator
 from ChartModule.models import Candle
 from ChartModule.plot import ChartPlot
 from typing import Any
 
 
-class ATR(IndicatorBaseModel):
+class ATR(Indicator):
     """
     Average True Range (Wilder Smoothing)
 

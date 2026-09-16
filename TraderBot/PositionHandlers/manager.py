@@ -1,8 +1,8 @@
+from Settings import TimeHandler
 from ChartModule import Signal, MarketSide, Chart, TimeFrame
 from TraderBot import Position, PositionSide, ExchangeAgent
 from TraderBot.PositionHandlers.trading_constraints import TradingConstraint
-from ChartModule.timing import TimeHandler
-from TraderBot.models import Command, PositionType, ReporterBot, Trigger
+from TraderBot.models import Command, CommandContext, PositionType, ReporterBot, Trigger
 from abc import ABC, abstractmethod
 import numpy as np
 import logging
@@ -35,12 +35,11 @@ class PositionGenerator(ABC):
     @abstractmethod
     def export_config(self) -> dict:
         return {
-            "Handler": self.__class__.__name__,
             "initial_volume": self.initial_volume,
             "leverage": self.leverage,
         }
 
-    async def generate(
+    def generate(
         self,
         signal: Signal,
         entry_price: float,
@@ -88,15 +87,16 @@ class TradesManager:
 
     def export_config(self) -> dict:
         return {
-            "Handler": self.__class__.__name__,
+            "generator": self.generator.export_config(),
             "long_trade": self.long_trade,
             "short_trade": self.short_trade,
             "constraints": [c.export_config() for c in self.trading_constraints],
         }
 
-    async def generate_position(
-        self, signal: Signal, *args, **kwargs
-    ) -> Position | None:
+    def give_command_contex(self, position: Position):
+        return CommandContext(position, self.exchange_agent, self.reporter)
+
+    def generate_position(self, signal: Signal, *args, **kwargs) -> Position | None:
         if signal.side is MarketSide.BEARISH:
             if not self.short_trade:
                 return None
@@ -104,7 +104,7 @@ class TradesManager:
             if not self.long_trade:
                 return None
         entry_price = self.exchange_agent.get_current_tick(signal.chart)
-        pos = await self.generator.generate(signal, entry_price, *args, **kwargs)
+        pos = self.generator.generate(signal, entry_price, *args, **kwargs)
         if pos:
             for constraint in self.trading_constraints:
                 if not constraint.check(
@@ -134,7 +134,7 @@ class TradesManager:
         for trigger in position.steps:
             if trigger.check(ticks):
                 if trigger.command:
-                    trigger.command.send(position, self.exchange_agent, self.reporter)
+                    trigger.command.send(self.give_command_contex(position))
                 continue
             return
 

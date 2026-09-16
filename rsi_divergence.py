@@ -1,4 +1,4 @@
-from config import settings
+from Settings.config import settings
 
 settings.TELEGRAM_BOT_TOKEN = "8470075659:AAHxX4BDBiUeKB85REsL8RB7jpe8XeubDbc"
 from TraderBot.reporter import TelegramReporter
@@ -12,7 +12,7 @@ from ExchangeAgents.MT5 import MT5Agent
 from ChartModule import Chart, TimeFrame
 from TraderBot.PositionHandlers.stepping_handler import SteppingHandlerForex
 from TraderBot.trader_bot import TraderBot
-from custom_logger import build_logger, LoggerConfig
+from Settings.custom_logger import build_logger, LoggerConfig
 import asyncio
 
 build_logger(LoggerConfig(name="root", log_file_name="ForexDiverBot(RSI)"))

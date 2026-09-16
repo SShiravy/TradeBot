@@ -6,8 +6,8 @@ from ChartModule.models import (
     Candle,
     Signal,
 )
-from ChartModule.timing import TimeHandler
-from ChartModule.Indicators import IndicatorBaseModel, SupportCandleConditions
+from Settings.timing import TimeHandler
+from ChartModule.Indicators import Indicator, SupportCandleConditions
 from dataclasses import asdict, dataclass, field
 from datetime import datetime, timedelta
 from abc import ABC, abstractmethod
@@ -30,6 +30,13 @@ class CommandStatus(Enum):
     FAILED = "Failed"
 
 
+@dataclass
+class CommandContext:
+    position: "Position"
+    exchange_agent: "ExchangeAgent"
+    reporter: "ReporterBot | None"
+
+
 class Command(ABC):
     pending_commands = []
     __executed_record = {}
@@ -40,12 +47,10 @@ class Command(ABC):
         self.failed_attempt: int = 0
         self.__status = CommandStatus.DEFINED
         self.next_command = bounded_command
-        self.position: Position
-        self.exchange_agent: ExchangeAgent
         self.define_timestamp: int = TimeHandler.now()
         self.send_timestamp: Optional[int] = None
         self.execution_timestamp: Optional[int] = None
-        self.reporter: ReporterBot | None = None
+        self.context: CommandContext
         command_logger.debug(self)
 
     @property
@@ -78,7 +83,8 @@ class Command(ABC):
             self.__record(self, self.__failed_record)
         self.__status = value
 
-    def send(self, *args, **kwargs):
+    def send(self, context: CommandContext, *args, **kwargs):
+        self.context = context
         self.status = CommandStatus.PENDING
 
     @abstractmethod
@@ -102,9 +108,7 @@ class Command(ABC):
             self.status = CommandStatus.EXECUTED
             if self.next_command:
                 if self.next_command.status == CommandStatus.DEFINED:
-                    self.next_command.send(
-                        self.position, self.exchange_agent, self.reporter
-                    )
+                    self.next_command.send(self.context)
                     command_logger.debug(
                         f"next command {self.next_command.name} sended"
                     )
@@ -338,15 +342,25 @@ class ExchangeAgent(ABC):
         pass
 
 
+class SignalPlotter:
+    def __call__(self, plot, signal, indicators: list[Indicator] = [], *args, **kwargs):
+        if indicators:
+            for i in indicators:
+                i.plot(plot)
+        plot.mark_signal(signal)
+
+
 class Strategy(ABC):
     def __init__(
         self,
         name: str,
+        plotter: SignalPlotter,
         long_support_conditions: SupportCandleConditions,
         short_support_conditions: SupportCandleConditions,
-        confirmation_indicators: list[IndicatorBaseModel] = [],
+        confirmation_indicators: list[Indicator] = [],
     ) -> None:
         self.name = name
+        self.plotter = plotter
         self.confirmation_indicators = confirmation_indicators
         self.long_support_conditions = long_support_conditions
         self.short_support_conditions = short_support_conditions
@@ -370,12 +384,6 @@ class Strategy(ABC):
         **kwargs,
     ) -> Signal | None:
         pass
-
-    @abstractmethod
-    def draw(self, plot, signal, draw_indicators: bool = True, *args, **kwargs):
-        if draw_indicators and self.confirmation_indicators:
-            for indicator in self.confirmation_indicators:
-                indicator.plot(plot)
 
     def export_config(self):
         indicators_configs = []
@@ -485,15 +493,15 @@ class ReporterBot(ABC):
         self.name = name
         self.signal_channel = signal_channel
         self.report_channel = report_channel
-        self._reporting = True
+        self.enable = True
         self.msg_formater = msg_formater
 
     def disable_reporting(self):
-        self._reporting = False
+        self.enable = False
         logging.info(f"⚠️ {self.name} Reporting Disabled")
 
     def enable_reporting(self):
-        self._reporting = True
+        self.enable = True
         logging.info(f"👍 {self.name} Reporting Enabled")
 
     @abstractmethod

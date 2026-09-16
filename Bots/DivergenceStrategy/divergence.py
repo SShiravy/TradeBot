@@ -6,7 +6,7 @@ from ChartModule.models import (
     CandlesSource,
 )
 from ChartModule.Indicators import (
-    IndicatorBaseModel,
+    Indicator,
     LineFinder,
     Line,
     SupportCandleConditions,
@@ -34,7 +34,7 @@ class Divergence(Strategy):
         self,
         min_step: int,
         max_step: int,
-        confirmation_indicators: list[IndicatorBaseModel] = [],
+        confirmation_indicators: list[Indicator] = [],
         long_support_conditions=SupportCandleConditions.RED_GREEN,
         short_support_conditions=SupportCandleConditions.GREEN_RED,
         name="Divergence",

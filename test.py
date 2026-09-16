@@ -1,4 +1,4 @@
-from custom_logger import build_logger, LoggerConfig
+from Settings.custom_logger import build_logger, LoggerConfig
 import logging
 import asyncio
 
@@ -49,7 +49,7 @@ async def test_open_position():
 
 async def test_BitUnix_open_position():
     from TraderBot.trader_bot import TraderBot
-    from config import settings
+    from Settings.config import settings
     from TraderBot.reporter import TelegramReporter
     from ChartModule.models import MarketSide
     from Bots.DivergenceStrategy.backtest_configs import (

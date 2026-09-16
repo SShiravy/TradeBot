@@ -1,10 +1,10 @@
-from ChartModule.Indicators.models import IndicatorBaseModel
+from ChartModule.Indicators.models import Indicator
 from ChartModule.models import Candle
 from ChartModule.plot import ChartPlot
 from typing import Any
 
 
-class ATR(IndicatorBaseModel):
+class ATR(Indicator):
     def __init__(self, n_bar: int = 14) -> None:
         super().__init__()
         self.data: dict[int, float]

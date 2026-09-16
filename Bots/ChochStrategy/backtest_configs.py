@@ -3,7 +3,7 @@ from Bots.ChochStrategy.choch_queue import ChochQueueFilter
 from ExchangeAgents.MT5 import MT5Agent, ForexChochQueueTradeConfig
 from ExchangeAgents.BitUnix import BitUnixAgent, BitUnixChochQueueTradeConfig
 from TraderBot.PositionHandlers import SteppingHandlerForex, SteppingHandlerCrypto
-from config import settings
+from Settings.config import settings
 
 # Forex ----------------------------------------------------------------
 

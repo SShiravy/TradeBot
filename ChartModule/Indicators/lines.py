@@ -2,7 +2,7 @@ from dataclasses import dataclass, field
 from typing import Any, Callable, Iterator
 
 from ChartModule.models import Candle, ChartData, MarketSide, CandlesSource
-from ChartModule.Indicators.models import IndicatorBaseModel, SupportCandleConditions
+from ChartModule.Indicators.models import Indicator, SupportCandleConditions
 from ChartModule.plot import ChartPlot
 import numpy as np
 
@@ -42,7 +42,7 @@ class Line:
         )
 
 
-class LineFinder(IndicatorBaseModel):
+class LineFinder(Indicator):
     def __init__(
         self,
         source: CandlesSource,

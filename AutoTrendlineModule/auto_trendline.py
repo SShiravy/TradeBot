@@ -1,5 +1,5 @@
 from ChartModule.models import Candle, MarketSide, CandlesSource, TimeFrame
-from ChartModule.Indicators.models import IndicatorBaseModel
+from ChartModule.Indicators.models import Indicator
 from ChartModule.Indicators.lines import Line
 from ChartModule.plot import ChartPlot
 from AutoTrendlineModule.swing_pivots import SwingPivots, PivotPoint
@@ -46,7 +46,7 @@ class TrendlineModel:
         )
 
 
-class AutoTrendlines(IndicatorBaseModel):
+class AutoTrendlines(Indicator):
     """
     Auto Trendlines (ATR Adaptive)
 

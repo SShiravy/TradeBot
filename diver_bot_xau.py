@@ -7,7 +7,7 @@ from TraderBot.PositionHandlers.trading_constraints import (
 )
 from TraderBot.trader_bot import TraderBot
 from Bots.DivergenceStrategy import Divergence
-from custom_logger import LoggerConfig, build_logger
+from Settings.custom_logger import LoggerConfig, build_logger
 import asyncio
 
 build_logger(LoggerConfig(name="root", log_file_name="ForexDiverBot"))

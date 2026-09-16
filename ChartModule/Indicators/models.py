@@ -11,7 +11,7 @@ from abc import ABC, abstractmethod
 from typing import Any
 
 
-class IndicatorBaseModel(ABC):
+class Indicator(ABC):
     def __init__(self) -> None:
         self.chartdata: ChartData | None = None
         self.data: Any = None
@@ -75,7 +75,7 @@ class IndicatorRule(ABC):
     @abstractmethod
     def forecast(
         self,
-        indicator: IndicatorBaseModel,
+        indicator: Indicator,
         *args,
         **kwargs,
     ) -> MarketSide: ...

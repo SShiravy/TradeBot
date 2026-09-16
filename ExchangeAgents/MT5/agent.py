@@ -3,7 +3,7 @@ import numpy as np
 from ChartModule import Chart, ChartData, TimeFrame
 from TraderBot.models import ExchangeAgent, Position, PositionSide
 from datetime import datetime, timedelta, timezone
-from config import settings
+from Settings.config import settings
 from enum import Enum
 import mt5_wrapper as mt5
 import logging

@@ -4,11 +4,11 @@ from ChartModule.models import (
     CandlesSource,
 )
 from ChartModule.plot import ChartPlot
-from ChartModule.Indicators.models import IndicatorBaseModel, SupportCandleConditions
+from ChartModule.Indicators.models import Indicator, SupportCandleConditions
 import numpy as np
 
 
-class Pivot(IndicatorBaseModel):
+class Pivot(Indicator):
     """
     Find All Pivot Candles
     values: list[Candle]

@@ -1,10 +1,10 @@
-from ChartModule.Indicators.models import IndicatorBaseModel
+from ChartModule.Indicators.models import Indicator
 from ChartModule.models import CandlesSource
 from ChartModule.plot import ChartPlot
 import numpy as np
 
 
-class RSI(IndicatorBaseModel):
+class RSI(Indicator):
     """
     Relative Strength Index
 

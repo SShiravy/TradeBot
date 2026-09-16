@@ -1,5 +1,5 @@
 from ChartModule.models import Candle, MarketSide, CandlesSource
-from ChartModule.Indicators.models import IndicatorBaseModel
+from ChartModule.Indicators.models import Indicator
 from ChartModule.plot import ChartPlot
 from dataclasses import dataclass
 
@@ -19,7 +19,7 @@ class PivotPoint:
         return f"Pivot{side}{tag}|{self.candle.time}|{self.price}"
 
 
-class SwingPivots(IndicatorBaseModel):
+class SwingPivots(Indicator):
     """
     Causal, repainting swing pivot detector (Depth / Backstep).
 

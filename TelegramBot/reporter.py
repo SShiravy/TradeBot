@@ -114,7 +114,7 @@ class TelegramReporter(ReporterBot):
         self.bot = Bot(bot_token)
         self.signal_channel = signal_channel
         self.report_channel = report_channel
-        self._reporting = True
+        self.enable = True
         self.msg_formater = msg_formater if msg_formater else TelegramMsgFormater()
 
     async def send_msg(
@@ -125,7 +125,7 @@ class TelegramReporter(ReporterBot):
         channel_id: Any = None,
         file_path: str | None = None,
     ):
-        if not self._reporting:
+        if not self.enable:
             return False
         channel_id = channel_id if channel_id else self.signal_channel
         res = None

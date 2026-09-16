@@ -1,7 +1,7 @@
 from LocalBackTester.Database.create_db import create_db
 from Bots.DivergenceStrategy.diver_backtester import TwoChartDiverBacktester
-from custom_logger import build_logger, LoggerConfig
-from config import settings
+from Settings.custom_logger import build_logger, LoggerConfig
+from Settings.config import settings
 import asyncio
 
 build_logger(LoggerConfig(name="root", log_file_name="Develop & Test"))

@@ -1,4 +1,4 @@
-from config import settings
+from Settings.config import settings
 
 settings.METATRADER_TERMINAL_PATH = settings.SECOND_METATRADER_TERMINAL_PATH
 from ExchangeAgents.MT5 import MT5Agent, ForexDiverTradeConfig
@@ -10,7 +10,7 @@ from TraderBot.PositionHandlers.trading_constraints import (
 )
 from TraderBot.trader_bot import TraderBot
 from Bots.DivergenceStrategy import Divergence
-from custom_logger import build_logger, LoggerConfig
+from Settings.custom_logger import build_logger, LoggerConfig
 import asyncio
 
 build_logger(LoggerConfig(name="root", log_file_name="ForexDiverBot(Single TP)"))

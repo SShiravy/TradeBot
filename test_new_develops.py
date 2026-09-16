@@ -1,4 +1,4 @@
-from custom_logger import build_logger, LoggerConfig
+from Settings.custom_logger import build_logger, LoggerConfig
 
 
 build_logger(LoggerConfig(name="root", log_file_name="Develop & Test"))

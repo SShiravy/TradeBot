@@ -6,7 +6,7 @@ from ChartModule.models import (
     Candle,
     CandlesSource,
 )
-from ChartModule.Indicators import IndicatorBaseModel, SupportCandleConditions
+from ChartModule.Indicators import Indicator, SupportCandleConditions
 from ChartModule.Indicators.swing_pivots import SwingPivots
 from ChartModule.plot import ChartPlot
 from TraderBot.trader_bot import TraderBot
@@ -62,7 +62,7 @@ class ChochQueueFilter(Strategy):
         use_wick: bool = True,
         use_fibo_filter: bool = True,
         max_queue: int = 30,
-        confirmation_indicators: list[IndicatorBaseModel] = [],
+        confirmation_indicators: list[Indicator] = [],
         long_support_conditions=SupportCandleConditions.RAW,
         short_support_conditions=SupportCandleConditions.RAW,
         name="ChochQueue",

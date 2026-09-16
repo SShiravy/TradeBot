@@ -1,4 +1,4 @@
-from config import settings
+from Settings.config import settings
 
 settings.TELEGRAM_BOT_TOKEN = "8937168160:AAHtl4qXCSKXgT6YTSZEvYYDSHs3UcVqD5Y"
 from Bots.DivergenceStrategy.two_chart_divergence import Divergence
@@ -17,7 +17,7 @@ from ExchangeAgents.MT5 import MT5Agent
 from ChartModule import Chart, TimeFrame
 from TraderBot.PositionHandlers.stepping_handler import SteppingHandlerForex
 from TraderBot.trader_bot import TraderBot
-from custom_logger import LoggerConfig, build_logger
+from Settings.custom_logger import LoggerConfig, build_logger
 import asyncio
 
 

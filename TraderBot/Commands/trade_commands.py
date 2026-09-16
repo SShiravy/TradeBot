@@ -1,5 +1,5 @@
 import logging
-from ChartModule.timing import TimeHandler
+from Settings.timing import TimeHandler
 from TraderBot.models import Command, Trigger, TriggerType
 
 
@@ -8,17 +8,17 @@ logger = logging.getLogger("Commands")
 
 class OpenPosition(Command):
     async def command(self):
-        entry_price = self.exchange_agent.open_position(self.position)
+        entry_price = self.context.exchange_agent.open_position(self.context.position)
         if entry_price:
-            self.position.entry_price = entry_price
-            self.position.open_timestamp = TimeHandler.now()
+            self.context.position.entry_price = entry_price
+            self.context.position.open_timestamp = TimeHandler.now()
             return True
         return False
 
 
 class StopLoss(Command):
     async def command(self):
-        self.position.closed_timestamp = TimeHandler.now()
+        self.context.position.closed_timestamp = TimeHandler.now()
         return True
 
 
@@ -33,9 +33,15 @@ class TrailStoploss(Command):
         self.stoploss_price = new_stoploss
 
     async def command(self):
-        if self.exchange_agent.change_stoploss(self.position, self.stoploss_price):
+        if self.context.exchange_agent.change_stoploss(
+            self.context.position, self.stoploss_price
+        ):
             return False
-        self.position.stoploss = Trigger(
-            self.stoploss_price, self.position.volume, -1, StopLoss(), TriggerType.SL
+        self.context.position.stoploss = Trigger(
+            self.stoploss_price,
+            self.context.position.volume,
+            -1,
+            StopLoss(),
+            TriggerType.SL,
         )
         return True

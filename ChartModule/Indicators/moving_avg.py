@@ -5,12 +5,12 @@ from ChartModule.models import (
     MarketSide,
     CandlesSource,
 )
-from ChartModule.Indicators.models import IndicatorBaseModel
+from ChartModule.Indicators.models import Indicator
 from ChartModule.plot import ChartPlot
 import pandas as pd
 
 
-class SMA(IndicatorBaseModel):
+class SMA(Indicator):
     """
     Calculate Simple Moving Average (SMA) over n_bar
     values: dict{time:sma}
@@ -55,7 +55,7 @@ class SMA(IndicatorBaseModel):
         plot.linear_plot(self.data.keys(), self.data.values(), f"SMA{self.n_bar}")
 
 
-class EMA(IndicatorBaseModel):
+class EMA(Indicator):
     """
     Calculate Exponential Moving Average (EMA) over n_bar
     values: dict{timestamp:ema}
@@ -112,7 +112,7 @@ class EMA(IndicatorBaseModel):
         plot.linear_plot(self.data.keys(), self.data.values(), f"EMA{self.n_bar}")
 
 
-class WMA(IndicatorBaseModel):
+class WMA(Indicator):
     """
     Calculate Weighted Moving Average (WMA) over n_bar
     values: dict{time:wma}
@@ -169,7 +169,7 @@ class WMA(IndicatorBaseModel):
         )
 
 
-class HMA(IndicatorBaseModel):
+class HMA(Indicator):
     """
     Calculate Hull Moving Average (HMA) over n_bar
     values: dict{time:hma}

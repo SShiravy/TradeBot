@@ -1,6 +1,6 @@
 # ruff: noqa: F401
 from sqlmodel import SQLModel, create_engine
-from config import settings
+from Settings.config import settings
 
 engine = create_engine(settings.LOCAL_BACKTEST_DB_NAME)
 

@@ -5,8 +5,8 @@ from TraderBot.PositionHandlers.stepping_handler import SteppingHandlerCrypto
 from TraderBot.reporter import TelegramReporter
 from TraderBot.trader_bot import TraderBot
 from Bots.DivergenceStrategy import Divergence
-from custom_logger import build_logger, LoggerConfig
-from config import settings
+from Settings.custom_logger import build_logger, LoggerConfig
+from Settings.config import settings
 import asyncio
 
 

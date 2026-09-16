@@ -1,54 +1,55 @@
-from TraderBot import ExchangeAgent, Position, commands, PositionsReport
-from TraderBot.reporter import TelegramReporter
-from BacktestModule.dummy_models import DummyAgent, DummyPositionHanler
-from TraderBot.PositionHandlers.manager import PositionGenerator, TradesManager
-from ChartModule.models import Chart, Candle, Signal, ChartData
+import hashlib
+import json
+from Settings import TimeHandler
+from TraderBot import ExchangeAgent, Position
+import TraderBot.Commands as commands
+from TraderBot.PositionHandlers.manager import TradesManager
+from ChartModule.models import Chart, Signal, ChartData
 from TraderBot.models import Strategy
-from ChartModule.plot import ChartPlot
-from datetime import datetime, timezone, timedelta
-from dataclasses import dataclass, field
+from ChartModule.plot import ChartPlot, Plot
+from datetime import timedelta
 from copy import copy
 import logging
 
 
-@dataclass(kw_only=True)
 class TraderBot:
-    chart: Chart
-    agent: ExchangeAgent
-    strategy: Strategy
-    position_generator: PositionGenerator
-    position_manager: TradesManager
+    def __init__(
+        self,
+        chart: Chart,
+        agent: ExchangeAgent,
+        strategy: Strategy,
+        trades_manager: TradesManager,
+        bar_between_signals: int = 2,
+        n_candle_check: int = 1000,
+        consider_position: bool = True,
+    ):
+        self.chart = chart
+        self.agent = agent
+        self.strategy = strategy
+        self.trades_manager = trades_manager
+        self.bar_between_signals = bar_between_signals
+        self.n_candle_check = n_candle_check
+        self.consider_position = consider_position
 
-    bar_between_signals: int = field(default=2)
-    signal_msg_sender: bool = field(default=True)
-
-    n_candle_check: int = field(default=1000)
-
-    max_long_lose: int = field(default=3)
-    max_short_lose: int = field(default=3)
-
-    _n_losed_long: int = field(default=0, init=False)
-    _n_losed_short: int = field(default=0, init=False)
-
-    consider_position: bool = field(default=True)
+    @property
+    def identifier(self):
+        return f"{self.chart.symbol}_{self.chart.timeframe.name}_{self.strategy.name}"
 
     def export_config(self) -> dict:
         return {
             "chart": self.chart.export_config(),
+            "strategy": self.strategy.export_config(),
+            "trades_manager": self.trades_manager.export_config(),
             "bar_between_signals": self.bar_between_signals,
+            "n_candle_check": self.n_candle_check,
         }
 
-    def give_delay(self, last_candle: Candle, jump=False) -> timedelta:
-        delay = self.chart.timeframe.time_delta
-        if jump:
-            delay *= self.bar_between_signals
-        next_timestamp = int(round(last_candle.timestamp) + delay.total_seconds())
-        now_timestamp = round(datetime.now(tz=timezone.utc).timestamp())
-        sleep_time_based_on_timestamp = next_timestamp - now_timestamp
-        logging.debug(
-            f"{next_timestamp=} | {last_candle.timestamp} | {now_timestamp} | {sleep_time_based_on_timestamp=}"
-        )
-        return timedelta(seconds=sleep_time_based_on_timestamp + 1)
+    def __hash__(self):
+        raw = json.dumps(
+            self.export_config(),
+            sort_keys=True,
+        ).encode()
+        return int(hashlib.sha256(raw).hexdigest(), 16)
 
     def get_chartdata(self, n_bar: int | None = None) -> ChartData:
         chartdata = self.agent.get_chartdata(
@@ -58,125 +59,126 @@ class TraderBot:
             raise ValueError(f"chart data is None from {self.agent.__class__.__name__}")
         return chartdata
 
-    async def find_signal(
-        self, chartdata: ChartData, *args, **kwargs
-    ) -> None | tuple[Signal, Position] | Signal:
+    def give_delay(self, last_candle_timestamp: int, jump: int = 1) -> int:
+        """
+        return seconds of delay
+        """
+        bar_seconds = self.chart.timeframe.minutes * 60 * jump
+        next_timestamp = int(round(last_candle_timestamp) + bar_seconds)
+        delay = next_timestamp - TimeHandler.now()
+        logging.debug(f"{bar_seconds=}|{jump=}|{next_timestamp=}|{delay=}")
+        return delay + 1
+
+    def check_signal(self, chartdata: ChartData) -> None | Signal:
         signal = self.strategy.check_signal(
-            chartdata, self.long_signal, self.short_signal
+            chartdata, self.trades_manager.long_trade, self.trades_manager.short_trade
         )
-        if signal is None:
+        if not signal:
             return None
 
-        plot = None
-        if self.send_signal_msg:
-            plot = ChartPlot(chartdata)
-            self.strategy.draw(plot, signal, draw_indicators=True)
-        if not self.consider_position:
-            if self.send_signal_msg:
-                await TelegramReporter().new_signal(signal, plot)
-            return signal
-        position = await self.position_generator.generate(signal)
-        if not position:
-            return None
-        return signal, position
+    def trade(self, signal: Signal, position: Position, plot: Plot) -> Position | None:
+        report_command = None
+        if self.trades_manager.reporter and self.trades_manager.reporter.enable:
+            # TODO: plot position
+            self.strategy.plotter(plot, signal, self.strategy.confirmation_indicators)
+            report_command = commands.NewPositionReport(plot=plot)
+        commands.OpenPosition(report_command).send(
+            self.trades_manager.give_command_contex(position)
+        )
+        return position
 
-    async def task(self) -> timedelta | tuple[timedelta, Signal, Position | None]:
+    def task(self):
         chartdata = self.get_chartdata()
-        res = await self.find_signal(chartdata)
-        if res is None:
-            return self.give_delay(chartdata[-1])
-        if isinstance(res, tuple):
-            signal, position = res
-        else:
-            signal = res
-            position = None
-        return self.give_delay(chartdata[-1], jump=True), signal, position
-
-    async def backtest(
-        self,
-        n_bar=500,
-        show_image=True,
-        len_sub_data=100,
-        *args,
-        **kwargs,
-    ):
-        logger = logging.getLogger(f"{self.__class__.__name__} Backtest")
-
-        if self.consider_position:
-            position_handler = copy(self.position_generator)
-        else:
-            position_handler = DummyPositionHanler()
-            self.position_generator = position_handler
-
-        chartdata = self.get_chartdata(n_bar)
-        if chartdata is None:
-            raise ValueError(f"{chartdata=}")
-
-        agent = DummyAgent(
-            self.agent,
-            chartdata=chartdata,
-            open_positions=position_handler.open_positions,
-            start_index=len_sub_data,
-        )
-
-        position_handler.exchange_agent = agent
-        position_handler.long_trade = False
-        position_handler.short_trade = False
-        self.agent = agent
-        self.send_signal_msg = False
-
-        all_positions: list[Position] = []
-        all_signals: list[Signal] = []
-
-        while agent.index < len(agent.chartdata.candles) - 1:  # type: ignore
+        signal = self.check_signal(chartdata)
+        if signal:
             if self.consider_position:
-                position_handler.manage_positions()
-                await commands.Command.execute_pending_commands(
-                    time=agent.get_chartdata(self.chart)[-1].time,  # type: ignore
-                    report=False,
-                )
-            res = await self.task()
-            if isinstance(res, timedelta):
-                candle_delay = 1
+                position = self.trades_manager.generate_position(signal)
+                if position:
+                    plot = ChartPlot(chartdata)
+                    self.trade(signal, position, plot)
             else:
-                all_signals.append(res[1])
-                if self.consider_position:
-                    all_positions.append(res[2])  # type: ignore
-                candle_delay = self.bar_between_signals + 1
-            agent.index += candle_delay
+                plot = ChartPlot(chartdata)
+                self.strategy.plotter(plot, signal)
+                commands.NewSignalReport(signal, plot=plot).send(
+                    reporter=self.trades_manager.reporter
+                )
 
-            logger.debug(f"{candle_delay} Candle next")
-        plot = ChartPlot(agent.chartdata)  # type: ignore
-        for signal in all_signals:
-            self.strategy.draw(plot, signal)
-        for pos in all_positions:
-            if not pos.closed_timestamp:
-                continue
-            pos.plot = plot
-            pos.draw()
-        commands_report = commands.Command.close_records()
-        all_reports = position_handler.report()
-        logger.info("Result:\n\n" + commands_report)
-        for poses_report in all_reports:
-            logger.info("\n" + str(poses_report))
-        overal_report = PositionsReport.give_overall_report(copy(all_reports))
-        logger.info("\n" + str(overal_report))
-        logger.info(
-            f"total time: {agent.chartdata[-1].time - agent.chartdata[0].time} with {len(agent.chartdata.candles)} candles"  # type: ignore
-        )
-        if show_image:
-            plot.show()
+        return self.give_delay(chartdata.timestamps[-1])
 
-        return all_signals, all_positions, plot, all_reports, commands_report
 
-    def load_from_json(self, path: str):
-        pass
+async def backtest(
+    self,
+    n_bar=500,
+    show_image=True,
+    len_sub_data=100,
+    *args,
+    **kwargs,
+):
+    logger = logging.getLogger(f"{self.__class__.__name__} Backtest")
 
-    def __str__(self) -> str:
-        msg_list = [
-            str(self.chart),
-            self.agent.__class__.__name__,
-            self.strategy.name,
-            self.position_generator.__class__.__name__,
-        ]
-        return "|".join(msg_list)
+    if self.consider_position:
+        position_handler = copy(self.position_generator)
+    else:
+        position_handler = DummyPositionHanler()
+        self.position_generator = position_handler
+
+    chartdata = self.get_chartdata(n_bar)
+    if chartdata is None:
+        raise ValueError(f"{chartdata=}")
+
+    agent = DummyAgent(
+        self.agent,
+        chartdata=chartdata,
+        open_positions=position_handler.open_positions,
+        start_index=len_sub_data,
+    )
+
+    position_handler.exchange_agent = agent
+    position_handler.long_trade = False
+    position_handler.short_trade = False
+    self.agent = agent
+    self.send_signal_msg = False
+
+    all_positions: list[Position] = []
+    all_signals: list[Signal] = []
+
+    while agent.index < len(agent.chartdata.candles) - 1:  # type: ignore
+        if self.consider_position:
+            position_handler.manage_positions()
+            await commands.Command.execute_pending_commands(
+                time=agent.get_chartdata(self.chart)[-1].time,  # type: ignore
+                report=False,
+            )
+        res = await self.task()
+        if isinstance(res, timedelta):
+            candle_delay = 1
+        else:
+            all_signals.append(res[1])
+            if self.consider_position:
+                all_positions.append(res[2])  # type: ignore
+            candle_delay = self.bar_between_signals + 1
+        agent.index += candle_delay
+
+        logger.debug(f"{candle_delay} Candle next")
+    plot = ChartPlot(agent.chartdata)  # type: ignore
+    for signal in all_signals:
+        self.strategy.draw(plot, signal)
+    for pos in all_positions:
+        if not pos.closed_timestamp:
+            continue
+        pos.plot = plot
+        pos.draw()
+    commands_report = commands.Command.close_records()
+    all_reports = position_handler.report()
+    logger.info("Result:\n\n" + commands_report)
+    for poses_report in all_reports:
+        logger.info("\n" + str(poses_report))
+    overal_report = PositionsReport.give_overall_report(copy(all_reports))
+    logger.info("\n" + str(overal_report))
+    logger.info(
+        f"total time: {agent.chartdata[-1].time - agent.chartdata[0].time} with {len(agent.chartdata.candles)} candles"  # type: ignore
+    )
+    if show_image:
+        plot.show()
+
+    return all_signals, all_positions, plot, all_reports, commands_report
