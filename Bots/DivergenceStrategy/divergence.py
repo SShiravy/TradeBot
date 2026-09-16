@@ -9,7 +9,7 @@ from ChartModule.Indicators import (
     Indicator,
     LineFinder,
     Line,
-    SupportCandleConditions,
+    SupportCandlesPattern,
 )
 from ChartModule.plot import DoubleChartPlot
 from TraderBot.reporter import TelegramReporter
@@ -35,8 +35,8 @@ class Divergence(Strategy):
         min_step: int,
         max_step: int,
         confirmation_indicators: list[Indicator] = [],
-        long_support_conditions=SupportCandleConditions.RED_GREEN,
-        short_support_conditions=SupportCandleConditions.GREEN_RED,
+        long_support_conditions=SupportCandlesPattern.RED_GREEN,
+        short_support_conditions=SupportCandlesPattern.GREEN_RED,
         name="Divergence",
         inverse_diver_long: bool = False,
         inverse_diver_short: bool = False,

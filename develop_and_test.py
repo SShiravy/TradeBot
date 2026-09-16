@@ -4,7 +4,7 @@ settings.TELEGRAM_BOT_TOKEN = "8937168160:AAHtl4qXCSKXgT6YTSZEvYYDSHs3UcVqD5Y"
 from Bots.DivergenceStrategy.two_chart_divergence import Divergence
 from ExchangeAgents.MT5.bot_config import ForexDiverTradeConfig
 from TraderBot.reporter import TelegramReporter
-from ChartModule.Indicators.models import SupportCandleConditions
+from ChartModule.Indicators.models import SupportCandlesPattern
 from ChartModule.Indicators.rsi import RSI
 from Bots.DivergenceStrategy.oscillator_divergence import (
     OscillatorDiverConfig,
@@ -78,8 +78,8 @@ xau_double_diver_rsi_1m = OscillatorDoubleDiverConfig(
         200,
         [],
         name="RSI_Double_Diver",
-        long_support_conditions=SupportCandleConditions.RED_GREEN,
-        short_support_conditions=SupportCandleConditions.GREEN_RED,
+        long_support_conditions=SupportCandlesPattern.RED_GREEN,
+        short_support_conditions=SupportCandlesPattern.GREEN_RED,
         body_candle=True,
         ignore_shadow_cross=True,
         inverse_diver_long=False,
@@ -111,8 +111,8 @@ audcad_double_diver_rsi_1m = OscillatorDoubleDiverConfig(
         200,
         [],
         name="RSI_Double_Diver",
-        long_support_conditions=SupportCandleConditions.RED_GREEN,
-        short_support_conditions=SupportCandleConditions.GREEN_RED,
+        long_support_conditions=SupportCandlesPattern.RED_GREEN,
+        short_support_conditions=SupportCandlesPattern.GREEN_RED,
         body_candle=True,
         ignore_shadow_cross=True,
         inverse_diver_long=False,
@@ -144,8 +144,8 @@ usdjpy_double_diver_rsi_1m = OscillatorDoubleDiverConfig(
         200,
         [],
         name="RSI_Double_Diver",
-        long_support_conditions=SupportCandleConditions.RED_GREEN,
-        short_support_conditions=SupportCandleConditions.GREEN_RED,
+        long_support_conditions=SupportCandlesPattern.RED_GREEN,
+        short_support_conditions=SupportCandlesPattern.GREEN_RED,
         body_candle=True,
         ignore_shadow_cross=True,
         inverse_diver_long=False,
@@ -176,8 +176,8 @@ eurgbp_double_diver_rsi_1m = OscillatorDoubleDiverConfig(
         200,
         [],
         name="RSI_Double_Diver",
-        long_support_conditions=SupportCandleConditions.RED_GREEN,
-        short_support_conditions=SupportCandleConditions.GREEN_RED,
+        long_support_conditions=SupportCandlesPattern.RED_GREEN,
+        short_support_conditions=SupportCandlesPattern.GREEN_RED,
         body_candle=True,
         ignore_shadow_cross=True,
         inverse_diver_long=False,
@@ -209,8 +209,8 @@ xau_rsi_1m = OscillatorDiverConfig(
         200,
         [],
         name="RSI_Divergence",
-        long_support_conditions=SupportCandleConditions.RED_GREEN,
-        short_support_conditions=SupportCandleConditions.GREEN_RED,
+        long_support_conditions=SupportCandlesPattern.RED_GREEN,
+        short_support_conditions=SupportCandlesPattern.GREEN_RED,
         body_candle=True,
         ignore_shadow_cross=True,
         inverse_diver_long=False,

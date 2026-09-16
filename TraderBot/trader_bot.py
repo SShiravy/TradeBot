@@ -5,8 +5,9 @@ from TraderBot import ExchangeAgent, Position
 import TraderBot.Commands as commands
 from TraderBot.PositionHandlers.manager import TradesManager
 from ChartModule.models import Chart, Signal, ChartData
+from TraderBot.PositionHandlers.plot import PositionPlotter
 from TraderBot.models import Strategy
-from ChartModule.plot import ChartPlot, Plot
+from ChartModule.plot import SingleChartFigure, Figure
 from datetime import timedelta
 from copy import copy
 import logging
@@ -76,11 +77,11 @@ class TraderBot:
         if not signal:
             return None
 
-    def trade(self, signal: Signal, position: Position, plot: Plot) -> Position | None:
+    def trade(self, signal: Signal, position: Position, plot: Figure) -> Position | None:
         report_command = None
         if self.trades_manager.reporter and self.trades_manager.reporter.enable:
-            # TODO: plot position
-            self.strategy.plotter(plot, signal, self.strategy.confirmation_indicators)
+            PositionPlotter()(plot.main_pane,position)
+            self.strategy.plotter(plot.main_pane, signal, self.strategy.confirmation_indicators)
             report_command = commands.NewPositionReport(plot=plot)
         commands.OpenPosition(report_command).send(
             self.trades_manager.give_command_contex(position)
@@ -94,11 +95,11 @@ class TraderBot:
             if self.consider_position:
                 position = self.trades_manager.generate_position(signal)
                 if position:
-                    plot = ChartPlot(chartdata)
+                    plot = SingleChartFigure(chartdata)
                     self.trade(signal, position, plot)
             else:
-                plot = ChartPlot(chartdata)
-                self.strategy.plotter(plot, signal)
+                plot = SingleChartFigure(chartdata)
+                self.strategy.plotter(plot.main_pane, signal)
                 commands.NewSignalReport(signal, plot=plot).send(
                     reporter=self.trades_manager.reporter
                 )

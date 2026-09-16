@@ -2,7 +2,7 @@ from dataclasses import dataclass, field
 from typing import Any, Callable, Iterator
 
 from ChartModule.models import Candle, ChartData, MarketSide, CandlesSource
-from ChartModule.Indicators.models import Indicator, SupportCandleConditions
+from ChartModule.Indicators.models import Indicator, SupportCandlesPattern
 from ChartModule.plot import ChartPlot
 import numpy as np
 
@@ -49,7 +49,7 @@ class LineFinder(Indicator):
         min_step: int,
         max_step: int,
         cross_check_source: CandlesSource | None = None,
-        support_conditions: SupportCandleConditions = SupportCandleConditions.RAW,
+        support_conditions: SupportCandlesPattern = SupportCandlesPattern.RAW,
     ) -> None:
         super().__init__()
         self.source = source
@@ -139,7 +139,7 @@ class LineFinder(Indicator):
         check_values = self.cross_check_source(chartdata)
 
         valid_step = None
-        if self.support_conditions is not SupportCandleConditions.RAW:
+        if self.support_conditions is not SupportCandlesPattern.RAW:
             valid_step = lambda i: self.support_conditions.check(chartdata, i)
 
         yield from self.iter_value_lines(

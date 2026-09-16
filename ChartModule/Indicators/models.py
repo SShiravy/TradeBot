@@ -4,6 +4,8 @@ from enum import Flag
 from typing import Any
 import logging
 
+from ChartModule.plot import ChartPane, Figure, ObjectPlotter
+
 
 logger = logging.getLogger("IndicatorModel")
 
@@ -11,12 +13,19 @@ from abc import ABC, abstractmethod
 from typing import Any
 
 
+
+class IndicatorPlotter(ObjectPlotter):
+    @abstractmethod
+    def __call__(self, pane: ChartPane, indicator_data: Any, *args, **kwargs):
+        pass
+
 class Indicator(ABC):
     def __init__(self) -> None:
         self.chartdata: ChartData | None = None
         self.data: Any = None
         self.rules: list[IndicatorRule] = []
         self.last_checked_candle: Candle | None = None
+        self.plotter: IndicatorPlotter
 
     def export_configs(self) -> dict:
         return {"name": self.__class__.__name__}
@@ -30,8 +39,6 @@ class Indicator(ABC):
     @abstractmethod
     def _calculate(self, *args, **kwargs) -> Any: ...
 
-    @abstractmethod
-    def plot(self, plot, *args, **kwargs) -> Any: ...
 
     @abstractmethod
     def update(self, chartdata: ChartData, *args, **kwargs) -> Any:
@@ -84,7 +91,7 @@ class IndicatorRule(ABC):
         return self.forecast(*args, **kwargs)
 
 
-class SupportCandleConditions(Flag):
+class SupportCandlesPattern(Flag):
     """
     support candlestick conditions
     """
@@ -110,7 +117,7 @@ class SupportCandleConditions(Flag):
 
     @property
     def indices(self):
-        values_list = list(SupportCandleConditions)
+        values_list = list(SupportCandlesPattern)
         res = []
         for support_condition in self:
             res.append(values_list.index(support_condition) + 1)
@@ -131,51 +138,51 @@ class SupportCandleConditions(Flag):
         return result
 
     def check(self, chartdata: ChartData, index: int = -1) -> bool:
-        if SupportCandleConditions.RAW in self:
+        if SupportCandlesPattern.RAW in self:
             return True
 
         current_candle = chartdata.candle(index)
         previous_candle = chartdata.candle(index - 1)
-        if SupportCandleConditions.RAW in self:
+        if SupportCandlesPattern.RAW in self:
             return True
 
-        if SupportCandleConditions.GREEN_RED in self:
+        if SupportCandlesPattern.GREEN_RED in self:
             if not (
                 previous_candle.side is MarketSide.BULLISH
                 and current_candle.side is MarketSide.BEARISH
             ):
                 return False
 
-        elif SupportCandleConditions.RED_GREEN in self:
+        elif SupportCandlesPattern.RED_GREEN in self:
             if not (
                 previous_candle.side is MarketSide.BEARISH
                 and current_candle.side is MarketSide.BULLISH
             ):
                 return False
 
-        if SupportCandleConditions.HIGHER_LOW in self:
+        if SupportCandlesPattern.HIGHER_LOW in self:
             if current_candle.low < previous_candle.low:
                 return False
-        if SupportCandleConditions.HIGHER_BOTTOM in self:
+        if SupportCandlesPattern.HIGHER_BOTTOM in self:
             if current_candle.body_bottom < previous_candle.body_bottom:
                 return False
-        if SupportCandleConditions.HIGHER_HIGH in self:
+        if SupportCandlesPattern.HIGHER_HIGH in self:
             if current_candle.high < previous_candle.high:
                 return False
-        if SupportCandleConditions.HIGHER_TOP in self:
+        if SupportCandlesPattern.HIGHER_TOP in self:
             if current_candle.body_top < previous_candle.body_top:
                 return False
 
-        if SupportCandleConditions.LOWER_LOW in self:
+        if SupportCandlesPattern.LOWER_LOW in self:
             if current_candle.low > previous_candle.low:
                 return False
-        if SupportCandleConditions.LOWER_BOTTOM in self:
+        if SupportCandlesPattern.LOWER_BOTTOM in self:
             if current_candle.body_bottom > previous_candle.body_bottom:
                 return False
-        if SupportCandleConditions.LOWER_HIGHT in self:
+        if SupportCandlesPattern.LOWER_HIGHT in self:
             if current_candle.high > previous_candle.high:
                 return False
-        if SupportCandleConditions.LOWER_TOP in self:
+        if SupportCandlesPattern.LOWER_TOP in self:
             if current_candle.body_top > previous_candle.body_top:
                 return False
         return True

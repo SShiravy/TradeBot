@@ -6,8 +6,9 @@ from ChartModule.models import (
     Candle,
     Signal,
 )
+from ChartModule.plot import ChartPane, SignalPlotter, ObjectPlotter, SignalPlotter
 from Settings.timing import TimeHandler
-from ChartModule.Indicators import Indicator, SupportCandleConditions
+from ChartModule.Indicators import Indicator, SupportCandlesPattern
 from dataclasses import asdict, dataclass, field
 from datetime import datetime, timedelta
 from abc import ABC, abstractmethod
@@ -342,21 +343,21 @@ class ExchangeAgent(ABC):
         pass
 
 
-class SignalPlotter:
-    def __call__(self, plot, signal, indicators: list[Indicator] = [], *args, **kwargs):
+class StrategyPlotter(ObjectPlotter):
+    def __call__(self, pane: ChartPane, signal:Signal, indicators: list[Indicator] = [], *args, **kwargs):
         if indicators:
             for i in indicators:
-                i.plot(plot)
-        plot.mark_signal(signal)
+                i.plotter(pane,i.data)
+        SignalPlotter()(pane,signal)
 
 
 class Strategy(ABC):
     def __init__(
         self,
         name: str,
-        plotter: SignalPlotter,
-        long_support_conditions: SupportCandleConditions,
-        short_support_conditions: SupportCandleConditions,
+        plotter: StrategyPlotter,
+        long_support_conditions: SupportCandlesPattern,
+        short_support_conditions: SupportCandlesPattern,
         confirmation_indicators: list[Indicator] = [],
     ) -> None:
         self.name = name

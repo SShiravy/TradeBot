@@ -4,7 +4,7 @@ from ChartModule.models import (
     CandlesSource,
 )
 from ChartModule.plot import ChartPlot
-from ChartModule.Indicators.models import Indicator, SupportCandleConditions
+from ChartModule.Indicators.models import Indicator, SupportCandlesPattern
 import numpy as np
 
 
@@ -20,7 +20,7 @@ class Pivot(Indicator):
         left: int = 3,
         right: int = 3,
         down_pivot=True,
-        support_conditions: SupportCandleConditions = SupportCandleConditions.RAW,
+        support_conditions: SupportCandlesPattern = SupportCandlesPattern.RAW,
     ) -> None:
         super().__init__()
         self.source = source

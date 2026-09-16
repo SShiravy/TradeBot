@@ -2,7 +2,7 @@ from Settings.config import settings
 
 settings.TELEGRAM_BOT_TOKEN = "8470075659:AAHxX4BDBiUeKB85REsL8RB7jpe8XeubDbc"
 from TraderBot.reporter import TelegramReporter
-from ChartModule.Indicators.models import SupportCandleConditions
+from ChartModule.Indicators.models import SupportCandlesPattern
 from ChartModule.Indicators.rsi import RSI
 from Bots.DivergenceStrategy.oscillator_divergence import OscillatorDivergence
 from Bots.DivergenceStrategy.oscillator_double_divergence import (
@@ -28,8 +28,8 @@ xau_double_diver_five_m = OscillatorDoubleDiverConfig(
         200,
         [],
         name="RSI_Double_Diver",
-        long_support_conditions=SupportCandleConditions.RED_GREEN,
-        short_support_conditions=SupportCandleConditions.GREEN_RED,
+        long_support_conditions=SupportCandlesPattern.RED_GREEN,
+        short_support_conditions=SupportCandlesPattern.GREEN_RED,
         body_candle=True,
         ignore_shadow_cross=True,
         inverse_diver_long=False,
@@ -61,8 +61,8 @@ audcad_double_diver_five_m = OscillatorDoubleDiverConfig(
         200,
         [],
         name="RSI_Double_Diver",
-        long_support_conditions=SupportCandleConditions.RED_GREEN,
-        short_support_conditions=SupportCandleConditions.GREEN_RED,
+        long_support_conditions=SupportCandlesPattern.RED_GREEN,
+        short_support_conditions=SupportCandlesPattern.GREEN_RED,
         body_candle=True,
         ignore_shadow_cross=True,
         inverse_diver_long=False,
@@ -94,8 +94,8 @@ usdjpy_double_diver_five_m = OscillatorDoubleDiverConfig(
         200,
         [],
         name="RSI_Double_Diver",
-        long_support_conditions=SupportCandleConditions.RED_GREEN,
-        short_support_conditions=SupportCandleConditions.GREEN_RED,
+        long_support_conditions=SupportCandlesPattern.RED_GREEN,
+        short_support_conditions=SupportCandlesPattern.GREEN_RED,
         body_candle=True,
         ignore_shadow_cross=True,
         inverse_diver_long=False,
@@ -126,8 +126,8 @@ eurgbp_double_diver_five_m = OscillatorDoubleDiverConfig(
         200,
         [],
         name="RSI_Double_Diver",
-        long_support_conditions=SupportCandleConditions.RED_GREEN,
-        short_support_conditions=SupportCandleConditions.GREEN_RED,
+        long_support_conditions=SupportCandlesPattern.RED_GREEN,
+        short_support_conditions=SupportCandlesPattern.GREEN_RED,
         body_candle=True,
         ignore_shadow_cross=True,
         inverse_diver_long=False,

@@ -1,5 +1,5 @@
 from ChartModule import Chart, TimeFrame
-from ChartModule.Indicators.models import SupportCandleConditions
+from ChartModule.Indicators.models import SupportCandlesPattern
 from ChartModule.Indicators.rsi import RSI
 from Bots.DivergenceStrategy import Divergence
 from ChartModule.Indicators import EMA
@@ -94,8 +94,8 @@ forex_rsi_diver_five_m = OscillatorDiverConfig(
         100,
         [],
         name="ForexOscillatorDiver",
-        long_support_conditions=SupportCandleConditions.LOWER_LOW,
-        short_support_conditions=SupportCandleConditions.HIGHER_HIGH,
+        long_support_conditions=SupportCandlesPattern.LOWER_LOW,
+        short_support_conditions=SupportCandlesPattern.HIGHER_HIGH,
         inverse_diver_long=False,
     ),
     bar_between_signals=2,
@@ -123,8 +123,8 @@ forex_rsi_double_diver_five_m = OscillatorDoubleDiverConfig(
         200,
         [],
         name="ForexOscillatorDiver",
-        long_support_conditions=SupportCandleConditions.RED_GREEN,
-        short_support_conditions=SupportCandleConditions.GREEN_RED,
+        long_support_conditions=SupportCandlesPattern.RED_GREEN,
+        short_support_conditions=SupportCandlesPattern.GREEN_RED,
         body_candle=True,
         ignore_shadow_cross=True,
         inverse_diver_long=False,

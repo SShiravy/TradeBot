@@ -1,6 +1,6 @@
 import logging
 from ChartModule.models import Signal
-from ChartModule.plot import Plot
+from ChartModule.plot import Figure
 from TraderBot.models import Command, CommandStatus, PnLReport, ReporterBot
 from TraderBot.PositionHandlers.trades_pnl import PnLReportGenerator
 
@@ -12,7 +12,7 @@ class NewSignalReport(Command):
         self,
         signal: Signal,
         bounded_command: Command | None = None,
-        plot: Plot | None = None,
+        plot: Figure | None = None,
     ):
         super().__init__(bounded_command)
         self.signal = signal
@@ -41,7 +41,7 @@ class NewPositionReport(Command):
     def __init__(
         self,
         bounded_command: Command | None = None,
-        plot: Plot | None = None,
+        plot: Figure | None = None,
         reply_id: None | int = None,
     ):
         super().__init__(bounded_command)

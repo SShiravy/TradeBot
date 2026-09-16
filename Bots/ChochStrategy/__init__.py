@@ -4,7 +4,7 @@ from ChartModule.Indicators.cvd import CVD
 from ChartModule.Indicators.moving_avg import SMA, EMA, WMA, HMA
 from ChartModule.Indicators.models import (
     Indicator,
-    SupportCandleConditions,
+    SupportCandlesPattern,
     IndicatorRule,
 )
 from ChartModule.Indicators.moving_color import MovingColor, MovingCandleLength
@@ -19,7 +19,7 @@ __all__ = [
     "CVD",
     "SMA",
     "EMA",
-    "SupportCandleConditions",
+    "SupportCandlesPattern",
     "IndicatorRule",
     "MovingColor",
     "MovingCandleLength",

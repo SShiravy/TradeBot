@@ -2,7 +2,7 @@ from ChartModule.Indicators.lines import Line, LineFinder
 from ChartModule.Indicators.pivot import Pivot
 from ChartModule.Indicators.cvd import CVD
 from ChartModule.Indicators.moving_avg import SMA, EMA, WMA, HMA
-from ChartModule.Indicators.models import Indicator, SupportCandleConditions
+from ChartModule.Indicators.models import Indicator, SupportCandlesPattern
 from ChartModule.Indicators.moving_color import MovingColor, MovingCandleLength
 from ChartModule.Indicators.fibonacci import FibonacciRetracement, FiboLevels
 from ChartModule.Indicators.rsi import RSI
@@ -16,7 +16,7 @@ __all__ = [
     "SMA",
     "EMA",
     "RSI",
-    "SupportCandleConditions",
+    "SupportCandlesPattern",
     "MovingColor",
     "MovingCandleLength",
     "FibonacciRetracement",
