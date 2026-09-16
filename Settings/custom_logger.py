@@ -101,10 +101,10 @@ def telegram_handler(level: int, bot_token: str, chat_id: int) -> logging.Handle
 class LoggerConfig:
     name: str = "app"
     console: bool = True
-    console_level: int = logging.INFO
+    console_level: int = logging.DEBUG
     log_file_name: Optional[str] = None
     log_dir: Path = Path("Logs")
-    file_level: int = logging.DEBUG
+    file_level: int = logging.INFO
     telegram_token: Optional[str] = None
     telegram_channel: Optional[int] = None
     telegram_level: int = logging.WARNING

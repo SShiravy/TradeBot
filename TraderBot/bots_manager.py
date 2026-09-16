@@ -1,138 +1,166 @@
-from TraderBot import commands, PositionsReport
-from TraderBot.reporter import TelegramReporter
-from datetime import datetime, timezone, timedelta
+import cProfile
+import io
+import pstats
 import tracemalloc
 import asyncio
 import logging
+from datetime import timedelta
+from TraderBot.PositionHandlers.trades_pnl import PnLReportGenerator
+from TraderBot.models import Command, ReporterBot
+from Settings.timing import TimeHandler
+from TraderBot.trader_bot import TraderBot
 
 
 class BotsManager:
-    def __new__(
-        cls,
-        name: str = "",
-        configs: list[TraderBot] = [],
-        report_time: dict = {"h": 23, "m": 50},
-        commands_report: bool = True,
-    ):
-        if not hasattr(cls, "_instance"):
-            cls._instance = object.__new__(cls)
-            cls.name = name
-            cls.configs = configs
-            cls.report_time = report_time
-            cls._start_time = datetime.now(tz=timezone.utc).replace(microsecond=0)
-            cls._commands_report = commands_report
-        return cls._instance
+    def __init__(
+        self,
+        name: str,
+        reporter: ReporterBot,
+        bots: list[TraderBot],
+        manage_interval: float = 2.0,
+        heartbeat_interval: float = 3600.0,
+        enable_profiling: bool = True,
+    ) -> None:
+        self.name = name
+        self.reporter = reporter
+        self.bots = bots
+        self.manage_interval = manage_interval
+        self.heartbeat_interval = heartbeat_interval
+        self._start_time = TimeHandler.now()
+        self._stop_event = asyncio.Event()
 
-    async def manage(self):
-        while True:
-            try:
-                for config in self.configs:
-                    config.position_handler.manage_positions()
-                await commands.Command.execute_pending_commands(
-                    report=self._commands_report
-                )
-                await asyncio.sleep(2)
-            except Exception as e:
-                logging.exception(f"Manage Failed: {e}")
-                await asyncio.sleep(10)
+        self._last_snapshot: tracemalloc.Snapshot | None = None
+        self.enable_profiling = enable_profiling
+        self._profilers: dict[str, cProfile.Profile] = {}
 
-    async def trade_task(self, config: TraderBot):
-        logging.info(f"Task with config:{str(config)} initilized")
-        error_number = 0
-        if not config.agent.prepare_chart(config.chart):
-            logging.error(f"Failed to check chart for config: {config}")
-            return
-        while True:
+    def _memory_report(self) -> str:
+        snapshot = tracemalloc.take_snapshot()
+        lines = ["Memory (top 20 by allocated size):"]
+
+        if self._last_snapshot is not None:
+            top_stats = snapshot.compare_to(self._last_snapshot, "lineno")
+        else:
+            top_stats = snapshot.statistics("lineno")
+
+        for stat in top_stats[:20]:
+            lines.append(str(stat))
+
+        self._last_snapshot = snapshot
+        return "\n".join(lines)
+
+    async def _run_bot_task(self, bot: TraderBot):
+        """Runs bot.task(), profiled if enabled. Executed inside the worker thread."""
+        if not self.enable_profiling:
+            return await bot.task()
+        profiler = self._profilers[bot.identifier]
+        profiler.enable()
+        try:
+            result = await bot.task()
+            return result
+        finally:
+            profiler.disable()
+
+    def _profiling_report(self, bot: TraderBot) -> str | None:
+        profiler = self._profilers.get(bot.identifier)
+        if profiler is None:
+            return None
+        stream = io.StringIO()
+        pstats.Stats(profiler, stream=stream).sort_stats("cumtime").print_stats(30)
+        return stream.getvalue()
+
+    async def _trade_task(self, bot: TraderBot) -> None:
+        if self.enable_profiling:
+            self._profilers[bot.identifier] = cProfile.Profile()
+        error_count = 0
+        while not self._stop_event.is_set():
             try:
-                res = await config.task()
-                if isinstance(res, timedelta):
-                    sleep_time = res
-                else:
-                    sleep_time = res[0]
+                delay = await self._run_bot_task(bot)
                 logging.info(
-                    f"{config.chart.timeframe} Checked on {config.chart}. sleep for {sleep_time}"
+                    f"{bot.chart.timeframe} checked on {bot.chart}. sleeping {delay}s"
                 )
-
-                if sleep_time.total_seconds() < 0:
-                    raise ValueError(f"Negative sleep time: {sleep_time}, 1m sleep")
-
-                await asyncio.sleep(sleep_time.total_seconds())
-                error_number = 0
-
+                await asyncio.sleep(max(1, delay))
+                error_count = 0
             except Exception as e:
-                error_number += 1
-                logging.exception(f"{error_number} Times Task failed :{e}\n{config}")
-                if error_number == 3:
-                    await TelegramReporter().log_report(
-                        f"3 Times Error:{e}\non {config}"
+                error_count += 1
+                logging.exception(f"{error_count} failures for {bot.identifier}: {e}")
+                if error_count == 3:
+                    await self.reporter.send_msg(f"3x error: {e}\non {bot.identifier}")
+                await asyncio.sleep(bot.chart.timeframe.minutes * 60 / 2)
+                if error_count > 6:
+                    await self.reporter.send_msg(
+                        f"Removing {bot.identifier} after 6 failures: {e}"
                     )
-                # Delay for half candle
-                await asyncio.sleep(
-                    int(config.chart.timeframe.time_delta.total_seconds() / 2)
-                )
+                    return
 
-                if error_number > 6:
-                    await TelegramReporter().log_report(
-                        f"Error:{e}\non {config}\nMore Than 6 Times\nTask removed"
-                    )
-                    break
-                continue
+    async def _manage_loop(self) -> None:
+        while not self._stop_event.is_set():
+            try:
+                for bot in self.bots:
+                    bot.trades_manager.manage_positions()
+                await Command.execute_pending_commands()
+            except Exception as e:
+                logging.exception(f"Manage failed: {e}")
+            await asyncio.sleep(self.manage_interval)
 
-    async def heartbeat(self):
-        while True:
-            await asyncio.sleep(3600)
+    async def _heartbeat_loop(self) -> None:
+        while not self._stop_event.is_set():
+            await asyncio.sleep(self.heartbeat_interval)
             current, peak = tracemalloc.get_traced_memory()
-            elapsed_time = str(
-                datetime.now(tz=timezone.utc).replace(microsecond=0) - self._start_time
+            elapsed = TimeHandler.elapsed_since(self._start_time)
+            await self.reporter.send_msg(
+                f"{self.name}\n👋🤖 Lifespan: {elapsed}\n"
+                f"Memory: {current / 1024 / 1024:.2f} MB (peak {peak / 1024 / 1024:.2f} MB)"
             )
-            msg = [
-                f"{self.name}",
-                f"👋🤖\nLifespan⌛:\n{elapsed_time}",
-                f"Memory📝:\n{current / 1024 / 1024:.2f} MB\npeak: {peak / 1024 / 1024:.2f} MB",
-            ]
-            await TelegramReporter().log_report("\n".join(msg))
 
-    async def report(self):
-        now = datetime.now(tz=timezone.utc)
-        report_time = now.replace(
-            hour=self.report_time["h"],
-            minute=self.report_time["m"],
-            second=0,
-            microsecond=0,
+    def _daily_report_sleeptime(self):
+        now = TimeHandler.to_datetime(TimeHandler.now())
+        next_report = now.replace(hour=20, minute=58)
+        next_report = (
+            next_report if next_report > now else next_report + timedelta(days=1)
         )
-        if report_time < now:
-            report_time += timedelta(days=1)
-        sleep_time = report_time - now
-        while True:
-            logging.info(f"Next daily report in {sleep_time}")
-            await asyncio.sleep(sleep_time.total_seconds())
-            commands_report = commands.Command.close_records()
-            await TelegramReporter().log_report(f"{self.name}\n{commands_report}")
-            overall_report = []
-            for config in self.configs:
-                all_reports = config.position_handler.report()
-                for report in all_reports:
-                    await TelegramReporter().log_report(str(report))
-                overall_report.append(PositionsReport.give_overall_report(all_reports))
+        return next_report - now
 
-            overall_report = sum(overall_report)
-            await TelegramReporter().public_report(
-                self.name + "\n" + str(overall_report)
+    async def _daily_report_loop(self) -> None:
+        while not self._stop_event.is_set():
+            sleep_time = self._daily_report_sleeptime()
+            logging.info(f"Next daily report in {sleep_time}s")
+            await asyncio.sleep(max(1, sleep_time.total_seconds()))
+
+            await self.reporter.send_msg(f"{self.name}\n{Command.close_records()}")
+            await self.reporter.send_msg(self._memory_report())
+
+            if self.enable_profiling:
+                for bot in self.bots:
+                    report = self._profiling_report(bot)
+                    if report:
+                        await self.reporter.send_msg(
+                            f"Profiling {bot.identifier}:\n{report}"
+                        )
+
+            per_bot_reports = []
+            for bot in self.bots:
+                pnl = PnLReportGenerator.overall_report(
+                    bot.trades_manager.closed_positions
+                )
+                per_bot_reports.append(pnl)
+                await self.reporter.send_msg(f"{bot.identifier}:\n{pnl}")
+
+            await self.reporter.send_msg(
+                f"Overall of {self.name}:\n{sum(per_bot_reports)}"
             )
 
-            now = datetime.now(tz=timezone.utc)
-            report_time = (now + timedelta(days=1)).replace(
-                hour=self.report_time["h"], minute=self.report_time["m"], microsecond=0
-            )
-            sleep_time = report_time - now
-
-    async def start(self):
+    async def start(self) -> None:
         tracemalloc.start()
-        await TelegramReporter().log_report(
-            f"--{self.name}--\n⚡⚡\nStart at\n{self._start_time} utc\n⚡⚡"
+        await self.reporter.send_msg(
+            f"--{self.name}--\n⚡ Start at {TimeHandler.format(self._start_time)} UTC ⚡"
         )
-        tasks = [self.trade_task(config) for config in self.configs]
-        tasks.append(self.heartbeat())
-        tasks.append(self.report())
-        tasks.append(self.manage())
-        await asyncio.gather(*tasks)
+        async with asyncio.TaskGroup() as tg:
+            for bot in self.bots:
+                bot.post_init()
+                tg.create_task(self._trade_task(bot))
+            tg.create_task(self._manage_loop())
+            tg.create_task(self._heartbeat_loop())
+            tg.create_task(self._daily_report_loop())
+
+    def stop(self) -> None:
+        self._stop_event.set()

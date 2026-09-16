@@ -2,8 +2,16 @@ from TraderBot.models import (
     Position,
     PositionSide,
     ExchangeAgent,
-    PositionsReport,
     Trigger,
 )
+from TraderBot.trader_bot import TraderBot
+from TraderBot.bots_manager import BotsManager
 
-__all__ = ["Position", "PositionSide", "ExchangeAgent", "PositionsReport", "Trigger"]
+__all__ = [
+    "TraderBot",
+    "BotsManager",
+    "Position",
+    "PositionSide",
+    "ExchangeAgent",
+    "Trigger",
+]

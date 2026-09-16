@@ -106,14 +106,12 @@ class TelegramReporter(ReporterBot):
         self,
         name: str,
         bot_token: str,
-        signal_channel: str,
-        report_channel: str,
+        channel: str | int,
         msg_formater: ReportMsgFormater | None = None,
     ):
         self.name = name
         self.bot = Bot(bot_token)
-        self.signal_channel = signal_channel
-        self.report_channel = report_channel
+        self.channel = channel
         self.enable = True
         self.msg_formater = msg_formater if msg_formater else TelegramMsgFormater()
 
@@ -127,7 +125,7 @@ class TelegramReporter(ReporterBot):
     ):
         if not self.enable:
             return False
-        channel_id = channel_id if channel_id else self.signal_channel
+        channel_id = channel_id if channel_id else self.channel
         res = None
         if img_path:
             img = open(img_path, "rb")

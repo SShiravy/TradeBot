@@ -344,33 +344,40 @@ class ExchangeAgent(ABC):
 
 
 class StrategyPlotter(ObjectPlotter):
-    def __call__(self, pane: ChartPane, signal:Signal, indicators: list[Indicator] = [], *args, **kwargs):
+    def __call__(
+        self,
+        pane: ChartPane,
+        signal: Signal,
+        indicators: list[Indicator] = [],
+        *args,
+        **kwargs,
+    ):
         if indicators:
             for i in indicators:
-                i.plotter(pane,i.data)
-        SignalPlotter()(pane,signal)
+                i.plotter(pane, i.data)
+        SignalPlotter()(pane, signal)
 
 
 class Strategy(ABC):
     def __init__(
         self,
         name: str,
-        plotter: StrategyPlotter,
+        plotter: StrategyPlotter | ObjectPlotter,
         long_support_conditions: SupportCandlesPattern,
         short_support_conditions: SupportCandlesPattern,
-        confirmation_indicators: list[Indicator] = [],
+        indicators: list[Indicator] = [],
     ) -> None:
         self.name = name
         self.plotter = plotter
-        self.confirmation_indicators = confirmation_indicators
+        self.indicators = indicators
         self.long_support_conditions = long_support_conditions
         self.short_support_conditions = short_support_conditions
 
     def get_indicators_confirmation(self, chartdata: ChartData) -> list[MarketSide]:
-        if self.confirmation_indicators == []:
+        if self.indicators == []:
             return [MarketSide.NEUTRAL]
         all_forcasts = []
-        for indicator in self.confirmation_indicators:
+        for indicator in self.indicators:
             indicator.set(chartdata)
             all_forcasts.append(indicator.forecast())
         return all_forcasts
@@ -388,7 +395,7 @@ class Strategy(ABC):
 
     def export_config(self):
         indicators_configs = []
-        for indicator in self.confirmation_indicators:
+        for indicator in self.indicators:
             indicators_configs.append(indicator.export_configs())
         return {
             "long_support_conditions": self.long_support_conditions.value,
@@ -464,6 +471,82 @@ class PnLReport:
 
     __radd__ = __add__
 
+    def export(self) -> dict:
+        return {
+            "identifier": self.identifier,
+            "chart": str(self.chart),
+            "side": str(self.side),
+            "source": self.source,
+            "first_time": self.first_time,
+            "last_time": self.last_time,
+            "duration": str(self.duration()),
+            "duration_seconds": self.last_time - self.first_time,
+            "pnl": {
+                "dollar": self.pnl_dollar,
+                "percent": self.pnl_percent,
+                "pips": self.pnl_pips,
+            },
+            "positions": {
+                "total": self.total_positions,
+                "wins": self.wins,
+                "flats": self.flats,
+                "loses": self.loses,
+            },
+            "win_rate": (
+                self.wins / self.total_positions * 100 if self.total_positions else 0.0
+            ),
+            "triggered_steps": dict(self.triggered_steps),
+            "streaks": {
+                "max_win_in_a_row": self.max_win_in_a_row,
+                "max_lose_in_a_row": self.max_lose_in_a_row,
+            },
+            "overall_report": self.overall_report,
+        }
+
+    def __str__(self) -> str:
+        data = self.export()
+
+        return (
+            f"PnL Report\n"
+            f"{'=' * 60}\n"
+            f"Identifier       : {data['identifier']}\n"
+            f"Chart            : {data['chart']}\n"
+            f"Side             : {data['side']}\n"
+            f"Source           : {data['source']}\n"
+            f"\n"
+            f"Time\n"
+            f"{'-' * 60}\n"
+            f"First time       : {data['first_time']}\n"
+            f"Last time        : {data['last_time']}\n"
+            f"Duration         : {data['duration']}\n"
+            f"Duration seconds : {data['duration_seconds']}\n"
+            f"\n"
+            f"P&L\n"
+            f"{'-' * 60}\n"
+            f"Dollar           : {data['pnl']['dollar']}\n"
+            f"Percent          : {data['pnl']['percent']}%\n"
+            f"Pips             : {data['pnl']['pips']}\n"
+            f"\n"
+            f"Positions\n"
+            f"{'-' * 60}\n"
+            f"Total            : {data['positions']['total']}\n"
+            f"Wins             : {data['positions']['wins']}\n"
+            f"Flats            : {data['positions']['flats']}\n"
+            f"Loses            : {data['positions']['loses']}\n"
+            f"Win rate         : {data['win_rate']:.2f}%\n"
+            f"\n"
+            f"Triggered Steps\n"
+            f"{'-' * 60}\n"
+            f"{data['triggered_steps']}\n"
+            f"\n"
+            f"Streaks\n"
+            f"{'-' * 60}\n"
+            f"Max win streak   : {data['streaks']['max_win_in_a_row']}\n"
+            f"Max lose streak  : {data['streaks']['max_lose_in_a_row']}\n"
+            f"\n"
+            f"Overall report   : {data['overall_report']}\n"
+        )
+
 
 class ReportMsgFormater(ABC):
     @abstractmethod
@@ -488,12 +571,9 @@ class ReportMsgFormater(ABC):
 
 
 class ReporterBot(ABC):
-    def __init__(
-        self, name: str, signal_channel, report_channel, msg_formater: ReportMsgFormater
-    ):
+    def __init__(self, name: str, signal_channel, msg_formater: ReportMsgFormater):
         self.name = name
-        self.signal_channel = signal_channel
-        self.report_channel = report_channel
+        self.channel = signal_channel
         self.enable = True
         self.msg_formater = msg_formater
 

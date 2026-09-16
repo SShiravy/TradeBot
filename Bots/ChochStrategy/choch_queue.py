@@ -62,7 +62,7 @@ class ChochQueueFilter(Strategy):
         use_wick: bool = True,
         use_fibo_filter: bool = True,
         max_queue: int = 30,
-        confirmation_indicators: list[Indicator] = [],
+        indicators: list[Indicator] = [],
         long_support_conditions=SupportCandlesPattern.RAW,
         short_support_conditions=SupportCandlesPattern.RAW,
         name="ChochQueue",
@@ -71,7 +71,7 @@ class ChochQueueFilter(Strategy):
             name,
             long_support_conditions,
             short_support_conditions,
-            confirmation_indicators,
+            indicators,
         )
         self.pivot_length = pivot_length
         self.backstep = backstep

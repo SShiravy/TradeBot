@@ -35,7 +35,7 @@ class Divergence(Strategy):
         self,
         min_step: int,
         max_step: int,
-        confirmation_indicators: list[Indicator] = [],
+        indicators: list[Indicator] = [],
         long_support_conditions=SupportCandlesPattern.RED_GREEN,
         short_support_conditions=SupportCandlesPattern.GREEN_RED,
         name="Divergence",
@@ -49,7 +49,7 @@ class Divergence(Strategy):
             name,
             long_support_conditions,
             short_support_conditions,
-            confirmation_indicators,
+            indicators,
         )
         self.min_step = min_step
         self.max_step = max_step
@@ -252,8 +252,8 @@ class Divergence(Strategy):
             signal.other_chart_line.end_candle,
             signal.other_chart_line.source,
         )
-        if draw_indicators and self.confirmation_indicators:
-            for indicator in self.confirmation_indicators:
+        if draw_indicators and self.indicators:
+            for indicator in self.indicators:
                 indicator.plot(plot.base_plot)
 
 

@@ -130,7 +130,7 @@ def load_diver_backtest(the_config: TwoChartDiverTradeConfig):
     if signals is None:
         raise Exception(f"There is no related signals for the config: {the_config}")
     chartdata, second_chartdata = the_config.get_chartdata(n_bar)
-    all_indicators = the_config.strategy.confirmation_indicators
+    all_indicators = the_config.strategy.indicators
     for indicator in all_indicators:
         indicator.set(chartdata.candles)
     plot = DoubleChartPlot(chartdata, second_chartdata, n_bar)

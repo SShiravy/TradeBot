@@ -3,21 +3,17 @@ from abc import ABC, abstractmethod
 from enum import Flag
 from typing import Any
 import logging
-
 from ChartModule.plot import ChartPane, Figure, ObjectPlotter
 
 
 logger = logging.getLogger("IndicatorModel")
-
-from abc import ABC, abstractmethod
-from typing import Any
-
 
 
 class IndicatorPlotter(ObjectPlotter):
     @abstractmethod
     def __call__(self, pane: ChartPane, indicator_data: Any, *args, **kwargs):
         pass
+
 
 class Indicator(ABC):
     def __init__(self) -> None:
@@ -30,30 +26,55 @@ class Indicator(ABC):
     def export_configs(self) -> dict:
         return {"name": self.__class__.__name__}
 
-    def find_new_candle_index(self, chartdata: ChartData) -> int:
+    def _find_update_start(self, chartdata: ChartData) -> int | None:
+        """
+        Locate where new_chartdata continues from what we last saw.
+        Returns the index to start computing from, or None if the
+        last known timestamp isn't present (gap, reset, or trimmed
+        history) -- signaling a full recompute.
+        """
         if self.last_checked_candle is None:
-            raise ValueError("last_checked_candle is None")
-        idx = chartdata.timestamp_index(self.last_checked_candle.timestamp)
+            return None
+
+        ts = self.last_checked_candle.timestamp
+        idx = chartdata.timestamp_index(ts)
+        if idx >= len(chartdata) or chartdata.timestamps[idx] != ts:
+            return None
         return idx + 1
 
     @abstractmethod
-    def _calculate(self, *args, **kwargs) -> Any: ...
-
+    def _calculate(self, chartdata: ChartData, *args, **kwargs) -> Any:
+        """Full computation over the entire chartdata."""
+        ...
 
     @abstractmethod
-    def update(self, chartdata: ChartData, *args, **kwargs) -> Any:
+    def _calculate_new(self, chartdata: ChartData, start: int, *args, **kwargs) -> Any:
         """
-        Must return the updated data. Called by set() when incremental
-        update is possible instead of a full recalculation.
+        Compute only the segment from `start` onward, using chartdata
+        (which holds full history) and self.data (previous result) as
+        needed context. Return just the new portion, aligned to
+        chartdata[start:] -- the caller merges it with self.data.
         """
         ...
 
+    def _merge(self, new_segment: Any) -> Any:
+        """How to combine self.data with a freshly computed new_segment. Override per data type."""
+        raise NotImplementedError
+
+    def update(self, chartdata: ChartData, *args, **kwargs) -> Any:
+        start = self._find_update_start(chartdata)
+        if start is None:
+            return self._calculate(chartdata, *args, **kwargs)
+        if start >= len(chartdata):
+            return self.data  # nothing new closed since last check
+        new_segment = self._calculate_new(chartdata, start, *args, **kwargs)
+        return self._merge(new_segment)
+
     def set(self, chartdata: ChartData, *args, **kwargs) -> Any:
+        self.chartdata = chartdata
         if self.data is None:
-            self.chartdata = chartdata
             self.data = self._calculate(chartdata, *args, **kwargs)
         else:
-            self.chartdata = chartdata
             self.data = self.update(chartdata, *args, **kwargs)
         self.last_checked_candle = chartdata[-1]
         return self.data
@@ -65,10 +86,6 @@ class Indicator(ABC):
         return self._aggregate_votes(votes)
 
     def _aggregate_votes(self, votes: list[MarketSide]) -> MarketSide:
-        """
-        Majority vote aggregation. Override in a subclass for weighted
-        or rule-priority-based logic if a simple majority isn't enough.
-        """
         bullish = votes.count(MarketSide.BULLISH)
         bearish = votes.count(MarketSide.BEARISH)
         if bullish > bearish:
@@ -91,7 +108,7 @@ class IndicatorRule(ABC):
         return self.forecast(*args, **kwargs)
 
 
-class SupportCandlesPattern(Flag):
+class SupportCandlesPattern(Flag):  # TODO: make this an indicator
     """
     support candlestick conditions
     """

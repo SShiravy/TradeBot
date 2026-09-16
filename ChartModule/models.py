@@ -147,7 +147,7 @@ class Candle:
 
 
 class ChartType(Enum):
-    Simple = "Simple"
+    Simple = ""
     Heikinashi = "Heikinashi"
 
 
@@ -161,7 +161,7 @@ class Chart:
     contract_size: float | int = field(default=1, init=False)
 
     def __str__(self) -> str:
-        return f"{self.symbol} {self.timeframe.value}"
+        return f"{self.symbol}_{self.timeframe.value}{self.chart_type.value}"
 
     def export_config(self) -> dict:
         return {

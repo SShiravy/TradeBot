@@ -1,7 +1,8 @@
 import numpy as np
 
 from ChartModule import Chart, ChartData, TimeFrame
-from TraderBot.models import ExchangeAgent, Position, PositionSide
+from Settings.timing import TimeHandler
+from TraderBot.models import ExchangeAgent, Position, PositionSide, Trigger, TriggerType
 from datetime import datetime, timedelta, timezone
 from Settings.config import settings
 from enum import Enum
@@ -33,6 +34,8 @@ class MarketState(Enum):
 
 
 class MT5Agent(ExchangeAgent):
+    _UTC_SHIFT: int = 0
+
     def __new__(cls, mt5_terminal_path: str = settings.METATRADER_TERMINAL_PATH):
         if not hasattr(cls, "_instance"):
             cls._instance = object.__new__(cls)
@@ -43,7 +46,19 @@ class MT5Agent(ExchangeAgent):
             cls.market_state: MarketState = MarketState.CHECK_LATER
         return cls._instance
 
+    def select_chart(self, chart: Chart) -> bool:
+        if not mt5.symbol_select(chart.symbol, True):
+            symbols = mt5.symbols_get()
+            for s in symbols:
+                if chart.symbol.lower() in s.name.lower():
+                    chart.symbol = s.name
+                    mt5.symbol_select(chart.symbol, True)
+                    return True
+            raise ValueError(f"Failed to select symbol {chart.symbol}")
+        return True
+
     def prepare_chart(self, chart: Chart) -> bool:
+        self.select_chart(chart)
         symbol_info = mt5.symbol_info(chart.symbol)
         if symbol_info is None:
             raise RuntimeError(f"Failed to get symbol info for {chart.symbol}")
@@ -53,20 +68,13 @@ class MT5Agent(ExchangeAgent):
         logger.debug(f"{chart=}")
         return True
 
-    def select_chart(self, chart: Chart) -> bool:
-        if not mt5.symbol_select(chart.symbol, True):
-            raise ValueError(f"Failed to select symbol {chart.symbol}")
-        return True
-
     @classmethod
-    def correct_time(cls, raw_time: datetime, chart: Chart) -> datetime:
+    def set_utc_shift(cls, chart: Chart) -> int:
         info = mt5.symbol_info(chart.symbol)
         if not info:
             raise ValueError(f"{chart=} | {info=}")
-        delta = datetime.fromtimestamp(info.time, timezone.utc) - datetime.now(
-            timezone.utc
-        )
-        return raw_time - delta
+        cls._UTC_SHIFT = TimeHandler.now() - info.time
+        return cls._UTC_SHIFT
 
     @classmethod
     def give_current_timestamp(cls, chart: Chart):
@@ -115,7 +123,7 @@ class MT5Agent(ExchangeAgent):
             return None
         return ChartData(
             chart=chart,
-            timestamps=ohlcv_res["time"].astype(np.int64),
+            timestamps=ohlcv_res["time"].astype(np.int64) + self.set_utc_shift(chart),
             open=ohlcv_res["open"].astype(np.float64),
             high=ohlcv_res["high"].astype(np.float64),
             low=ohlcv_res["low"].astype(np.float64),
@@ -142,46 +150,57 @@ class MT5Agent(ExchangeAgent):
             price = tick.bid
             trade_side = mt5.ORDER_TYPE_SELL
 
-        # Build request
-        request = {
-            "action": mt5.TRADE_ACTION_DEAL,
-            "symbol": position.chart.symbol,
-            "volume": position.volume,
-            "type": trade_side,
-            "price": price,
-            "sl": position.stoploss,
-            "tp": position.takeprofit,
-            "deviation": 20,
-            "magic": 80713,
-            "comment": position.source,
-            "type_time": mt5.ORDER_TIME_GTC,
-            "type_filling": mt5.ORDER_FILLING_IOC,
-        }
+        exchange_id = None
+        entry_prices = []
+        for trigger in position.triggers:
+            if trigger.type != TriggerType.TP or trigger.exchange_id:
+                continue
+            # Build request
+            request = {
+                "action": mt5.TRADE_ACTION_DEAL,
+                "symbol": position.chart.symbol,
+                "volume": trigger.volume,
+                "type": trade_side,
+                "price": price,
+                "sl": position.stoploss,
+                "tp": trigger.price,
+                "deviation": 20,
+                "magic": 80713,
+                "comment": position.source,
+                "type_time": mt5.ORDER_TIME_GTC,
+                "type_filling": mt5.ORDER_FILLING_IOC,
+            }
 
-        result = mt5.order_send(request)
-        if not result or not result.request_id:
-            logging.error(f"Opening position failed: {position}\n{mt5.last_error()=}")
-            return None
-        logger.debug(f"opening position {result=}")
-        position.exchange_id = str(result.order)
-        position.spread = round(result.ask - result.bid, position.chart.precision)
-        logging.info(f"Position Opened: {position}\n{result=}")
-        return result.price
+            result = mt5.order_send(request)
+            if not result or not result.request_id:
+                logger.error(
+                    f"Opening position failed: {position}\n{mt5.last_error()=}"
+                )
+                return None
+            exchange_id = str(result.order)
+            trigger.exchange_id = exchange_id
+            entry_prices.append(result.price)
+            logger.info(f"Position Opened: {position}\n{result=}")
+        position.exchange_id = exchange_id if exchange_id else ""
+        return round(sum(entry_prices) / len(entry_prices), position.chart.precision)
 
     def change_stoploss(self, position: Position, price) -> bool:
-        request = {
-            "action": mt5.TRADE_ACTION_SLTP,
-            "position": int(position.exchange_id),
-            "symbol": position.chart.symbol,
-            "sl": price,
-            "tp": position.takeprofit,
-        }
+        for trigger in position.triggers:
+            if trigger.type != TriggerType.TP or not trigger.exchange_id:
+                continue
+            request = {
+                "action": mt5.TRADE_ACTION_SLTP,
+                "position": int(trigger.exchange_id),
+                "symbol": position.chart.symbol,
+                "sl": price,
+                "tp": trigger.price,
+            }
 
-        result = mt5.order_send(request)
-        if not result:
-            logger.error(f"New SL Request Failed:{position=}\n{result=}")
-            return False
-        logger.debug(f"SL Changed of {position=}\n{result=}")
+            result = mt5.order_send(request)
+            if not result:
+                logger.error(f"New SL Request Failed:{position=}\n{result=}")
+                return False
+        logger.debug(f"SL Changed of {position=}")
         return True
 
     def change_takeprofit(self, position: Position, price) -> bool:
@@ -200,63 +219,76 @@ class MT5Agent(ExchangeAgent):
         logger.debug(f"TP Changed of {position=}\n{result=}")
         return True
 
+    # TODO: implement below methods
+
+    def get_current_tick(self, chart: Chart) -> float:
+        return 0.0
+
     def partial_close(self, position: Position, volume) -> float | None:
-        if position.side == PositionSide.LONG:
-            trade_side = mt5.ORDER_TYPE_BUY
-        else:
-            trade_side = mt5.ORDER_TYPE_SELL
+        # if position.side == PositionSide.LONG:
+        #     trade_side = mt5.ORDER_TYPE_BUY
+        # else:
+        #     trade_side = mt5.ORDER_TYPE_SELL
 
-        request = {
-            "action": mt5.TRADE_ACTION_DEAL,
-            "symbol": position.chart.symbol,
-            "position": int(position.exchange_id),
-            "type": trade_side,
-            "volume": volume,
-            "deviation": 20,
-        }
+        # request = {
+        #     "action": mt5.TRADE_ACTION_DEAL,
+        #     "symbol": position.chart.symbol,
+        #     "position": int(position.exchange_id),
+        #     "type": trade_side,
+        #     "volume": volume,
+        #     "deviation": 20,
+        # }
 
-        result = mt5.order_send(request)
-        if not result:
-            logger.error(f"Partial Close Request Failed:{position=}\n{result=}")
-            return None
-        logger.debug(f"Partial Close for {position=}\n{result=}")
-        return result.price
+        # result = mt5.order_send(request)
+        # if not result:
+        #     logger.error(f"Partial Close Request Failed:{position=}\n{result=}")
+        #     return None
+        # logger.debug(f"Partial Close for {position=}\n{result=}")
+        # return result.price
+        pass
 
     def close_position(self, position: Position) -> float | None:
-        if position.side == PositionSide.LONG:
-            trade_side = mt5.ORDER_TYPE_BUY
-        else:
-            trade_side = mt5.ORDER_TYPE_SELL
+        # if position.side == PositionSide.LONG:
+        #     trade_side = mt5.ORDER_TYPE_BUY
+        # else:
+        #     trade_side = mt5.ORDER_TYPE_SELL
 
-        request = {
-            "action": mt5.TRADE_ACTION_DEAL,
-            "symbol": position.chart.symbol,
-            "position": int(position.exchange_id),
-            "type": trade_side,
-            "volume": position.volume,
-            "deviation": 20,
-        }
+        # request = {
+        #     "action": mt5.TRADE_ACTION_DEAL,
+        #     "symbol": position.chart.symbol,
+        #     "position": int(position.exchange_id),
+        #     "type": trade_side,
+        #     "volume": position.volume,
+        #     "deviation": 20,
+        # }
 
-        result = mt5.order_send(request)
-        if not result:
-            logger.error(f"Close Position Failed: {position}\n{result=}")
-            return None
-        logger.debug(f"Position Close for {position=}\n{result=}")
-        return result.price
+        # result = mt5.order_send(request)
+        # if not result:
+        #     logger.error(f"Close Position Failed: {position}\n{result=}")
+        #     return None
+        # logger.debug(f"Position Close for {position=}\n{result=}")
+        # return result.price
+        pass
 
     def mt5_trade_to_position(self, mt5_pos: mt5.TradePosition) -> Position:
+        side = (
+            PositionSide.LONG
+            if mt5_pos.type == mt5.ORDER_TYPE_BUY
+            else PositionSide.SHORT
+        )
         pos = Position(
             chart=Chart(mt5_pos.symbol, TimeFrame.one_minute),
-            side=PositionSide.LONG
-            if mt5_pos.type == mt5.ORDER_TYPE_BUY
-            else PositionSide.SHORT,
+            side=side,
             entry_price=mt5_pos.price_open,
             volume=mt5_pos.volume,
-            stoploss=mt5_pos.sl,
-            takeprofit=mt5_pos.tp,
+            stoploss=Trigger(
+                mt5_pos.sl, mt5_pos.volume, side.factor, type=TriggerType.SL
+            ),
+            triggers=[
+                Trigger(mt5_pos.tp, mt5_pos.volume, side.factor, type=TriggerType.TP)
+            ],
             leverage=mt5_pos.volume,  # / mt5_pos.volume_real,  # type: ignore
             source=f"MetaTrader|{mt5_pos.comment}",
-            real_trade=True,
         )
         pos.exchange_id = str(mt5_pos.ticket)
         return pos
@@ -285,7 +317,7 @@ class MT5Agent(ExchangeAgent):
         comment_filter: str = "",
     ) -> float | None:
         if not position_ticket and not comment_filter:
-            logging.error("No Ticket nor comment_filter is given")
+            logger.error("No Ticket nor comment_filter is given")
             return None
         position = mt5.positions_get(ticket=position_ticket)
         if position:

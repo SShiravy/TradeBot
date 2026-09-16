@@ -22,6 +22,7 @@ def apply_theme() -> None:
 
 apply_theme()
 
+
 class ChartPane:
     """
     One axis. Owns its own y-range tracking and every drawing primitive.
@@ -55,53 +56,105 @@ class ChartPane:
         self.extend_y_range(min(self.chartdata.low), max(self.chartdata.high))
 
     def draw_line(self, x1, y1, x2, y2, color: str = "#cb00e2", width: int = 2) -> None:
-        fplt.add_line((x1, y1), (x2, y2), color=color, width=width,
-                      interactive=False, ax=self.ax)
+        fplt.add_line(
+            (x1, y1), (x2, y2), color=color, width=width, interactive=False, ax=self.ax
+        )
 
-    def draw_directional_line(self, start_timestamp: int, start_price: float,
-                              end_timestamp: int, end_price: float,
-                              side: MarketSide) -> None:
+    def draw_directional_line(
+        self,
+        start_timestamp: int,
+        start_price: float,
+        end_timestamp: int,
+        end_price: float,
+        side: MarketSide,
+    ) -> None:
         color = BEARISH_COLOR if side is MarketSide.BEARISH else BULLISH_COLOR
-        self.draw_line(start_timestamp, start_price, end_timestamp, end_price, color=color)
+        self.draw_line(
+            start_timestamp, start_price, end_timestamp, end_price, color=color
+        )
 
-    def draw_horizontal_line(self, start_time: int, end_time: int, price: float,
-                             color: str = "#8b0072ff", width: int = 5) -> None:
-        fplt.add_line((start_time, price), (end_time, price),
-                      color=color, style="--", width=width, ax=self.ax)
+    def draw_horizontal_line(
+        self,
+        start_time: int,
+        end_time: int,
+        price: float,
+        color: str = "#8b0072ff",
+        width: int = 5,
+    ) -> None:
+        fplt.add_line(
+            (start_time, price),
+            (end_time, price),
+            color=color,
+            style="--",
+            width=width,
+            ax=self.ax,
+        )
 
-    def mark_price(self, timestamp: int, price: float, side: MarketSide,
-                   legend: str | None = None) -> None:
+    def mark_price(
+        self, timestamp: int, price: float, side: MarketSide, legend: str | None = None
+    ) -> None:
         bullish = side is MarketSide.BULLISH
-        fplt.plot(timestamp, price, style="^" if bullish else "v",
-                  color= BULLISH_COLOR if bullish else BEARISH_COLOR,
-                  width=3, legend=legend, ax=self.ax)
+        fplt.plot(
+            timestamp,
+            price,
+            style="^" if bullish else "v",
+            color=BULLISH_COLOR if bullish else BEARISH_COLOR,
+            width=3,
+            legend=legend,
+            ax=self.ax,
+        )
 
-    def mark_candle(self, index: int, source: CandlesSource = CandlesSource.Open,
-                    legend: str | None = None, color: str | None = None) -> None:
+    def mark_candle(
+        self,
+        index: int,
+        source: CandlesSource = CandlesSource.Open,
+        legend: str | None = None,
+        color: str | None = None,
+    ) -> None:
         if self.chartdata is None:
             raise ValueError("This pane has no chartdata to mark a candle on")
         if color is None:
-            color = BEARISH_COLOR if source in (CandlesSource.Top, CandlesSource.High) else BULLISH_COLOR
+            color = (
+                BEARISH_COLOR
+                if source in (CandlesSource.Top, CandlesSource.High)
+                else BULLISH_COLOR
+            )
         values = source(self.chartdata)
-        fplt.plot(int(self.chartdata.timestamps[index]), float(values[index]),
-                  style="o", color=color, width=1, legend=legend, ax=self.ax)
+        fplt.plot(
+            int(self.chartdata.timestamps[index]),
+            float(values[index]),
+            style="o",
+            color=color,
+            width=1,
+            legend=legend,
+            ax=self.ax,
+        )
 
-    def linear_plot(self, x, y, legend: str | None = None,
-                    color: str = "#410087", thickness: int = 2) -> None:
-        fplt.plot(x, y, style="-", ax=self.ax, color=color,
-                  legend=legend, width=thickness)
+    def linear_plot(
+        self,
+        x,
+        y,
+        legend: str | None = None,
+        color: str = "#410087",
+        thickness: int = 2,
+    ) -> None:
+        fplt.plot(
+            x, y, style="-", ax=self.ax, color=color, legend=legend, width=thickness
+        )
 
 
 class ObjectPlotter(ABC):
     @abstractmethod
     def __call__(self, pane: ChartPane, *args, **kwargs) -> None: ...
 
+
 class SignalPlotter(ObjectPlotter):
-    def __call__(self, pane:ChartPane, signal: Signal) -> None:
+    def __call__(self, pane: ChartPane, signal: Signal) -> None:
         bullish = signal.side is MarketSide.BULLISH
         price = signal.candle.low * 0.9995 if bullish else signal.candle.high * 1.0005
         pane.mark_price(signal.candle.timestamp, price, signal.side)
-    
+
+
 class BaseChartFigure(ABC):
     def __init__(self, title: str, rows: int) -> None:
         axes = fplt.create_plot(title, rows=rows)
@@ -129,9 +182,7 @@ class BaseChartFigure(ABC):
         """Last n_candles of chartdata -- start_index, not end_index."""
         if len(chartdata) <= n_candles:
             return chartdata
-        return chartdata.subdata(
-            start_index=len(chartdata) - n_candles, copy=True
-        )
+        return chartdata.subdata(start_index=len(chartdata) - n_candles, copy=True)
 
     def show(self, blocking: bool = True) -> None:
         for pane in self.panes:
@@ -164,8 +215,12 @@ class SingleChartFigure(BaseChartFigure):
 
 
 class DoubleChartFigure(BaseChartFigure):
-    def __init__(self, base_chartdata: ChartData, second_chartdata: ChartData,
-                 plot_n_candles: int = 100) -> None:
+    def __init__(
+        self,
+        base_chartdata: ChartData,
+        second_chartdata: ChartData,
+        plot_n_candles: int = 100,
+    ) -> None:
         self._base = base_chartdata
         self._second = second_chartdata
         self._plot_n_candles = plot_n_candles
@@ -184,9 +239,14 @@ class DoubleChartFigure(BaseChartFigure):
 
 
 class ChartWithOscillatorFigure(BaseChartFigure):
-    def __init__(self, base_chartdata: ChartData, oscillator_values: np.ndarray,
-                 plot_n_candles: int = 100, label: str = "Oscillator",
-                 color: str = "#002576") -> None:
+    def __init__(
+        self,
+        base_chartdata: ChartData,
+        oscillator_values: np.ndarray,
+        plot_n_candles: int = 100,
+        label: str = "Oscillator",
+        color: str = "#002576",
+    ) -> None:
         self._base = base_chartdata
         self._oscillator_values = oscillator_values
         self._plot_n_candles = plot_n_candles
@@ -205,8 +265,13 @@ class ChartWithOscillatorFigure(BaseChartFigure):
         oscillator = self._oscillator_values[-tail_len:]
 
         osc_pane = ChartPane(self._axes[1])
-        osc_pane.linear_plot(data.timestamps, oscillator,
-                             legend=self._label, color=self._color, thickness=1)
+        osc_pane.linear_plot(
+            data.timestamps,
+            oscillator,
+            legend=self._label,
+            color=self._color,
+            thickness=1,
+        )
         self.panes.append(osc_pane)
 
     @property

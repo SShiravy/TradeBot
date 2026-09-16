@@ -1,9 +1,9 @@
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Any, Callable, Iterator
 
-from ChartModule.models import Candle, ChartData, MarketSide, CandlesSource
+from ChartModule.models import ChartData, MarketSide, CandlesSource
 from ChartModule.Indicators.models import Indicator, SupportCandlesPattern
-from ChartModule.plot import ChartPlot
+from ChartModule.plot import ChartPane
 import numpy as np
 
 
@@ -29,17 +29,6 @@ class Line:
     def value_at(self, step_from_start: int) -> float:
         """Predicted value at a given number of steps past start_index, along the line."""
         return self.start_value + step_from_start * self.slope
-
-    def plot(self, plot: "ChartPlot", chartdata: ChartData):
-        start_index = chartdata.timestamp_index(self.start_timestamp)
-        end_index = chartdata.timestamp_index(self.end_timestamp)
-        plot.draw_chart_line(
-            self.start_value,
-            self.start_timestamp,
-            self.end_value,
-            self.end_timestamp,
-            self.direction(),
-        )
 
 
 class LineFinder(Indicator):
@@ -159,6 +148,9 @@ class LineFinder(Indicator):
     def _calculate(self, chartdata: ChartData) -> list[Line]:
         return self.find_lines_at_index(chartdata, end_index=len(chartdata) - 1)
 
+    def _calculate_new(self, chartdata: ChartData, start: int, *args, **kwargs) -> Any:
+        pass
+
     def update(self, chartdata: ChartData, *args, **kwargs) -> Any:
         return self._calculate(chartdata)
 
@@ -166,8 +158,3 @@ class LineFinder(Indicator):
         if not self.data:
             return MarketSide.NEUTRAL
         return self.data[-1].direction()
-
-    def plot(self, plot: "ChartPlot", chartdata: ChartData):
-        if not self.data:
-            return
-        self.data[-1].plot(plot, chartdata)
