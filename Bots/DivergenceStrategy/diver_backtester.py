@@ -1,4 +1,4 @@
-from Bots.DivergenceStrategy.oscillator_divergence import OscillatorDiverConfig
+from Bots.DivergenceStrategy.old_oscillator_divergence import OscillatorDiverConfig
 from TraderBot import commands
 from LocalBackTester.Database.methods import (
     fetch_oscillator_diver_siganls,

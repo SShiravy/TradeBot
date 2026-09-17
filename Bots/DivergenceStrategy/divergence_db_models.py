@@ -1,7 +1,7 @@
 from sqlmodel import SQLModel, Field
 from datetime import datetime, timezone
 import json
-from Bots.DivergenceStrategy.oscillator_divergence import (
+from Bots.DivergenceStrategy.old_oscillator_divergence import (
     OscillatorDiverConfig,
     OscillatorDiverSignal,
 )

@@ -23,8 +23,12 @@ class Indicator(ABC):
         self.last_checked_candle: Candle | None = None
         self.plotter: IndicatorPlotter
 
+    @property
+    def name(self):
+        return self.__class__.__name__
+
     def export_configs(self) -> dict:
-        return {"name": self.__class__.__name__}
+        return {"name": self.name}
 
     def _find_update_start(self, chartdata: ChartData) -> int | None:
         """

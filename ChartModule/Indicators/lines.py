@@ -70,6 +70,79 @@ class LineFinder(Indicator):
         return -1
 
     @classmethod
+    def validate_value_line(
+        cls,
+        anchor_values: np.ndarray,
+        timestamps: np.ndarray,
+        start_timestamp: int,
+        end_timestamp: int,
+        cross_multiplier: int,
+        check_values: np.ndarray | None = None,
+        valid_step: Callable[[int], bool] | None = None,
+    ) -> Line | None:
+        """
+        Check whether a line from start_timestamp to end_timestamp is valid
+        on this array -- same crossing rule as iter_value_lines, but for one
+        specific pair of timestamps instead of scanning every candidate.
+        Returns the Line if valid, None otherwise (timestamps not found,
+        wrong order, or the line crosses an intermediate value).
+        """
+        start_idx = int(np.searchsorted(timestamps, start_timestamp))
+        end_idx = int(np.searchsorted(timestamps, end_timestamp))
+
+        if start_idx >= len(timestamps) or timestamps[start_idx] != start_timestamp:
+            return None
+        if end_idx >= len(timestamps) or timestamps[end_idx] != end_timestamp:
+            return None
+        if start_idx >= end_idx:
+            return None
+
+        check_values = anchor_values if check_values is None else check_values
+        step = end_idx - start_idx
+
+        if valid_step is not None and not valid_step(start_idx):
+            return None
+
+        start_value = anchor_values[start_idx]
+        end_value = anchor_values[end_idx]
+        slope = (end_value - start_value) / step
+
+        offset_from_start = step - np.arange(1, step + 1, dtype=np.float64)
+        predicted = start_value + offset_from_start * slope
+        window_values = check_values[start_idx + 1 : end_idx + 1]
+
+        if np.any((window_values - predicted) * cross_multiplier < 0):
+            return None
+
+        return Line(
+            start_value=float(start_value),
+            end_value=float(end_value),
+            start_timestamp=start_timestamp,
+            end_timestamp=end_timestamp,
+            step=step,
+        )
+
+    def validate_line_at(
+        self, chartdata: ChartData, start_timestamp: int, end_timestamp: int
+    ) -> Line | None:
+        anchor_values = self.source(chartdata)
+        check_values = self.cross_check_source(chartdata)
+
+        valid_step = None
+        if self.support_conditions is not SupportCandlesPattern.RAW:
+            valid_step = lambda i: self.support_conditions.check(chartdata, i)
+
+        return self.validate_value_line(
+            anchor_values=anchor_values,
+            timestamps=chartdata.timestamps,
+            start_timestamp=start_timestamp,
+            end_timestamp=end_timestamp,
+            cross_multiplier=self._cross_multiplier(),
+            check_values=check_values,
+            valid_step=valid_step,
+        )
+
+    @classmethod
     def iter_value_lines(
         cls,
         anchor_values: np.ndarray,

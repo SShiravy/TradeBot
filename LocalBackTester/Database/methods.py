@@ -11,7 +11,7 @@ from Bots.DivergenceStrategy.divergence_db_models import (
     OscillatorDiverSignalRow,
     OscillatorDoubleDiverSignalRow,
 )
-from Bots.DivergenceStrategy.oscillator_divergence import OscillatorDiverConfig
+from Bots.DivergenceStrategy.old_oscillator_divergence import OscillatorDiverConfig
 from Bots.DivergenceStrategy.oscillator_double_divergence import (
     OscillatorDoubleDiverConfig,
 )

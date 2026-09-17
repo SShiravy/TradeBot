@@ -113,34 +113,27 @@ class Divergence(Strategy):
         other_chart_line_validation: bool = True,
     ) -> tuple[Line, Line] | None:
         # TODO: implement other_chart_line_validation
-        while True:
-            base_chart_line = next(
-                linefinder.iter_lines_at_index(base_chartdata, -1), None
-            )
-            if base_chart_line is None:
-                return None
-            second_chart_line = next(
-                linefinder.iter_lines_at_index(second_chartdata, -1), None
-            )
-            if second_chart_line is None:
-                return None
+        wanted_base, wanted_second = (
+            (MarketSide.BEARISH, MarketSide.BULLISH)
+            if inverse
+            else (MarketSide.BULLISH, MarketSide.BEARISH)
+        )
 
-            base_direction = base_chart_line.direction()
-            second_direction = second_chart_line.direction()
-            if base_direction == second_direction:
+        for base_line in linefinder.iter_lines_at_index(base_chartdata, -1):
+            if base_line.direction() is not wanted_base:
                 continue
 
-            if inverse and not (
-                base_direction is MarketSide.BEARISH
-                and second_direction is MarketSide.BULLISH
-            ):
+            second_line = linefinder.validate_line_at(
+                second_chartdata, base_line.start_timestamp, base_line.end_timestamp
+            )
+            if second_line is None:
                 continue
-            elif not inverse and not (
-                base_direction is MarketSide.BULLISH
-                and second_direction is MarketSide.BEARISH
-            ):
+            if second_line.direction() is not wanted_second:
                 continue
-            return base_chart_line, second_chart_line
+
+            return base_line, second_line
+
+        return None
 
     def check_long_signal(self, base_chartdata: ChartData, second_chartdata: ChartData):
         if not self.long_support_conditions.check(base_chartdata):

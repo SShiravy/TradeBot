@@ -10,7 +10,7 @@ from ChartModule.Indicators import (
     Line,
 )
 from ChartModule.plot import ChartWithOscillatorPlot
-from Bots.DivergenceStrategy.oscillator_divergence import (
+from Bots.DivergenceStrategy.old_oscillator_divergence import (
     OscillatorDiverSignal,
     OscillatorDivergence,
 )
