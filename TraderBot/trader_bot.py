@@ -58,6 +58,7 @@ class TraderBot:
     def get_chartdata(
         self, n_bar: int | None = None, chart: Chart | None = None
     ) -> ChartData:
+        print('no hererrrr')
         chartdata = self.agent.get_chartdata(
             chart=chart if chart else self.chart,
             n_bars=n_bar if n_bar else self.n_candle_check,
@@ -106,6 +107,8 @@ class TraderBot:
 
     async def task(self):
         chartdata = self.get_chartdata()
+        last_timestamp = chartdata.timestamps[-1]
+        chartdata = chartdata.subdata(end_index=-1)
         signal = self.check_signal(chartdata)
         if signal:
             if self.consider_position:
@@ -120,7 +123,7 @@ class TraderBot:
                     reporter=self.trades_manager.reporter
                 )
 
-        return self.give_delay(chartdata.timestamps[-1])
+        return self.give_delay(last_timestamp)
 
 
 # async def backtest(

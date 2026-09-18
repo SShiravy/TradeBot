@@ -218,7 +218,7 @@ class OscillatorDiverBot(TraderBot):
     async def task(self):
         chartdata = self.get_chartdata()
         last_timestamp = chartdata.timestamps[-1]
-        chartdata = self.get_chartdata().subdata(end_index=-1)
+        chartdata = chartdata.subdata(end_index=-1)
         signal = self.check_signal(chartdata)
         if signal:
             if self.consider_position:

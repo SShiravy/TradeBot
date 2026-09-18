@@ -36,7 +36,7 @@ class MarketState(Enum):
 class MT5Agent(ExchangeAgent):
     _UTC_SHIFT: int = 0
 
-    def __new__(cls, mt5_terminal_path: str = settings.METATRADER_TERMINAL_PATH):
+    def __new__(cls, mt5_terminal_path: str, utc_shift:int|None=None):
         if not hasattr(cls, "_instance"):
             cls._instance = object.__new__(cls)
             if not mt5.initialize(mt5_terminal_path):
@@ -44,9 +44,14 @@ class MT5Agent(ExchangeAgent):
             logger.info("Initialized")
             cls.last_checked_timestamp: None | int = None
             cls.market_state: MarketState = MarketState.CHECK_LATER
+            if utc_shift:
+                cls._UTC_SHIFT = utc_shift
+            else:
+                cls.set_utc_shift()            
         return cls._instance
 
-    def select_chart(self, chart: Chart) -> bool:
+    @classmethod
+    def select_chart(cls, chart: Chart) -> bool:
         if not mt5.symbol_select(chart.symbol, True):
             symbols = mt5.symbols_get()
             for s in symbols:
@@ -57,6 +62,17 @@ class MT5Agent(ExchangeAgent):
             raise ValueError(f"Failed to select symbol {chart.symbol}")
         return True
 
+    @classmethod
+    def set_utc_shift(cls, symbol: str="EURUSD") -> int:
+        chart = Chart(symbol,TimeFrame.one_minute)
+        cls.select_chart(chart)
+        info = mt5.symbol_info(chart.symbol)
+        if not info:
+            raise ValueError(f"{chart=} | {info=}")
+        cls._UTC_SHIFT = TimeHandler.now() - info.time
+        return cls._UTC_SHIFT
+    
+    
     def prepare_chart(self, chart: Chart) -> bool:
         self.select_chart(chart)
         symbol_info = mt5.symbol_info(chart.symbol)
@@ -68,14 +84,7 @@ class MT5Agent(ExchangeAgent):
         logger.debug(f"{chart=}")
         return True
 
-    @classmethod
-    def set_utc_shift(cls, chart: Chart) -> int:
-        info = mt5.symbol_info(chart.symbol)
-        if not info:
-            raise ValueError(f"{chart=} | {info=}")
-        cls._UTC_SHIFT = TimeHandler.now() - info.time
-        return cls._UTC_SHIFT
-
+   
     @classmethod
     def give_current_timestamp(cls, chart: Chart):
         info = mt5.symbol_info(chart.symbol)
@@ -121,9 +130,12 @@ class MT5Agent(ExchangeAgent):
         if ohlcv_res is None:
             logger.error(f"fetching chart data failed: {chart=}")
             return None
+        print(str(chart))
+        print(ohlcv_res["time"].astype(np.int64)[-3:],self._UTC_SHIFT,TimeHandler.now())
+        print(ohlcv_res["time"].astype(np.int64)[-3:]+self._UTC_SHIFT)
         return ChartData(
             chart=chart,
-            timestamps=ohlcv_res["time"].astype(np.int64) + self.set_utc_shift(chart),
+            timestamps=ohlcv_res["time"].astype(np.int64) + self._UTC_SHIFT,
             open=ohlcv_res["open"].astype(np.float64),
             high=ohlcv_res["high"].astype(np.float64),
             low=ohlcv_res["low"].astype(np.float64),

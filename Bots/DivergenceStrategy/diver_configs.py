@@ -1,5 +1,5 @@
 from ChartModule.models import Chart, TimeFrame, ChartType
-from ChartModule.Indicators import RSI
+from ChartModule.Indicators import RSI, EMA, HMA
 from Bots.DivergenceStrategy import (
     Divergence,
     DivergenceBot,
@@ -12,7 +12,8 @@ from TraderBot.PositionHandlers import TradesManager
 from TelegramBot import TelegramReporter
 from Settings import settings
 
-mt5_agent = MT5Agent(settings.METATRADER_TERMINAL_PATH)
+mt5_agent = MT5Agent(settings.METATRADER_TERMINAL_PATH,utc_shift=settings.BROKER_UTC_SHIFT)
+
 reporter = TelegramReporter(
     "Divergence", settings.TELEGRAM_BOT_TOKEN, settings.TELEGRAM_CHANNEL_ID
 )
@@ -21,7 +22,7 @@ xau_jpy_1m = DivergenceBot(
     chart=Chart("XAUUSD", TimeFrame.one_minute, ChartType.Simple),
     second_chart=Chart("USDJPY", TimeFrame.one_minute, ChartType.Simple),
     agent=mt5_agent,
-    strategy=Divergence(min_step=2, max_step=150, indicators=[]),
+    strategy=Divergence(min_step=2, max_step=150, indicators=[EMA(20)]),
     trades_manager=TradesManager(
         mt5_agent,
         ForexStepping(),
@@ -40,7 +41,7 @@ xau_dxy_1m = DivergenceBot(
     chart=Chart("XAUUSD", TimeFrame.one_minute, ChartType.Simple),
     second_chart=Chart("DXY", TimeFrame.one_minute, ChartType.Simple),
     agent=mt5_agent,
-    strategy=Divergence(min_step=2, max_step=150, indicators=[]),
+    strategy=Divergence(min_step=2, max_step=150, indicators=[HMA(20),EMA(50)]),
     trades_manager=TradesManager(
         mt5_agent,
         ForexStepping(),

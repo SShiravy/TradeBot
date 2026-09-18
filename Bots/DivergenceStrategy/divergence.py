@@ -275,7 +275,7 @@ class DivergenceBot(TraderBot):
     async def task(self):
         chartdata = self.get_chartdata()
         last_timestamp = chartdata.timestamps[-1]
-        chartdata = self.get_chartdata().subdata(end_index=-1)
+        chartdata = chartdata.subdata(end_index=-1)
         second_chartdata = self.get_chartdata(chart=self.second_chart).subdata(
             end_index=-1
         )

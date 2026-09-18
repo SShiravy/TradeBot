@@ -148,6 +148,7 @@ class TradesManager:
             position.last_check_timestamp = TimeHandler.now()
 
         chart_1m = Chart(position.chart.symbol, TimeFrame.one_minute)
+        print('here')
         chartdata = self.exchange_agent.get_chartdata(chart_1m, 3)
         if not chartdata:
             logger.warning(f"getting candles failed for {position}")
