@@ -1,17 +1,39 @@
 from ChartModule.models import (
+    ChartData,
     MarketSide,
-    Candle,
     CandlesSource,
 )
-from ChartModule.plot import ChartPlot
-from ChartModule.Indicators.models import Indicator, SupportCandlesPattern
+from ChartModule.Indicators.models import (
+    Indicator,
+    IndicatorPlotter,
+    SupportCandlesPattern,
+)
 import numpy as np
+
+from ChartModule.plot import ChartPane
+
+
+class PivotPlotter(IndicatorPlotter):
+    def __call__(
+        self,
+        pane: ChartPane,
+        indicator_data: np.ndarray,
+        show_all=True,
+        source: CandlesSource = CandlesSource.Close,
+    ) -> None:
+        if indicator_data is None or len(indicator_data) == 0:
+            return
+
+        indices = indicator_data if show_all else indicator_data[-1:]
+        for idx in indices:
+            pane.mark_candle(int(idx), source=source, color="#e1b400")
 
 
 class Pivot(Indicator):
     """
-    Find All Pivot Candles
-    values: list[Candle]
+    Indices of pivot candles (local extrema over a left/right window).
+    self.data: np.ndarray of int64 indices into chartdata, sorted ascending.
+    down_pivot=True finds swing lows, False finds swing highs.
     """
 
     def __init__(
@@ -19,68 +41,107 @@ class Pivot(Indicator):
         source: CandlesSource,
         left: int = 3,
         right: int = 3,
-        down_pivot=True,
+        down_pivot: bool = True,
         support_conditions: SupportCandlesPattern = SupportCandlesPattern.RAW,
     ) -> None:
         super().__init__()
         self.source = source
-        self.right = right
         self.left = left
+        self.right = right
         self.down_pivot = down_pivot
         self.support_conditions = support_conditions
-        self._biggest_pivot = None
+        self.plotter = PivotPlotter()
+        self._last_pivot_index: int = -(10**9)  # sentinel: "no pivot found yet"
 
-    def _calculate(self) -> list[Candle]:
-        all_source = []
-        all_pivots = []
-        n_candle_jump = 0
-        factor = -1 if self.down_pivot else 1
-        for index in range(0, len(self.candles)):
-            all_source.append(self.source(self.candles[index]))
-            if index < self.left + self.right:
+    def export_configs(self) -> dict:
+        configs = super().export_configs()
+        configs.update(
+            {
+                "source": self.source.name,
+                "left": self.left,
+                "right": self.right,
+                "down_pivot": self.down_pivot,
+            }
+        )
+        return configs
+
+    def _find_pivots(
+        self, chartdata: ChartData, values: np.ndarray, scan_start: int, scan_stop: int
+    ) -> list[int]:
+        """
+        Find pivot indices with candidate positions in [scan_start, scan_stop),
+        each needing `left` bars before and `right` bars after within the
+        full array (not just the scanned slice) to compare against.
+        """
+        window = self.left + self.right + 1
+        n = len(values)
+        pivots: list[int] = []
+
+        lo = max(self.left, scan_start)
+        hi = min(n - self.right, scan_stop)
+        if hi <= lo:
+            return pivots
+
+        windows = np.lib.stride_tricks.sliding_window_view(values, window)
+        extreme = windows.min(axis=1) if self.down_pivot else windows.max(axis=1)
+        # windows[i] spans values[i : i+window]; its center is index i+left
+        center_start = 0
+        centers = np.arange(center_start, center_start + len(extreme)) + self.left
+        is_extreme = np.isclose(values[centers], extreme)
+
+        candidate_mask = is_extreme & (centers >= lo) & (centers < hi)
+        candidates = centers[candidate_mask]
+
+        for idx in candidates:
+            idx = int(idx)
+            if idx - self._last_pivot_index <= self.left:
                 continue
-            if n_candle_jump > 0:
-                n_candle_jump -= 1
+            if (
+                self.support_conditions is not SupportCandlesPattern.RAW
+                and not self.support_conditions.check(chartdata, idx)
+            ):
                 continue
-            candle_index = index - self.right
-            candle_source = all_source[candle_index]
-            res = (
-                np.array(all_source[candle_index - self.left : index]) - candle_source
-            ) * factor
-            if np.all(res <= 0):
-                if not self.support_conditions.check(self.candles[: candle_index + 2]):
-                    continue
-                all_pivots.append(self.candles[candle_index])
-                n_candle_jump += self.left
-        return all_pivots
+            pivots.append(idx)
+            self._last_pivot_index = idx
 
-    def check_candle_is_pivot(
-        self,
-        candle_index: int,
-        candles: list[Candle],
-    ) -> bool:
-        self.update(candles)
-        if self.candles[candle_index] in self.data:
-            return True
-        return False
+        return pivots
 
-    def _forcast(self) -> MarketSide:
+    def _calculate(self, chartdata: ChartData, *args, **kwargs) -> np.ndarray:
+        values = self.source(chartdata)
+        self._last_pivot_index = -(10**9)
+        pivots = self._find_pivots(
+            chartdata, values, scan_start=0, scan_stop=len(values)
+        )
+        return np.array(pivots, dtype=np.int64)
+
+    def _calculate_new(
+        self, chartdata: ChartData, start: int, *args, **kwargs
+    ) -> np.ndarray:
+        values = self.source(chartdata)
+        # candidates near `start` need `left` bars of prior context to be
+        # scannable at all; anything before that was already resolved
+        scan_start = max(0, start - self.left)
+        pivots = self._find_pivots(
+            chartdata, values, scan_start=scan_start, scan_stop=len(values)
+        )
+        return np.array(pivots, dtype=np.int64)
+
+    def _merge(self, new_segment: np.ndarray) -> np.ndarray:
+        return np.concatenate([self.data, new_segment])
+
+    def check_candle_is_pivot(self, index: int, chartdata: ChartData) -> bool:
+        self.set(chartdata)
+        return index in self.data
+
+    def forecast(self, *args, **kwargs) -> MarketSide:
         return MarketSide.NEUTRAL
 
-    def plot(self, plot: ChartPlot, all=False):
-        if all:
-            for candle in self.data:
-                plot.mark_candle(candle, self.source)
-        else:
-            plot.mark_candle(self.data[-1], self.source)
-
     @property
-    def major_pivot(self) -> Candle:
-        if self._biggest_pivot:
-            return self._biggest_pivot
-        factor = -1 if self.down_pivot else 1
-        self._biggest_pivot = self.data[0]
-        for pivot in self.data[1:]:
-            if (self.source(pivot) - self.source(self._biggest_pivot)) * factor > 0:
-                self._biggest_pivot = pivot
-        return self._biggest_pivot
+    def major_pivot_index(self) -> int | None:
+        """Index of the most extreme pivot found so far (highest high or lowest low)."""
+        if self.data is None or len(self.data) == 0 or self.chartdata is None:
+            return None
+        values = self.source(self.chartdata)
+        pivot_values = values[self.data]
+        best = pivot_values.argmin() if self.down_pivot else pivot_values.argmax()
+        return int(self.data[best])
