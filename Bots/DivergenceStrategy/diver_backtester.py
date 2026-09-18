@@ -289,3 +289,46 @@ class OscilatorDiverBacktester:
             for i, indicator in enumerate(self.statistical_indicators):
                 indicator.analyze(all_positions, self.diver_config)
                 indicator.plot(plot_name, show=show_plots)
+
+
+# async def backtest(  # type: ignore
+#     self,
+#     n_bar=500,
+#     len_sub_data=100,
+#     show_image=True,
+# ):
+#     self.send_signal_msg = False
+#     self.consider_position = False
+
+#     all_signals: list[Signal | DivergenceSignal] = []
+
+#     jump = 0
+#     base_chartdata, second_chartdata = self.get_chartdata(n_bar)
+#     n = 1
+#     for i in range(len_sub_data, len(base_chartdata) - 1):
+#         base_subdata = base_chartdata.subdata(end_index=i, copy=False)
+#         seocnd_sub_data = second_chartdata.subdata(end_index=i, copy=False)
+#         logger.debug(f"backtest subdata: {base_subdata[-1]}-{n}")
+#         n += 1
+#         if jump > 0:
+#             jump -= 1
+#             continue
+#         signal = await self.find_signal(base_subdata, seocnd_sub_data)
+#         logger.debug(f"backtest found signal: {signal}")
+#         if signal is None:
+#             continue
+#         jump = self.bar_between_signals
+#         all_signals.append(signal)  # type: ignore
+#     logger.info(f"backtest found {len(all_signals)} signals")
+#     plot = DoubleChartPlot(base_chartdata, second_chartdata, plot_n_candles=n_bar)
+#     if not all_signals:
+#         if show_image:
+#             plot.show()
+#         return [], plot
+
+#     self.strategy.draw(plot, all_signals[0], draw_indicators=True)  # type: ignore
+#     for signal in all_signals[1:]:
+#         self.strategy.draw(plot, signal, draw_indicators=False)  # type: ignore
+#     if show_image:
+#         plot.show()
+#     return all_signals, plot

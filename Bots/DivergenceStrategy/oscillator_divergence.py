@@ -1,3 +1,5 @@
+import numpy as np
+
 from Bots.DivergenceStrategy.divergence import DivergencePlotter, DivergenceSignal
 from ChartModule.models import (
     Chart,
@@ -11,7 +13,7 @@ from ChartModule.Indicators import (
     Line,
     SupportCandlesPattern,
 )
-from ChartModule.plot import DoubleChartFigure
+from ChartModule.plot import ChartWithOscillatorFigure
 from TraderBot.PositionHandlers.manager import TradesManager
 import TraderBot.Commands as commands
 from TraderBot.trader_bot import TraderBot
@@ -72,8 +74,8 @@ class OscillatorDivergence(Strategy):
     def find_divergence(
         cls,
         linefinder: LineFinder,
-        base_chartdata: ChartData,
-        second_chartdata: ChartData,
+        chartdata: ChartData,
+        oscillator_data: np.ndarray,
         inverse: bool = False,
         other_chart_line_validation: bool = True,
     ) -> tuple[Line, Line] | None:
@@ -84,24 +86,27 @@ class OscillatorDivergence(Strategy):
             else (MarketSide.BULLISH, MarketSide.BEARISH)
         )
 
-        for base_line in linefinder.iter_lines_at_index(base_chartdata, -1):
-            if base_line.direction() is not wanted_base:
+        for base_line in linefinder.iter_lines_at_index(chartdata, -1):
+            if base_line.direction is not wanted_base:
                 continue
-
-            second_line = linefinder.validate_line_at(
-                second_chartdata, base_line.start_timestamp, base_line.end_timestamp
+            second_line = linefinder.validate_value_line(
+                oscillator_data,
+                chartdata.timestamps,
+                base_line.start_timestamp,
+                base_line.end_timestamp,
+                base_line.direction.number,
             )
             if second_line is None:
                 continue
-            if second_line.direction() is not wanted_second:
+            if second_line.direction is not wanted_second:
                 continue
 
             return base_line, second_line
 
         return None
 
-    def check_long_signal(self, base_chartdata: ChartData, second_chartdata: ChartData):
-        if not self.long_support_conditions.check(base_chartdata):
+    def check_long_signal(self, chartdata: ChartData, oscillator_data: np.ndarray):
+        if not self.long_support_conditions.check(chartdata):
             return None
         res = self.find_divergence(
             LineFinder(
@@ -110,8 +115,8 @@ class OscillatorDivergence(Strategy):
                 self.max_step,
                 support_conditions=self.long_support_conditions,
             ),
-            base_chartdata,
-            second_chartdata,
+            chartdata,
+            oscillator_data,
             self.inverse_diver_long,
             self.long_other_chart_line_validation,
         )
@@ -119,8 +124,8 @@ class OscillatorDivergence(Strategy):
             return None
         main_chart_line, other_chart_line = res
         signal = DivergenceSignal(
-            base_chartdata.chart,
-            base_chartdata[-1],
+            chartdata.chart,
+            chartdata[-1],
             MarketSide.BULLISH,
             self.name,
             main_chart_line,
@@ -128,10 +133,8 @@ class OscillatorDivergence(Strategy):
         )
         return signal
 
-    def check_short_signal(
-        self, base_chartdata: ChartData, second_chartdata: ChartData
-    ):
-        if not self.short_support_conditions.check(base_chartdata):
+    def check_short_signal(self, chartdata: ChartData, oscillator_data: np.ndarray):
+        if not self.short_support_conditions.check(chartdata):
             return None
         res = self.find_divergence(
             LineFinder(
@@ -140,8 +143,8 @@ class OscillatorDivergence(Strategy):
                 self.max_step,
                 support_conditions=self.short_support_conditions,
             ),
-            base_chartdata,
-            second_chartdata,
+            chartdata,
+            oscillator_data,
             not self.inverse_diver_short,
             self.short_other_chart_line_validation,
         )
@@ -149,8 +152,8 @@ class OscillatorDivergence(Strategy):
             return None
         main_chart_line, other_chart_line = res
         signal = DivergenceSignal(
-            base_chartdata.chart,
-            base_chartdata[-1],
+            chartdata.chart,
+            chartdata[-1],
             MarketSide.BEARISH,
             self.name,
             main_chart_line,
@@ -171,10 +174,14 @@ class OscillatorDivergence(Strategy):
         self.oscillator_indicator.set(chartdata)
 
         if check_long and MarketSide.BEARISH not in confirmations:
-            long_signal = self.check_long_signal(chartdata, second_chartdata)
+            long_signal = self.check_long_signal(
+                chartdata, self.oscillator_indicator.data
+            )
 
         if check_short and MarketSide.BULLISH not in confirmations:
-            short_signal = self.check_short_signal(chartdata, second_chartdata)
+            short_signal = self.check_short_signal(
+                chartdata, self.oscillator_indicator.data
+            )
 
         if long_signal and short_signal:
             logger.warning("long and short signal in same time!")
@@ -189,11 +196,10 @@ class OscillatorDivergence(Strategy):
         return None
 
 
-class DivergenceBot(TraderBot):
+class OscillatorDiverBot(TraderBot):
     def __init__(
         self,
         chart: Chart,
-        second_chart: Chart,
         agent: ExchangeAgent,
         strategy: OscillatorDivergence,
         trades_manager: TradesManager,
@@ -201,7 +207,6 @@ class DivergenceBot(TraderBot):
         n_candle_check: int = 100,
         consider_position: bool = True,
     ):
-        self.second_chart = second_chart
         self.chart = chart
         self.agent = agent
         self.strategy = strategy
@@ -210,57 +215,35 @@ class DivergenceBot(TraderBot):
         self.n_candle_check = n_candle_check
         self.consider_position = consider_position
 
-    def post_init(self):
-        if not self.agent.prepare_chart(self.second_chart):
-            raise ValueError(
-                f"Failed to prepare chart for {self.identifier} on second chart"
-            )
-        if not self.agent.prepare_chart(self.chart):
-            raise ValueError(f"Failed to prepare chart for {self.identifier}")
-        logging.info(f"{self.identifier} Bot initialized")
-
-    @property
-    def identifier(self):
-        return f"{self.chart}_{self.second_chart}_{self.strategy.name}"
-
-    def export_config(self) -> dict:
-        conf_dict = super().export_config()
-        conf_dict.update({"second_chart": self.second_chart.export_config()})
-        return conf_dict
-
-    def check_signal(
-        self, chartdata: ChartData, second_chartdata: ChartData
-    ) -> None | DivergenceSignal:
-        signal = self.strategy.check_signal(
-            chartdata,
-            second_chartdata,
-            self.trades_manager.long_trade,
-            self.trades_manager.short_trade,
-        )
-        if not signal:
-            return None
-
     async def task(self):
         chartdata = self.get_chartdata()
-        second_chartdata = self.get_chartdata(chart=self.second_chart)
-        signal = self.check_signal(chartdata, second_chartdata)
+        last_timestamp = chartdata.timestamps[-1]
+        chartdata = self.get_chartdata().subdata(end_index=-1)
+        signal = self.check_signal(chartdata)
         if signal:
             if self.consider_position:
                 position = self.trades_manager.generate_position(signal)
                 if position:
-                    plot = DoubleChartFigure(
-                        chartdata, second_chartdata, self.n_candle_check
+                    plot = ChartWithOscillatorFigure(
+                        chartdata,
+                        self.strategy.oscillator_indicator.data,
+                        self.n_candle_check,
                     )
                     self.trade(signal, position, plot)
             else:
-                plot = DoubleChartFigure(
-                    chartdata, second_chartdata, self.n_candle_check
+                plot = ChartWithOscillatorFigure(
+                    chartdata,
+                    self.strategy.oscillator_indicator.data,
+                    self.n_candle_check,
                 )
                 self.strategy.plotter(
-                    plot.main_pane, plot.second_pane, signal, self.strategy.indicators
+                    plot.main_pane,
+                    plot.oscillator_pane,
+                    signal,  # type: ignore
+                    self.strategy.indicators,
                 )
                 commands.NewSignalReport(signal, plot=plot).send(
                     reporter=self.trades_manager.reporter
                 )
 
-        return self.give_delay(chartdata.timestamps[-1])
+        return self.give_delay(last_timestamp)

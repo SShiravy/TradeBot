@@ -1,6 +1,11 @@
-from ChartModule.Indicators.moving_avg import EMA
 from ChartModule.models import Chart, TimeFrame, ChartType
-from Bots.DivergenceStrategy.divergence import Divergence, DivergenceBot
+from ChartModule.Indicators import RSI
+from Bots.DivergenceStrategy import (
+    Divergence,
+    DivergenceBot,
+    OscillatorDivergence,
+    OscillatorDiverBot,
+)
 from ExchangeAgents.MT5.agent import MT5Agent
 from TraderBot.PositionHandlers.PositionGenerators import ForexStepping
 from TraderBot.PositionHandlers import TradesManager
@@ -14,9 +19,9 @@ reporter = TelegramReporter(
 
 xau_jpy_1m = DivergenceBot(
     chart=Chart("XAUUSD", TimeFrame.one_minute, ChartType.Simple),
-    second_chart=Chart("USDJPY", TimeFrame.one_minute, ChartType.Heikinashi),
+    second_chart=Chart("USDJPY", TimeFrame.one_minute, ChartType.Simple),
     agent=mt5_agent,
-    strategy=Divergence(min_step=2, max_step=200, indicators=[]),
+    strategy=Divergence(min_step=2, max_step=150, indicators=[]),
     trades_manager=TradesManager(
         mt5_agent,
         ForexStepping(),
@@ -26,5 +31,47 @@ xau_jpy_1m = DivergenceBot(
         reporter=reporter,
         agent_check=False,
     ),
+    n_candle_check=150,
+    consider_position=False,
+)
+
+
+xau_dxy_1m = DivergenceBot(
+    chart=Chart("XAUUSD", TimeFrame.one_minute, ChartType.Simple),
+    second_chart=Chart("DXY", TimeFrame.one_minute, ChartType.Simple),
+    agent=mt5_agent,
+    strategy=Divergence(min_step=2, max_step=150, indicators=[]),
+    trades_manager=TradesManager(
+        mt5_agent,
+        ForexStepping(),
+        long_trade=True,
+        short_trade=True,
+        trading_constraints=[],
+        reporter=reporter,
+        agent_check=False,
+    ),
+    n_candle_check=150,
+    consider_position=False,
+)
+
+
+xau_rsi_1m = OscillatorDiverBot(
+    chart=Chart("XAUUSD", TimeFrame.one_minute, ChartType.Simple),
+    agent=mt5_agent,
+    strategy=OscillatorDivergence(
+        oscillator_indicator=RSI(20),
+        min_step=2,
+        max_step=150,
+    ),
+    trades_manager=TradesManager(
+        mt5_agent,
+        ForexStepping(),
+        long_trade=True,
+        short_trade=True,
+        trading_constraints=[],
+        reporter=reporter,
+        agent_check=False,
+    ),
+    n_candle_check=150,
     consider_position=False,
 )

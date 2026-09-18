@@ -20,12 +20,14 @@ class BotsManager:
         manage_interval: float = 2.0,
         heartbeat_interval: float = 3600.0,
         enable_profiling: bool = True,
+        report_shift: int = 30,
     ) -> None:
         self.name = name
         self.reporter = reporter
         self.bots = bots
         self.manage_interval = manage_interval
         self.heartbeat_interval = heartbeat_interval
+        self.report_shift = report_shift
         self._start_time = TimeHandler.now()
         self._stop_event = asyncio.Event()
 
@@ -114,7 +116,7 @@ class BotsManager:
 
     def _daily_report_sleeptime(self):
         now = TimeHandler.to_datetime(TimeHandler.now())
-        next_report = now.replace(hour=20, minute=58)
+        next_report = now.replace(hour=20, minute=60 - self.report_shift)
         next_report = (
             next_report if next_report > now else next_report + timedelta(days=1)
         )
@@ -123,27 +125,29 @@ class BotsManager:
     async def _daily_report_loop(self) -> None:
         while not self._stop_event.is_set():
             sleep_time = self._daily_report_sleeptime()
-            logging.info(f"Next daily report in {sleep_time}s")
+            logging.info(f"Next daily report in {sleep_time}")
             await asyncio.sleep(max(1, sleep_time.total_seconds()))
 
-            await self.reporter.send_msg(f"{self.name}\n{Command.close_records()}")
-            await self.reporter.send_msg(self._memory_report())
+            await self.reporter.send_msg(f"📝 {self.name}\n{Command.close_records()}")
+            await self.reporter.send_msg(f"🗒️ {self._memory_report()}")
 
             if self.enable_profiling:
                 for bot in self.bots:
                     report = self._profiling_report(bot)
                     if report:
                         await self.reporter.send_msg(
-                            f"Profiling {bot.identifier}:\n{report}"
+                            f"🧾 Profiling {bot.identifier}:\n{report}"
                         )
 
             per_bot_reports = []
             for bot in self.bots:
+                if not bot.trades_manager.closed_positions:
+                    continue
                 pnl = PnLReportGenerator.overall_report(
                     bot.trades_manager.closed_positions
                 )
                 per_bot_reports.append(pnl)
-                await self.reporter.send_msg(f"{bot.identifier}:\n{pnl}")
+                await self.reporter.send_msg(f"📈 {bot.identifier}:\n{pnl}")
 
             await self.reporter.send_msg(
                 f"Overall of {self.name}:\n{sum(per_bot_reports)}"

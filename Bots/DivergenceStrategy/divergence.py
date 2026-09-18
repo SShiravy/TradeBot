@@ -14,9 +14,9 @@ from ChartModule.Indicators import (
 from ChartModule.plot import ChartPane, DoubleChartFigure
 from TraderBot.PositionHandlers.manager import TradesManager
 import TraderBot.Commands as commands
-from TraderBot.trader_bot import TraderBot, Position
+from TraderBot.trader_bot import TraderBot
 from TraderBot.models import ExchangeAgent, Strategy, StrategyPlotter
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Literal
 import logging
 
@@ -66,8 +66,8 @@ class Divergence(Strategy):
         min_step: int,
         max_step: int,
         indicators: list[Indicator] = [],
-        long_support_conditions=SupportCandlesPattern.RED_GREEN,
-        short_support_conditions=SupportCandlesPattern.GREEN_RED,
+        long_support_conditions=SupportCandlesPattern.RAW,
+        short_support_conditions=SupportCandlesPattern.RAW,
         name="Divergence",
         inverse_diver_long: bool = False,
         inverse_diver_short: bool = False,
@@ -112,23 +112,20 @@ class Divergence(Strategy):
         inverse: bool = False,
         other_chart_line_validation: bool = True,
     ) -> tuple[Line, Line] | None:
-        # TODO: implement other_chart_line_validation
         wanted_base, wanted_second = (
             (MarketSide.BEARISH, MarketSide.BULLISH)
             if inverse
             else (MarketSide.BULLISH, MarketSide.BEARISH)
         )
-
         for base_line in linefinder.iter_lines_at_index(base_chartdata, -1):
-            if base_line.direction() is not wanted_base:
+            if base_line is not wanted_base:
                 continue
-
             second_line = linefinder.validate_line_at(
                 second_chartdata, base_line.start_timestamp, base_line.end_timestamp
             )
             if second_line is None:
                 continue
-            if second_line.direction() is not wanted_second:
+            if second_line is not wanted_second:
                 continue
 
             return base_line, second_line
@@ -277,7 +274,11 @@ class DivergenceBot(TraderBot):
 
     async def task(self):
         chartdata = self.get_chartdata()
-        second_chartdata = self.get_chartdata(chart=self.second_chart)
+        last_timestamp = chartdata.timestamps[-1]
+        chartdata = self.get_chartdata().subdata(end_index=-1)
+        second_chartdata = self.get_chartdata(chart=self.second_chart).subdata(
+            end_index=-1
+        )
         signal = self.check_signal(chartdata, second_chartdata)
         if signal:
             if self.consider_position:
@@ -298,50 +299,7 @@ class DivergenceBot(TraderBot):
                     reporter=self.trades_manager.reporter
                 )
 
-        return self.give_delay(chartdata.timestamps[-1])
-
-
-# async def backtest(  # type: ignore
-#     self,
-#     n_bar=500,
-#     len_sub_data=100,
-#     show_image=True,
-# ):
-#     self.send_signal_msg = False
-#     self.consider_position = False
-
-#     all_signals: list[Signal | DivergenceSignal] = []
-
-#     jump = 0
-#     base_chartdata, second_chartdata = self.get_chartdata(n_bar)
-#     n = 1
-#     for i in range(len_sub_data, len(base_chartdata) - 1):
-#         base_subdata = base_chartdata.subdata(end_index=i, copy=False)
-#         seocnd_sub_data = second_chartdata.subdata(end_index=i, copy=False)
-#         logger.debug(f"backtest subdata: {base_subdata[-1]}-{n}")
-#         n += 1
-#         if jump > 0:
-#             jump -= 1
-#             continue
-#         signal = await self.find_signal(base_subdata, seocnd_sub_data)
-#         logger.debug(f"backtest found signal: {signal}")
-#         if signal is None:
-#             continue
-#         jump = self.bar_between_signals
-#         all_signals.append(signal)  # type: ignore
-#     logger.info(f"backtest found {len(all_signals)} signals")
-#     plot = DoubleChartPlot(base_chartdata, second_chartdata, plot_n_candles=n_bar)
-#     if not all_signals:
-#         if show_image:
-#             plot.show()
-#         return [], plot
-
-#     self.strategy.draw(plot, all_signals[0], draw_indicators=True)  # type: ignore
-#     for signal in all_signals[1:]:
-#         self.strategy.draw(plot, signal, draw_indicators=False)  # type: ignore
-#     if show_image:
-#         plot.show()
-#     return all_signals, plot
+        return self.give_delay(last_timestamp)
 
 
 def generate_dummy_signal(

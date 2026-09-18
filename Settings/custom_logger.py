@@ -28,7 +28,7 @@ class TelegramLogHandler(logging.Handler):
                 timeout=5,
             )
         except requests.RequestException:
-            logger.warning("can not send log to channel")
+            logging.warning("can not send log to channel")
 
 
 def console_handler(level: int) -> logging.Handler:

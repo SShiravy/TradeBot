@@ -13,12 +13,13 @@ class Line:
     end_value: float
     start_timestamp: int
     end_timestamp: int
-    step: int  # number of values spanned between start and end, timeframe-agnostic
+    step: int
 
     @property
     def slope(self) -> float:
         return (self.end_value - self.start_value) / self.step
 
+    @property
     def direction(self) -> MarketSide:
         if self.start_value > self.end_value:
             return MarketSide.BEARISH
@@ -27,7 +28,6 @@ class Line:
         return MarketSide.NEUTRAL
 
     def value_at(self, step_from_start: int) -> float:
-        """Predicted value at a given number of steps past start_index, along the line."""
         return self.start_value + step_from_start * self.slope
 
 
@@ -179,7 +179,6 @@ class LineFinder(Indicator):
 
             offset_from_start = step - np.arange(1, step + 1, dtype=np.float64)
             predicted = start_value + offset_from_start * slope
-
             if np.any((window_values[:step] - predicted) * cross_multiplier < 0):
                 continue
 

@@ -3,7 +3,7 @@ from abc import ABC, abstractmethod
 from enum import Flag
 from typing import Any
 import logging
-from ChartModule.plot import ChartPane, Figure, ObjectPlotter
+from ChartModule.plot import ChartPane, ObjectPlotter
 
 
 logger = logging.getLogger("IndicatorModel")
@@ -16,10 +16,10 @@ class IndicatorPlotter(ObjectPlotter):
 
 
 class Indicator(ABC):
-    def __init__(self) -> None:
+    def __init__(self, rules: list["IndicatorRule"] = []) -> None:
+        self.rules = rules
         self.chartdata: ChartData | None = None
         self.data: Any = None
-        self.rules: list[IndicatorRule] = []
         self.last_checked_candle: Candle | None = None
         self.plotter: IndicatorPlotter
 

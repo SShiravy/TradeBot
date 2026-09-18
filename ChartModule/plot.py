@@ -245,7 +245,7 @@ class ChartWithOscillatorFigure(BaseChartFigure):
         oscillator_values: np.ndarray,
         plot_n_candles: int = 100,
         label: str = "Oscillator",
-        color: str = "#002576",
+        color: str = "#1F4BAB",
     ) -> None:
         self._base = base_chartdata
         self._oscillator_values = oscillator_values

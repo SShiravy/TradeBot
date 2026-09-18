@@ -32,8 +32,13 @@ class IndicatorLinePlotter(IndicatorPlotter):
 
 
 class WMA(Indicator):
-    def __init__(self, n_bar: int, source: CandlesSource = CandlesSource.Close) -> None:
-        super().__init__()
+    def __init__(
+        self,
+        n_bar: int,
+        source: CandlesSource = CandlesSource.Close,
+        rules: list[IndicatorRule] = [],
+    ) -> None:
+        super().__init__(rules=rules)
         self.n_bar = n_bar
         self.source = source
         self.plotter = IndicatorLinePlotter(color=self._default_color())
