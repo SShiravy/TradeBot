@@ -58,7 +58,6 @@ class TraderBot:
     def get_chartdata(
         self, n_bar: int | None = None, chart: Chart | None = None
     ) -> ChartData:
-        print('no hererrrr')
         chartdata = self.agent.get_chartdata(
             chart=chart if chart else self.chart,
             n_bars=n_bar if n_bar else self.n_candle_check,

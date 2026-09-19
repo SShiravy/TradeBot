@@ -11,7 +11,7 @@ import requests
 class TelegramLogHandler(logging.Handler):
     """Sends log records to a Telegram chat via bot API. Fire-and-forget, non-blocking."""
 
-    def __init__(self, bot_token: str, chat_id: int, level: int = logging.NOTSET):
+    def __init__(self, bot_token: str, chat_id: int|str, level: int = logging.NOTSET):
         super().__init__(level)
         self._url = f"https://api.telegram.org/bot{bot_token}/sendMessage"
         self._chat_id = chat_id
@@ -91,7 +91,7 @@ class TelegramFormatter(logging.Formatter):
         return super().format(record)
 
 
-def telegram_handler(level: int, bot_token: str, chat_id: int) -> logging.Handler:
+def telegram_handler(level: int, bot_token: str, chat_id: int|str) -> logging.Handler:
     handler = TelegramLogHandler(bot_token=bot_token, chat_id=chat_id, level=level)
     handler.setFormatter(TelegramFormatter())
     return handler
@@ -106,7 +106,7 @@ class LoggerConfig:
     log_dir: Path = Path("Logs")
     file_level: int = logging.INFO
     telegram_token: Optional[str] = None
-    telegram_channel: Optional[int] = None
+    telegram_channel: str|int|None = None
     telegram_level: int = logging.WARNING
     extra_handlers: list = field(default_factory=list)
 

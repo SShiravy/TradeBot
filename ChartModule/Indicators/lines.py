@@ -3,7 +3,6 @@ from typing import Any, Callable, Iterator
 
 from ChartModule.models import ChartData, MarketSide, CandlesSource
 from ChartModule.Indicators.models import Indicator, SupportCandlesPattern
-from ChartModule.plot import ChartPane
 import numpy as np
 
 
@@ -62,8 +61,8 @@ class LineFinder(Indicator):
 
     def _cross_multiplier(self) -> int:
         """
-        Support-type lines (Low/Bottom) must stay at or below every value -> +1.
-        Resistance-type lines (High/Top) must stay at or above every value -> -1.
+        support-type lines (Low/Bottom) must stay at or below every value -> +1.
+        resistance-type lines (High/Top) must stay at or above every value -> -1.
         """
         if self.source in (CandlesSource.Low, CandlesSource.Bottom):
             return 1
@@ -80,36 +79,28 @@ class LineFinder(Indicator):
         check_values: np.ndarray | None = None,
         valid_step: Callable[[int], bool] | None = None,
     ) -> Line | None:
-        """
-        Check whether a line from start_timestamp to end_timestamp is valid
-        on this array -- same crossing rule as iter_value_lines, but for one
-        specific pair of timestamps instead of scanning every candidate.
-        Returns the Line if valid, None otherwise (timestamps not found,
-        wrong order, or the line crosses an intermediate value).
-        """
         start_idx = int(np.searchsorted(timestamps, start_timestamp))
         end_idx = int(np.searchsorted(timestamps, end_timestamp))
 
-        if start_idx >= len(timestamps) or timestamps[start_idx] != start_timestamp:
-            return None
-        if end_idx >= len(timestamps) or timestamps[end_idx] != end_timestamp:
-            return None
         if start_idx >= end_idx:
-            return None
+            raise ValueError("Start point came after End point!")
 
         check_values = anchor_values if check_values is None else check_values
-        step = end_idx - start_idx
+        step = end_idx - start_idx + 1
 
         if valid_step is not None and not valid_step(start_idx):
+            print("not valid")
             return None
 
+        print(f"{start_idx=}|{end_idx}")
         start_value = anchor_values[start_idx]
         end_value = anchor_values[end_idx]
-        slope = (end_value - start_value) / step
+        slope = (end_value - start_value) / (step-1)
 
-        offset_from_start = step - np.arange(1, step + 1, dtype=np.float64)
+        offset_from_start = np.arange(0,step, dtype=np.float64)
         predicted = start_value + offset_from_start * slope
-        window_values = check_values[start_idx + 1 : end_idx + 1]
+        window_values = check_values[start_idx : end_idx + 1]
+        print(f'\n\n Second Chart line founded \n{step=} {start_value=} {end_value=}\n\n',"windo:\n",window_values,"\n\noffset:\n",offset_from_start,"\n\npredicted:\n",predicted,'\n\nres:\n',(window_values - predicted) * cross_multiplier)
 
         if np.any((window_values - predicted) * cross_multiplier < 0):
             return None
@@ -162,11 +153,11 @@ class LineFinder(Indicator):
         end_timestamp = int(timestamps[end_index])
 
         max_step = min(max_step, end_index)
-        window_values = np.empty(max_step, dtype=np.float64)
+        window_values = np.zeros(max_step, dtype=np.float64)
 
-        for step in range(1, max_step + 1):
-            start_index = end_index - step
-            window_values[step - 1] = check_values[start_index]
+        for step in range(1, max_step):
+            start_index = end_index - step + 1
+            window_values[-step] = check_values[start_index]
 
             if step < min_step:
                 continue
@@ -175,17 +166,17 @@ class LineFinder(Indicator):
                 continue
 
             start_value = anchor_values[start_index]
-            slope = (end_value - start_value) / step
+            slope = (end_value - start_value) / (step-1)
 
-            offset_from_start = step - np.arange(1, step + 1, dtype=np.float64)
+            offset_from_start = np.arange(0,step, dtype=np.float64)
             predicted = start_value + offset_from_start * slope
-            if np.any((window_values[:step] - predicted) * cross_multiplier < 0):
+            if np.any((window_values[-step:] - predicted) * cross_multiplier < 0):
                 continue
-
+            print(f"The line {start_index=}|{end_index=}|{len(timestamps)}|{len(anchor_values)}")
             yield Line(
                 start_value=float(start_value),
                 end_value=float(end_value),
-                start_timestamp=int(timestamps[start_index]),
+                start_timestamp=timestamps[start_index],
                 end_timestamp=end_timestamp,
                 step=step,
             )

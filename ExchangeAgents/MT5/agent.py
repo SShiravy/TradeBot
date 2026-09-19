@@ -63,7 +63,7 @@ class MT5Agent(ExchangeAgent):
         return True
 
     @classmethod
-    def set_utc_shift(cls, symbol: str="EURUSD") -> int:
+    def set_utc_shift(cls, symbol: str="BTCUSD") -> int:
         chart = Chart(symbol,TimeFrame.one_minute)
         cls.select_chart(chart)
         info = mt5.symbol_info(chart.symbol)
@@ -130,9 +130,6 @@ class MT5Agent(ExchangeAgent):
         if ohlcv_res is None:
             logger.error(f"fetching chart data failed: {chart=}")
             return None
-        print(str(chart))
-        print(ohlcv_res["time"].astype(np.int64)[-3:],self._UTC_SHIFT,TimeHandler.now())
-        print(ohlcv_res["time"].astype(np.int64)[-3:]+self._UTC_SHIFT)
         return ChartData(
             chart=chart,
             timestamps=ohlcv_res["time"].astype(np.int64) + self._UTC_SHIFT,
