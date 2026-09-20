@@ -64,7 +64,11 @@ class NewPositionReport(Command):
         path = self.context.reporter.save_path or "Records/"
         res = await self.context.reporter.send_msg(
             msg,
-            img_path=self.plot.save_image(path) if self.plot else None,
+            img_path=self.plot.save_image(
+                name=str(self.context.position.id), path=path
+            )
+            if self.plot
+            else None,
             reply_id=self.reply_id,
         )
         if not res:

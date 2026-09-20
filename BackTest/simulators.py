@@ -21,7 +21,7 @@ class SignalBacktest:
         self.backtest_agent = backtest_agent
 
         backtest_reporter = BacktestReporter()
-        backtest_reporter.save_path += bot.strategy.name + "/"
+        backtest_reporter.save_path += bot.identifier + "/"
 
         bot.trades_manager.reporter = backtest_reporter
         bot.agent = backtest_agent
@@ -37,6 +37,8 @@ class SignalBacktest:
         while TimeHandler.now() < end_timestamp:
             delay = await self.bot.task()
             TimeHandler.advance(delay)
+            if delay <= 0:
+                delay = 5
             await Command.execute_pending_commands()
 
         profiler.disable()

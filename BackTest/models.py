@@ -75,7 +75,7 @@ class CsvChart(Chart):
     _tick_handler: TickDataHandler | None = field(default=None, init=False)
 
     def __str__(self) -> str:
-        return f"Csv Chart: {self.symbol}_{self.timeframe.value}{self.chart_type.value}"
+        return f"Csv_{self.symbol}_{self.timeframe.value}{self.chart_type.value}"
 
     def export_config(self) -> dict:
         conf_dict = super(CsvChart, self).export_config()

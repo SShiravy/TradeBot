@@ -1,6 +1,7 @@
 import numpy as np
 from typing import TypeAlias
 from abc import ABC, abstractmethod
+from pathlib import Path
 import finplot as fplt
 from Settings.timing import TimeHandler
 from ChartModule import ChartData, Signal, MarketSide, CandlesSource
@@ -257,8 +258,17 @@ class BaseChartFigure(ABC):
         fplt.refresh()
         screenshot = self.main_pane.ax.vb.win.grab()
         name = name or str(self.chartdata.chart)
-        image_path = path + name + ".png"
-        screenshot.save(image_path)
+
+        # Qt writes nothing and raises nothing when the directory is
+        # missing -- save() just returns False -- so create the folder
+        # first and then insist the write actually happened. Reporters
+        # build save_path from a strategy/bot name, so the folder usually
+        # does not exist on the first run.
+        directory = Path(path)
+        directory.mkdir(parents=True, exist_ok=True)
+        image_path = str(directory / f"{name}.png")
+        if not screenshot.save(image_path):
+            raise RuntimeError(f"Failed to write chart image to {image_path!r}")
         return image_path
 
 
