@@ -585,7 +585,6 @@ class ChochQueueFilter(Strategy):
                         if fired:
                             last_side = MarketSide.BEARISH
 
-                # Universal cleanup - see docstring.
                 for p in bear_clusters:
                     if not p["consumed"] and p["index"] < i and lows[i] <= p["price"]:
                         p["consumed"] = True
@@ -647,14 +646,6 @@ class ChochQueueFilter(Strategy):
                 "type": "high" if p.is_high else "low",
             }
             for p in self.pivots.data
-            # a pivot's index is only rebased relative to the *current*
-            # chartdata window when SwingPivots sees a genuinely new tail
-            # candle; if this window is smaller than the one that formed
-            # an old pivot (e.g. the caller fetched fewer candles than
-            # last time while the tail candle is unchanged), that pivot's
-            # rebased index can still fall outside [0, len(chartdata)) -
-            # skip it rather than index into the wrong candle (negative
-            # index) or crash (index >= len(chartdata)).
             if 0 <= p.index < n
         ]
         self._pivot_events = [
@@ -824,16 +815,13 @@ class ChochQueueFilter(Strategy):
         self._simulate(chartdata)
 
         last_candle = chartdata[-1]
-        # CHoCH (independent, flip-candle based) takes priority over BOS
-        # (old pivot/range engine) when both would fire on the same candle.
+
         candidates: list[ChochModel] = list(self.choch_events)
         if self.use_bos:
             candidates += [model for model in self.queue if not model.is_choch]
 
         newest_validated: ChochModel | None = None
-        # bound alongside the model: the `is None` check below narrows the
-        # loop variable, not `newest_validated`, so keeping the candle
-        # itself is what lets the rest of this method use it as a Candle
+
         touch_candle: Candle | None = None
         for model in candidates:
             if not model.validated or model.touch_candle is None:
@@ -918,20 +906,6 @@ def generate_dummy_signal(
 
 
 class ChochBot(TraderBot):
-    """
-    TraderBot for ChochQueueFilter.
-
-    The only thing it adds over the plain TraderBot is the market-session
-    gate the old ForexChochQueueTradeConfig had: before doing any work,
-    ask the agent whether the market is currently tradeable, and if it is
-    not, just sleep for as long as the agent suggests instead of fetching
-    candles and running the strategy against a frozen chart.
-
-    The gate is duck-typed rather than required, so this bot still works
-    with agents that have no session concept (crypto venues, the local
-    backtester); those simply never report a wait.
-    """
-
     strategy: ChochQueueFilter  # type: ignore[assignment]
 
     def __init__(
@@ -953,20 +927,3 @@ class ChochBot(TraderBot):
             n_candle_check,
             consider_position,
         )
-
-    def market_wait_seconds(self) -> int:
-        """
-        Seconds the agent wants us to hold off for, 0 when it is fine to
-        trade. Agents without a `check_market_open` never hold us back.
-        """
-        check_market_open = getattr(self.agent, "check_market_open", None)
-        if check_market_open is None:
-            return 0
-        return check_market_open(self.chart) or 0
-
-    async def task(self):
-        wait_seconds = self.market_wait_seconds()
-        if wait_seconds:
-            logger.debug(f"{self.identifier} market not tradeable, {wait_seconds}s")
-            return wait_seconds
-        return await super().task()

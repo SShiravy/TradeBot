@@ -48,7 +48,7 @@ class DivergencePlotter(StrategyPlotter):
             signal.main_chart_line.end_timestamp,
             signal.main_chart_line.end_value,
             color=color,
-            width=1,
+            width=2,
         )
         second_pane.draw_line(
             signal.second_chart_line.start_timestamp,
@@ -56,7 +56,7 @@ class DivergencePlotter(StrategyPlotter):
             signal.second_chart_line.end_timestamp,
             signal.second_chart_line.end_value,
             color=color,
-            width=1,
+            width=2,
         )
 
 
@@ -66,8 +66,8 @@ class Divergence(Strategy):
         min_step: int,
         max_step: int,
         indicators: list[Indicator] = [],
-        long_support_conditions=SupportCandlesPattern.RAW,
-        short_support_conditions=SupportCandlesPattern.RAW,
+        long_support_conditions=SupportCandlesPattern.RED_GREEN,
+        short_support_conditions=SupportCandlesPattern.GREEN_RED,
         name="Divergence",
         inverse_diver_long: bool = False,
         inverse_diver_short: bool = False,

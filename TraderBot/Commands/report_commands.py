@@ -13,11 +13,11 @@ class NewSignalReport(Command):
         signal: Signal,
         bounded_command: Command | None = None,
         plot: Figure | None = None,
-        msg_id: int | None = None,
     ):
         super().__init__(bounded_command)
         self.signal = signal
         self.plot = plot
+        self.msg_id: int | None = None
         self.reporter: ReporterBot | None
 
     def send(self, context=None, reporter: ReporterBot | None = None):
@@ -41,7 +41,7 @@ class NewSignalReport(Command):
         )
         if not res:
             return False
-        self.msg_id = res
+        self.msg_id = getattr(res, "message_id", res)
         return True
 
 
@@ -71,7 +71,7 @@ class NewPositionReport(Command):
         )
         if not res:
             return False
-        self.context.position.report_id = res.message_id
+        self.context.position.report_id = getattr(res, "message_id", res)
         return True
 
 

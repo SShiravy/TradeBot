@@ -1,6 +1,6 @@
 from ChartModule.models import Chart, ChartData, MarketSide
 from ChartModule.Indicators import Indicator, SupportCandlesPattern
-from ChartModule.Indicators.auto_trendline import AutoTrendlines, MTREvent
+from ChartModule.Indicators.auto_trendline import AutoTrendlines
 from ChartModule.plot import ChartPane
 from Bots.CompositeStrategies.models import MTRSignal
 from TraderBot.models import Strategy, StrategyPlotter
@@ -8,15 +8,6 @@ import logging
 
 
 logger = logging.getLogger("MTR_Signal")
-
-
-def mtr_side(event: MTREvent) -> MarketSide:
-    """
-    MTREvent records direction as `bullish`, not a MarketSide: a bullish
-    event is one or more RESISTANCE lines breaking, a bearish one is
-    support breaking (see AutoTrendlines._process_bar).
-    """
-    return MarketSide.BULLISH if event.bullish else MarketSide.BEARISH
 
 
 class MTRPlotter(StrategyPlotter):
@@ -106,14 +97,13 @@ class MTRFilter(Strategy):
         if event.candle.timestamp != last_candle.timestamp:
             return None
 
-        side = mtr_side(event)
-        if side is MarketSide.BULLISH and not check_long:
+        if event.side is MarketSide.BULLISH and not check_long:
             return None
-        if side is MarketSide.BEARISH and not check_short:
+        if event.side is MarketSide.BEARISH and not check_short:
             return None
 
         self.last_mtr_signal = MTRSignal(
-            chartdata.chart, last_candle, side, self.name, event
+            chartdata.chart, last_candle, event.side, self.name, event
         )
         logger.info(f"MTR Signal: {self.last_mtr_signal} ({event.text})")
         return self.last_mtr_signal

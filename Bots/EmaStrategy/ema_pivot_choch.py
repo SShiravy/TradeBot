@@ -661,7 +661,7 @@ class EmaPivotChochBot(TraderBot):
             return None
         return self.get_chartdata(
             n_bar=self.n_ema_htf_candle_check, chart=self.htf_chart
-        ).subdata(end_index=-1)
+        ).subdata(end_index=-2)
 
     def _make_figure(
         self, ltf_chartdata: ChartData, htf_chartdata: ChartData
@@ -736,7 +736,7 @@ class EmaPivotChochBot(TraderBot):
         chartdata = chartdata.subdata(end_index=-2)
         htf_chartdata = self.get_chartdata(
             n_bar=self.n_htf_candle_check, chart=self.htf_chart
-        ).subdata(end_index=-1)
+        ).subdata(end_index=-2)
         ema_htf_chartdata = self.get_ema_htf_chartdata()
 
         signal = self.check_signal(chartdata, htf_chartdata, ema_htf_chartdata)

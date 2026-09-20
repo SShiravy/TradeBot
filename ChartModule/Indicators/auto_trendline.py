@@ -23,8 +23,15 @@ class BreakLogicMode(Enum):
 
 @dataclass(slots=True, frozen=True)
 class MTREvent:
+    """
+    One or more trendlines broken on the same candle.
+
+    `side` is the direction of the break: BULLISH means resistance line(s)
+    broke upward, BEARISH means support line(s) broke downward.
+    """
+
     candle: Candle
-    bullish: bool
+    side: Literal[MarketSide.BEARISH, MarketSide.BULLISH]
     count: int
 
     @property
@@ -35,10 +42,7 @@ class MTREvent:
         return f"MTR{suffix}+" if suffix > 1 else "MTR+"
 
     def __str__(self) -> str:
-        return (
-            f"{self.text}|{'bullish' if self.bullish else 'bearish'}"
-            f"|{self.candle.timestamp}"
-        )
+        return f"{self.text}|{self.side.value.lower()}|{self.candle.timestamp}"
 
 
 @dataclass(slots=True)
@@ -148,7 +152,7 @@ class AutoTrendlinesPlotter(IndicatorPlotter):
             for event in mtr_events:
                 atr_value = self._atr_at(chartdata, atr, event.candle.timestamp)
                 offset = atr_value * 0.6 if atr_value else event.candle.close * 0.001
-                if event.bullish:
+                if event.side is MarketSide.BULLISH:
                     # resistance broken -> bullish break, label below the low
                     pane.draw_label(
                         event.candle.timestamp,
@@ -748,9 +752,11 @@ class AutoTrendlines(Indicator):
                     self._lines.remove(line)
 
         if resistance_breaks > 0:
-            self.mtr_events.append(MTREvent(candle, True, resistance_breaks))
+            self.mtr_events.append(
+                MTREvent(candle, MarketSide.BULLISH, resistance_breaks)
+            )
         if support_breaks > 0:
-            self.mtr_events.append(MTREvent(candle, False, support_breaks))
+            self.mtr_events.append(MTREvent(candle, MarketSide.BEARISH, support_breaks))
         self._enforce_max_mtr_events()
 
         self._merge_similar_lines(chartdata, candle, similar_tolerance)

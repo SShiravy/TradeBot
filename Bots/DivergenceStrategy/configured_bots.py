@@ -22,7 +22,7 @@ xau_jpy_1m = DivergenceBot(
     chart=Chart("XAUUSD", TimeFrame.one_minute, ChartType.Simple),
     second_chart=Chart("USDJPY", TimeFrame.one_minute, ChartType.Simple),
     agent=mt5_agent,
-    strategy=Divergence(min_step=2, max_step=150, indicators=[EMA(20)]),
+    strategy=Divergence(min_step=5, max_step=150, indicators=[EMA(50)]),
     trades_manager=TradesManager(
         mt5_agent,
         ForexStepping(),
@@ -38,10 +38,10 @@ xau_jpy_1m = DivergenceBot(
 
 
 xau_dxy_1m = DivergenceBot(
-    chart=Chart("XAUUSD", TimeFrame.one_minute, ChartType.Simple),
-    second_chart=Chart("DXY", TimeFrame.one_minute, ChartType.Simple),
+    chart=Chart("XAUUSD", TimeFrame.one_minute, ChartType.Heikinashi),
+    second_chart=Chart("DXY", TimeFrame.one_minute, ChartType.Heikinashi),
     agent=mt5_agent,
-    strategy=Divergence(min_step=2, max_step=150, indicators=[HMA(20), EMA(50)]),
+    strategy=Divergence(min_step=2, max_step=150, indicators=[EMA(50)]),
     trades_manager=TradesManager(
         mt5_agent,
         ForexStepping(),
@@ -79,7 +79,7 @@ btc_eth_1m = DivergenceBot(
     chart=Chart("BTCUSD", TimeFrame.one_minute, ChartType.Simple),
     second_chart=Chart("ETHUSD", TimeFrame.one_minute, ChartType.Simple),
     agent=mt5_agent,
-    strategy=Divergence(min_step=2, max_step=10, indicators=[HMA(20), EMA(50)]),
+    strategy=Divergence(min_step=2, max_step=10, indicators=[EMA(50)]),
     trades_manager=TradesManager(
         mt5_agent,
         ForexStepping(),
@@ -150,6 +150,50 @@ sol_rsi_1m = OscillatorDiverBot(
         oscillator_indicator=RSI(20),
         min_step=2,
         max_step=10,
+    ),
+    trades_manager=TradesManager(
+        mt5_agent,
+        ForexStepping(),
+        long_trade=True,
+        short_trade=True,
+        trading_constraints=[],
+        reporter=reporter,
+        agent_check=False,
+    ),
+    n_candle_check=150,
+    consider_position=False,
+)
+
+
+xau_rsi_1m = OscillatorDiverBot(
+    chart=Chart("XAUUSD", TimeFrame.one_minute, ChartType.Simple),
+    agent=mt5_agent,
+    strategy=OscillatorDivergence(
+        oscillator_indicator=RSI(20),
+        min_step=2,
+        max_step=150,
+    ),
+    trades_manager=TradesManager(
+        mt5_agent,
+        ForexStepping(),
+        long_trade=True,
+        short_trade=True,
+        trading_constraints=[],
+        reporter=reporter,
+        agent_check=False,
+    ),
+    n_candle_check=150,
+    consider_position=False,
+)
+
+
+xau_rsi_1m = OscillatorDiverBot(
+    chart=Chart("XAUUSD", TimeFrame.one_minute, ChartType.Simple),
+    agent=mt5_agent,
+    strategy=OscillatorDivergence(
+        oscillator_indicator=RSI(20),
+        min_step=2,
+        max_step=150,
     ),
     trades_manager=TradesManager(
         mt5_agent,

@@ -15,15 +15,17 @@ logger = build_logger(
         name="root",
         log_file_name="DivergenceBots",
         file_level=logging.DEBUG,
-        telegram_channel=settings.TELEGRAM_TEST_CHANNEL,
-        telegram_token=settings.TELEGRAM_TEST_BOT,
+        telegram_channel=settings.TELEGRAM_REPORT_CHANNEL,
+        telegram_token=settings.TELEGRAM_BOT_TOKEN,
     )
 )
 
 reporter = TelegramReporter(
     "Divergence", settings.TELEGRAM_BOT_TOKEN, settings.TELEGRAM_REPORT_CHANNEL
 )
-manager = BotsManager("Divergence", reporter, [btc_sol_1m, btc_eth_1m, btc_rsi_1m])
+manager = BotsManager(
+    "Divergence", reporter, [btc_sol_1m, btc_eth_1m, btc_rsi_1m, sol_rsi_1m]
+)
 
 if __name__ == "__main__":
     asyncio.run(manager.start())

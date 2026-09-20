@@ -66,6 +66,7 @@ class SRChochBot(TraderBot):
 
         self.last_sr_signal: SRSignal | None = None
         self.last_sr_report_id: int | None = None
+        self._sr_report_command: commands.NewSignalReport | None = None
         self.last_static_sr_checked_timestamp: int | None = None
         self.last_dynamic_sr_checked_timestamp: int | None = None
 
@@ -109,11 +110,6 @@ class SRChochBot(TraderBot):
     async def _report_sr_signal(
         self, signal: SRSignal, chartdata: ChartData, draw
     ) -> None:
-        """
-        Sent straight through the reporter rather than as a NewSignalReport
-        command, because the returned message id is needed right away to
-        thread the eventual entry report as a reply to this one.
-        """
         self.last_sr_signal = signal
         self.last_sr_report_id = None
         logger.info(f"S&R Signal:{signal}")
@@ -126,8 +122,7 @@ class SRChochBot(TraderBot):
         SignalPlotter()(figure.main_pane, signal)
         command = commands.NewSignalReport(signal, plot=figure)
         command.send(reporter=self.trades_manager.reporter)
-
-        self.last_sr_report_id = command.msg_id
+        self._sr_report_command = command
 
     async def _check_static_sr(self, chartdata: ChartData) -> None:
         last_candle = chartdata[-1]
@@ -268,9 +263,15 @@ class SRChochBot(TraderBot):
             return False
         return True
 
+    def _sr_reply_id(self) -> int | None:
+        if self.last_sr_report_id is not None:
+            return self.last_sr_report_id
+        return getattr(self._sr_report_command, "msg_id", None)
+
     def _clear_sr(self) -> None:
         self.last_sr_signal = None
         self.last_sr_report_id = None
+        self._sr_report_command = None
 
     def trade(  # type: ignore[override]
         self, signal: ChochSignal, position: Position, plot: Figure
@@ -291,7 +292,7 @@ class SRChochBot(TraderBot):
                 use_fibo_filter=self.strategy.use_fibo_filter,
             )
             report_command = commands.NewPositionReport(
-                plot=plot, reply_id=self.last_sr_report_id
+                plot=plot, reply_id=self._sr_reply_id()
             )
         commands.OpenPosition(report_command).send(
             self.trades_manager.give_command_contex(position)
@@ -348,7 +349,7 @@ class SRChochBot(TraderBot):
     async def task(self):
         sr_chartdata = self.get_chartdata(
             n_bar=self.n_sr_candle_check, chart=self.sr_chart
-        ).subdata(end_index=-1)
+        ).subdata(end_index=-2)
 
         choch_chartdata = self.get_chartdata()
         last_timestamp = choch_chartdata.timestamps[-1]

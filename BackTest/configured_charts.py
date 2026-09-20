@@ -1,4 +1,4 @@
-from ChartModule.models import TimeFrame
+from ChartModule.models import ChartType, TimeFrame
 from BackTest.models import CsvChart, KlineSource
 
 # CRYPTO
@@ -168,6 +168,7 @@ SOLUSD_1m_5000_test = CsvChart(
 XAUUSD_1m_5000_test = CsvChart(
     "XAUUSD",
     TimeFrame.one_minute,
+    chart_type=ChartType.Heikinashi,
     csv_path=r"D:\TraderBot\BackTest\KlinesCSV\Opofincance\opo_XAUUSD_1m_5000_test.csv",
     csv_source=KlineSource.OPOFINANCE_META,
     ticks_path=r"D:\TraderBot\BackTest\TickData\Opofinance\XAUUSD!_2025_11_03_to_2026_05_19.parquet",
