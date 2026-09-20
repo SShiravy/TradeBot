@@ -488,9 +488,7 @@ class EmaPivotChochFilter(Strategy):
                 continue
             self.debug_counters["pivots_in_window"] += 1
             self.debug_counters["ltf_window_ok"] += 1
-            window_chartdata = ltf_chartdata.subdata(
-                start_index=start_index, end_index=len(ltf_chartdata)
-            )
+            window_chartdata = ltf_chartdata.subdata(start_index=start_index)
             self.debug_counters["inner_choch_called"] += 1
             inner_signal = self._make_inner_filter().check_signal(
                 window_chartdata,
@@ -685,6 +683,7 @@ class EmaPivotChochBot(TraderBot):
             self.strategy._touch_events,
             touch_keys=self.strategy._new_touch_keys,
         )
+
         image_path = figure.save_image(f"{self.strategy.name}_{self.chart}")
         await reporter.send_msg(
             f"{self.strategy.name}\n📈 {self.chart}\nEMA-pivot touch report",
@@ -734,7 +733,7 @@ class EmaPivotChochBot(TraderBot):
     async def task(self):
         chartdata = self.get_chartdata()
         last_timestamp = chartdata.timestamps[-1]
-        chartdata = chartdata.subdata(end_index=-1)
+        chartdata = chartdata.subdata(end_index=-2)
         htf_chartdata = self.get_chartdata(
             n_bar=self.n_htf_candle_check, chart=self.htf_chart
         ).subdata(end_index=-1)

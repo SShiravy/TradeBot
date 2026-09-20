@@ -15,11 +15,11 @@ from Bots.DivergenceStrategy.old_oscillator_divergence import OscillatorDiverCon
 from Bots.DivergenceStrategy.oscillator_double_divergence import (
     OscillatorDoubleDiverConfig,
 )
-from LocalBackTester.Database.backtest_models import PositionsResult
-from LocalBackTester.Database.create_db import engine
+from BackTest.Database.backtest_models import PositionsResult
+from BackTest.Database.create_db import engine
 import logging
 
-from LocalBackTester.Database.hashing import give_config_hash
+from BackTest.Database.hashing import give_config_hash
 from TraderBot.PositionHandlers.manager import PositionGenerator
 
 

@@ -1,5 +1,5 @@
-import cProfile
 import io
+import cProfile
 import pstats
 import tracemalloc
 import asyncio

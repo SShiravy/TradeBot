@@ -1,5 +1,5 @@
 from sqlmodel import SQLModel, Field
-from LocalBackTester.Database.hashing import generate_hash
+from BackTest.Database.hashing import generate_hash
 from TraderBot.PositionHandlers.manager import PositionGenerator
 from TraderBot.models import PositionsReport
 import json

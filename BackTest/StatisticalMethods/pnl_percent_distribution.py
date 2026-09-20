@@ -1,5 +1,5 @@
-from LocalBackTester.StatisticalMethods.models import BasePnLDistribution
-from LocalBackTester.models import TickDataHandler
+from BackTest.StatisticalMethods.models import BasePnLDistribution
+from BackTest.models import TickDataHandler
 from TraderBot.models import PositionSide, Position
 from TraderBot.trader_bot import TraderBot
 from matplotlib import pyplot as plt

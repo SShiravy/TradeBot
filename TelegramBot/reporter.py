@@ -93,9 +93,8 @@ class TelegramMsgFormater(ReportMsgFormater):
     def new_signal(self, signal: Signal) -> str:
         msg_list = [
             f"🏷️ {signal.source}",
-            f"📊 {signal.chart}🟢 Bullish"
-            if signal.side is MarketSide.BULLISH
-            else "🔴 Bearish",
+            f"📊 {signal.chart}",
+            "🟢 Bullish" if signal.side is MarketSide.BULLISH else "🔴 Bearish",
         ]
         msg = "\n\n".join(msg_list)
         return msg
@@ -108,12 +107,14 @@ class TelegramReporter(ReporterBot):
         bot_token: str,
         channel: str | int,
         msg_formater: ReportMsgFormater | None = None,
+        save_path: str = "",
     ):
         self.name = name
         self.bot = Bot(bot_token)
         self.channel = channel
         self.enable = True
         self.msg_formater = msg_formater if msg_formater else TelegramMsgFormater()
+        self.save_path = save_path
 
     async def send_msg(
         self,

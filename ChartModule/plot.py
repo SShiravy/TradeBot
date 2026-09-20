@@ -242,7 +242,6 @@ class BaseChartFigure(ABC):
             return chartdata
         return chartdata.subdata(
             start_index=len(chartdata) - n_candles,
-            end_index=len(chartdata),
             copy=True,
         )
 

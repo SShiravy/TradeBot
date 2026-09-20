@@ -238,9 +238,9 @@ class ChartData:
 
     def timestamp_index(self, timestamp: int) -> int:
         idx = np.searchsorted(self.timestamps, timestamp)
-        if idx >= len(self) or self.timestamps[idx] != timestamp:
+        if idx >= len(self):
             raise ValueError(
-                f"Timestamp {timestamp} not found in chart data \n{self.timestamps[-5:]}|{idx}|{self.timestamps[idx]}|{len(self)=}"
+                f"No timestamp >= {timestamp} found in chart data \n{self.timestamps[-5:]}|{len(self)=}"
             )
         return int(idx)
 
@@ -328,6 +328,10 @@ class ChartData:
         self, start_index: int = 0, end_index: int = -1, copy: bool = True
     ) -> "ChartData":
         n = len(self)
+        if end_index < 0:
+            end_index = len(self) + end_index + 1
+        if end_index < 0:
+            start_index = len(self) + start_index + 1
         s = slice(start_index, end_index).indices(n)
         s = slice(*s)
 

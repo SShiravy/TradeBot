@@ -16,10 +16,6 @@ class Settings(BaseSettings):
     TELEGRAM_TEST_BOT: str
     TELEGRAM_TEST_CHANNEL: str
 
-    # Coinex Exchange
-    COINEX_ACCESS_ID: str
-    COINEX_SECRET_KEY: str
-
     # Bitunix Exchange
     BITUNIX_API_KEY: str
     BITUNIX_API_SECRET_KEY: str

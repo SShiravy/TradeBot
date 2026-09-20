@@ -107,7 +107,7 @@ class TraderBot:
     async def task(self):
         chartdata = self.get_chartdata()
         last_timestamp = chartdata.timestamps[-1]
-        chartdata = chartdata.subdata(end_index=-1)
+        chartdata = chartdata.subdata(end_index=-2)
         signal = self.check_signal(chartdata)
         if signal:
             if self.consider_position:
@@ -123,81 +123,3 @@ class TraderBot:
                 )
 
         return self.give_delay(last_timestamp)
-
-
-# async def backtest(
-#     self,
-#     n_bar=500,
-#     show_image=True,
-#     len_sub_data=100,
-#     *args,
-#     **kwargs,
-# ):
-#     logger = logging.getLogger(f"{self.__class__.__name__} Backtest")
-
-#     if self.consider_position:
-#         position_handler = copy(self.position_generator)
-#     else:
-#         position_handler = DummyPositionHanler()
-#         self.position_generator = position_handler
-
-#     chartdata = self.get_chartdata(n_bar)
-#     if chartdata is None:
-#         raise ValueError(f"{chartdata=}")
-
-#     agent = DummyAgent(
-#         self.agent,
-#         chartdata=chartdata,
-#         open_positions=position_handler.open_positions,
-#         start_index=len_sub_data,
-#     )
-
-#     position_handler.exchange_agent = agent
-#     position_handler.long_trade = False
-#     position_handler.short_trade = False
-#     self.agent = agent
-#     self.send_signal_msg = False
-
-#     all_positions: list[Position] = []
-#     all_signals: list[Signal] = []
-
-#     while agent.index < len(agent.chartdata.candles) - 1:  # type: ignore
-#         if self.consider_position:
-#             position_handler.manage_positions()
-#             await commands.Command.execute_pending_commands(
-#                 time=agent.get_chartdata(self.chart)[-1].time,  # type: ignore
-#                 report=False,
-#             )
-#         res = await self.task()
-#         if isinstance(res, timedelta):
-#             candle_delay = 1
-#         else:
-#             all_signals.append(res[1])
-#             if self.consider_position:
-#                 all_positions.append(res[2])  # type: ignore
-#             candle_delay = self.bar_between_signals + 1
-#         agent.index += candle_delay
-
-#         logger.debug(f"{candle_delay} Candle next")
-#     plot = ChartPlot(agent.chartdata)  # type: ignore
-#     for signal in all_signals:
-#         self.strategy.draw(plot, signal)
-#     for pos in all_positions:
-#         if not pos.closed_timestamp:
-#             continue
-#         pos.plot = plot
-#         pos.draw()
-#     commands_report = commands.Command.close_records()
-#     all_reports = position_handler.report()
-#     logger.info("Result:\n\n" + commands_report)
-#     for poses_report in all_reports:
-#         logger.info("\n" + str(poses_report))
-#     overal_report = PositionsReport.give_overall_report(copy(all_reports))
-#     logger.info("\n" + str(overal_report))
-#     logger.info(
-#         f"total time: {agent.chartdata[-1].time - agent.chartdata[0].time} with {len(agent.chartdata.candles)} candles"  # type: ignore
-#     )
-#     if show_image:
-#         plot.show()
-
-#     return all_signals, all_positions, plot, all_reports, commands_report

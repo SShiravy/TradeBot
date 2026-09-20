@@ -292,7 +292,6 @@ class ExchangeAgent(ABC):
     def get_current_tick(self, chart: Chart) -> float:
         pass
 
-    @abstractmethod
     def get_candles_since(self, chart: Chart, time: datetime) -> list[Candle]:
         chartdata = self.get_chartdata(chart, 3)
         if chartdata is None:
@@ -571,11 +570,18 @@ class ReportMsgFormater(ABC):
 
 
 class ReporterBot(ABC):
-    def __init__(self, name: str, signal_channel, msg_formater: ReportMsgFormater):
+    def __init__(
+        self,
+        name: str,
+        signal_channel,
+        msg_formater: ReportMsgFormater,
+        save_path: str = "",
+    ):
         self.name = name
         self.channel = signal_channel
         self.enable = True
         self.msg_formater = msg_formater
+        self.save_path = save_path
 
     def disable_reporting(self):
         self.enable = False

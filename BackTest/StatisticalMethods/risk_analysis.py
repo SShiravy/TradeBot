@@ -1,4 +1,4 @@
-from LocalBackTester.StatisticalMethods.models import BaseStatisticalAnalysis
+from BackTest.StatisticalMethods.models import BaseStatisticalAnalysis
 from TraderBot.models import Position
 
 

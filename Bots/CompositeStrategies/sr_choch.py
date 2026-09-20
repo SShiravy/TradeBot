@@ -124,11 +124,10 @@ class SRChochBot(TraderBot):
         figure = SingleChartFigure(chartdata, self.n_sr_candle_check)
         draw(figure.main_pane)
         SignalPlotter()(figure.main_pane, signal)
-        result = await reporter.send_msg(
-            reporter.msg_formater.new_signal(signal),
-            img_path=figure.save_image(),
-        )
-        self.last_sr_report_id = getattr(result, "message_id", None)
+        command = commands.NewSignalReport(signal, plot=figure)
+        command.send(reporter=self.trades_manager.reporter)
+
+        self.last_sr_report_id = command.msg_id
 
     async def _check_static_sr(self, chartdata: ChartData) -> None:
         last_candle = chartdata[-1]
@@ -353,7 +352,7 @@ class SRChochBot(TraderBot):
 
         choch_chartdata = self.get_chartdata()
         last_timestamp = choch_chartdata.timestamps[-1]
-        choch_chartdata = choch_chartdata.subdata(end_index=-1)
+        choch_chartdata = choch_chartdata.subdata(end_index=-2)
 
         await self.find_signal(sr_chartdata, choch_chartdata)
         return self.give_delay(last_timestamp)

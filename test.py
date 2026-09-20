@@ -95,9 +95,9 @@ def test_handler_export_config():
 
 
 def store_mt5_data():
-    from LocalBackTester.models import CsvChart
+    from BackTest.models import CsvChart
     from ChartModule.models import TimeFrame
-    from LocalBackTester.methods import (
+    from BackTest.methods import (
         store_forex_data,
         plot_csv_kline,
         # store_mt5_tick_data,

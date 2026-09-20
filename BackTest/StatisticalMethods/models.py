@@ -1,4 +1,4 @@
-from LocalBackTester.models import CsvChart
+from BackTest.models import CsvChart
 from TraderBot.models import Position
 from TraderBot.trader_bot import TraderBot
 from abc import ABC, abstractmethod

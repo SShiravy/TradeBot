@@ -13,6 +13,7 @@ class NewSignalReport(Command):
         signal: Signal,
         bounded_command: Command | None = None,
         plot: Figure | None = None,
+        msg_id: int | None = None,
     ):
         super().__init__(bounded_command)
         self.signal = signal
@@ -28,12 +29,19 @@ class NewSignalReport(Command):
         if not self.reporter:
             logger.warning("Reporter not initialized, cannot send new signal report")
             return True
+        path = self.reporter.save_path or "Records/"
         msg = self.reporter.msg_formater.new_signal(self.signal)
         res = await self.reporter.send_msg(
-            msg, img_path=self.plot.save_image() if self.plot else None
+            msg,
+            img_path=self.plot.save_image(
+                name=str(self.signal.candle.timestamp), path=path
+            )
+            if self.plot
+            else None,
         )
         if not res:
             return False
+        self.msg_id = res
         return True
 
 
@@ -53,9 +61,10 @@ class NewPositionReport(Command):
             logger.warning("Reporter not initialized, cannot send new position report")
             return True
         msg = self.context.reporter.msg_formater.new_position(self.context.position)
+        path = self.context.reporter.save_path or "Records/"
         res = await self.context.reporter.send_msg(
             msg,
-            img_path=self.plot.save_image() if self.plot else None,
+            img_path=self.plot.save_image(path) if self.plot else None,
             reply_id=self.reply_id,
         )
         if not res:

@@ -124,7 +124,7 @@ class Divergence(Strategy):
                 second_chartdata,
                 base_line.start_timestamp,
                 base_line.end_timestamp,
-                timestamps=base_chartdata.timestamps,
+                timestamps=second_chartdata.timestamps,
             )
             if second_line is None:
                 continue
@@ -279,9 +279,9 @@ class DivergenceBot(TraderBot):
     async def task(self):
         chartdata = self.get_chartdata()
         last_timestamp = chartdata.timestamps[-1]
-        chartdata = chartdata.subdata(end_index=-1)
+        chartdata = chartdata.subdata(end_index=-2)
         second_chartdata = self.get_chartdata(chart=self.second_chart).subdata(
-            end_index=-1
+            end_index=-2
         )
         signal = self.check_signal(chartdata, second_chartdata)
         if signal:

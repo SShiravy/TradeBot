@@ -1,28 +1,24 @@
 from ExchangeAgents.MT5.agent import forex_timeframe_mapper
-from Bots.DivergenceStrategy import TwoChartDiverTradeConfig
-from LocalBackTester.Database.methods import fetch_two_chart_diver_siganls
-from ChartModule.plot import DoubleChartPlot
-from LocalBackTester.agent import LocalAgent
-from LocalBackTester.models import CsvChart
-from LocalBackTester.Database.methods import (
-    store_diver_backtest,
-    store_diver_signal,
-    fetch_diver_backtest,
-)
+from BackTest.models import CsvChart
+from BackTest.agent import BacktestAgent
 from Settings.custom_logger import build_logger, LoggerConfig
 import mt5_wrapper as mt5
 import pandas as pd
 import logging
 
+from TraderBot.models import ExchangeAgent
+
 build_logger(LoggerConfig(name="root"))
 
 
-def plot_csv_kline(chart: CsvChart):
-    from ChartModule.plot import ChartPlot
+def plot_csv_kline(chart: CsvChart, exchange_agent: ExchangeAgent):
+    from ChartModule.plot import SingleChartFigure
 
-    agent = LocalAgent()
+    agent = BacktestAgent(exchange_agent, chart)
     chartdata = agent.get_chartdata(chart)
-    ChartPlot(chartdata, len(chartdata.candles)).show()  # type: ignore
+    if not chartdata:
+        raise ValueError(f"Chartdata is None for {chart}")
+    SingleChartFigure(chartdata, len(chartdata)).show()
 
 
 def store_forex_data(chart: CsvChart, n_bars=1000):
@@ -115,7 +111,7 @@ def read_tick_data(path):
 
 
 def test_tick_data():
-    from LocalBackTester.models import TickDataHandler
+    from BackTest.models import TickDataHandler
 
     path = r"D:\TraderBot\LocalBackTester\TickData\Opofinance\XAUUSD!_2025_11_03_to_2026_05_19.parquet"
 
@@ -124,49 +120,10 @@ def test_tick_data():
     logging.info(tick_handler.get_ticks_from_timstamp_range(1769543520, 1769543940))
 
 
-def load_diver_backtest(the_config: TwoChartDiverTradeConfig):
-    n_bar = the_config.chart.total_bars_number  # type: ignore
-    signals = fetch_two_chart_diver_siganls(the_config)
-    if signals is None:
-        raise Exception(f"There is no related signals for the config: {the_config}")
-    chartdata, second_chartdata = the_config.get_chartdata(n_bar)
-    all_indicators = the_config.strategy.indicators
-    for indicator in all_indicators:
-        indicator.set(chartdata.candles)
-    plot = DoubleChartPlot(chartdata, second_chartdata, n_bar)
-    the_config.strategy.draw(plot, signals[0], True)
-    for signal in signals[1:]:
-        the_config.strategy.draw(plot, signal, False)
-    plot.show()
-
-
-async def diver_signal_local_backtest(
-    the_config: TwoChartDiverTradeConfig, show_plot=True
-):
-    diver_backtest = fetch_diver_backtest(the_config)
-
-    if diver_backtest:
-        logging.info("Already in db. Loading previous backtest ....")
-        if show_plot:
-            load_diver_backtest(the_config)
-        return
-
-    res = await the_config.backtest(
-        n_bar=the_config.chart.total_bars_number,  # type: ignore
-        len_sub_data=the_config.n_candle_check,
-        show_image=show_plot,
-    )
-
-    backtest_datapoint = store_diver_backtest(the_config)
-    logging.debug(backtest_datapoint)
-    diver_signals = res[0]
-    store_diver_signal(diver_signals, backtest_datapoint.id)  # type: ignore
-
-
 def store_klines_from_mt5():
-    from LocalBackTester.methods import store_forex_data
+    from BackTest.methods import store_forex_data
     from ChartModule.models import TimeFrame
-    from LocalBackTester.models import CsvChart, KlineSource
+    from BackTest.models import CsvChart, KlineSource
 
     symbol = "BTCUSD"
     len_bar = 99000

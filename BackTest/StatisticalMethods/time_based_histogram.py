@@ -1,4 +1,4 @@
-from LocalBackTester.StatisticalMethods.models import BasePnLHistogram
+from BackTest.StatisticalMethods.models import BasePnLHistogram
 from datetime import datetime, timezone
 
 
