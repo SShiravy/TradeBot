@@ -122,6 +122,15 @@ class LineFinder(Indicator):
         if start_idx >= end_idx:
             raise ValueError("Start point came after End point!")
 
+        if end_idx >= anchor_values.shape[0]:
+            # anchor_values must be one value per candle of `timestamps`;
+            # an indicator series that drifted out of step with its chart
+            # would otherwise be read at the wrong bar
+            raise ValueError(
+                f"anchor_values has {anchor_values.shape[0]} values for "
+                f"{timestamps.shape[0]} timestamps -- they must align"
+            )
+
         check_values = anchor_values if check_values is None else check_values
         step = end_idx - start_idx + 1
 
@@ -130,11 +139,21 @@ class LineFinder(Indicator):
 
         start_value = anchor_values[start_idx]
         end_value = anchor_values[end_idx]
+
+        # an indicator is undefined until it warms up (RSI/ATR leave NaN
+        # there). NaN would sail through the cross check below, since every
+        # comparison against NaN is False, and yield a NaN line.
+        if np.isnan(start_value) or np.isnan(end_value):
+            return None
+
         slope = (end_value - start_value) / (step - 1)
 
         offset_from_start = np.arange(0, step, dtype=np.float64)
         predicted = start_value + offset_from_start * slope
         window_values = check_values[start_idx : end_idx + 1]
+
+        if np.isnan(window_values).any():
+            return None
 
         if cls._crosses(window_values, predicted, cross_multiplier):
             return None
@@ -154,12 +173,23 @@ class LineFinder(Indicator):
         end_timestamp: int,
         timestamps: np.ndarray | None = None,
     ) -> Line | None:
+        """
+        Re-draw a line found on one chart onto ANOTHER chart, between the
+        same two timestamps, and check that chart's own values never cross
+        it. Used for the second leg of a divergence.
+
+        `support_conditions` is deliberately NOT applied here. It describes
+        the candle pattern that qualifies the SETUP, which lives on the base
+        chart -- `iter_value_lines` already enforces it when anchoring the
+        base line. Re-testing it against the other chart's candles adds an
+        unrelated requirement and silently throws away valid divergences
+        (it rejected most of them with a non-RAW pattern). The oscillator
+        variant, which validates its second leg through
+        `validate_value_line` directly, never applied it either.
+        """
         anchor_values = self.source(chartdata)
         check_values = self.cross_check_source(chartdata)
 
-        valid_step = None
-        if self.support_conditions is not SupportCandlesPattern.RAW:
-            valid_step = lambda i: self.support_conditions.check(chartdata, i)
         timestamps = timestamps if timestamps is not None else chartdata.timestamps
         return self.validate_value_line(
             anchor_values=anchor_values,
@@ -168,7 +198,6 @@ class LineFinder(Indicator):
             end_timestamp=end_timestamp,
             cross_multiplier=self._cross_multiplier(),
             check_values=check_values,
-            valid_step=valid_step,
         )
 
     @classmethod

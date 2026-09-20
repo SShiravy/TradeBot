@@ -65,6 +65,28 @@ class Indicator(ABC):
         """How to combine self.data with a freshly computed new_segment. Override per data type."""
         raise NotImplementedError
 
+    def _trim_to_window(self, data: Any) -> Any:
+        """
+        Keep exactly one value per candle of the CURRENT window.
+
+        set() is called with a sliding window -- the bot refetches the last
+        `n_candle_check` bars on every poll -- so a `_merge` that only
+        concatenates grows the series by one per call while the window
+        length stays put. Callers index this data with positions taken from
+        chartdata, so any drift makes them silently read the wrong bar.
+
+        For per-bar indicators only. Indicators whose data is a list of
+        events or indices (Pivot, SwingPivots, SRZones, AutoTrendlines)
+        have no one-value-per-candle invariant and must not use this.
+        """
+        if self.chartdata is None:
+            return data
+        n = len(self.chartdata)
+        excess = len(data) - n
+        if excess <= 0:
+            return data
+        return data.iloc[excess:] if hasattr(data, "iloc") else data[excess:]
+
     def update(self, chartdata: ChartData, *args, **kwargs) -> Any:
         start = self._find_update_start(chartdata)
         if start is None:

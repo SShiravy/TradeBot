@@ -140,7 +140,7 @@ class RSI(Indicator):
         return new_values
 
     def _merge(self, new_segment: np.ndarray) -> np.ndarray:
-        return np.concatenate([self.data, new_segment])
+        return self._trim_to_window(np.concatenate([self.data, new_segment]))
 
 
 class RsiBoundryRule(IndicatorRule):

@@ -36,9 +36,9 @@ class SignalBacktest:
 
         while TimeHandler.now() < end_timestamp:
             delay = await self.bot.task()
-            TimeHandler.advance(delay)
             if delay <= 0:
                 delay = 5
+            TimeHandler.advance(delay)
             await Command.execute_pending_commands()
 
         profiler.disable()

@@ -83,7 +83,7 @@ class WMA(Indicator):
         return pd.Series(result[offset:], index=chartdata.timestamps[start:])
 
     def _merge(self, new_segment: pd.Series) -> pd.Series:
-        return pd.concat([self.data, new_segment])
+        return self._trim_to_window(pd.concat([self.data, new_segment]))
 
 
 class SMA(WMA):
@@ -118,7 +118,7 @@ class EMA(WMA):
         return pd.Series(new_values, index=chartdata.timestamps[start:])
 
     def _merge(self, new_segment: pd.Series) -> pd.Series:
-        return pd.concat([self.data, new_segment])
+        return self._trim_to_window(pd.concat([self.data, new_segment]))
 
 
 class HMA(WMA):
@@ -159,7 +159,7 @@ class HMA(WMA):
         return full_result.iloc[offset:]
 
     def _merge(self, new_segment: pd.Series) -> pd.Series:
-        return pd.concat([self.data, new_segment])
+        return self._trim_to_window(pd.concat([self.data, new_segment]))
 
 
 class PriceCrossRule(IndicatorRule):

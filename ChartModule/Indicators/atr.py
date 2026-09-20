@@ -94,7 +94,7 @@ class ATR(Indicator):
         return new_values
 
     def _merge(self, new_segment: np.ndarray) -> np.ndarray:
-        return np.concatenate([self.data, new_segment])
+        return self._trim_to_window(np.concatenate([self.data, new_segment]))
 
     def update(self, chartdata: ChartData, *args, **kwargs) -> np.ndarray:
         if not self._warm:
