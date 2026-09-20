@@ -27,7 +27,7 @@ class Settings(BaseSettings):
     # Mt5
     METATRADER_TERMINAL_PATH: str
     SECOND_METATRADER_TERMINAL_PATH: str
-    BROKER_UTC_SHIFT:int
+    BROKER_UTC_SHIFT: int
 
     # LocalBacktest DB
     LOCAL_BACKTEST_DB_NAME: str

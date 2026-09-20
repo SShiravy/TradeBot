@@ -31,6 +31,13 @@ class Line:
 
 
 class LineFinder(Indicator):
+    # slope/offset arithmetic in float64 leaves residues around 1e-15 relative,
+    # which would otherwise read as a cross on a perfectly straight run.
+    # Relative, so it scales across instruments (USDJPY ~150, BTCUSD ~60000);
+    # the absolute floor only matters for sources that sit near zero.
+    CROSS_RTOL: float = 1e-9
+    CROSS_ATOL: float = 1e-12
+
     def __init__(
         self,
         source: CandlesSource,
@@ -69,6 +76,32 @@ class LineFinder(Indicator):
         return -1
 
     @classmethod
+    def _crosses(
+        cls,
+        window_values: np.ndarray,
+        predicted: np.ndarray,
+        cross_multiplier: int,
+    ) -> bool:
+        """
+        Whether any value breaks through the line. A value sitting within
+        tolerance of the line counts as touching it, not crossing it.
+        """
+        deviation = (window_values - predicted) * cross_multiplier
+        tolerance = cls.CROSS_ATOL + cls.CROSS_RTOL * np.abs(predicted)
+        return bool(np.any(deviation < -tolerance))
+
+    @staticmethod
+    def _exact_index(timestamps: np.ndarray, timestamp: int) -> int | None:
+        """
+        Index of `timestamp`, or None when this chart holds no candle at that
+        exact time -- a missing bar, or a range reaching past its history.
+        """
+        idx = int(np.searchsorted(timestamps, timestamp))
+        if idx >= timestamps.shape[0] or int(timestamps[idx]) != int(timestamp):
+            return None
+        return idx
+
+    @classmethod
     def validate_value_line(
         cls,
         anchor_values: np.ndarray,
@@ -79,8 +112,12 @@ class LineFinder(Indicator):
         check_values: np.ndarray | None = None,
         valid_step: Callable[[int], bool] | None = None,
     ) -> Line | None:
-        start_idx = int(np.searchsorted(timestamps, start_timestamp))
-        end_idx = int(np.searchsorted(timestamps, end_timestamp))
+        start_idx = cls._exact_index(timestamps, start_timestamp)
+        end_idx = cls._exact_index(timestamps, end_timestamp)
+
+        # the two charts are fetched separately, so one can lag or skip a bar
+        if start_idx is None or end_idx is None:
+            return None
 
         if start_idx >= end_idx:
             raise ValueError("Start point came after End point!")
@@ -89,20 +126,17 @@ class LineFinder(Indicator):
         step = end_idx - start_idx + 1
 
         if valid_step is not None and not valid_step(start_idx):
-            print("not valid")
             return None
 
-        print(f"{start_idx=}|{end_idx}")
         start_value = anchor_values[start_idx]
         end_value = anchor_values[end_idx]
-        slope = (end_value - start_value) / (step-1)
+        slope = (end_value - start_value) / (step - 1)
 
-        offset_from_start = np.arange(0,step, dtype=np.float64)
+        offset_from_start = np.arange(0, step, dtype=np.float64)
         predicted = start_value + offset_from_start * slope
         window_values = check_values[start_idx : end_idx + 1]
-        print(f'\n\n Second Chart line founded \n{step=} {start_value=} {end_value=}\n\n',"windo:\n",window_values,"\n\noffset:\n",offset_from_start,"\n\npredicted:\n",predicted,'\n\nres:\n',(window_values - predicted) * cross_multiplier)
 
-        if np.any((window_values - predicted) * cross_multiplier < 0):
+        if cls._crosses(window_values, predicted, cross_multiplier):
             return None
 
         return Line(
@@ -114,7 +148,11 @@ class LineFinder(Indicator):
         )
 
     def validate_line_at(
-        self, chartdata: ChartData, start_timestamp: int, end_timestamp: int
+        self,
+        chartdata: ChartData,
+        start_timestamp: int,
+        end_timestamp: int,
+        timestamps: np.ndarray | None = None,
     ) -> Line | None:
         anchor_values = self.source(chartdata)
         check_values = self.cross_check_source(chartdata)
@@ -122,10 +160,10 @@ class LineFinder(Indicator):
         valid_step = None
         if self.support_conditions is not SupportCandlesPattern.RAW:
             valid_step = lambda i: self.support_conditions.check(chartdata, i)
-
+        timestamps = timestamps if timestamps is not None else chartdata.timestamps
         return self.validate_value_line(
             anchor_values=anchor_values,
-            timestamps=chartdata.timestamps,
+            timestamps=timestamps,
             start_timestamp=start_timestamp,
             end_timestamp=end_timestamp,
             cross_multiplier=self._cross_multiplier(),
@@ -159,20 +197,19 @@ class LineFinder(Indicator):
             start_index = end_index - step + 1
             window_values[-step] = check_values[start_index]
 
-            if step < min_step:
+            if step <= min_step:
                 continue
 
             if valid_step is not None and not valid_step(start_index):
                 continue
 
             start_value = anchor_values[start_index]
-            slope = (end_value - start_value) / (step-1)
+            slope = (end_value - start_value) / (step - 1)
 
-            offset_from_start = np.arange(0,step, dtype=np.float64)
+            offset_from_start = np.arange(0, step, dtype=np.float64)
             predicted = start_value + offset_from_start * slope
-            if np.any((window_values[-step:] - predicted) * cross_multiplier < 0):
+            if cls._crosses(window_values[-step:], predicted, cross_multiplier):
                 continue
-            print(f"The line {start_index=}|{end_index=}|{len(timestamps)}|{len(anchor_values)}")
             yield Line(
                 start_value=float(start_value),
                 end_value=float(end_value),

@@ -1,6 +1,6 @@
-from ChartModule.models import Candle, MarketSide, CandlesSource
-from ChartModule.Indicators.models import Indicator
-from ChartModule.plot import ChartPlot
+from ChartModule.models import Candle, ChartData, CandlesSource
+from ChartModule.Indicators.models import Indicator, IndicatorPlotter, IndicatorRule
+from ChartModule.plot import ChartPane
 from dataclasses import dataclass
 
 
@@ -16,23 +16,77 @@ class PivotPoint:
     def __str__(self) -> str:
         side = "High" if self.is_high else "Low"
         tag = "" if self.confirmed else "*"
-        return f"Pivot{side}{tag}|{self.candle.time}|{self.price}"
+        return f"Pivot{side}{tag}|{self.candle.timestamp}|{self.price}"
+
+
+class SwingPivotsPlotter(IndicatorPlotter):
+    def __call__(
+        self,
+        pane: ChartPane,
+        indicator_data: list[PivotPoint],
+        show_live: bool = True,
+        live_pivots: list[PivotPoint] | None = None,
+        color: str = "#e1b400",
+        live_color: str = "#8a8a8a",
+    ) -> None:
+        if not indicator_data:
+            return
+
+        for pivot in indicator_data:
+            pane.mark_candle(
+                pivot.index,
+                source=CandlesSource.High if pivot.is_high else CandlesSource.Low,
+                color=color,
+            )
+
+        if show_live and live_pivots:
+            for pivot in live_pivots:
+                pane.mark_candle(
+                    pivot.index,
+                    source=CandlesSource.High if pivot.is_high else CandlesSource.Low,
+                    color=live_color,
+                )
 
 
 class SwingPivots(Indicator):
     """
     Causal, repainting swing pivot detector (Depth / Backstep).
 
-    values: list[PivotPoint]           (confirmed pivots only)
+    self.data: list[PivotPoint]        (confirmed pivots only)
     live_pivots: list[PivotPoint]      (0-2 currently running, unconfirmed)
+
+    The scan carries running state between calls, so an incremental update
+    resumes from the last seen candle instead of rescanning from bar 0.
+    Backstep is re-applied over the whole cumulative raw-pivot history on
+    every update, so `self.data` is always the ENTIRE confirmed list rebuilt
+    from scratch -- never "just the new pivots". A late pivot can replace an
+    earlier one, which is exactly why the raw history has to be kept.
+
+    Indices are positions into the chartdata passed in. When that chartdata
+    is a sliding window, indices recorded on an earlier call go stale by
+    however many candles fell off the front; consumers rebase them.
     """
 
-    def __init__(self, depth: int = 12, backstep: int = 2) -> None:
-        super().__init__()
+    def __init__(
+        self,
+        depth: int = 12,
+        backstep: int = 2,
+        rules: list[IndicatorRule] = [],
+    ) -> None:
+        super().__init__(rules=rules)
         self.data: list[PivotPoint]
         self.live_pivots: list[PivotPoint] = []
         self.depth = depth
         self.backstep = backstep
+        self.plotter = SwingPivotsPlotter()
+
+        self._raw_pivots: list[PivotPoint] = []
+        # scan state, carried between _calculate() and every _calculate_new()
+        self._direction = 0  # 0 = tracking both, 1 = tracking a high, -1 = a low
+        self._high_idx = self._high_last_update = 0
+        self._high_price = 0.0
+        self._low_idx = self._low_last_update = 0
+        self._low_price = 0.0
 
     def export_configs(self) -> dict:
         configs = super().export_configs()
@@ -56,91 +110,130 @@ class SwingPivots(Indicator):
                 result.append(pivot)
         return result
 
-    def _calculate(self) -> list[PivotPoint]:
-        candles = self.candles
-        self.live_pivots = []
-
-        if len(candles) < 2:
-            return []
-
-        pivots: list[PivotPoint] = []
-
-        direction = (
-            0  # 0 = tracking both (not decided yet), 1 = tracking a high, -1 = a low
+    def _confirmed_from_raw(self) -> list[PivotPoint]:
+        highs = self._apply_backstep([p for p in self._raw_pivots if p.is_high], True)
+        lows = self._apply_backstep(
+            [p for p in self._raw_pivots if not p.is_high], False
         )
-        high_idx = high_last_update = 0
-        high_price = candles[0].high
-        low_idx = low_last_update = 0
-        low_price = candles[0].low
+        return sorted(highs + lows, key=lambda pivot: pivot.confirmed_index)
 
-        for i in range(1, len(candles)):
-            candle = candles[i]
+    def _scan(self, chartdata: ChartData, start: int, stop: int) -> list[PivotPoint]:
+        """
+        Walk bars [start, stop) forward from the current running state,
+        appending every raw (pre-backstep) pivot it confirms.
+        """
+        highs = chartdata.high
+        lows = chartdata.low
+        found: list[PivotPoint] = []
 
-            if direction <= 0:
-                if candle.low < low_price:
-                    low_price = candle.low
-                    low_idx = i
-                    low_last_update = i
-                if i - low_last_update >= self.depth:
-                    pivots.append(
-                        PivotPoint(low_idx, candles[low_idx], low_price, False, i, True)
-                    )
-                    direction = 1
-                    high_price = candle.high
-                    high_idx = i
-                    high_last_update = i
-
-            if direction >= 0:
-                if candle.high > high_price:
-                    high_price = candle.high
-                    high_idx = i
-                    high_last_update = i
-                if i - high_last_update >= self.depth:
-                    pivots.append(
+        for i in range(start, stop):
+            if self._direction <= 0:
+                if lows[i] < self._low_price:
+                    self._low_price = float(lows[i])
+                    self._low_idx = i
+                    self._low_last_update = i
+                if i - self._low_last_update >= self.depth:
+                    found.append(
                         PivotPoint(
-                            high_idx, candles[high_idx], high_price, True, i, True
+                            self._low_idx,
+                            chartdata.candle(self._low_idx),
+                            self._low_price,
+                            False,
+                            i,
+                            True,
                         )
                     )
-                    direction = -1
-                    low_price = candle.low
-                    low_idx = i
-                    low_last_update = i
+                    self._direction = 1
+                    self._high_price = float(highs[i])
+                    self._high_idx = i
+                    self._high_last_update = i
 
-        highs = self._apply_backstep([p for p in pivots if p.is_high], True)
-        lows = self._apply_backstep([p for p in pivots if not p.is_high], False)
-        confirmed = sorted(highs + lows, key=lambda pivot: pivot.confirmed_index)
+            if self._direction >= 0:
+                if highs[i] > self._high_price:
+                    self._high_price = float(highs[i])
+                    self._high_idx = i
+                    self._high_last_update = i
+                if i - self._high_last_update >= self.depth:
+                    found.append(
+                        PivotPoint(
+                            self._high_idx,
+                            chartdata.candle(self._high_idx),
+                            self._high_price,
+                            True,
+                            i,
+                            True,
+                        )
+                    )
+                    self._direction = -1
+                    self._low_price = float(lows[i])
+                    self._low_idx = i
+                    self._low_last_update = i
 
-        last_index = len(candles) - 1
-        if direction <= 0:
+        self._raw_pivots.extend(found)
+        return found
+
+    def _refresh_live_pivots(self, chartdata: ChartData) -> None:
+        """The 0-2 extremes still being tracked, not yet confirmed by depth."""
+        self.live_pivots = []
+        last_index = len(chartdata) - 1
+        if last_index < 0:
+            return
+
+        if self._direction <= 0:
             self.live_pivots.append(
                 PivotPoint(
-                    low_idx, candles[low_idx], low_price, False, last_index, False
+                    self._low_idx,
+                    chartdata.candle(self._low_idx),
+                    self._low_price,
+                    False,
+                    last_index,
+                    False,
                 )
             )
-        if direction >= 0:
+        if self._direction >= 0:
             self.live_pivots.append(
                 PivotPoint(
-                    high_idx, candles[high_idx], high_price, True, last_index, False
+                    self._high_idx,
+                    chartdata.candle(self._high_idx),
+                    self._high_price,
+                    True,
+                    last_index,
+                    False,
                 )
             )
 
-        return confirmed
+    def _calculate(self, chartdata: ChartData, *args, **kwargs) -> list[PivotPoint]:
+        self._raw_pivots = []
+        self.live_pivots = []
+        self._direction = 0
+        self._high_idx = self._high_last_update = 0
+        self._low_idx = self._low_last_update = 0
 
-    def _forcast(self) -> MarketSide:
-        return MarketSide.NEUTRAL
+        if len(chartdata) == 0:
+            return []
 
-    def plot(self, plot: ChartPlot, show_live: bool = True):
-        for pivot in self.data:
-            plot.mark_candle(
-                pivot.candle,
-                CandlesSource.High if pivot.is_high else CandlesSource.Low,
-            )
-        if show_live:
-            for pivot in self.live_pivots:
-                plot.mark_candle(
-                    pivot.candle,
-                    CandlesSource.High if pivot.is_high else CandlesSource.Low,
-                )
+        # seed before the length check: a later incremental call resumes from
+        # this state, and leaving the prices at 0.0 would make every real low
+        # look like a new high and emit a pivot priced at zero.
+        self._high_price = float(chartdata.high[0])
+        self._low_price = float(chartdata.low[0])
 
-    def update(self, candles: list[Candle], *args, **kwargs):
-        pass
+        if len(chartdata) < 2:
+            return []
+
+        self._scan(chartdata, 1, len(chartdata))
+        self._refresh_live_pivots(chartdata)
+        return self._confirmed_from_raw()
+
+    def _calculate_new(
+        self, chartdata: ChartData, start: int, *args, **kwargs
+    ) -> list[PivotPoint]:
+        new_pivots = self._scan(chartdata, start, len(chartdata))
+        self._refresh_live_pivots(chartdata)
+        return new_pivots
+
+    def _merge(self, new_segment: list[PivotPoint]) -> list[PivotPoint]:
+        # backstep can retroactively replace an already-emitted pivot, so the
+        # confirmed list is rebuilt from the full raw history rather than
+        # appended to -- `new_segment` is already inside `_raw_pivots`.
+        return self._confirmed_from_raw()

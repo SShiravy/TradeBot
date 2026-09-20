@@ -7,12 +7,14 @@ from ChartModule.models import (
     CandlesSource,
 )
 from ChartModule.Indicators import Indicator, SupportCandlesPattern
-from ChartModule.Indicators.swing_pivots import SwingPivots, PivotPoint
-from ChartModule.plot import ChartPlot
-from TradingModule.trader_bot import TradeConfig
-from TradingModule.models import Position, Strategy
-from datetime import datetime
+from ChartModule.Indicators.swing_pivots import SwingPivots
+from ChartModule.plot import ChartPane
+from TraderBot.PositionHandlers.manager import TradesManager
+from TraderBot.trader_bot import TraderBot
+from TraderBot.models import ExchangeAgent, Strategy, StrategyPlotter
 from dataclasses import dataclass, field
+from typing import Callable, Sequence
+import numpy as np
 import logging
 
 
@@ -42,15 +44,119 @@ class ChochModel:
     def __str__(self) -> str:
         kind = "CHoCH" if self.is_choch else "BOS"
         return (
-            f"{kind}|{self.side}|{self.break_candle.time}"
+            f"{kind}|{self.side}|{self.break_candle.timestamp}"
             f"|active={self.active}|validated={self.validated}"
         )
 
 
 @dataclass(slots=True, frozen=True)
 class ChochSignal(Signal):
-    source: str = field(default="ChochQueue", init=False)
     choch_model: ChochModel
+
+
+class ChochPlotter(StrategyPlotter):
+    BULLISH_BASE = "26a69a"
+    BEARISH_BASE = "ef5350"
+
+    def __call__(
+        self,
+        pane: ChartPane,
+        signal: ChochSignal,
+        indicators: list[Indicator] = [],
+        *args,
+        use_fibo_filter: bool = True,
+        **kwargs,
+    ):
+        # keyword-only on purpose: TraderBot.trade() calls plotters with an
+        # extra positional argument, which would otherwise land here
+        super().__call__(pane, signal, indicators)
+        self.draw_model(pane, signal.choch_model, use_fibo_filter)
+
+    @staticmethod
+    def _candle_index(pane: ChartPane, candle: Candle) -> int | None:
+        """
+        Position of `candle` in the pane's visible window, or None when it
+        falls outside it -- the pane only holds the tail that is actually
+        drawn, so an older model's candle simply has nothing to mark.
+        """
+        chartdata = pane.chartdata
+        if chartdata is None:
+            return None
+        idx = int(np.searchsorted(chartdata.timestamps, candle.timestamp))
+        if idx >= len(chartdata) or int(chartdata.timestamps[idx]) != candle.timestamp:
+            return None
+        return idx
+
+    def draw_model(
+        self, pane: ChartPane, model: ChochModel, use_fibo_filter: bool = True
+    ) -> None:
+        base = (
+            self.BULLISH_BASE if model.side is MarketSide.BULLISH else self.BEARISH_BASE
+        )
+        color = f"#{base}" if model.is_choch else f"#{base}70"
+        width = 2 if model.is_choch else 1
+
+        pane.draw_line(
+            model.pivot_candle.timestamp,
+            model.break_level,
+            model.break_candle.timestamp,
+            model.break_level,
+            color=color,
+            width=width,
+        )
+
+        pivot_index = self._candle_index(pane, model.pivot_candle)
+        if pivot_index is not None:
+            pivot_source = (
+                CandlesSource.High
+                if model.side is MarketSide.BULLISH
+                else CandlesSource.Low
+            )
+            pane.mark_candle(pivot_index, source=pivot_source, color=color)
+
+        if (
+            use_fibo_filter
+            and model.retrace_level is not None
+            and model.touch_candle is not None
+        ):
+            pane.draw_horizontal_line(
+                model.break_candle.timestamp,
+                model.touch_candle.timestamp,
+                model.retrace_level,
+                color=color,
+            )
+            pane.mark_price(
+                model.touch_candle.timestamp, model.retrace_level, model.side
+            )
+
+    def draw_pivots(self, pane: ChartPane, pivot_events: list[dict]) -> None:
+        highs = [
+            (event["timestamp"], event["price"])
+            for event in pivot_events
+            if event["type"] == "high"
+        ]
+        lows = [
+            (event["timestamp"], event["price"])
+            for event in pivot_events
+            if event["type"] == "low"
+        ]
+        pane.mark_points(highs, legend="PivotHigh", color="#ff9800")
+        pane.mark_points(lows, legend="PivotLow", color="#2196f3")
+
+    def draw_all(
+        self,
+        pane: ChartPane,
+        choch_events: list[ChochModel],
+        bos_models: list[ChochModel] = [],
+        pivot_events: list[dict] = [],
+        use_fibo_filter: bool = True,
+    ) -> None:
+        if pivot_events:
+            self.draw_pivots(pane, pivot_events)
+        for model in choch_events:
+            self.draw_model(pane, model, use_fibo_filter)
+        for model in bos_models:
+            self.draw_model(pane, model, use_fibo_filter)
 
 
 class ChochQueueFilter(Strategy):
@@ -62,9 +168,9 @@ class ChochQueueFilter(Strategy):
         use_fibo_filter: bool = True,
         use_bos: bool = True,
         max_queue: int = 30,
-        confirmation_indicators: list[IndicatorBaseModel] = [],
-        long_support_conditions=SupportCandleConditions.RAW,
-        short_support_conditions=SupportCandleConditions.RAW,
+        indicators: list[Indicator] = [],
+        long_support_conditions=SupportCandlesPattern.RAW,
+        short_support_conditions=SupportCandlesPattern.RAW,
         plot_pivots: bool = False,
         min_choch_candles: int = 3,
         choch_mode: int = 2,
@@ -86,10 +192,8 @@ class ChochQueueFilter(Strategy):
                       - completely decoupled from BOS/pivots.
 
         backstep: enforces alternation between pivot highs/lows. Raw pivot
-        candidates from _find_pivots() (Pine-style pivothigh/pivotlow,
-        meaningful even at pivot_length=1 since its window excludes the
-        current bar) are reduced via _reduce_to_zigzag() before being used
-        by the simulation:
+        candidates are reduced by SwingPivots' backstep pass before being
+        used by the simulation:
           - among consecutive candidates of the SAME type, only the most
             extreme one survives (a higher high replaces a lower prior
             high, a lower low replaces a higher prior low) - this is what
@@ -99,12 +203,8 @@ class ChochQueueFilter(Strategy):
             zigzag point if it is at least `backstep` bars (by
             pivot_index) away from the last confirmed point; closer
             reversals are treated as noise and dropped.
-        This is NOT an exact port of DevLucem's ZigLib (whose Depth+Backstep
-        formula degenerates at depth=1 - see chat history) but gives the
-        same practical guarantee (no same-type pivots back-to-back) while
-        staying meaningful at pivot_length=1. NOTE: this bias/pivot engine
-        now ONLY drives BOS detection - see _find_flip_candle_chochs for
-        the independent CHoCH detection.
+        NOTE: this bias/pivot engine now ONLY drives BOS detection - see
+        _find_flip_candle_chochs for the independent CHoCH detection.
 
         use_bos: BOS breaks are ALWAYS computed and pushed into the internal
                  queue/state exactly like the Pine script - they still flip
@@ -119,7 +219,7 @@ class ChochQueueFilter(Strategy):
                  this engine - see _find_flip_candle_chochs.)
 
         plot_pivots: purely visual - when True, draw_all() also marks every
-                 raw pivot high/low found by _find_pivots() (regardless of
+                 pivot high/low found by the pivot engine (regardless of
                  whether it ever became a CHoCH/BOS model). Useful for
                  sanity-checking pivot_length visually. Has no effect on
                  detection/filtering logic.
@@ -133,9 +233,10 @@ class ChochQueueFilter(Strategy):
         """
         super().__init__(
             name,
+            ChochPlotter(),
             long_support_conditions,
             short_support_conditions,
-            confirmation_indicators,
+            indicators,
         )
         self.pivot_length = pivot_length
         self.backstep = backstep
@@ -158,7 +259,7 @@ class ChochQueueFilter(Strategy):
         self.queue: list[ChochModel] = []
         self.choch_events: list[ChochModel] = []
 
-        self.last_reported_time: datetime | None = None
+        self.last_reported_timestamp: int | None = None
 
     def export_config(self):
         conf_dict = super().export_config()
@@ -179,7 +280,7 @@ class ChochQueueFilter(Strategy):
 
     @staticmethod
     def _pine_extreme(
-        values: list[float], start: int, end: int, find_min: bool
+        values: Sequence[float] | np.ndarray, start: int, end: int, find_min: bool
     ) -> tuple[float, int]:
         """
         Mirrors Pine's:
@@ -192,10 +293,10 @@ class ChochQueueFilter(Strategy):
         most recently found one), unlike `min()/list.index()` which would
         keep the oldest/leftmost bar.
         """
-        best = values[end]
+        best = float(values[end])
         best_index = end
         for idx in range(end - 1, start - 1, -1):
-            v = values[idx]
+            v = float(values[idx])
             if (find_min and v < best) or (not find_min and v > best):
                 best = v
                 best_index = idx
@@ -297,7 +398,7 @@ class ChochQueueFilter(Strategy):
 
             return
 
-    def _find_flip_candle_chochs(self, candles: list[Candle]) -> list[ChochModel]:
+    def _find_flip_candle_chochs(self, chartdata: ChartData) -> list[ChochModel]:
         """
         Independent CHoCH detection - completely decoupled from BOS and
         from `self.pivots`/SwingPivots. Only BOS uses the pivot engine;
@@ -338,7 +439,7 @@ class ChochQueueFilter(Strategy):
             successor - NOT necessarily "current") are skipped entirely
             without a touch check. Each structurally valid candidate found
             is touch/distance-checked; if it fires, the walk stops
-            (success). If it's touched-but-too-fast (or simply not
+            (success). If it is touched-but-too-fast (or simply not
             touched), the walk KEEPS GOING to the next older valid
             candidate - it does not give up after a single attempt. The
             walk only ends when something fires or the cluster history is
@@ -359,16 +460,11 @@ class ChochQueueFilter(Strategy):
         invalidate the move - so it can still be used as an SL base price
         exactly like before.
         """
-
-        def candle_color(c: Candle) -> str:
-            if c.close > c.open:
-                return "green"
-            if c.close < c.open:
-                return "red"
-            return "doji"
-
-        n = len(candles)
-        colors = [candle_color(c) for c in candles]
+        n = len(chartdata)
+        highs, lows = chartdata.high, chartdata.low
+        # +1 green, -1 red, 0 doji -- the same three-way split the old
+        # candle_color() helper made, without building a list of strings
+        colors = np.sign(chartdata.close - chartdata.open)
         models: list[ChochModel] = []
 
         # Full, append-only history per side: [{"price", "index", "consumed"}, ...]
@@ -382,23 +478,27 @@ class ChochQueueFilter(Strategy):
             side: MarketSide, ref_price: float, ref_index: int, touch_index: int
         ) -> ChochModel:
             if side is MarketSide.BEARISH:
-                anchor = max(c.high for c in candles[ref_index : touch_index + 1])
+                anchor = float(highs[ref_index : touch_index + 1].max())
             else:
-                anchor = min(c.low for c in candles[ref_index : touch_index + 1])
+                anchor = float(lows[ref_index : touch_index + 1].min())
             model = ChochModel(
                 side=side,
-                break_candle=candles[touch_index],
+                break_candle=chartdata.candle(touch_index),
                 break_level=ref_price,
-                pivot_candle=candles[ref_index],
+                pivot_candle=chartdata.candle(ref_index),
                 anchor=anchor,
                 is_choch=True,
             )
             model.validated = True
-            model.touch_candle = candles[touch_index]
+            model.touch_candle = chartdata.candle(touch_index)
             return model
 
         def try_fallback_chain(
-            clusters: list[dict], want_lower: bool, side: MarketSide, i: int, touches
+            clusters: list[dict],
+            want_lower: bool,
+            side: MarketSide,
+            i: int,
+            touches: Callable[[float], bool],
         ) -> bool:
             """
             Walks backward from clusters[-2] (the one just before
@@ -438,17 +538,17 @@ class ChochQueueFilter(Strategy):
                             p["consumed"] = True
                         return True
                     # touched but too fast -> consumed, keep walking back
-                # not touched (or touched-but-rejected handled above) -> keep walking back
+                # not touched (or touched-but-rejected above) -> keep walking back
             return False
 
         for i in range(1, n):
-            if colors[i] == "green" and colors[i - 1] == "red":
+            if colors[i] > 0 and colors[i - 1] < 0:
                 bear_clusters.append(
-                    {"price": candles[i].low, "index": i, "consumed": False}
+                    {"price": float(lows[i]), "index": i, "consumed": False}
                 )
-            if colors[i] == "red" and colors[i - 1] == "green":
+            if colors[i] < 0 and colors[i - 1] > 0:
                 bull_clusters.append(
-                    {"price": candles[i].high, "index": i, "consumed": False}
+                    {"price": float(highs[i]), "index": i, "consumed": False}
                 )
 
             # --- bearish CHoCH ---
@@ -457,7 +557,7 @@ class ChochQueueFilter(Strategy):
                 if (
                     not current["consumed"]
                     and current["index"] < i
-                    and candles[i].low <= current["price"]
+                    and lows[i] <= current["price"]
                 ):
                     current["consumed"] = True
                     if last_side is MarketSide.BEARISH:
@@ -480,18 +580,14 @@ class ChochQueueFilter(Strategy):
                             True,
                             MarketSide.BEARISH,
                             i,
-                            lambda price: candles[i].low <= price,
+                            lambda price, bar=i: lows[bar] <= price,
                         )
                         if fired:
                             last_side = MarketSide.BEARISH
 
                 # Universal cleanup - see docstring.
                 for p in bear_clusters:
-                    if (
-                        not p["consumed"]
-                        and p["index"] < i
-                        and candles[i].low <= p["price"]
-                    ):
+                    if not p["consumed"] and p["index"] < i and lows[i] <= p["price"]:
                         p["consumed"] = True
 
             # --- bullish CHoCH ---
@@ -500,7 +596,7 @@ class ChochQueueFilter(Strategy):
                 if (
                     not current["consumed"]
                     and current["index"] < i
-                    and candles[i].high >= current["price"]
+                    and highs[i] >= current["price"]
                 ):
                     current["consumed"] = True
                     if last_side is MarketSide.BULLISH:
@@ -523,29 +619,26 @@ class ChochQueueFilter(Strategy):
                             False,
                             MarketSide.BULLISH,
                             i,
-                            lambda price: candles[i].high >= price,
+                            lambda price, bar=i: highs[bar] >= price,
                         )
                         if fired:
                             last_side = MarketSide.BULLISH
 
                 # Universal cleanup - see docstring.
                 for p in bull_clusters:
-                    if (
-                        not p["consumed"]
-                        and p["index"] < i
-                        and candles[i].high >= p["price"]
-                    ):
+                    if not p["consumed"] and p["index"] < i and highs[i] >= p["price"]:
                         p["consumed"] = True
 
         return models
 
-    def _simulate(self, candles: list[Candle]) -> list[ChochModel]:
-        self.pivots.set(candles)
+    def _simulate(self, chartdata: ChartData) -> list[ChochModel]:
+        self.pivots.set(chartdata)
         if self.choch_mode == 2:
-            self.choch_events = self._find_flip_candle_chochs(candles)
+            self.choch_events = self._find_flip_candle_chochs(chartdata)
         else:
             self.choch_events = []  # mode 1 fills this in below, from self.queue
 
+        n = len(chartdata)
         events = [
             {
                 "pivot_index": p.index,
@@ -555,18 +648,18 @@ class ChochQueueFilter(Strategy):
             }
             for p in self.pivots.data
             # a pivot's index is only rebased relative to the *current*
-            # candles window when SwingPivots sees a genuinely new tail
+            # chartdata window when SwingPivots sees a genuinely new tail
             # candle; if this window is smaller than the one that formed
             # an old pivot (e.g. the caller fetched fewer candles than
             # last time while the tail candle is unchanged), that pivot's
-            # rebased index can still fall outside [0, len(candles)) -
+            # rebased index can still fall outside [0, len(chartdata)) -
             # skip it rather than index into the wrong candle (negative
-            # index) or crash (index >= len(candles)).
-            if 0 <= p.index < len(candles)
+            # index) or crash (index >= len(chartdata)).
+            if 0 <= p.index < n
         ]
         self._pivot_events = [
             {
-                "candle": candles[event["pivot_index"]],
+                "timestamp": int(chartdata.timestamps[event["pivot_index"]]),
                 "price": event["price"],
                 "type": event["type"],
             }
@@ -593,10 +686,11 @@ class ChochQueueFilter(Strategy):
         range_high: float | None = None
         range_high_index: int | None = None
 
-        highs = [c.high for c in candles]
-        lows = [c.low for c in candles]
+        highs = chartdata.high
+        lows = chartdata.low
 
-        for i, candle in enumerate(candles):
+        for i in range(n):
+            candle = chartdata.candle(i)
             for event in events_by_index.get(i, []):
                 if event["type"] == "high":
                     last_ph_price = event["price"]
@@ -681,7 +775,7 @@ class ChochQueueFilter(Strategy):
                         side=MarketSide.BULLISH,
                         break_candle=candle,
                         break_level=bull_sig_level,  # type: ignore[arg-type]
-                        pivot_candle=candles[bull_sig_index]
+                        pivot_candle=chartdata.candle(bull_sig_index)
                         if bull_sig_index is not None
                         else candle,
                         anchor=last_pl_price,
@@ -702,7 +796,7 @@ class ChochQueueFilter(Strategy):
                         side=MarketSide.BEARISH,
                         break_candle=candle,
                         break_level=bear_sig_level,  # type: ignore[arg-type]
-                        pivot_candle=candles[bear_sig_index]
+                        pivot_candle=chartdata.candle(bear_sig_index)
                         if bear_sig_index is not None
                         else candle,
                         anchor=last_ph_price,
@@ -727,9 +821,9 @@ class ChochQueueFilter(Strategy):
         **kwargs,
     ) -> ChochSignal | None:
         self.chart = chartdata.chart
-        self._simulate(chartdata.candles)
+        self._simulate(chartdata)
 
-        last_candle = chartdata.candles[-1]
+        last_candle = chartdata[-1]
         # CHoCH (independent, flip-candle based) takes priority over BOS
         # (old pivot/range engine) when both would fire on the same candle.
         candidates: list[ChochModel] = list(self.choch_events)
@@ -737,28 +831,34 @@ class ChochQueueFilter(Strategy):
             candidates += [model for model in self.queue if not model.is_choch]
 
         newest_validated: ChochModel | None = None
+        # bound alongside the model: the `is None` check below narrows the
+        # loop variable, not `newest_validated`, so keeping the candle
+        # itself is what lets the rest of this method use it as a Candle
+        touch_candle: Candle | None = None
         for model in candidates:
             if not model.validated or model.touch_candle is None:
                 continue
-            if model.touch_candle.time != last_candle.time:
+            if model.touch_candle.timestamp != last_candle.timestamp:
                 continue
             newest_validated = model
+            touch_candle = model.touch_candle
             break
 
-        if newest_validated is None:
+        if newest_validated is None or touch_candle is None:
             return None
         if (
-            self.last_reported_time is not None
-            and newest_validated.touch_candle.time <= self.last_reported_time  # type: ignore[union-attr]
+            self.last_reported_timestamp is not None
+            and touch_candle.timestamp <= self.last_reported_timestamp
         ):
             return None
 
-        self.last_reported_time = newest_validated.touch_candle.time  # type: ignore[union-attr]
+        self.last_reported_timestamp = touch_candle.timestamp
         signal = ChochSignal(
             self.chart,
-            newest_validated.touch_candle,
+            touch_candle,
             newest_validated.side,
-            newest_validated,  # type: ignore[arg-type]
+            self.name,
+            newest_validated,
         )
 
         if signal.side is MarketSide.BULLISH and not check_long:
@@ -777,122 +877,96 @@ class ChochQueueFilter(Strategy):
         logger.info(f"Signal: {signal} | {signal.choch_model}")
         return signal
 
-    def report(self, *args, **kwargs) -> str:
-        return ""
-
-    def _draw_model(self, plot: ChartPlot, model: ChochModel):
-        base = "26a69a" if model.side is MarketSide.BULLISH else "ef5350"
-        color = f"#{base}" if model.is_choch else f"#{base}70"
-        width = 2 if model.is_choch else 1
-
-        plot.draw_line(
-            model.pivot_candle.time,
-            model.break_level,
-            model.break_candle.time,
-            model.break_level,
-            color=color,
-            width=width,
+    def draw_all(self, pane: ChartPane) -> None:
+        """Every model this strategy currently holds -- backtest/debug view."""
+        bos_models = (
+            [m for m in self.queue if m.validated and not m.is_choch]
+            if self.use_bos
+            else []
+        )
+        self.plotter.draw_all(
+            pane,
+            self.choch_events,
+            bos_models,
+            self._pivot_events if self.plot_pivots else [],
+            self.use_fibo_filter,
         )
 
-        pivot_source = (
-            CandlesSource.High
-            if model.side is MarketSide.BULLISH
-            else CandlesSource.Low
-        )
-        plot.mark_candle(model.pivot_candle, source=pivot_source, color=color)
 
-        if (
-            self.use_fibo_filter
-            and model.retrace_level is not None
-            and model.touch_candle is not None
-        ):
-            plot.draw_horizontal_line(
-                model.break_candle.time,
-                model.touch_candle.time,
-                model.retrace_level,
-                color=color,
-            )
-            plot.mark_price(model.touch_candle.time, model.retrace_level, model.side)
+def generate_dummy_signal(
+    base_chartdata: ChartData,
+    side: MarketSide = MarketSide.BULLISH,
+) -> ChochSignal:
+    pivot_candle = base_chartdata[-5]
+    break_candle = base_chartdata[-2]
+    touch_candle = base_chartdata[-1]
+    source = CandlesSource.High if side is MarketSide.BEARISH else CandlesSource.Low
+    dummy_model = ChochModel(
+        side=side,
+        break_candle=break_candle,
+        break_level=source(pivot_candle),
+        pivot_candle=pivot_candle,
+        anchor=source(base_chartdata[-8]),
+        is_choch=True,
+    )
+    dummy_model.validated = True
+    dummy_model.touch_candle = touch_candle
+    dummy_model.retrace_level = source(touch_candle)
+    return ChochSignal(
+        base_chartdata.chart, touch_candle, side, "dummy choch", dummy_model
+    )
 
-    def draw(
+
+class ChochBot(TraderBot):
+    """
+    TraderBot for ChochQueueFilter.
+
+    The only thing it adds over the plain TraderBot is the market-session
+    gate the old ForexChochQueueTradeConfig had: before doing any work,
+    ask the agent whether the market is currently tradeable, and if it is
+    not, just sleep for as long as the agent suggests instead of fetching
+    candles and running the strategy against a frozen chart.
+
+    The gate is duck-typed rather than required, so this bot still works
+    with agents that have no session concept (crypto venues, the local
+    backtester); those simply never report a wait.
+    """
+
+    strategy: ChochQueueFilter  # type: ignore[assignment]
+
+    def __init__(
         self,
-        plot: ChartPlot,
-        signal: ChochSignal,
-        draw_indicators: bool = True,
-        *args,
-        **kwargs,
+        chart: Chart,
+        agent: ExchangeAgent,
+        strategy: ChochQueueFilter,
+        trades_manager: TradesManager,
+        bar_between_signals: int = 2,
+        n_candle_check: int = 1000,
+        consider_position: bool = True,
     ):
-        super().draw(plot, signal, draw_indicators)
-        self._draw_model(plot, signal.choch_model)
-        plot.mark_signal(signal)
-
-    def _draw_pivots(self, plot: ChartPlot):
-        highs = [
-            (event["candle"].time, event["price"])
-            for event in self._pivot_events
-            if event["type"] == "high"
-        ]
-        lows = [
-            (event["candle"].time, event["price"])
-            for event in self._pivot_events
-            if event["type"] == "low"
-        ]
-        plot.mark_points(highs, legend="PivotHigh", color="#ff9800")
-        plot.mark_points(lows, legend="PivotLow", color="#2196f3")
-
-    def draw_all(self, plot: ChartPlot):
-        if self.plot_pivots:
-            self._draw_pivots(plot)
-        for model in self.choch_events:
-            self._draw_model(plot, model)
-        if self.use_bos:
-            for model in self.queue:
-                if model.validated and not model.is_choch:
-                    self._draw_model(plot, model)
-
-    def generate_dummy_signal(
-        self,
-        base_chartdata: ChartData,
-        side: MarketSide = MarketSide.BULLISH,
-    ) -> ChochSignal:
-        pivot_candle = base_chartdata.candles[-5]
-        break_candle = base_chartdata.candles[-2]
-        touch_candle = base_chartdata.candles[-1]
-        source = CandlesSource.High if side is MarketSide.BEARISH else CandlesSource.Low
-        dummy_model = ChochModel(
-            side=side,
-            break_candle=break_candle,
-            break_level=source(pivot_candle),
-            pivot_candle=pivot_candle,
-            anchor=source(base_chartdata.candles[-8]),
-            is_choch=True,
+        super().__init__(
+            chart,
+            agent,
+            strategy,
+            trades_manager,
+            bar_between_signals,
+            n_candle_check,
+            consider_position,
         )
-        dummy_model.validated = True
-        dummy_model.touch_candle = touch_candle
-        dummy_model.retrace_level = source(touch_candle)
-        return ChochSignal(base_chartdata.chart, touch_candle, side, dummy_model)
 
+    def market_wait_seconds(self) -> int:
+        """
+        Seconds the agent wants us to hold off for, 0 when it is fine to
+        trade. Agents without a `check_market_open` never hold us back.
+        """
+        check_market_open = getattr(self.agent, "check_market_open", None)
+        if check_market_open is None:
+            return 0
+        return check_market_open(self.chart) or 0
 
-class ChochQueueTradeConfig(TradeConfig):
-    strategy: ChochQueueFilter  # type: ignore[override]
-
-    async def find_signal(
-        self, chartdata: ChartData, *args, **kwargs
-    ) -> None | tuple[ChochSignal, Position]:
-        signal = self.strategy.check_signal(
-            chartdata, self.long_signal, self.short_signal
-        )
-        if signal is None:
-            return None
-
-        plot = None
-        if self.send_signal:
-            plot = ChartPlot(chartdata)
-            self.strategy.draw(plot, signal, draw_indicators=True)
-
-        position = await self.position_handler.generate_position(
-            signal, sl_base_price=signal.choch_model.anchor, plot=plot
-        )
-        if not position:
-            return None
-        return signal, position
+    async def task(self):
+        wait_seconds = self.market_wait_seconds()
+        if wait_seconds:
+            logger.debug(f"{self.identifier} market not tradeable, {wait_seconds}s")
+            return wait_seconds
+        return await super().task()

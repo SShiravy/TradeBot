@@ -1,69 +1,151 @@
-from datetime import timedelta
-from AutoTrendlineModule.auto_trendline import AutoTrendlines, TrendlineModel
-from ChochQueueStrategy.choch_queue import ChochQueueFilter, ChochSignal
-from CompositeStrategies.models import DynamicSRSignal, StaticSRSignal
-from Forex.agent import ForexAgent
-from SRZoneModule.sr_zone import SRZones, ZoneModel
-from custom_logger import CustomLogger
-from ChartModule.models import (
-    Candle,
-    Chart,
-    ChartData,
-    MarketSide,
-)
-from ChartModule.plot import ChartPlot
-from TradingModule.reporter import TelegramReporter
-from TradingModule.trader_bot import TradeConfig, Position
-from dataclasses import dataclass, field
-from copy import copy
+from ChartModule.models import Chart, ChartData, MarketSide
+from ChartModule.plot import ChartPane, SingleChartFigure, SignalPlotter, Figure
+from ChartModule.Indicators.auto_trendline import AutoTrendlines, TrendlineModel
+from ChartModule.Indicators.sr_zone import SRZones, ZoneModel
+from Bots.ChochStrategy.choch import ChochQueueFilter, ChochSignal
+from Bots.CompositeStrategies.models import DynamicSRSignal, StaticSRSignal
+from TraderBot.models import ExchangeAgent, Position
+from TraderBot.PositionHandlers.manager import TradesManager
+from TraderBot.PositionHandlers.plot import PositionPlotter
+from TraderBot.trader_bot import TraderBot
+import TraderBot.Commands as commands
 import logging
 
 
-logger = CustomLogger(
-    log_file=True, file_log_name="SR_Choch", consol_log_level=logging.DEBUG
-)
+logger = logging.getLogger("SR_Choch")
+
+SRSignal = StaticSRSignal | DynamicSRSignal
 
 
-@dataclass(kw_only=True)
-class SR_ChochConfig(TradeConfig):
-    strategy: ChochQueueFilter  # type: ignore[override]
-    static_sr_indicator: SRZones
-    sr_chart: Chart
-    dynamic_sr_indicator: AutoTrendlines
-    n_candle_confirmation: int = 100
-    last_sr_signal: StaticSRSignal | DynamicSRSignal | None = field(
-        default=None, init=False
-    )
-    last_static_sr_checked_candle: Candle | None = field(default=None, init=False)
-    last_dynamic_sr_checked_candle: Candle | None = field(default=None, init=False)
+class SRChochBot(TraderBot):
+    """
+    Two-chart composite bot.
 
-    def give_allowed_time(self):
-        return (
-            self.n_candle_confirmation * self.chart.timeframe.time_delta.total_seconds()
+    `sr_chart` (the higher timeframe) is where support/resistance is found,
+    both static (SRZones) and dynamic (AutoTrendlines). `chart` (the lower
+    timeframe) is where the entry is found, via ChochQueueFilter.
+
+    A trade needs BOTH: price has to touch an S&R level, and then a CHoCH
+    has to fire on the entry chart in the SAME direction within
+    `n_candle_confirmation` bars. The S&R touch is reported on its own as
+    soon as it happens, and the eventual entry report is threaded as a
+    reply to it.
+    """
+
+    strategy: ChochQueueFilter  # type: ignore[assignment]
+
+    def __init__(
+        self,
+        chart: Chart,
+        sr_chart: Chart,
+        agent: ExchangeAgent,
+        strategy: ChochQueueFilter,
+        trades_manager: TradesManager,
+        static_sr_indicator: SRZones,
+        dynamic_sr_indicator: AutoTrendlines,
+        n_candle_confirmation: int = 100,
+        bar_between_signals: int = 2,
+        n_candle_check: int = 1000,
+        n_sr_candle_check: int | None = None,
+        consider_position: bool = True,
+    ):
+        super().__init__(
+            chart,
+            agent,
+            strategy,
+            trades_manager,
+            bar_between_signals,
+            n_candle_check,
+            consider_position,
         )
+        self.sr_chart = sr_chart
+        self.static_sr_indicator = static_sr_indicator
+        self.dynamic_sr_indicator = dynamic_sr_indicator
+        self.n_candle_confirmation = n_candle_confirmation
+        self.n_sr_candle_check = n_sr_candle_check or n_candle_check
 
-    async def _check_static_sr(self, chartdata: ChartData):
-        if (
-            self.last_static_sr_checked_candle
-            and self.last_static_sr_checked_candle == chartdata.candles[-1]
-        ):
-            return None
-        self.static_sr_indicator.set(
-            chartdata.candles
-        )  # or however you feed candles into it
-        if not self.static_sr_indicator.candles or not self.static_sr_indicator.data:
+        self.last_sr_signal: SRSignal | None = None
+        self.last_sr_report_id: int | None = None
+        self.last_static_sr_checked_timestamp: int | None = None
+        self.last_dynamic_sr_checked_timestamp: int | None = None
+
+    def post_init(self):
+        if not self.agent.prepare_chart(self.sr_chart):
+            raise ValueError(
+                f"Failed to prepare chart for {self.identifier} on sr chart"
+            )
+        if not self.agent.prepare_chart(self.chart):
+            raise ValueError(f"Failed to prepare chart for {self.identifier}")
+        logger.info(f"{self.identifier} Bot initialized")
+
+    @property
+    def identifier(self):
+        return f"{self.chart}_{self.sr_chart}_{self.strategy.name}"
+
+    def export_config(self) -> dict:
+        conf_dict = super().export_config()
+        conf_dict.update(
+            {
+                "sr_chart": self.sr_chart.export_config(),
+                "static_sr_indicator": self.static_sr_indicator.export_configs(),
+                "dynamic_sr_indicator": self.dynamic_sr_indicator.export_configs(),
+                "n_candle_confirmation": self.n_candle_confirmation,
+                "n_sr_candle_check": self.n_sr_candle_check,
+            }
+        )
+        return conf_dict
+
+    def give_allowed_time(self) -> int:
+        """Seconds an S&R touch stays valid while waiting for its CHoCH."""
+        return self.n_candle_confirmation * self.chart.timeframe.minutes * 60
+
+    @property
+    def _reporter(self):
+        reporter = self.trades_manager.reporter
+        return reporter if reporter and reporter.enable else None
+
+    # ─── S&R DETECTION ───────────────────────────────
+
+    async def _report_sr_signal(
+        self, signal: SRSignal, chartdata: ChartData, draw
+    ) -> None:
+        """
+        Sent straight through the reporter rather than as a NewSignalReport
+        command, because the returned message id is needed right away to
+        thread the eventual entry report as a reply to this one.
+        """
+        self.last_sr_signal = signal
+        self.last_sr_report_id = None
+        logger.info(f"S&R Signal:{signal}")
+
+        reporter = self._reporter
+        if reporter is None:
+            return
+        figure = SingleChartFigure(chartdata, self.n_sr_candle_check)
+        draw(figure.main_pane)
+        SignalPlotter()(figure.main_pane, signal)
+        result = await reporter.send_msg(
+            reporter.msg_formater.new_signal(signal),
+            img_path=figure.save_image(),
+        )
+        self.last_sr_report_id = getattr(result, "message_id", None)
+
+    async def _check_static_sr(self, chartdata: ChartData) -> None:
+        last_candle = chartdata[-1]
+        if self.last_static_sr_checked_timestamp == last_candle.timestamp:
             return None
 
-        candle = self.static_sr_indicator.candles[-1]
-        self.last_static_sr_checked_candle = candle
+        self.static_sr_indicator.set(chartdata)
+        if not self.static_sr_indicator.data:
+            return None
+
+        self.last_static_sr_checked_timestamp = last_candle.timestamp
 
         candidates: list[ZoneModel] = []
         for zone in self.static_sr_indicator.data:
             if zone.broken:
                 continue
-            else:
-                touched = candle.low <= zone.upper and zone.lower <= candle.high
-
+            touched = last_candle.low <= zone.upper and zone.lower <= last_candle.high
             if touched:
                 candidates.append(zone)
 
@@ -75,62 +157,57 @@ class SR_ChochConfig(TradeConfig):
             isinstance(self.last_sr_signal, StaticSRSignal)
             and self.last_sr_signal.zone == best_zone
             and (
-                (self.last_sr_signal.candle.time - candle.time).total_seconds()
+                self.last_sr_signal.candle.timestamp - last_candle.timestamp
                 < self.give_allowed_time()
             )
         ):
             return None
 
         side = MarketSide.BULLISH if best_zone.is_support else MarketSide.BEARISH
-        body_low = min(candle.body_top, candle.body_bottom)
-        body_high = max(candle.body_top, candle.body_bottom)
+        body_low = min(last_candle.body_top, last_candle.body_bottom)
+        body_high = max(last_candle.body_top, last_candle.body_bottom)
         touch_type = (
             "Body"
             if (body_low <= best_zone.upper and best_zone.lower <= body_high)
             else "Shadow"
         )
 
-        self.last_sr_signal = StaticSRSignal(
+        signal = StaticSRSignal(
             self.sr_chart,
-            candle,
+            last_candle,
             side,
-            source="Static Support" if best_zone.is_support else "Static Resistance",
+            "Static Support" if best_zone.is_support else "Static Resistance",
             zone=best_zone,
             touch_type=touch_type,
         )
-        logger.info(f"S&R Signal:{self.last_sr_signal}")
-        if self.send_signal:
-            plot = ChartPlot(
-                chartdata,
-                plot_n_candles=self.n_candle_check,
+
+        def draw(pane: ChartPane) -> None:
+            self.static_sr_indicator.plotter(
+                pane,
+                self.static_sr_indicator.data,
+                median_atr=self.static_sr_indicator.last_median_atr,
+                live_pivots=self.static_sr_indicator.pivots.live_pivots,
+                max_zones_display=None,
             )
 
-            self.static_sr_indicator.plot(plot, max_zones_display=None)
-            plot.mark_signal(
-                self.last_sr_signal,
-            )
-            self.last_sr_signal_msg_id = await TelegramReporter().new_signal(
-                self.last_sr_signal, plot
-            )
+        await self._report_sr_signal(signal, chartdata, draw)
 
-    async def _check_dynamic_sr(self, chartdata: ChartData):
-        if (
-            self.last_dynamic_sr_checked_candle
-            and self.last_dynamic_sr_checked_candle == chartdata.candles[-1]
-        ):
+    async def _check_dynamic_sr(self, chartdata: ChartData) -> None:
+        last_candle = chartdata[-1]
+        if self.last_dynamic_sr_checked_timestamp == last_candle.timestamp:
             return None
 
-        self.dynamic_sr_indicator.set(chartdata.candles)
+        self.dynamic_sr_indicator.set(chartdata)
+        if not self.dynamic_sr_indicator.data:
+            return None
 
-        candle = self.dynamic_sr_indicator.candles[-1]
-        self.last_dynamic_sr_checked_candle = candle
+        self.last_dynamic_sr_checked_timestamp = last_candle.timestamp
 
         candidates: list[TrendlineModel] = []
         for trendline in self.dynamic_sr_indicator.data:
             if trendline.broken:
                 continue
-
-            if trendline.last_touch_candle == chartdata.candles[-1]:
+            if trendline.last_touch_candle.timestamp == last_candle.timestamp:
                 candidates.append(trendline)
 
         if not candidates:
@@ -141,145 +218,142 @@ class SR_ChochConfig(TradeConfig):
             isinstance(self.last_sr_signal, DynamicSRSignal)
             and self.last_sr_signal.dynamic_sr == best_dynamic_sr
             and (
-                (self.last_sr_signal.candle.time - candle.time).total_seconds()
+                self.last_sr_signal.candle.timestamp - last_candle.timestamp
                 < self.give_allowed_time()
             )
         ):
             return None
 
-        self.last_sr_signal = DynamicSRSignal(
+        signal = DynamicSRSignal(
             self.sr_chart,
-            candle,
+            last_candle,
             best_dynamic_sr.side,
-            source="Dynamic Support"
-            if best_dynamic_sr.is_support
-            else "Dynamic Resistance",
+            "Dynamic Support" if best_dynamic_sr.is_support else "Dynamic Resistance",
             dynamic_sr=best_dynamic_sr,
         )
-        logger.info(f"S&R Signal:{self.last_sr_signal}")
-        if self.send_signal:
-            plot = ChartPlot(
-                chartdata,
-                plot_n_candles=self.n_candle_check,
+
+        def draw(pane: ChartPane) -> None:
+            self.dynamic_sr_indicator.plotter(
+                pane,
+                self.dynamic_sr_indicator.data,
+                mtr_events=self.dynamic_sr_indicator.mtr_events,
+                atr=self.dynamic_sr_indicator.atr.data,
+                keep_archived=self.dynamic_sr_indicator.keep_archived,
             )
 
-            self.dynamic_sr_indicator.plot(plot)
-            plot.mark_signal(
-                self.last_sr_signal,
-            )
-            self.last_sr_signal_msg_id = await TelegramReporter().new_signal(
-                self.last_sr_signal, plot
-            )
+        await self._report_sr_signal(signal, chartdata, draw)
 
-    def _check_choch(self, chartdata: ChartData):
+    # ─── ENTRY ───────────────────────────────────────
+
+    def check_signal(  # type: ignore[override]
+        self, chartdata: ChartData, *args, **kwargs
+    ) -> ChochSignal | None:
+        """Only a real CHoCH counts as an entry here -- a BOS never does."""
         signal = self.strategy.check_signal(
-            chartdata, self.long_signal, self.short_signal
+            chartdata,
+            self.trades_manager.long_trade,
+            self.trades_manager.short_trade,
         )
         if signal is None or not signal.choch_model.is_choch:
             return None
         return signal
 
-    async def find_signal(
-        self, chartdata: ChartData, choch_chartdata: ChartData
-    ) -> None | ChochSignal | tuple[ChochSignal, Position]:
-        # Check for S&R
-        await self._check_static_sr(chartdata)
-        await self._check_dynamic_sr(chartdata)
+    def _sr_still_valid(self, choch_chartdata: ChartData) -> bool:
         if self.last_sr_signal is None:
-            return None
+            return False
+        elapsed = choch_chartdata[-1].timestamp - self.last_sr_signal.candle.timestamp
+        allowed = self.give_allowed_time()
+        if elapsed > allowed:
+            logger.warning(f"S&R was too old {elapsed=} > {allowed}")
+            self._clear_sr()
+            return False
+        return True
 
-        # Check if the last signal is too old
-        elapsed_time = (
-            choch_chartdata.candles[-1].time - self.last_sr_signal.candle.time
-        ).total_seconds()
-        time_condition = self.give_allowed_time()
-        if elapsed_time > time_condition:
-            self.last_sr_signal = None
-            self.last_sr_signal_msg_id = None
-            logging.warning(f"S&R was too old {elapsed_time=} > {time_condition}")
-            return None
+    def _clear_sr(self) -> None:
+        self.last_sr_signal = None
+        self.last_sr_report_id = None
 
-        # Check for CHoCH signal
-        choch_signal = self._check_choch(choch_chartdata)
+    def trade(  # type: ignore[override]
+        self, signal: ChochSignal, position: Position, plot: Figure
+    ) -> Position | None:
+        """
+        Same as TraderBot.trade, but the position report is threaded as a
+        reply to the S&R message that set this trade up, and the plotter is
+        called with the single extra positional argument this one expects.
+        """
+        report_command = None
+        reporter = self._reporter
+        if reporter is not None:
+            PositionPlotter()(plot.main_pane, position)
+            self.strategy.plotter(
+                plot.main_pane,
+                signal,
+                self.strategy.indicators,
+                use_fibo_filter=self.strategy.use_fibo_filter,
+            )
+            report_command = commands.NewPositionReport(
+                plot=plot, reply_id=self.last_sr_report_id
+            )
+        commands.OpenPosition(report_command).send(
+            self.trades_manager.give_command_contex(position)
+        )
+        return position
+
+    async def find_signal(
+        self, sr_chartdata: ChartData, choch_chartdata: ChartData
+    ) -> ChochSignal | None:
+        # S&R first -- it is what arms the setup
+        await self._check_static_sr(sr_chartdata)
+        await self._check_dynamic_sr(sr_chartdata)
+        if not self._sr_still_valid(choch_chartdata):
+            return None
+        assert self.last_sr_signal is not None
+
+        choch_signal = self.check_signal(choch_chartdata)
         if choch_signal is None:
             return None
 
-        # Check if the CHoCH signal is in the same direction as the last SR signal
-        if choch_signal.side != self.last_sr_signal.side:
-            logging.warning(
-                f"different side for SR & choch: {self.last_sr_signal.side} | {choch_signal.side}"
+        if choch_signal.side is not self.last_sr_signal.side:
+            logger.warning(
+                f"different side for SR & choch: "
+                f"{self.last_sr_signal.side} | {choch_signal.side}"
             )
             return None
 
-        # Generate position based on the combined signals
-        plot = None
-        if self.send_signal:
-            plot = ChartPlot(choch_chartdata)
-            self.strategy.draw(plot, choch_signal, draw_indicators=True)
-        if not self.consider_position:
-            if self.send_signal:
-                await TelegramReporter().new_signal(
-                    choch_signal, plot, self.last_sr_signal_msg_id
-                )
+        figure = SingleChartFigure(choch_chartdata, self.n_candle_check)
+        if self.consider_position:
+            position = self.trades_manager.generate_position(
+                choch_signal, sl_base_price=choch_signal.choch_model.anchor
+            )
+            if position is None:
+                logger.warning("Position is None")
+                return None
+            self.trade(choch_signal, position, figure)
+            logger.info("SR & CHoCH Signal")
+            # the setup has been consumed -- a new S&R touch must arm the next
+            self._clear_sr()
             return choch_signal
 
-        position = await self.position_handler.generate_position(
-            choch_signal, sl_base_price=choch_signal.choch_model.anchor, plot=plot
+        self.strategy.plotter(
+            figure.main_pane,
+            choch_signal,
+            self.strategy.indicators,
+            use_fibo_filter=self.strategy.use_fibo_filter,
         )
-        if not position:
-            logger.warning("Position is None")
-            return None
-        logger.info("SR & CHoCH Signal")
-        position.reply_msg_id = self.last_sr_signal_msg_id
-        self.last_sr_signal = None
-        self.last_sr_signal_msg_id = None
-        return choch_signal, position
-
-    def get_chartdata(
-        self,
-        chart: Chart,
-        n_bar: int | None = None,
-    ) -> ChartData:
-        chartdata = self.agent.get_chartdata(
-            chart, n_bars=n_bar if n_bar else self.n_candle_check
+        commands.NewSignalReport(choch_signal, plot=figure).send(
+            reporter=self.trades_manager.reporter
         )
-        if chartdata is None:
-            raise ValueError(f"chart data is None from {self.agent.__class__.__name__}")
-        if self.heikingashi_chartdata:
-            chartdata = chartdata.give_heikingashi_chartdata()
-        return chartdata
-
-    def give_delay(self, last_candle: Candle, jump=False) -> timedelta:
-        delay = self.chart.timeframe.time_delta
-        if jump:
-            delay *= self.bar_between_signals
-        last_candle_time = (
-            ForexAgent().get_chartdata(self.chart, n_bars=1).candles[0]  # type: ignore
-        )
-        next_timestamp = int(round(last_candle_time.timestamp) + delay.total_seconds())
-        sleep_time_based_on_timestamp = (
-            next_timestamp - ForexAgent().give_current_timestamp(self.chart)
-        )
-
-        return timedelta(seconds=sleep_time_based_on_timestamp + 1)
+        self._clear_sr()
+        return choch_signal
 
     async def task(self):
-        # SR chart data
-        sr_chartdata = self.get_chartdata(self.sr_chart)
-        sr_sub_chartdata = copy(sr_chartdata)
-        sr_sub_chartdata.candles = sr_sub_chartdata.candles[:-1]
+        sr_chartdata = self.get_chartdata(
+            n_bar=self.n_sr_candle_check, chart=self.sr_chart
+        ).subdata(end_index=-1)
 
-        # Get CHoCH chart data
-        choch_chartdata = self.get_chartdata(self.chart)
-        choch_sub_chartdata = copy(choch_chartdata)
-        choch_sub_chartdata.candles = choch_chartdata.candles[:-1]
+        choch_chartdata = self.get_chartdata()
+        last_timestamp = choch_chartdata.timestamps[-1]
+        choch_chartdata = choch_chartdata.subdata(end_index=-1)
 
-        res = await self.find_signal(sr_sub_chartdata, choch_chartdata)
-        if res is None:
-            return self.give_delay(choch_chartdata[-1])
-        if isinstance(res, tuple):
-            signal, position = res
-        else:
-            signal = res
-            position = None
-        return self.give_delay(choch_sub_chartdata[-1], jump=True), signal, position
+        await self.find_signal(sr_chartdata, choch_chartdata)
+        return self.give_delay(last_timestamp)

@@ -1,6 +1,6 @@
-from ChartModule.models import Candle, MarketSide
-from ChartModule.Indicators.models import IndicatorBaseModel
-from ChartModule.plot import ChartPlot
+from ChartModule.models import Candle, ChartData
+from ChartModule.Indicators.models import Indicator, IndicatorPlotter, IndicatorRule
+from ChartModule.plot import ChartPane
 from ChartModule.Indicators.swing_pivots import SwingPivots, PivotPoint
 from ChartModule.Indicators.atr import ATR
 from dataclasses import dataclass, field, replace
@@ -33,7 +33,7 @@ class ZoneModel:
     score_pct: float = field(default=0.0, init=False)
 
     invalidated_index: int | None = field(default=None, init=False)
-    # kept alongside invalidated_index: `self.candles` is a sliding window,
+    # kept alongside invalidated_index: the chartdata is a sliding window,
     # so an index recorded now can point at the wrong candle (or even go
     # negative/out of range) once the window has shifted by the time this
     # zone is drawn. A direct Candle reference (like base_candle/
@@ -83,7 +83,149 @@ class ZoneModel:
         )
 
 
-class SRZones(IndicatorBaseModel):
+class SRZonesPlotter(IndicatorPlotter):
+    def __call__(
+        self,
+        pane: ChartPane,
+        indicator_data: list[ZoneModel],
+        median_atr: float = 0.0,
+        live_pivots: list[PivotPoint] | None = None,
+        min_score_percentile: float = 0.0,
+        max_zones_display: int | None = 8,
+        proximity_boost: float = 0.3,
+        support_color: str = "#00808040",
+        resist_color: str = "#ff000040",
+        flip_marker_color: str = "#ffff00d0",
+        show_labels: bool = True,
+        show_live: bool = True,
+    ) -> None:
+        if pane.chartdata is None or len(pane.chartdata) == 0 or not indicator_data:
+            return
+
+        end_time = int(pane.chartdata.timestamps[-1])
+        close = float(pane.chartdata.close[-1])
+        median_atr = median_atr or 1e-9
+
+        candidates = [z for z in indicator_data if z.score_pct >= min_score_percentile]
+
+        def priority(zone: ZoneModel) -> float:
+            prox = math.exp(-abs(close - zone.center) / max(median_atr, 1e-9))
+            return zone.score_pct * (1 + proximity_boost * prox)
+
+        candidates.sort(key=priority, reverse=True)
+        candidates = (
+            candidates if max_zones_display is None else candidates[:max_zones_display]
+        )
+
+        # the pane already holds exactly the window that will be visible in
+        # the image (figures tail their chartdata before building the pane),
+        # so its first timestamp IS the left edge -- nothing to trim here.
+        earliest_visible_time = int(pane.chartdata.timestamps[0])
+
+        for rank, zone in enumerate(candidates):
+            zone_end = (
+                zone.invalidated_candle.timestamp
+                if zone.invalidated_candle is not None
+                else end_time
+            )
+
+            # A zone can flip role mid-life (`max_zone_breaks > 1` lets it
+            # survive a break instead of being invalidated by it, and a
+            # broken support conventionally starts acting as resistance
+            # from that point on, and vice versa). `polarity_segments`
+            # holds one (candle, is_support) entry per stretch of the
+            # zone's life; draw each stretch as its own rect in its own
+            # color so a flip actually shows up in the image, instead of
+            # silently drawing the whole box in whatever `is_support`
+            # happens to be right now.
+            for seg_index, (seg_candle, seg_is_support) in enumerate(
+                zone.polarity_segments
+            ):
+                seg_end = (
+                    zone.polarity_segments[seg_index + 1][0].timestamp
+                    if seg_index + 1 < len(zone.polarity_segments)
+                    else zone_end
+                )
+                # Same reasoning as the single-segment case used to have:
+                # don't draw past the left edge of the visible image.
+                seg_start = max(seg_candle.timestamp, earliest_visible_time)
+                # A segment that entirely predates the visible window (e.g.
+                # an old, already-invalidated zone whose invalidated_candle
+                # - or, for an earlier segment, whose next flip - happened
+                # before the earliest candle shown) would end up with
+                # seg_end <= seg_start after the clamp above: an inverted,
+                # zero/negative-width rectangle that finplot won't render.
+                # There's nothing meaningful left to draw for it, so skip
+                # it rather than pass bad geometry through.
+                if seg_end <= seg_start:
+                    continue
+                color = support_color if seg_is_support else resist_color
+                pane.draw_filled_rect(seg_start, seg_end, zone.upper, zone.lower, color)
+
+            # explicit marker at every flip point, so the role-reversal is
+            # visible even where the two segment colors are hard to tell
+            # apart at a glance (e.g. thumbnail size on a phone screen)
+            for seg_candle, _ in zone.polarity_segments[1:]:
+                flip_time = max(seg_candle.timestamp, earliest_visible_time)
+                pane.draw_line(
+                    flip_time,
+                    zone.lower,
+                    flip_time,
+                    zone.upper,
+                    color=flip_marker_color,
+                    width=2,
+                )
+
+            if show_labels and rank < 3:
+                status = " [INVALID]" if zone.broken else ""
+                flip_note = (
+                    f" [FLIPPED x{len(zone.polarity_segments) - 1}]"
+                    if zone.flipped
+                    else ""
+                )
+                logger.info(
+                    f"{'Support' if zone.is_support else 'Resist'} "
+                    f"score:{zone.score_pct:.0f} touch:{zone.touch_count} "
+                    f"break:{zone.break_count}{status}{flip_note}"
+                )
+
+        if show_live and live_pivots:
+            for pivot in live_pivots:
+                is_support = not pivot.is_high
+                # only draw the live-test line when price is genuinely
+                # inside a zone that's actually shown in this image --
+                # matching purely on "nearest zone of the right side" (the
+                # old behavior) picked whatever zone was geometrically
+                # closest even when price was nowhere near it, which is
+                # why a dashed line could show up cutting through the
+                # middle of an unrelated zone's box.
+                zone = next(
+                    (
+                        z
+                        for z in candidates
+                        if z.is_support == is_support
+                        and z.lower <= pivot.price <= z.upper
+                    ),
+                    None,
+                )
+                if zone is None:
+                    continue
+                zone_start = max(zone.base_candle.timestamp, earliest_visible_time)
+                pane.draw_horizontal_line(
+                    zone_start, end_time, zone.center, "#ffffff80"
+                )
+
+
+class SRZones(Indicator):
+    """
+    Adaptive support/resistance zones built from swing pivots.
+
+    self.data: list[ZoneModel] -- the ENTIRE zone pool, rebuilt and rescored
+    on every call, never just the new zones. The pool is persistent running
+    state, so an incremental update resumes from the last seen candle rather
+    than replaying from bar 0.
+    """
+
     def __init__(
         self,
         # (1) Pivot Detection (ZigZag)
@@ -113,14 +255,16 @@ class SRZones(IndicatorBaseModel):
         prune_after_bars: int = 4500,
         # storage cap (not a Pine input -- Pine's box/label count is capped
         # by the indicator() call's max_boxes_count/max_labels_count instead;
-        # this is the equivalent guard for update()'s persistent zone list)
+        # this is the equivalent guard for the persistent zone list)
         max_stored_zones: int = 200,
+        rules: list[IndicatorRule] = [],
     ) -> None:
-        super().__init__()
+        super().__init__(rules=rules)
         self.data: list[ZoneModel]
 
         self.pivots = SwingPivots(depth, backstep)
         self.atr = ATR(atr_len)
+        self.plotter = SRZonesPlotter()
 
         self.max_candidates = max_candidates
         self.atr_median_lookback = atr_median_lookback
@@ -145,9 +289,9 @@ class SRZones(IndicatorBaseModel):
         self._last_base_radius: float = 0.0
 
         # running state carried between `_calculate()` and every subsequent
-        # `update()` call, so update() can resume exactly where the last
-        # call left off instead of recomputing from bar 0 -- same idea as
-        # `SwingPivots`'s own `_direction`/`_high_idx`/... running state.
+        # `_calculate_new()` call, so an update can resume exactly where the
+        # last call left off instead of recomputing from bar 0 -- same idea
+        # as `SwingPivots`'s own `_direction`/`_high_idx`/... running state.
         self._atr_buf: list[float] = []
         self._pivot_gaps: list[int] = []
         self._last_confirmed_bar_index: int | None = None
@@ -155,20 +299,20 @@ class SRZones(IndicatorBaseModel):
         self._median_atr: float | None = None
         self._base_radius: float | None = None
         # highest `confirmed_index` already fed into `_process_new_pivot`.
-        # `SwingPivots.update()` rebuilds its ENTIRE confirmed list from
-        # scratch every call (backstep is re-applied over the full
-        # cumulative raw-pivot history), so `self.pivots.data` on update()
-        # is not "just the new pivots" -- this is what filters it back down
-        # to only the ones this engine hasn't already committed to a zone.
+        # `SwingPivots` rebuilds its ENTIRE confirmed list from scratch on
+        # every update (backstep is re-applied over the full cumulative
+        # raw-pivot history), so `self.pivots.data` after an update is not
+        # "just the new pivots" -- this is what filters it back down to
+        # only the ones this engine hasn't already committed to a zone.
         self._last_processed_confirm_index: int | None = None
 
-        # `candles` is a SLIDING WINDOW (each poll refetches the last
+        # the chartdata is a SLIDING WINDOW (each poll refetches the last
         # `n_candle_check` candles), not an append-only array, so every
         # index stored above (`base_index`, `last_touch_index`,
         # `invalidated_index`, pivot indices in `_pivot_log`, etc.) goes
         # stale by however many candles fell off the front since it was
         # recorded. `_last_checked_index` remembers where the last-seen
-        # candle sat in the window last time, so `update()` can measure
+        # candle sat in the window last time, so an update can measure
         # that drift and `_rebase()` everything before doing anything else.
         # Without this, a fresh pivot's (correctly-based) index can end up
         # SMALLER than a stale `_last_processed_confirm_index`, so the
@@ -205,6 +349,11 @@ class SRZones(IndicatorBaseModel):
         )
         return configs
 
+    @property
+    def last_median_atr(self) -> float:
+        """Median ATR as of the last processed bar -- what the plotter ranks by."""
+        return self._last_median_atr
+
     # --- PURE HELPERS ---------------------------------
 
     @staticmethod
@@ -229,7 +378,7 @@ class SRZones(IndicatorBaseModel):
         logger.debug(f"new zone added: {new_zone}")
         return new_zone
 
-    def _merge_overlapping_zones(self, bar_index: int):
+    def _merge_overlapping_zones(self, bar_index: int, chartdata: ChartData):
         if not self.merge_nearby:
             return
         n = len(self._zones)
@@ -259,7 +408,7 @@ class SRZones(IndicatorBaseModel):
                     zi.last_touch_index = zj.last_touch_index
                     zi.last_touch_candle = zj.last_touch_candle
                 zj.invalidated_index = bar_index
-                zj.invalidated_candle = self.candles[bar_index]
+                zj.invalidated_candle = chartdata.candle(bar_index)
 
     def _prune_zones(self, bar_index: int):
         self._zones = [
@@ -282,7 +431,7 @@ class SRZones(IndicatorBaseModel):
 
     def _rebase(self, shift: int):
         """
-        The candles window shifted forward by `shift` bars (that many
+        The chartdata window shifted forward by `shift` bars (that many
         candles fell off the front since the last call). Every previously
         recorded position needs to move back by the same amount so it
         still points at the same real candle in the new window.
@@ -443,11 +592,16 @@ class SRZones(IndicatorBaseModel):
     def _process_bar(
         self,
         i: int,
-        candle: Candle,
+        chartdata: ChartData,
         pivots_by_confirm_index: dict[int, list[PivotPoint]],
     ):
-        atr_value = self.atr.data.get(candle.timestamp)
-        if atr_value is not None:
+        candle = chartdata.candle(i)
+
+        # ATR is index-aligned with chartdata and NaN until it has warmed up,
+        # which is the same "no value for this bar" the old timestamp-keyed
+        # lookup signalled by returning None.
+        atr_value = float(self.atr.data[i])
+        if not math.isnan(atr_value):
             self._atr_buf.append(atr_value)
             if len(self._atr_buf) > self.atr_median_lookback:
                 self._atr_buf.pop(0)
@@ -489,13 +643,13 @@ class SRZones(IndicatorBaseModel):
         if self._base_radius is not None:
             self._check_zone_breaks(candle, i)
             if i % self.merge_interval_bars == 0:
-                self._merge_overlapping_zones(i)
+                self._merge_overlapping_zones(i, chartdata)
                 self._prune_zones(i)
 
-    def _finalize(self, last_index: int) -> list[ZoneModel]:
+    def _finalize(self, last_index: int, chartdata: ChartData) -> list[ZoneModel]:
         # one more merge/prune pass regardless of the mod-`merge_interval_bars`
         # cadence, so nothing overlapping is ever left in the returned data.
-        self._merge_overlapping_zones(last_index)
+        self._merge_overlapping_zones(last_index, chartdata)
         self._prune_zones(last_index)
 
         self._compute_scores(last_index, self._med_pivot_spacing)
@@ -515,14 +669,20 @@ class SRZones(IndicatorBaseModel):
             pivots_by_confirm_index.setdefault(pivot.confirmed_index, []).append(pivot)
         return pivots_by_confirm_index
 
-    def _calculate(self) -> list[ZoneModel]:
-        candles = self.candles
-        n = len(candles)
+    def _reset_sub_indicators(self) -> None:
+        """Force pivots/ATR to recompute from bar 0 instead of resuming."""
+        for indicator in (self.pivots, self.atr):
+            indicator.data = None
+            indicator.last_checked_candle = None
+
+    def _calculate(self, chartdata: ChartData, *args, **kwargs) -> list[ZoneModel]:
+        n = len(chartdata)
         if n < self.pivots.depth + 2:
             return []
 
-        self.pivots.set(candles)
-        self.atr.set(candles)
+        self._reset_sub_indicators()
+        self.pivots.set(chartdata)
+        self.atr.set(chartdata)
 
         self._zones = []
         self._pivot_log = []
@@ -536,178 +696,37 @@ class SRZones(IndicatorBaseModel):
 
         pivots_by_confirm_index = self._new_pivots_by_confirm_index()
 
-        for i, candle in enumerate(candles):
-            self._process_bar(i, candle, pivots_by_confirm_index)
+        for i in range(n):
+            self._process_bar(i, chartdata, pivots_by_confirm_index)
 
         self._last_checked_index = n - 1
-        return self._finalize(n - 1)
+        return self._finalize(n - 1, chartdata)
 
-    def _forcast(self) -> MarketSide:
-        return MarketSide.NEUTRAL
-
-    # --- DISPLAY ---------------------------------------
-
-    def plot(
-        self,
-        plot: ChartPlot,
-        min_score_percentile: float = 0.0,
-        max_zones_display: int | None = 8,
-        proximity_boost: float = 0.3,
-        support_color: str = "#00808040",
-        resist_color: str = "#ff000040",
-        flip_marker_color: str = "#ffff00d0",
-        show_labels: bool = True,
-        show_live: bool = True,
-    ):
-        if not self.candles:
-            return
-
-        end_time = self.candles[-1].time
-        close = self.candles[-1].close
-        median_atr = self._last_median_atr or 1e-9
-
-        candidates = [z for z in self.data if z.score_pct >= min_score_percentile]
-
-        def priority(zone: ZoneModel) -> float:
-            prox = math.exp(-abs(close - zone.center) / max(median_atr, 1e-9))
-            return zone.score_pct * (1 + proximity_boost * prox)
-
-        candidates.sort(key=priority, reverse=True)
-        candidates = (
-            candidates if max_zones_display is None else candidates[:max_zones_display]
-        )
-
-        # `ChartPlot.plot()` trims its own candles down to `plot_n_candles`
-        # (default 100) the first time `plot.ax` is touched -- accessing it
-        # here (before drawing anything) guarantees that trim has already
-        # happened, so `plot.give_chartdata()` reflects the window that
-        # will actually be visible in the sent image.
-        _ = plot.ax
-        visible_candles = plot.give_chartdata().candles
-        earliest_visible_time = (
-            visible_candles[0].time if visible_candles else self.candles[0].time
-        )
-
-        for rank, zone in enumerate(candidates):
-            zone_end = (
-                zone.invalidated_candle.time
-                if zone.invalidated_candle is not None
-                else end_time
-            )
-
-            # A zone can flip role mid-life (`max_zone_breaks > 1` lets it
-            # survive a break instead of being invalidated by it, and a
-            # broken support conventionally starts acting as resistance
-            # from that point on, and vice versa). `polarity_segments`
-            # holds one (candle, is_support) entry per stretch of the
-            # zone's life; draw each stretch as its own rect in its own
-            # color so a flip actually shows up in the image, instead of
-            # silently drawing the whole box in whatever `is_support`
-            # happens to be right now.
-            for seg_index, (seg_candle, seg_is_support) in enumerate(
-                zone.polarity_segments
-            ):
-                seg_end = (
-                    zone.polarity_segments[seg_index + 1][0].time
-                    if seg_index + 1 < len(zone.polarity_segments)
-                    else zone_end
-                )
-                # Same reasoning as the single-segment case used to have:
-                # don't draw past the left edge of the visible image.
-                seg_start = max(seg_candle.time, earliest_visible_time)
-                # A segment that entirely predates the visible window (e.g.
-                # an old, already-invalidated zone whose invalidated_candle
-                # - or, for an earlier segment, whose next flip - happened
-                # before the earliest candle shown) would end up with
-                # seg_end <= seg_start after the clamp above: an inverted,
-                # zero/negative-width rectangle that finplot won't render.
-                # There's nothing meaningful left to draw for it, so skip
-                # it rather than pass bad geometry through.
-                if seg_end <= seg_start:
-                    continue
-                color = support_color if seg_is_support else resist_color
-                plot.draw_filled_rect(seg_start, seg_end, zone.upper, zone.lower, color)
-
-            # explicit marker at every flip point, so the role-reversal is
-            # visible even where the two segment colors are hard to tell
-            # apart at a glance (e.g. thumbnail size on a phone screen)
-            for seg_candle, _ in zone.polarity_segments[1:]:
-                flip_time = max(seg_candle.time, earliest_visible_time)
-                plot.draw_line(
-                    flip_time,
-                    zone.lower,
-                    flip_time,
-                    zone.upper,
-                    color=flip_marker_color,
-                    width=2,
-                )
-
-            if show_labels and rank < 3:
-                status = " [INVALID]" if zone.broken else ""
-                flip_note = (
-                    f" [FLIPPED x{len(zone.polarity_segments) - 1}]"
-                    if zone.flipped
-                    else ""
-                )
-                logger.info(
-                    f"{'Support' if zone.is_support else 'Resist'} "
-                    f"score:{zone.score_pct:.0f} touch:{zone.touch_count} "
-                    f"break:{zone.break_count}{status}{flip_note}"
-                )
-
-        if show_live:
-            for pivot in self.pivots.live_pivots:
-                is_support = not pivot.is_high
-                # only draw the live-test line when price is genuinely
-                # inside a zone that's actually shown in this image --
-                # matching purely on "nearest zone of the right side" (the
-                # old behavior) picked whatever zone was geometrically
-                # closest even when price was nowhere near it, which is
-                # why a dashed line could show up cutting through the
-                # middle of an unrelated zone's box.
-                zone = next(
-                    (
-                        z
-                        for z in candidates
-                        if z.is_support == is_support
-                        and z.lower <= pivot.price <= z.upper
-                    ),
-                    None,
-                )
-                if zone is None:
-                    continue
-                zone_start = max(zone.base_candle.time, earliest_visible_time)
-                plot.draw_horizontal_line(
-                    zone_start, end_time, zone.center, "#ffffff80"
-                )
-
-    def update(self, candles: list[Candle], *args, **kwargs) -> list[ZoneModel]:
-        if self.last_checked_candle is None:
-            raise ValueError("last_checked_candle is None")
-
-        start_index = self.find_new_candle_index(candles)
-        if start_index >= len(candles):
-            return self.data
-
+    def _calculate_new(
+        self, chartdata: ChartData, start: int, *args, **kwargs
+    ) -> list[ZoneModel]:
         # position of the last-seen candle in the NEW window vs where it
         # was recorded last time -> how far the window has slid forward.
         # Must rebase BEFORE touching self.pivots/self.atr or computing
         # anything below, since everything downstream compares against
         # these stored indices.
-        shift = self._last_checked_index - (start_index - 1)
+        shift = self._last_checked_index - (start - 1)
         if shift > 0:
             self._rebase(shift)
 
-        self.candles = candles
-        self.pivots.update(candles)
-        self.atr.update(candles)
+        self.pivots.set(chartdata)
+        self.atr.set(chartdata)
 
         pivots_by_confirm_index = self._new_pivots_by_confirm_index()
 
-        for i in range(start_index, len(candles)):
-            self._process_bar(i, candles[i], pivots_by_confirm_index)
+        for i in range(start, len(chartdata)):
+            self._process_bar(i, chartdata, pivots_by_confirm_index)
 
-        self.data = self._finalize(len(candles) - 1)
-        self.last_checked_candle = candles[-1]
-        self._last_checked_index = len(candles) - 1
-        return self.data
+        self._last_checked_index = len(chartdata) - 1
+        return self._finalize(len(chartdata) - 1, chartdata)
+
+    def _merge(self, new_segment: list[ZoneModel]) -> list[ZoneModel]:
+        # the zone pool is persistent running state that `_calculate_new`
+        # already finalized in place, so there is nothing to concatenate --
+        # `new_segment` IS the whole rebuilt list.
+        return new_segment

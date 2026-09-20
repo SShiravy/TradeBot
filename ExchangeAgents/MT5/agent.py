@@ -1,10 +1,8 @@
 import numpy as np
-
 from ChartModule import Chart, ChartData, TimeFrame
 from Settings.timing import TimeHandler
 from TraderBot.models import ExchangeAgent, Position, PositionSide, Trigger, TriggerType
 from datetime import datetime, timedelta, timezone
-from Settings.config import settings
 from enum import Enum
 import mt5_wrapper as mt5
 import logging
@@ -36,7 +34,7 @@ class MarketState(Enum):
 class MT5Agent(ExchangeAgent):
     _UTC_SHIFT: int = 0
 
-    def __new__(cls, mt5_terminal_path: str, utc_shift:int|None=None):
+    def __new__(cls, mt5_terminal_path: str, utc_shift: int | None = None):
         if not hasattr(cls, "_instance"):
             cls._instance = object.__new__(cls)
             if not mt5.initialize(mt5_terminal_path):
@@ -47,7 +45,7 @@ class MT5Agent(ExchangeAgent):
             if utc_shift:
                 cls._UTC_SHIFT = utc_shift
             else:
-                cls.set_utc_shift()            
+                cls.set_utc_shift()
         return cls._instance
 
     @classmethod
@@ -63,16 +61,15 @@ class MT5Agent(ExchangeAgent):
         return True
 
     @classmethod
-    def set_utc_shift(cls, symbol: str="BTCUSD") -> int:
-        chart = Chart(symbol,TimeFrame.one_minute)
+    def set_utc_shift(cls, symbol: str = "BTCUSD") -> int:
+        chart = Chart(symbol, TimeFrame.one_minute)
         cls.select_chart(chart)
         info = mt5.symbol_info(chart.symbol)
         if not info:
             raise ValueError(f"{chart=} | {info=}")
         cls._UTC_SHIFT = TimeHandler.now() - info.time
         return cls._UTC_SHIFT
-    
-    
+
     def prepare_chart(self, chart: Chart) -> bool:
         self.select_chart(chart)
         symbol_info = mt5.symbol_info(chart.symbol)
@@ -84,7 +81,6 @@ class MT5Agent(ExchangeAgent):
         logger.debug(f"{chart=}")
         return True
 
-   
     @classmethod
     def give_current_timestamp(cls, chart: Chart):
         info = mt5.symbol_info(chart.symbol)

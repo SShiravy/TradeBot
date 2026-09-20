@@ -239,7 +239,9 @@ class ChartData:
     def timestamp_index(self, timestamp: int) -> int:
         idx = np.searchsorted(self.timestamps, timestamp)
         if idx >= len(self) or self.timestamps[idx] != timestamp:
-            raise ValueError(f"Timestamp {timestamp} not found in chart data \n{self.timestamps[-5:]}|{idx}|{self.timestamps[idx]}|{len(self)=}")
+            raise ValueError(
+                f"Timestamp {timestamp} not found in chart data \n{self.timestamps[-5:]}|{idx}|{self.timestamps[idx]}|{len(self)=}"
+            )
         return int(idx)
 
     def candle_index(self, candle: Candle) -> int:

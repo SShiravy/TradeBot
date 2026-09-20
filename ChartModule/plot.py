@@ -90,6 +90,22 @@ class ChartPane:
             ax=self.ax,
         )
 
+    def draw_filled_rect(
+        self,
+        start_time: int,
+        end_time: int,
+        upper_price: float,
+        lower_price: float,
+        color: str = "#8b007240",
+    ) -> None:
+        fplt.add_rect(
+            (start_time, upper_price),
+            (end_time, lower_price),
+            color=color,
+            interactive=False,
+            ax=self.ax,
+        )
+
     def mark_price(
         self, timestamp: int, price: float, side: MarketSide, legend: str | None = None
     ) -> None:
@@ -126,6 +142,42 @@ class ChartPane:
             style="o",
             color=color,
             width=1,
+            legend=legend,
+            ax=self.ax,
+        )
+
+    def draw_label(
+        self,
+        timestamp: int,
+        price: float,
+        text: str,
+        color: str = "#000000",
+        anchor: tuple[float, float] = (0.5, 0.5),
+    ) -> None:
+        fplt.add_text(
+            (timestamp, price),
+            text,
+            color=color,
+            anchor=anchor,
+            ax=self.ax,
+        )
+
+    def mark_points(
+        self,
+        points: list[tuple[int, float]],
+        legend: str | None = None,
+        color: str = "#e1b400",
+        width: int = 1,
+    ) -> None:
+        if not points:
+            return
+        x, y = zip(*points)
+        fplt.plot(
+            np.array(x),
+            np.array(y, dtype=np.float64),
+            style="o",
+            color=color,
+            width=width,
             legend=legend,
             ax=self.ax,
         )
@@ -179,10 +231,20 @@ class BaseChartFigure(ABC):
 
     @staticmethod
     def _tail(chartdata: ChartData, n_candles: int) -> ChartData:
-        """Last n_candles of chartdata -- start_index, not end_index."""
+        """
+        Last n_candles of chartdata, newest bar included. end_index has to
+        be passed explicitly: subdata() defaults it to -1, which would drop
+        the most recent candle -- the very one a signal fires on -- and only
+        on the long-enough path, so charts would silently disagree about
+        whether the newest bar is drawn.
+        """
         if len(chartdata) <= n_candles:
             return chartdata
-        return chartdata.subdata(start_index=len(chartdata) - n_candles, copy=True)
+        return chartdata.subdata(
+            start_index=len(chartdata) - n_candles,
+            end_index=len(chartdata),
+            copy=True,
+        )
 
     def show(self, blocking: bool = True) -> None:
         for pane in self.panes:

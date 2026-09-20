@@ -94,7 +94,7 @@ class OscillatorDivergence(Strategy):
                 chartdata.timestamps,
                 base_line.start_timestamp,
                 base_line.end_timestamp,
-                base_line.direction.number,
+                linefinder._cross_multiplier(),
             )
             if second_line is None:
                 continue

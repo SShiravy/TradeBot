@@ -9,7 +9,8 @@ class ATR(Indicator):
     """
     Average True Range (Wilder's smoothing).
     self.data: np.ndarray, same length as chartdata, aligned by index
-    (first n_bar entries are NaN -- undefined until enough history exists).
+    (first n_bar - 1 entries are NaN -- undefined until enough history
+    exists). data[i] is the average through bar i, current bar included.
     """
 
     def __init__(self, n_bar: int = 14) -> None:
@@ -20,6 +21,9 @@ class ATR(Indicator):
         # Wilder recurrence state, needed for incremental updates
         self._avg_tr: float = 0.0
         self._last_close: float = 0.0
+        # the seed average only exists once n_bar bars have been seen; until
+        # then there is no state to resume from and an update must recompute
+        self._warm: bool = False
 
     def export_configs(self) -> dict:
         configs = super().export_configs()
@@ -45,20 +49,26 @@ class ATR(Indicator):
         n = len(chartdata)
         result = np.full(n, np.nan, dtype=np.float64)
 
-        if n < self.n_bar + 1:
+        if n < self.n_bar:
             return result
 
         true_ranges = self._true_ranges(chartdata)
 
+        # seed sits at n_bar - 1: it is the average OF the first n_bar true
+        # ranges, so it is the average THROUGH bar n_bar - 1. Each later bar
+        # then folds in its own true range -- same convention _calculate_new
+        # resumes with, so a series built in one pass and one built
+        # incrementally agree bar for bar.
         avg_tr = true_ranges[: self.n_bar].mean()
-        result[self.n_bar] = avg_tr
+        result[self.n_bar - 1] = avg_tr
 
-        for i in range(self.n_bar, n - 1):
+        for i in range(self.n_bar, n):
             avg_tr = (avg_tr * (self.n_bar - 1) + true_ranges[i]) / self.n_bar
-            result[i + 1] = avg_tr
+            result[i] = avg_tr
 
         self._avg_tr = avg_tr
         self._last_close = float(chartdata.close[-1])
+        self._warm = True
         return result
 
     def _calculate_new(
@@ -85,3 +95,10 @@ class ATR(Indicator):
 
     def _merge(self, new_segment: np.ndarray) -> np.ndarray:
         return np.concatenate([self.data, new_segment])
+
+    def update(self, chartdata: ChartData, *args, **kwargs) -> np.ndarray:
+        if not self._warm:
+            # nothing was ever seeded (the first call had fewer than n_bar
+            # bars), so there is no recurrence state to carry forward
+            return self._calculate(chartdata, *args, **kwargs)
+        return super().update(chartdata, *args, **kwargs)

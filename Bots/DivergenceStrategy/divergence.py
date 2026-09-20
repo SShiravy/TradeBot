@@ -119,15 +119,16 @@ class Divergence(Strategy):
         )
         for base_line in linefinder.iter_lines_at_index(base_chartdata, -1):
             if base_line.direction is not wanted_base:
-                print(base_line.direction,wanted_base)
                 continue
             second_line = linefinder.validate_line_at(
-                second_chartdata, base_line.start_timestamp, base_line.end_timestamp
+                second_chartdata,
+                base_line.start_timestamp,
+                base_line.end_timestamp,
+                timestamps=base_chartdata.timestamps,
             )
             if second_line is None:
                 continue
             if second_line.direction is not wanted_second:
-                print('bad second direction')
                 continue
 
             return base_line, second_line
@@ -137,7 +138,6 @@ class Divergence(Strategy):
     def check_long_signal(self, base_chartdata: ChartData, second_chartdata: ChartData):
         if not self.long_support_conditions.check(base_chartdata):
             return None
-        print("ON LONNGGGGGGGGGGGGGGGGGGGGGGGGGG")
         res = self.find_divergence(
             LineFinder(
                 CandlesSource.Bottom if self.body_candle else CandlesSource.Low,
@@ -168,7 +168,6 @@ class Divergence(Strategy):
     ):
         if not self.short_support_conditions.check(base_chartdata):
             return None
-        print("ONNN SHORTTTTTTTTTTTTTTTTTTTTT")
         res = self.find_divergence(
             LineFinder(
                 CandlesSource.Top if self.body_candle else CandlesSource.High,
@@ -275,6 +274,7 @@ class DivergenceBot(TraderBot):
         )
         if not signal:
             return None
+        return signal
 
     async def task(self):
         chartdata = self.get_chartdata()
