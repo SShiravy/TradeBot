@@ -1,5 +1,5 @@
 from ChartModule.models import Chart, ChartData, MarketSide
-from ChartModule.plot import ChartPane, SingleChartFigure, SignalPlotter, Figure
+from ChartModule.plot import SingleChartFigure, SignalPlotter, Figure
 from ChartModule.Indicators.auto_trendline import AutoTrendlines, TrendlineModel
 from ChartModule.Indicators.sr_zone import SRZones, ZoneModel
 from Bots.ChochStrategy.choch import ChochQueueFilter, ChochSignal
@@ -26,10 +26,10 @@ class SRChochBot(TraderBot):
     timeframe) is where the entry is found, via ChochQueueFilter.
 
     A trade needs BOTH: price has to touch an S&R level, and then a CHoCH
-    has to fire on the entry chart in the SAME direction within
-    `n_candle_confirmation` bars. The S&R touch is reported on its own as
-    soon as it happens, and the eventual entry report is threaded as a
-    reply to it.
+    -- never a BOS -- has to fire on the entry chart in the SAME direction
+    within `n_candle_confirmation` bars. The S&R touch is reported on its
+    own as soon as it happens, and the eventual entry report is threaded as
+    a reply to it.
     """
 
     strategy: ChochQueueFilter  # type: ignore[assignment]
@@ -105,26 +105,49 @@ class SRChochBot(TraderBot):
         reporter = self.trades_manager.reporter
         return reporter if reporter and reporter.enable else None
 
-    # ─── S&R DETECTION ───────────────────────────────
+    # --- S&R (arms the setup) ------------------------
 
-    async def _report_sr_signal(
-        self, signal: SRSignal, chartdata: ChartData, draw
-    ) -> None:
+    def generate_static_sr_figure(
+        self, chartdata: ChartData, signal: StaticSRSignal
+    ) -> Figure:
+        figure = SingleChartFigure(chartdata, self.n_sr_candle_check)
+        self.static_sr_indicator.plotter(
+            figure.main_pane,
+            self.static_sr_indicator.data,
+            median_atr=self.static_sr_indicator.last_median_atr,
+            live_pivots=self.static_sr_indicator.pivots.live_pivots,
+            max_zones_display=None,
+        )
+        SignalPlotter()(figure.main_pane, signal)
+        return figure
+
+    def generate_dynamic_sr_figure(
+        self, chartdata: ChartData, signal: DynamicSRSignal
+    ) -> Figure:
+        figure = SingleChartFigure(chartdata, self.n_sr_candle_check)
+        self.dynamic_sr_indicator.plotter(
+            figure.main_pane,
+            self.dynamic_sr_indicator.data,
+            mtr_events=self.dynamic_sr_indicator.mtr_events,
+            atr=self.dynamic_sr_indicator.atr.data,
+            keep_archived=self.dynamic_sr_indicator.keep_archived,
+        )
+        SignalPlotter()(figure.main_pane, signal)
+        return figure
+
+    def _arm_sr(self, signal: SRSignal) -> None:
+        """Record the touch that arms the setup. Reporting is the caller's."""
         self.last_sr_signal = signal
         self.last_sr_report_id = None
+        self._sr_report_command = None
         logger.info(f"S&R Signal:{signal}")
 
-        reporter = self._reporter
-        if reporter is None:
-            return
-        figure = SingleChartFigure(chartdata, self.n_sr_candle_check)
-        draw(figure.main_pane)
-        SignalPlotter()(figure.main_pane, signal)
+    def _report_sr(self, signal: SRSignal, figure: Figure) -> None:
         command = commands.NewSignalReport(signal, plot=figure)
         command.send(reporter=self.trades_manager.reporter)
         self._sr_report_command = command
 
-    async def _check_static_sr(self, chartdata: ChartData) -> None:
+    def _check_static_sr(self, chartdata: ChartData) -> None:
         last_candle = chartdata[-1]
         if self.last_static_sr_checked_timestamp == last_candle.timestamp:
             return None
@@ -175,18 +198,12 @@ class SRChochBot(TraderBot):
             touch_type=touch_type,
         )
 
-        def draw(pane: ChartPane) -> None:
-            self.static_sr_indicator.plotter(
-                pane,
-                self.static_sr_indicator.data,
-                median_atr=self.static_sr_indicator.last_median_atr,
-                live_pivots=self.static_sr_indicator.pivots.live_pivots,
-                max_zones_display=None,
-            )
+        self._arm_sr(signal)
+        if self._reporter is None:
+            return None
+        self._report_sr(signal, self.generate_static_sr_figure(chartdata, signal))
 
-        await self._report_sr_signal(signal, chartdata, draw)
-
-    async def _check_dynamic_sr(self, chartdata: ChartData) -> None:
+    def _check_dynamic_sr(self, chartdata: ChartData) -> None:
         last_candle = chartdata[-1]
         if self.last_dynamic_sr_checked_timestamp == last_candle.timestamp:
             return None
@@ -226,18 +243,34 @@ class SRChochBot(TraderBot):
             dynamic_sr=best_dynamic_sr,
         )
 
-        def draw(pane: ChartPane) -> None:
-            self.dynamic_sr_indicator.plotter(
-                pane,
-                self.dynamic_sr_indicator.data,
-                mtr_events=self.dynamic_sr_indicator.mtr_events,
-                atr=self.dynamic_sr_indicator.atr.data,
-                keep_archived=self.dynamic_sr_indicator.keep_archived,
-            )
+        self._arm_sr(signal)
+        if self._reporter is None:
+            return None
+        self._report_sr(signal, self.generate_dynamic_sr_figure(chartdata, signal))
 
-        await self._report_sr_signal(signal, chartdata, draw)
+    def _sr_still_valid(self, choch_chartdata: ChartData) -> bool:
+        if self.last_sr_signal is None:
+            return False
+        elapsed = choch_chartdata[-1].timestamp - self.last_sr_signal.candle.timestamp
+        allowed = self.give_allowed_time()
+        if elapsed > allowed:
+            logger.warning(f"S&R was too old {elapsed=} > {allowed}")
+            self._clear_sr()
+            return False
+        return True
 
-    # ─── ENTRY ───────────────────────────────────────
+    def _sr_reply_id(self) -> int | None:
+        # send() only queues the report -- the id exists once it has run
+        if self.last_sr_report_id is not None:
+            return self.last_sr_report_id
+        return getattr(self._sr_report_command, "msg_id", None)
+
+    def _clear_sr(self) -> None:
+        self.last_sr_signal = None
+        self.last_sr_report_id = None
+        self._sr_report_command = None
+
+    # --- ENTRY ---------------------------------------
 
     def check_signal(  # type: ignore[override]
         self, chartdata: ChartData, *args, **kwargs
@@ -252,45 +285,32 @@ class SRChochBot(TraderBot):
             return None
         return signal
 
-    def _sr_still_valid(self, choch_chartdata: ChartData) -> bool:
-        if self.last_sr_signal is None:
-            return False
-        elapsed = choch_chartdata[-1].timestamp - self.last_sr_signal.candle.timestamp
-        allowed = self.give_allowed_time()
-        if elapsed > allowed:
-            logger.warning(f"S&R was too old {elapsed=} > {allowed}")
-            self._clear_sr()
-            return False
-        return True
+    def generate_figure(  # type: ignore[override]
+        self,
+        chartdata: ChartData,
+        signal: ChochSignal,
+        position: Position | None = None,
+        *args,
+        **kwargs,
+    ) -> Figure:
+        figure = SingleChartFigure(chartdata, self.n_candle_check)
+        self.strategy.plotter(
+            figure.main_pane,
+            signal,
+            self.strategy.indicators,
+            use_fibo_filter=self.strategy.use_fibo_filter,
+        )
+        if position:
+            PositionPlotter()(figure.main_pane, position)
+        return figure
 
-    def _sr_reply_id(self) -> int | None:
-        if self.last_sr_report_id is not None:
-            return self.last_sr_report_id
-        return getattr(self._sr_report_command, "msg_id", None)
-
-    def _clear_sr(self) -> None:
-        self.last_sr_signal = None
-        self.last_sr_report_id = None
-        self._sr_report_command = None
-
-    def trade(  # type: ignore[override]
-        self, signal: ChochSignal, position: Position, plot: Figure
-    ) -> Position | None:
+    def trade(self, position: Position, plot: Figure) -> Position | None:
         """
-        Same as TraderBot.trade, but the position report is threaded as a
-        reply to the S&R message that set this trade up, and the plotter is
-        called with the single extra positional argument this one expects.
+        TraderBot.trade, with the position report threaded as a reply to the
+        S&R message that armed this trade.
         """
         report_command = None
-        reporter = self._reporter
-        if reporter is not None:
-            PositionPlotter()(plot.main_pane, position)
-            self.strategy.plotter(
-                plot.main_pane,
-                signal,
-                self.strategy.indicators,
-                use_fibo_filter=self.strategy.use_fibo_filter,
-            )
+        if self._reporter is not None:
             report_command = commands.NewPositionReport(
                 plot=plot, reply_id=self._sr_reply_id()
             )
@@ -299,12 +319,12 @@ class SRChochBot(TraderBot):
         )
         return position
 
-    async def find_signal(
+    def find_signal(
         self, sr_chartdata: ChartData, choch_chartdata: ChartData
     ) -> ChochSignal | None:
         # S&R first -- it is what arms the setup
-        await self._check_static_sr(sr_chartdata)
-        await self._check_dynamic_sr(sr_chartdata)
+        self._check_static_sr(sr_chartdata)
+        self._check_dynamic_sr(sr_chartdata)
         if not self._sr_still_valid(choch_chartdata):
             return None
         assert self.last_sr_signal is not None
@@ -320,7 +340,6 @@ class SRChochBot(TraderBot):
             )
             return None
 
-        figure = SingleChartFigure(choch_chartdata, self.n_candle_check)
         if self.consider_position:
             position = self.trades_manager.generate_position(
                 choch_signal, sl_base_price=choch_signal.choch_model.anchor
@@ -328,21 +347,18 @@ class SRChochBot(TraderBot):
             if position is None:
                 logger.warning("Position is None")
                 return None
-            self.trade(choch_signal, position, figure)
+            self.trade(
+                position,
+                self.generate_figure(choch_chartdata, choch_signal, position),
+            )
             logger.info("SR & CHoCH Signal")
-            # the setup has been consumed -- a new S&R touch must arm the next
-            self._clear_sr()
-            return choch_signal
+        else:
+            commands.NewSignalReport(
+                choch_signal,
+                plot=self.generate_figure(choch_chartdata, choch_signal),
+            ).send(reporter=self.trades_manager.reporter)
 
-        self.strategy.plotter(
-            figure.main_pane,
-            choch_signal,
-            self.strategy.indicators,
-            use_fibo_filter=self.strategy.use_fibo_filter,
-        )
-        commands.NewSignalReport(choch_signal, plot=figure).send(
-            reporter=self.trades_manager.reporter
-        )
+        # the setup has been consumed -- a new S&R touch must arm the next
         self._clear_sr()
         return choch_signal
 
@@ -355,5 +371,5 @@ class SRChochBot(TraderBot):
         last_timestamp = choch_chartdata.timestamps[-1]
         choch_chartdata = choch_chartdata.subdata(end_index=-2)
 
-        await self.find_signal(sr_chartdata, choch_chartdata)
+        self.find_signal(sr_chartdata, choch_chartdata)
         return self.give_delay(last_timestamp)

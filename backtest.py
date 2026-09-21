@@ -25,12 +25,12 @@ if __name__ == "__main__":
         xau_rsi_1m,
     )
     from Bots.ChochStrategy.configured_bots import xau_choch_1m
-    from Bots.CompositeStrategies.configured_bots import xau_5m_rsi_choch
+    from Bots.CompositeStrategies.configured_bots import xau_sr_choch_5m_1m
 
-    bot = xau_5m_rsi_choch
+    bot = xau_sr_choch_5m_1m
 
-    bot.chart = BTCUSD_1m_99000
-    bot.oscillator_chart = SOLUSD_1m_99000
+    bot.sr_chart = BTCUSD_1m_99000
+    bot.chart = SOLUSD_1m_99000
     backtest_agent = BacktestAgent(bot.agent, [SOLUSD_1m_99000, BTCUSD_1m_99000])
 
     simulator = SignalBacktest(bot, backtest_agent)

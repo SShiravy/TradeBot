@@ -220,7 +220,7 @@ xau_rsi_1m = OscillatorDiverBot(
 
 
 xau_rsi_double_diver_5m = OscillatorDoubleDiverBot(
-    chart=Chart("XAUUSD!", TimeFrame.five_minutes),
+    chart=Chart("XAUUSD", TimeFrame.five_minutes),
     agent=mt5_agent,
     strategy=OscillatorDivergence(
         oscillator_indicator=RSI(14),
@@ -241,7 +241,7 @@ xau_rsi_double_diver_5m = OscillatorDoubleDiverBot(
 
 
 xau_rsi_double_diver_5m = OscillatorDoubleDiverBot(
-    chart=Chart("XAUUSD!", TimeFrame.fifteen_minutes),
+    chart=Chart("XAUUSD", TimeFrame.fifteen_minutes),
     agent=mt5_agent,
     strategy=OscillatorDivergence(
         oscillator_indicator=RSI(14),
@@ -261,7 +261,7 @@ xau_rsi_double_diver_5m = OscillatorDoubleDiverBot(
 )
 
 eurusd_rsi_double_diver_5m = OscillatorDoubleDiverBot(
-    chart=Chart("EURUSD!", TimeFrame.five_minutes),
+    chart=Chart("EURUSD", TimeFrame.five_minutes),
     agent=mt5_agent,
     strategy=OscillatorDivergence(
         oscillator_indicator=RSI(14),
@@ -281,7 +281,7 @@ eurusd_rsi_double_diver_5m = OscillatorDoubleDiverBot(
 )
 
 eurusd_rsi_double_diver_15m = OscillatorDoubleDiverBot(
-    chart=Chart("EURUSD!", TimeFrame.fifteen_minutes),
+    chart=Chart("EURUSD", TimeFrame.fifteen_minutes),
     agent=mt5_agent,
     strategy=OscillatorDivergence(
         oscillator_indicator=RSI(14),
@@ -302,7 +302,7 @@ eurusd_rsi_double_diver_15m = OscillatorDoubleDiverBot(
 
 
 usdjpy_rsi_double_diver_5m = OscillatorDoubleDiverBot(
-    chart=Chart("USDJPY!", TimeFrame.five_minutes),
+    chart=Chart("USDJPY", TimeFrame.five_minutes),
     agent=mt5_agent,
     strategy=OscillatorDivergence(
         oscillator_indicator=RSI(14),
@@ -322,7 +322,7 @@ usdjpy_rsi_double_diver_5m = OscillatorDoubleDiverBot(
 )
 
 usdjpy_rsi_double_diver_15m = OscillatorDoubleDiverBot(
-    chart=Chart("USDJPY!", TimeFrame.fifteen_minutes),
+    chart=Chart("USDJPY", TimeFrame.fifteen_minutes),
     agent=mt5_agent,
     strategy=OscillatorDivergence(
         oscillator_indicator=RSI(14),
@@ -343,7 +343,7 @@ usdjpy_rsi_double_diver_15m = OscillatorDoubleDiverBot(
 
 
 gbpusd_rsi_double_diver_5m = OscillatorDoubleDiverBot(
-    chart=Chart("GBPUSD!", TimeFrame.five_minutes),
+    chart=Chart("GBPUSD", TimeFrame.five_minutes),
     agent=mt5_agent,
     strategy=OscillatorDivergence(
         oscillator_indicator=RSI(14),
@@ -363,7 +363,7 @@ gbpusd_rsi_double_diver_5m = OscillatorDoubleDiverBot(
 )
 
 gbpusd_rsi_double_diver_15m = OscillatorDoubleDiverBot(
-    chart=Chart("GBPUSD!", TimeFrame.fifteen_minutes),
+    chart=Chart("GBPUSD", TimeFrame.fifteen_minutes),
     agent=mt5_agent,
     strategy=OscillatorDivergence(
         oscillator_indicator=RSI(14),
@@ -384,7 +384,7 @@ gbpusd_rsi_double_diver_15m = OscillatorDoubleDiverBot(
 
 
 usdchf_rsi_double_diver_5m = OscillatorDoubleDiverBot(
-    chart=Chart("USDCHF!", TimeFrame.five_minutes),
+    chart=Chart("USDCHF", TimeFrame.five_minutes),
     agent=mt5_agent,
     strategy=OscillatorDivergence(
         oscillator_indicator=RSI(14),
@@ -404,7 +404,7 @@ usdchf_rsi_double_diver_5m = OscillatorDoubleDiverBot(
 )
 
 usdchf_rsi_double_diver_15m = OscillatorDoubleDiverBot(
-    chart=Chart("USDCHF!", TimeFrame.fifteen_minutes),
+    chart=Chart("USDCHF", TimeFrame.fifteen_minutes),
     agent=mt5_agent,
     strategy=OscillatorDivergence(
         oscillator_indicator=RSI(14),
@@ -425,7 +425,7 @@ usdchf_rsi_double_diver_15m = OscillatorDoubleDiverBot(
 
 
 audusd_rsi_double_diver_5m = OscillatorDoubleDiverBot(
-    chart=Chart("AUDUSD!", TimeFrame.five_minutes),
+    chart=Chart("AUDUSD", TimeFrame.five_minutes),
     agent=mt5_agent,
     strategy=OscillatorDivergence(
         oscillator_indicator=RSI(14),
@@ -445,7 +445,7 @@ audusd_rsi_double_diver_5m = OscillatorDoubleDiverBot(
 )
 
 audusd_rsi_double_diver_15m = OscillatorDoubleDiverBot(
-    chart=Chart("AUDUSD!", TimeFrame.fifteen_minutes),
+    chart=Chart("AUDUSD", TimeFrame.fifteen_minutes),
     agent=mt5_agent,
     strategy=OscillatorDivergence(
         oscillator_indicator=RSI(14),
@@ -466,7 +466,7 @@ audusd_rsi_double_diver_15m = OscillatorDoubleDiverBot(
 
 
 usdcad_rsi_double_diver_5m = OscillatorDoubleDiverBot(
-    chart=Chart("USDCAD!", TimeFrame.five_minutes),
+    chart=Chart("USDCAD", TimeFrame.five_minutes),
     agent=mt5_agent,
     strategy=OscillatorDivergence(
         oscillator_indicator=RSI(14),
@@ -486,7 +486,7 @@ usdcad_rsi_double_diver_5m = OscillatorDoubleDiverBot(
 )
 
 usdcad_rsi_double_diver_15m = OscillatorDoubleDiverBot(
-    chart=Chart("USDCAD!", TimeFrame.fifteen_minutes),
+    chart=Chart("USDCAD", TimeFrame.fifteen_minutes),
     agent=mt5_agent,
     strategy=OscillatorDivergence(
         oscillator_indicator=RSI(14),
@@ -507,7 +507,7 @@ usdcad_rsi_double_diver_15m = OscillatorDoubleDiverBot(
 
 
 nzdusd_rsi_double_diver_5m = OscillatorDoubleDiverBot(
-    chart=Chart("NZDUSD!", TimeFrame.five_minutes),
+    chart=Chart("NZDUSD", TimeFrame.five_minutes),
     agent=mt5_agent,
     strategy=OscillatorDivergence(
         oscillator_indicator=RSI(14),
@@ -527,7 +527,7 @@ nzdusd_rsi_double_diver_5m = OscillatorDoubleDiverBot(
 )
 
 nzdusd_rsi_double_diver_15m = OscillatorDoubleDiverBot(
-    chart=Chart("NZDUSD!", TimeFrame.fifteen_minutes),
+    chart=Chart("NZDUSD", TimeFrame.fifteen_minutes),
     agent=mt5_agent,
     strategy=OscillatorDivergence(
         oscillator_indicator=RSI(14),

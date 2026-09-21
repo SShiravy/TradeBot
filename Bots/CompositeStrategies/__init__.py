@@ -1,5 +1,5 @@
 from Bots.CompositeStrategies.mtr_bot import MTRFilter, MTRPlotter
-from Bots.CompositeStrategies.sr_choch import SRChochBot
+from Bots.CompositeStrategies.sr_choch_strategy import SRChochBot
 from Bots.CompositeStrategies.models import (
     StaticSRSignal,
     DynamicSRSignal,
