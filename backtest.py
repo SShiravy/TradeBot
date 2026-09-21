@@ -19,18 +19,19 @@ if __name__ == "__main__":
 
     # from BackTest.methods import *  # noqa: F403
     # from BackTest.StatisticalMethods import *  # noqa: F403
-    from BackTest.configured_charts import BTCUSD_1m_99000, XAUUSD_1m_5000_test
+    from BackTest.configured_charts import BTCUSD_1m_99000, SOLUSD_1m_99000
     from Bots.DivergenceStrategy.configured_bots import (
         xau_rsi_double_diver_5m,
         xau_rsi_1m,
     )
     from Bots.ChochStrategy.configured_bots import xau_choch_1m
+    from Bots.CompositeStrategies.configured_bots import xau_5m_rsi_choch
 
-    bot = xau_choch_1m
+    bot = xau_5m_rsi_choch
 
     bot.chart = BTCUSD_1m_99000
-    # bot.second_chart = SOLUSD_1m_5000_test
-    backtest_agent = BacktestAgent(bot.agent, [XAUUSD_1m_5000_test, BTCUSD_1m_99000])
+    bot.oscillator_chart = SOLUSD_1m_99000
+    backtest_agent = BacktestAgent(bot.agent, [SOLUSD_1m_99000, BTCUSD_1m_99000])
 
     simulator = SignalBacktest(bot, backtest_agent)
     asyncio.run(simulator.run())
