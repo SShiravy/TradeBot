@@ -17,7 +17,6 @@ from ChartModule.Indicators import (
 )
 from ChartModule.plot import ChartWithOscillatorFigure
 from TraderBot.PositionHandlers.manager import TradesManager
-import TraderBot.Commands as commands
 from TraderBot.PositionHandlers.plot import PositionPlotter
 from TraderBot.trader_bot import TraderBot
 from TraderBot.models import ExchangeAgent, Position, Strategy
@@ -37,8 +36,8 @@ class OscillatorDivergence(Strategy):
         long_support_conditions=SupportCandlesPattern.RAW,
         short_support_conditions=SupportCandlesPattern.RAW,
         name="OscillatorDivergence",
-        inverse_diver_long: bool = False,
-        inverse_diver_short: bool = False,
+        inverse_diver_long: bool = True,
+        inverse_diver_short: bool = True,
         long_other_chart_line_validation: bool = True,
         short_other_chart_line_validation: bool = True,
         body_candle: bool = False,
