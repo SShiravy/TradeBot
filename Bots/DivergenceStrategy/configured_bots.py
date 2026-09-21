@@ -1,3 +1,9 @@
+from Bots.ChochStrategy.choch import ChochQueueFilter
+from Bots.CompositeStrategies.oscillator_diver_choch import OscillatorDiverChochBot
+from Bots.DivergenceStrategy.oscillator_double_divergence import (
+    OscillatorDoubleDiverBot,
+)
+from ChartModule.Indicators.models import SupportCandlesPattern
 from ChartModule.models import Chart, TimeFrame, ChartType
 from ChartModule.Indicators import RSI, EMA, HMA
 from Bots.DivergenceStrategy import (
@@ -206,4 +212,107 @@ xau_rsi_1m = OscillatorDiverBot(
     ),
     n_candle_check=150,
     consider_position=False,
+)
+
+
+#  ----------------------------------------------------------------
+#  ----------------------------------------------------------------
+#  Oscillator Choch -----------------------------------------------
+#  ----------------------------------------------------------------
+#  ----------------------------------------------------------------
+
+xau_5m_rsi_choch = OscillatorDiverChochBot(
+    chart=Chart("XAUUSD!", TimeFrame.one_minute),
+    oscillator_chart=Chart("XAUUSD!", TimeFrame.five_minutes),
+    agent=mt5_agent,
+    strategy=OscillatorDivergence(
+        RSI(),
+        3,
+        100,
+        [],
+        name="RSI_Double_Diver",
+        body_candle=True,
+        inverse_diver_long=False,
+    ),
+    choch_strategy=ChochQueueFilter(
+        pivot_length=2,
+        backstep=2,
+        choch_mode=1,
+        retrace_fib=0.5,
+        use_fibo_filter=True,
+        name="Choch",
+    ),
+    trades_manager=TradesManager(
+        mt5_agent,
+        ForexStepping(),
+        long_trade=True,
+        short_trade=True,
+        trading_constraints=[],
+        reporter=reporter,
+        agent_check=False,
+    ),
+    n_candle_check=150,
+    consider_position=False,
+)
+
+
+xau_15m_rsi_choch = OscillatorDiverChochBot(
+    chart=Chart("XAUUSD!", TimeFrame.one_minute),
+    oscillator_chart=Chart("XAUUSD!", TimeFrame.five_minutes),
+    agent=mt5_agent,
+    strategy=OscillatorDivergence(
+        RSI(),
+        3,
+        100,
+        [],
+        name="RSI_Double_Diver",
+        body_candle=True,
+        inverse_diver_long=False,
+    ),
+    choch_strategy=ChochQueueFilter(
+        pivot_length=2,
+        backstep=2,
+        choch_mode=1,
+        retrace_fib=0.5,
+        use_fibo_filter=True,
+        name="Choch",
+    ),
+    trades_manager=TradesManager(
+        mt5_agent,
+        ForexStepping(),
+        long_trade=True,
+        short_trade=True,
+        trading_constraints=[],
+        reporter=reporter,
+        agent_check=False,
+    ),
+    n_candle_check=150,
+    consider_position=False,
+)
+
+
+#  ----------------------------------------------------------------
+#  ----------------------------------------------------------------
+#  Oscillator Double Diver ----------------------------------------
+#  ----------------------------------------------------------------
+#  ----------------------------------------------------------------
+
+
+xau_rsi_double_diver_5m = OscillatorDoubleDiverBot(
+    chart=Chart("XAUUSD!", TimeFrame.five_minutes),
+    agent=mt5_agent,
+    strategy=OscillatorDivergence(
+        oscillator_indicator=RSI(20),
+        min_step=2,
+        max_step=150,
+    ),
+    trades_manager=TradesManager(
+        mt5_agent,
+        ForexStepping(),
+        long_trade=True,
+        short_trade=True,
+        trading_constraints=[],
+        reporter=reporter,
+        agent_check=False,
+    ),
 )

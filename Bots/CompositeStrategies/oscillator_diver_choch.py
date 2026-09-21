@@ -10,6 +10,9 @@ from Bots.ChochStrategy.choch import ChochQueueFilter, ChochSignal
 from Bots.CompositeStrategies.models import MTRSignal
 from Bots.DivergenceStrategy.divergence import DivergenceSignal
 from Bots.DivergenceStrategy.oscillator_divergence import OscillatorDivergence
+from Bots.DivergenceStrategy.oscillator_double_divergence import (
+    OscillatorDoubleDiverSignal,
+)
 from TraderBot.models import ExchangeAgent, Position
 from TraderBot.PositionHandlers.manager import TradesManager
 from TraderBot.PositionHandlers.plot import PositionPlotter
@@ -22,8 +25,6 @@ logger = logging.getLogger("OscillatorDiverChoch")
 
 
 class OscillatorDiverChochBot(TraderBot):
-    strategy: OscillatorDivergence  # type: ignore[assignment]
-
     def __init__(
         self,
         chart: Chart,
@@ -41,22 +42,14 @@ class OscillatorDiverChochBot(TraderBot):
         n_oscillator_candle_check: int | None = None,
         consider_position: bool = True,
     ):
-        if double_diver:
-            raise NotImplementedError(
-                "double_diver is not supported yet: "
-                "oscillator_double_divergence.py still targets the old "
-                "Line/Signal API and cannot be imported"
-            )
+        self.chart = chart
+        self.agent = agent
+        self.strategy = strategy
+        self.trades_manager = trades_manager
+        self.bar_between_signals = bar_between_signals
+        self.n_candle_check = n_candle_check
+        self.consider_position = consider_position
 
-        super().__init__(
-            chart,
-            agent,
-            strategy,
-            trades_manager,
-            bar_between_signals,
-            n_candle_check,
-            consider_position,
-        )
         self.oscillator_chart = oscillator_chart
         self.choch_strategy = choch_strategy
         self.mtr_indicator = mtr_indicator
@@ -65,7 +58,9 @@ class OscillatorDiverChochBot(TraderBot):
         self.double_diver = double_diver
         self.n_oscillator_candle_check = n_oscillator_candle_check or n_candle_check
 
-        self.last_diver_signal: DivergenceSignal | None = None
+        self.last_diver_signal: (
+            DivergenceSignal | OscillatorDoubleDiverSignal | None
+        ) = None
         self.last_diver_report_id: int | None = None
         self.last_diver_checked_timestamp: int | None = None
         self.last_mtr_checked_timestamp: int | None = None
@@ -151,7 +146,7 @@ class OscillatorDiverChochBot(TraderBot):
         self.strategy.plotter(
             figure.main_pane,
             figure.oscillator_pane,
-            signal,
+            signal,  # type: ignore
             self.strategy.indicators,
         )
         self.last_diver_report_id = await self._report(signal, figure)
@@ -207,8 +202,6 @@ class OscillatorDiverChochBot(TraderBot):
     def _diver_still_valid(self, choch_chartdata: ChartData) -> bool:
         if self.last_diver_signal is None:
             return False
-        # measured from the END of the divergence line -- the bar the
-        # divergence actually completed on
         elapsed = (
             choch_chartdata[-1].timestamp
             - self.last_diver_signal.main_chart_line.end_timestamp

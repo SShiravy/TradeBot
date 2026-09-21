@@ -86,18 +86,26 @@ class TraderBot:
             return None
         return signal
 
-    def trade(
-        self, signal: Signal, position: Position, plot: Figure
-    ) -> Position | None:
+    def generate_figure(
+        self,
+        chartdata: ChartData,
+        signal: Signal,
+        position: Position | None = None,
+        *args,
+        **kwargs,
+    ) -> Figure:
+        figure = SingleChartFigure(
+            chartdata,
+            self.n_candle_check,
+        )
+        self.strategy.plotter(figure.main_pane, signal, self.strategy.indicators)
+        if position:
+            PositionPlotter()(figure.main_pane, position)
+        return figure
+
+    def trade(self, position: Position, plot: Figure) -> Position | None:
         report_command = None
         if self.trades_manager.reporter and self.trades_manager.reporter.enable:
-            PositionPlotter()(plot.main_pane, position)
-            self.strategy.plotter(
-                plot.main_pane,
-                signal,
-                self.strategy.indicators,
-                self.strategy.indicators,
-            )
             report_command = commands.NewPositionReport(plot=plot)
         commands.OpenPosition(report_command).send(
             self.trades_manager.give_command_contex(position)
@@ -113,12 +121,11 @@ class TraderBot:
             if self.consider_position:
                 position = self.trades_manager.generate_position(signal)
                 if position:
-                    plot = SingleChartFigure(chartdata)
-                    self.trade(signal, position, plot)
+                    figure = self.generate_figure(chartdata, signal, position)
+                    self.trade(position, figure)
             else:
-                plot = SingleChartFigure(chartdata)
-                self.strategy.plotter(plot.main_pane, signal, self.strategy.indicators)
-                commands.NewSignalReport(signal, plot=plot).send(
+                figure = self.generate_figure(chartdata, signal)
+                commands.NewSignalReport(signal, plot=figure).send(
                     reporter=self.trades_manager.reporter
                 )
 

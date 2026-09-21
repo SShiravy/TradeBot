@@ -5,6 +5,7 @@ from Bots.DivergenceStrategy.configured_bots import (
     btc_eth_1m,
     btc_rsi_1m,
     sol_rsi_1m,
+    xau_5m_rsi_choch,
 )
 from TraderBot import BotsManager
 from TelegramBot import TelegramReporter
@@ -24,7 +25,9 @@ reporter = TelegramReporter(
     "Divergence", settings.TELEGRAM_BOT_TOKEN, settings.TELEGRAM_REPORT_CHANNEL
 )
 manager = BotsManager(
-    "Divergence", reporter, [btc_sol_1m, btc_eth_1m, btc_rsi_1m, sol_rsi_1m]
+    "Divergence",
+    reporter,
+    [btc_sol_1m, btc_eth_1m, btc_rsi_1m, sol_rsi_1m, xau_5m_rsi_choch],
 )
 
 if __name__ == "__main__":

@@ -14,8 +14,9 @@ from ChartModule.Indicators import (
 from ChartModule.plot import ChartPane, DoubleChartFigure
 from TraderBot.PositionHandlers.manager import TradesManager
 import TraderBot.Commands as commands
+from TraderBot.PositionHandlers.plot import PositionPlotter
 from TraderBot.trader_bot import TraderBot
-from TraderBot.models import ExchangeAgent, Strategy, StrategyPlotter
+from TraderBot.models import ExchangeAgent, Position, Strategy, StrategyPlotter
 from dataclasses import dataclass
 from typing import Literal
 import logging
@@ -276,6 +277,26 @@ class DivergenceBot(TraderBot):
             return None
         return signal
 
+    def generate_figure(
+        self,
+        chartdata: ChartData,
+        second_chartdata: ChartData,
+        signal: DivergenceSignal,
+        position: Position | None = None,
+    ) -> DoubleChartFigure:
+        figure = DoubleChartFigure(
+            chartdata,
+            second_chartdata,
+            self.n_candle_check,
+        )
+        self.strategy.plotter(
+            figure.main_pane, figure.second_pane, signal, self.strategy.indicators
+        )
+        if position:
+            PositionPlotter()(figure.main_pane, position)
+
+        return figure
+
     async def task(self):
         chartdata = self.get_chartdata()
         last_timestamp = chartdata.timestamps[-1]
@@ -288,18 +309,13 @@ class DivergenceBot(TraderBot):
             if self.consider_position:
                 position = self.trades_manager.generate_position(signal)
                 if position:
-                    plot = DoubleChartFigure(
-                        chartdata, second_chartdata, self.n_candle_check
+                    figure = self.generate_figure(
+                        chartdata, second_chartdata, signal, position
                     )
-                    self.trade(signal, position, plot)
+                    self.trade(position, figure)
             else:
-                plot = DoubleChartFigure(
-                    chartdata, second_chartdata, self.n_candle_check
-                )
-                self.strategy.plotter(
-                    plot.main_pane, plot.second_pane, signal, self.strategy.indicators
-                )
-                commands.NewSignalReport(signal, plot=plot).send(
+                figure = self.generate_figure(chartdata, second_chartdata, signal)
+                commands.NewSignalReport(signal, plot=figure).send(
                     reporter=self.trades_manager.reporter
                 )
 

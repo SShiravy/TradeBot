@@ -1,3 +1,5 @@
+from typing import overload
+
 import numpy as np
 
 from Bots.DivergenceStrategy.divergence import DivergencePlotter, DivergenceSignal
@@ -16,8 +18,9 @@ from ChartModule.Indicators import (
 from ChartModule.plot import ChartWithOscillatorFigure
 from TraderBot.PositionHandlers.manager import TradesManager
 import TraderBot.Commands as commands
+from TraderBot.PositionHandlers.plot import PositionPlotter
 from TraderBot.trader_bot import TraderBot
-from TraderBot.models import ExchangeAgent, Strategy
+from TraderBot.models import ExchangeAgent, Position, Strategy
 import logging
 
 
@@ -31,8 +34,8 @@ class OscillatorDivergence(Strategy):
         min_step: int,
         max_step: int,
         indicators: list[Indicator] = [],
-        long_support_conditions=SupportCandlesPattern.RED_GREEN,
-        short_support_conditions=SupportCandlesPattern.GREEN_RED,
+        long_support_conditions=SupportCandlesPattern.RAW,
+        short_support_conditions=SupportCandlesPattern.RAW,
         name="OscillatorDivergence",
         inverse_diver_long: bool = False,
         inverse_diver_short: bool = False,
@@ -161,27 +164,25 @@ class OscillatorDivergence(Strategy):
         )
         return signal
 
-    def check_signal(
+    def signal_from(
         self,
         chartdata: ChartData,
+        oscillator_data: np.ndarray,
         check_long: bool = True,
         check_short: bool = True,
+        confirmations: list[MarketSide] | None = None,
     ) -> DivergenceSignal | None:
+        if confirmations is None:
+            confirmations = self.get_indicators_confirmation(chartdata)
+
         long_signal = None
         short_signal = None
 
-        confirmations = self.get_indicators_confirmation(chartdata)
-        self.oscillator_indicator.set(chartdata)
-
         if check_long and MarketSide.BEARISH not in confirmations:
-            long_signal = self.check_long_signal(
-                chartdata, self.oscillator_indicator.data
-            )
+            long_signal = self.check_long_signal(chartdata, oscillator_data)
 
         if check_short and MarketSide.BULLISH not in confirmations:
-            short_signal = self.check_short_signal(
-                chartdata, self.oscillator_indicator.data
-            )
+            short_signal = self.check_short_signal(chartdata, oscillator_data)
 
         if long_signal and short_signal:
             logger.warning("long and short signal in same time!")
@@ -194,6 +195,22 @@ class OscillatorDivergence(Strategy):
             return long_signal
 
         return None
+
+    def check_signal(
+        self,
+        chartdata: ChartData,
+        check_long: bool = True,
+        check_short: bool = True,
+    ) -> DivergenceSignal | None:
+        confirmations = self.get_indicators_confirmation(chartdata)
+        self.oscillator_indicator.set(chartdata)
+        return self.signal_from(
+            chartdata,
+            self.oscillator_indicator.data,
+            check_long,
+            check_short,
+            confirmations,
+        )
 
 
 class OscillatorDiverBot(TraderBot):
@@ -215,35 +232,22 @@ class OscillatorDiverBot(TraderBot):
         self.n_candle_check = n_candle_check
         self.consider_position = consider_position
 
-    async def task(self):
-        chartdata = self.get_chartdata()
-        last_timestamp = chartdata.timestamps[-1]
-        chartdata = chartdata.subdata(end_index=-2)
-        signal = self.check_signal(chartdata)
-        if signal:
-            if self.consider_position:
-                position = self.trades_manager.generate_position(signal)
-                if position:
-                    plot = ChartWithOscillatorFigure(
-                        chartdata,
-                        self.strategy.oscillator_indicator.data,
-                        self.n_candle_check,
-                    )
-                    self.trade(signal, position, plot)
-            else:
-                plot = ChartWithOscillatorFigure(
-                    chartdata,
-                    self.strategy.oscillator_indicator.data,
-                    self.n_candle_check,
-                )
-                self.strategy.plotter(
-                    plot.main_pane,
-                    plot.oscillator_pane,
-                    signal,  # type: ignore
-                    self.strategy.indicators,
-                )
-                commands.NewSignalReport(signal, plot=plot).send(
-                    reporter=self.trades_manager.reporter
-                )
-
-        return self.give_delay(last_timestamp)
+    def generate_figure(
+        self,
+        chartdata: ChartData,
+        signal: DivergenceSignal,
+        position: Position | None = None,
+        *args,
+        **kwargs,
+    ) -> ChartWithOscillatorFigure:
+        figure = ChartWithOscillatorFigure(
+            chartdata,
+            self.strategy.oscillator_indicator.data,
+            self.n_candle_check,
+        )
+        self.strategy.plotter(
+            figure.main_pane, figure.oscillator_pane, signal, self.strategy.indicators
+        )
+        if position:
+            PositionPlotter()(figure.main_pane, position)
+        return figure

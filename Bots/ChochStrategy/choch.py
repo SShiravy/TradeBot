@@ -881,33 +881,7 @@ class ChochQueueFilter(Strategy):
         )
 
 
-def generate_dummy_signal(
-    base_chartdata: ChartData,
-    side: MarketSide = MarketSide.BULLISH,
-) -> ChochSignal:
-    pivot_candle = base_chartdata[-5]
-    break_candle = base_chartdata[-2]
-    touch_candle = base_chartdata[-1]
-    source = CandlesSource.High if side is MarketSide.BEARISH else CandlesSource.Low
-    dummy_model = ChochModel(
-        side=side,
-        break_candle=break_candle,
-        break_level=source(pivot_candle),
-        pivot_candle=pivot_candle,
-        anchor=source(base_chartdata[-8]),
-        is_choch=True,
-    )
-    dummy_model.validated = True
-    dummy_model.touch_candle = touch_candle
-    dummy_model.retrace_level = source(touch_candle)
-    return ChochSignal(
-        base_chartdata.chart, touch_candle, side, "dummy choch", dummy_model
-    )
-
-
 class ChochBot(TraderBot):
-    strategy: ChochQueueFilter  # type: ignore[assignment]
-
     def __init__(
         self,
         chart: Chart,
