@@ -24,8 +24,9 @@ if __name__ == "__main__":
         xau_rsi_double_diver_5m,
         xau_rsi_1m,
     )
+    from Bots.ChochStrategy.configured_bots import xau_choch_1m
 
-    bot = xau_rsi_double_diver_5m
+    bot = xau_choch_1m
 
     bot.chart = BTCUSD_1m_99000
     # bot.second_chart = SOLUSD_1m_5000_test

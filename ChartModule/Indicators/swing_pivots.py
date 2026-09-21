@@ -1,7 +1,7 @@
 from ChartModule.models import Candle, ChartData, CandlesSource
 from ChartModule.Indicators.models import Indicator, IndicatorPlotter, IndicatorRule
 from ChartModule.plot import ChartPane
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 
 
 @dataclass(slots=True, frozen=True)
@@ -64,7 +64,8 @@ class SwingPivots(Indicator):
 
     Indices are positions into the chartdata passed in. When that chartdata
     is a sliding window, indices recorded on an earlier call go stale by
-    however many candles fell off the front; consumers rebase them.
+    however many candles fell off the front, so every incremental update
+    rebases the whole running state first -- see `_rebase`.
     """
 
     def __init__(
@@ -87,6 +88,9 @@ class SwingPivots(Indicator):
         self._high_price = 0.0
         self._low_idx = self._low_last_update = 0
         self._low_price = 0.0
+        # where the last-seen candle sat in the window last time, so an
+        # update can measure how far the window has slid and rebase.
+        self._last_checked_index = 0
 
     def export_configs(self) -> dict:
         configs = super().export_configs()
@@ -116,6 +120,36 @@ class SwingPivots(Indicator):
             [p for p in self._raw_pivots if not p.is_high], False
         )
         return sorted(highs + lows, key=lambda pivot: pivot.confirmed_index)
+
+    def _rebase(self, shift: int) -> bool:
+        """
+        The window slid forward by `shift` bars. Move every recorded
+        position back by the same amount so it still points at the same
+        real candle, and drop the raw pivots that fell off the front.
+
+        Returns False when the running extremes themselves scrolled out of
+        the window -- their true price can no longer be reconstructed from
+        what is left, so the caller must recompute from scratch instead.
+
+        Without this the scan state stays pinned to the coordinates of
+        whatever window it last saw: `i - self._low_last_update` is 0 on
+        every subsequent bar, the depth test can never fire again, and the
+        indicator silently freezes on its first result forever.
+        """
+        if self._low_idx - shift < 0 or self._high_idx - shift < 0:
+            return False
+
+        self._low_idx -= shift
+        self._high_idx -= shift
+        self._low_last_update = max(self._low_last_update - shift, 0)
+        self._high_last_update = max(self._high_last_update - shift, 0)
+
+        self._raw_pivots = [
+            replace(p, index=p.index - shift, confirmed_index=p.confirmed_index - shift)
+            for p in self._raw_pivots
+            if p.index - shift >= 0
+        ]
+        return True
 
     def _scan(self, chartdata: ChartData, start: int, stop: int) -> list[PivotPoint]:
         """
@@ -223,13 +257,22 @@ class SwingPivots(Indicator):
 
         self._scan(chartdata, 1, len(chartdata))
         self._refresh_live_pivots(chartdata)
+        self._last_checked_index = len(chartdata) - 1
         return self._confirmed_from_raw()
 
     def _calculate_new(
         self, chartdata: ChartData, start: int, *args, **kwargs
     ) -> list[PivotPoint]:
+        # position of the last-seen candle in the NEW window vs where it was
+        # recorded last time -> how far the window has slid forward. Rebase
+        # before scanning: every index below is in the new window's frame.
+        shift = self._last_checked_index - (start - 1)
+        if shift > 0 and not self._rebase(shift):
+            return self._calculate(chartdata, *args, **kwargs)
+
         new_pivots = self._scan(chartdata, start, len(chartdata))
         self._refresh_live_pivots(chartdata)
+        self._last_checked_index = len(chartdata) - 1
         return new_pivots
 
     def _merge(self, new_segment: list[PivotPoint]) -> list[PivotPoint]:

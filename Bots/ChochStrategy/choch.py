@@ -125,8 +125,11 @@ class ChochPlotter(StrategyPlotter):
                 model.retrace_level,
                 color=color,
             )
-            pane.mark_price(
-                model.touch_candle.timestamp, model.retrace_level, model.side
+            # a dot, not mark_price(): the touch candle IS the signal candle,
+            # and a second side-coloured triangle there reads as a second
+            # signal on the same bar. SignalPlotter already marked it.
+            pane.mark_points(
+                [(model.touch_candle.timestamp, model.retrace_level)], color=color
             )
 
     def draw_pivots(self, pane: ChartPane, pivot_events: list[dict]) -> None:
@@ -174,7 +177,7 @@ class ChochQueueFilter(Strategy):
         plot_pivots: bool = False,
         min_choch_candles: int = 3,
         choch_mode: int = 2,
-        name="ChochQueue",
+        name="Choch",
     ) -> None:
         """
         choch_mode: which CHoCH detection engine to use.

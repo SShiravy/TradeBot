@@ -1,23 +1,18 @@
-import numpy as np
-
 from ChartModule.models import (
     Chart,
     Signal,
     ChartData,
-    MarketSide,
 )
-from ChartModule.Indicators import Indicator, Line, SupportCandlesPattern
-from ChartModule.plot import ChartPane, ChartWithOscillatorFigure, Figure
-from Bots.DivergenceStrategy.divergence import DivergenceSignal, DivergencePlotter
+from ChartModule.Indicators import Line
+from ChartModule.plot import ChartWithOscillatorFigure
+from Bots.DivergenceStrategy.divergence import DivergenceSignal
 from Bots.DivergenceStrategy.oscillator_divergence import (
     OscillatorDiverBot,
     OscillatorDivergence,
 )
 from TraderBot.PositionHandlers.manager import TradesManager
 from TraderBot.PositionHandlers.plot import PositionPlotter
-from TraderBot.trader_bot import TraderBot
 from TraderBot.models import ExchangeAgent, Position
-import TraderBot.Commands as commands
 from dataclasses import dataclass
 import logging
 
