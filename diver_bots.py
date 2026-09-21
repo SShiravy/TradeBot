@@ -1,12 +1,6 @@
 import asyncio
 import logging
-from Bots.DivergenceStrategy.configured_bots import (
-    btc_sol_1m,
-    btc_eth_1m,
-    btc_rsi_1m,
-    sol_rsi_1m,
-    xau_5m_rsi_choch,
-)
+from Bots.DivergenceStrategy.configured_bots import *
 from TraderBot import BotsManager
 from TelegramBot import TelegramReporter
 from Settings import settings, build_logger, LoggerConfig
@@ -27,7 +21,24 @@ reporter = TelegramReporter(
 manager = BotsManager(
     "Divergence",
     reporter,
-    [btc_sol_1m, btc_eth_1m, btc_rsi_1m, sol_rsi_1m, xau_5m_rsi_choch],
+    [
+        xau_rsi_double_diver_5m,
+        xau_rsi_double_diver_5m,
+        eurusd_rsi_double_diver_5m,
+        eurusd_rsi_double_diver_15m,
+        usdjpy_rsi_double_diver_5m,
+        usdjpy_rsi_double_diver_15m,
+        gbpusd_rsi_double_diver_5m,
+        gbpusd_rsi_double_diver_15m,
+        usdchf_rsi_double_diver_5m,
+        usdchf_rsi_double_diver_15m,
+        audusd_rsi_double_diver_5m,
+        audusd_rsi_double_diver_15m,
+        usdcad_rsi_double_diver_5m,
+        usdcad_rsi_double_diver_15m,
+        nzdusd_rsi_double_diver_5m,
+        nzdusd_rsi_double_diver_15m,
+    ],
 )
 
 if __name__ == "__main__":
