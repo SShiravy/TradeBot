@@ -71,7 +71,7 @@ xau_sr_choch_5m_1m = SRChochBot(
     bar_between_signals=2,
     n_candle_confirmation=60,
     n_candle_check=300,
-    consider_position=True,
+    consider_position=False,
     trades_manager=TradesManager(
         mt5_agent,
         ForexStepping(),

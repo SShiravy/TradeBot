@@ -163,6 +163,9 @@ class ChartPane:
             ax=self.ax,
         )
 
+    def add_legend(self, text: str) -> None:
+        fplt.add_legend(text, ax=self.ax)
+
     def mark_points(
         self,
         points: list[tuple[int, float]],
@@ -172,6 +175,9 @@ class ChartPane:
     ) -> None:
         if not points:
             return
+        # finplot warns and misdraws on a non-ascending x; callers collect
+        # points in whatever order they walk their own data
+        points = sorted(points, key=lambda point: point[0])
         x, y = zip(*points)
         fplt.plot(
             np.array(x),

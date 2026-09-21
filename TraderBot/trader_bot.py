@@ -70,12 +70,18 @@ class TraderBot:
         """
         return seconds of delay
         """
+        if last_candle_timestamp == getattr(self, "last_candle_timestamp", None):
+            return 5
+        self.last_candle_timestamp = last_candle_timestamp
         bar_seconds = self.chart.timeframe.minutes * 60 * jump
         next_timestamp = last_candle_timestamp + bar_seconds
         delay = next_timestamp - TimeHandler.now()
         logging.debug(
             f"{bar_seconds=}|{jump=}|{next_timestamp=}|{TimeHandler.now()}|{last_candle_timestamp}|{delay=}"
         )
+        if delay <= 0:
+            delay = 4
+
         return delay + 1
 
     def check_signal(self, chartdata: ChartData, *args, **kwargs) -> None | Signal:

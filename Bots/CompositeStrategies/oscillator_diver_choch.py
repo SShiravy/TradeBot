@@ -318,7 +318,7 @@ class OscillatorDiverChochBot(TraderBot):
             return None
 
         if choch_signal.side is not self.last_diver_signal.side:
-            logger.warning(
+            logger.debug(
                 f"different side for divergence & choch: "
                 f"{self.last_diver_signal.side} | {choch_signal.side}"
             )

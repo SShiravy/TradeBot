@@ -10,14 +10,9 @@ from ChartModule.Indicators import Indicator, SupportCandlesPattern
 from ChartModule.Indicators.swing_pivots import SwingPivots, PivotPoint
 from ChartModule.Indicators.moving_avg import EMA
 from ChartModule.Indicators.atr import ATR
-from ChartModule.plot import ChartPane, DoubleChartFigure, SignalPlotter
-from Bots.ChochStrategy.choch import (
-    ChochQueueFilter,
-    ChochSignal,
-    ChochPlotter,
-    generate_dummy_signal as generate_dummy_choch_signal,
-)
-from TraderBot.models import ExchangeAgent, Strategy, StrategyPlotter
+from ChartModule.plot import ChartPane, DoubleChartFigure, SignalPlotter, Figure
+from Bots.ChochStrategy.choch import ChochQueueFilter, ChochSignal, ChochPlotter
+from TraderBot.models import ExchangeAgent, Position, Strategy, StrategyPlotter
 from TraderBot.PositionHandlers.manager import TradesManager
 from TraderBot.PositionHandlers.plot import PositionPlotter
 from TraderBot.trader_bot import TraderBot
@@ -80,16 +75,32 @@ class EmaPivotChochPlotter(StrategyPlotter):
         return colors
 
     def draw_emas(self, pane: ChartPane, emas: dict[int, pd.Series]) -> None:
-        """Every configured EMA on the HTF pane, each with a legend entry so
-        the color-to-EMA mapping is visible next to the chart."""
+        """
+        Every configured EMA on the HTF pane, with the color-to-EMA mapping
+        in one legend row.
+
+        The mapping deliberately does NOT go through `legend=` on each
+        line: this pane already carries a candlestick datasource, and a
+        second legend *item* on such a pane collapses its x-range, which
+        squeezes every EMA into a few pixels. See ChartPane.add_legend.
+        """
+        if not emas:
+            return
         colors = self.ema_colors(list(emas))
         for period, ema_values in emas.items():
             pane.linear_plot(
                 ema_values.index.to_numpy(),
                 ema_values.to_numpy(),
                 color=colors[period],
-                legend=f"EMA{period}",
             )
+            if ema_values.notna().any():
+                pane.extend_y_range(float(ema_values.min()), float(ema_values.max()))
+        pane.add_legend(
+            " ".join(
+                f"<span style='color:{colors[period]}'>EMA{period}</span>"
+                for period in emas
+            )
+        )
 
     def __call__(
         self,
@@ -565,32 +576,6 @@ class EmaPivotChochFilter(Strategy):
             )
         return sorted(out, key=lambda d: d["pivot_time"])
 
-    def generate_dummy_signal(
-        self, base_chartdata: ChartData, side: MarketSide = MarketSide.BULLISH
-    ) -> EmaPivotChochSignal:
-        inner_signal = generate_dummy_choch_signal(base_chartdata, side)
-        pivot_index = len(base_chartdata) - 8
-        pivot_candle = base_chartdata[pivot_index]
-        dummy_pivot = PivotPoint(
-            index=pivot_index,
-            candle=pivot_candle,
-            price=pivot_candle.high if side is MarketSide.BEARISH else pivot_candle.low,
-            is_high=side is MarketSide.BEARISH,
-            confirmed_index=pivot_index,
-            confirmed=True,
-        )
-        ema_value = (pivot_candle.high + pivot_candle.low) / 2
-        touches = (EmaTouch(self.ema_periods[0], ema_value),)
-        return EmaPivotChochSignal(
-            base_chartdata.chart,
-            inner_signal.candle,
-            side,
-            self.name,
-            dummy_pivot,
-            touches,
-            inner_signal,
-        )
-
 
 class EmaPivotChochBot(TraderBot):
     """
@@ -656,6 +641,11 @@ class EmaPivotChochBot(TraderBot):
         )
         return conf_dict
 
+    @property
+    def _reporter(self):
+        reporter = self.trades_manager.reporter
+        return reporter if reporter and reporter.enable else None
+
     def get_ema_htf_chartdata(self) -> ChartData | None:
         if not self.n_ema_htf_candle_check:
             return None
@@ -669,12 +659,40 @@ class EmaPivotChochBot(TraderBot):
         plot_n_candles = max(len(ltf_chartdata), len(htf_chartdata))
         return DoubleChartFigure(ltf_chartdata, htf_chartdata, plot_n_candles)
 
-    async def send_touch_report(
+    def generate_figure(  # type: ignore[override]
+        self,
+        chartdata: ChartData,
+        signal: EmaPivotChochSignal,
+        position: Position | None = None,
+        htf_chartdata: ChartData | None = None,
+        *args,
+        **kwargs,
+    ) -> DoubleChartFigure:
+        """
+        The base builds a SingleChartFigure and calls the plotter as
+        `plotter(main_pane, signal, indicators)`. This plotter is the
+        two-pane `(pane, second_pane, signal, ...)` shape, so `signal`
+        would bind to `second_pane` -- hence the override. `htf_chartdata`
+        comes after `position` so the base's positional order still holds.
+        """
+        if htf_chartdata is None:
+            raise ValueError("EmaPivotChochBot.generate_figure needs htf_chartdata")
+        figure = self._make_figure(chartdata, htf_chartdata)
+        self.strategy.plotter(
+            figure.main_pane,
+            figure.second_pane,
+            signal,
+            self.strategy.indicators,
+            self.strategy.emas,
+            use_fibo_filter=self.strategy.use_fibo_filter,
+        )
+        if position:
+            PositionPlotter()(figure.main_pane, position)
+        return figure
+
+    def generate_touch_figure(
         self, ltf_chartdata: ChartData, htf_chartdata: ChartData
-    ) -> None:
-        reporter = self.trades_manager.reporter
-        if reporter is None or not reporter.enable:
-            return
+    ) -> DoubleChartFigure:
         figure = self._make_figure(ltf_chartdata, htf_chartdata)
         self.strategy.plotter.draw_emas(figure.second_pane, self.strategy.emas)
         self.strategy.plotter.draw_touches(
@@ -683,33 +701,44 @@ class EmaPivotChochBot(TraderBot):
             self.strategy._touch_events,
             touch_keys=self.strategy._new_touch_keys,
         )
+        return figure
 
-        image_path = figure.save_image(f"{self.strategy.name}_{self.chart}")
+    def _touch_report_name(self, ltf_chartdata: ChartData) -> str:
+        """
+        Named after the touch it is reporting, the way NewSignalReport
+        names a signal image after its candle. A fixed name would have
+        every touch overwrite the previous one in the same file.
+        """
+        keys = self.strategy._new_touch_keys
+        if keys:
+            _pivot, _touches, touch_candle = self.strategy._touch_events[keys[-1]]
+            return str(touch_candle.timestamp)
+        return str(ltf_chartdata[-1].timestamp)
+
+    async def send_touch_report(
+        self, ltf_chartdata: ChartData, htf_chartdata: ChartData
+    ) -> None:
+        """
+        Not a Signal, so it cannot go through NewSignalReport -- this stays
+        a direct send. The image still lands under the reporter's save_path
+        the way every queued report does.
+        """
+        reporter = self._reporter
+        if reporter is None:
+            return
+        figure = self.generate_touch_figure(ltf_chartdata, htf_chartdata)
+        image_path = figure.save_image(
+            name=self._touch_report_name(ltf_chartdata),
+            path=reporter.save_path or "Records/",
+        )
         await reporter.send_msg(
             f"{self.strategy.name}\n📈 {self.chart}\nEMA-pivot touch report",
             img_path=image_path,
         )
 
-    def trade(self, signal, position, plot):  # type: ignore[override]
-        """
-        TraderBot.trade() calls the plotter as
-        `plotter(main_pane, signal, indicators, indicators)`, which is the
-        single-pane shape -- on this two-pane plotter `signal` would bind
-        to `second_pane`. Drawing is done here instead so both panes and
-        the EMA series reach the plotter correctly.
-        """
+    def trade(self, position: Position, plot: Figure) -> Position | None:
         report_command = None
-        reporter = self.trades_manager.reporter
-        if reporter and reporter.enable:
-            PositionPlotter()(plot.main_pane, position)
-            self.strategy.plotter(
-                plot.main_pane,
-                plot.second_pane,
-                signal,
-                self.strategy.indicators,
-                self.strategy.emas,
-                use_fibo_filter=self.strategy.use_fibo_filter,
-            )
+        if self._reporter is not None:
             report_command = commands.NewPositionReport(plot=plot)
         commands.OpenPosition(report_command).send(
             self.trades_manager.give_command_contex(position)
@@ -721,6 +750,8 @@ class EmaPivotChochBot(TraderBot):
         chartdata: ChartData,
         htf_chartdata: ChartData,
         ema_htf_chartdata: ChartData | None = None,
+        *args,
+        **kwargs,
     ) -> EmaPivotChochSignal | None:
         return self.strategy.check_signal(
             chartdata,
@@ -729,6 +760,34 @@ class EmaPivotChochBot(TraderBot):
             self.trades_manager.short_trade,
             ema_htf_chartdata,
         )
+
+    def find_signal(
+        self,
+        chartdata: ChartData,
+        htf_chartdata: ChartData,
+        ema_htf_chartdata: ChartData | None = None,
+    ) -> EmaPivotChochSignal | None:
+        signal = self.check_signal(chartdata, htf_chartdata, ema_htf_chartdata)
+        if signal is None:
+            return None
+
+        if self.consider_position:
+            position = self.trades_manager.generate_position(
+                signal, sl_base_price=signal.inner_signal.choch_model.anchor
+            )
+            if position is None:
+                logger.warning("Position is None")
+                return None
+            self.trade(
+                position,
+                self.generate_figure(chartdata, signal, position, htf_chartdata),
+            )
+        else:
+            commands.NewSignalReport(
+                signal,
+                plot=self.generate_figure(chartdata, signal, None, htf_chartdata),
+            ).send(reporter=self.trades_manager.reporter)
+        return signal
 
     async def task(self):
         chartdata = self.get_chartdata()
@@ -739,28 +798,7 @@ class EmaPivotChochBot(TraderBot):
         ).subdata(end_index=-2)
         ema_htf_chartdata = self.get_ema_htf_chartdata()
 
-        signal = self.check_signal(chartdata, htf_chartdata, ema_htf_chartdata)
-
-        if signal:
-            figure = self._make_figure(chartdata, htf_chartdata)
-            if self.consider_position:
-                position = self.trades_manager.generate_position(
-                    signal, sl_base_price=signal.inner_signal.choch_model.anchor
-                )
-                if position:
-                    self.trade(signal, position, figure)
-            else:
-                self.strategy.plotter(
-                    figure.main_pane,
-                    figure.second_pane,
-                    signal,
-                    self.strategy.indicators,
-                    self.strategy.emas,
-                    use_fibo_filter=self.strategy.use_fibo_filter,
-                )
-                commands.NewSignalReport(signal, plot=figure).send(
-                    reporter=self.trades_manager.reporter
-                )
+        self.find_signal(chartdata, htf_chartdata, ema_htf_chartdata)
 
         # populated fresh by strategy.check_signal() above with only the
         # touch(es) registered THIS call

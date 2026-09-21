@@ -218,7 +218,7 @@ class AutoTrendlines(Indicator):
         merge_projection_bars: int = 50,
         display_only_aligned: bool = True,
         keep_archived: bool = True,
-        break_logic_mode: BreakLogicMode = BreakLogicMode.ATR_DISTANCE,
+        break_logic_mode: BreakLogicMode = BreakLogicMode.CANDLE_CLOSE,
         candle_confirm_count: int = 2,
         max_stored_mtr_events: int = 300,
         rules: list[IndicatorRule] = [],

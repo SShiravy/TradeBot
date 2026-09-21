@@ -108,7 +108,7 @@ class BotsManager:
         while not self._stop_event.is_set():
             await asyncio.sleep(self.heartbeat_interval)
             current, peak = tracemalloc.get_traced_memory()
-            elapsed = TimeHandler.elapsed_since(self._start_time)
+            elapsed = timedelta(seconds=TimeHandler.elapsed_since(self._start_time))
             await self.reporter.send_msg(
                 f"{self.name}\n👋🤖 Lifespan: {elapsed}\n"
                 f"Memory: {current / 1024 / 1024:.2f} MB (peak {peak / 1024 / 1024:.2f} MB)"

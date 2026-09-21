@@ -19,7 +19,12 @@ xau_choch_1m = ChochBot(
     chart=Chart("XAUUSD", TimeFrame.one_minute),
     agent=mt5_agent,
     strategy=ChochQueueFilter(
-        pivot_length=2, backstep=2, choch_mode=2, retrace_fib=0.5, use_fibo_filter=True
+        pivot_length=2,
+        backstep=2,
+        choch_mode=1,
+        retrace_fib=0.5,
+        use_bos=False,
+        use_fibo_filter=True,
     ),
     trades_manager=TradesManager(
         mt5_agent,

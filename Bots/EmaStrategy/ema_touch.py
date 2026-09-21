@@ -8,8 +8,11 @@ from ChartModule.models import (
 )
 from ChartModule.Indicators import Indicator, SupportCandlesPattern
 from ChartModule.Indicators.moving_avg import EMA
-from ChartModule.plot import ChartPane
-from TraderBot.models import Strategy, StrategyPlotter
+from ChartModule.plot import ChartPane, SingleChartFigure
+from TraderBot.models import ExchangeAgent, Position, Strategy, StrategyPlotter
+from TraderBot.PositionHandlers.manager import TradesManager
+from TraderBot.PositionHandlers.plot import PositionPlotter
+from TraderBot.trader_bot import TraderBot
 from dataclasses import dataclass
 import pandas as pd
 import numpy as np
@@ -407,3 +410,55 @@ class EmaTouchFilter(Strategy):
         self.plotter.draw_all(
             pane, signals, self.indicators, self._emas, self.ema_periods
         )
+
+
+class EmaTouchBot(TraderBot):
+    """
+    Single-chart bot -- everything but the figure comes from TraderBot.
+
+    Same shape as OscillatorDiverBot: the only thing this strategy's
+    plotter needs that the base does not supply is the EMA series it just
+    computed, so `generate_figure` is the one override.
+    """
+
+    strategy: EmaTouchFilter  # type: ignore[assignment]
+
+    def __init__(
+        self,
+        chart: Chart,
+        agent: ExchangeAgent,
+        strategy: EmaTouchFilter,
+        trades_manager: TradesManager,
+        bar_between_signals: int = 2,
+        n_candle_check: int = 500,
+        consider_position: bool = True,
+    ):
+        super().__init__(
+            chart,
+            agent,
+            strategy,
+            trades_manager,
+            bar_between_signals,
+            n_candle_check,
+            consider_position,
+        )
+
+    def generate_figure(  # type: ignore[override]
+        self,
+        chartdata: ChartData,
+        signal: EmaTouchSignal,
+        position: Position | None = None,
+        *args,
+        **kwargs,
+    ) -> SingleChartFigure:
+        figure = SingleChartFigure(chartdata, self.n_candle_check)
+        self.strategy.plotter(
+            figure.main_pane,
+            signal,
+            self.strategy.indicators,
+            self.strategy.emas,
+            self.strategy.ema_periods,
+        )
+        if position:
+            PositionPlotter()(figure.main_pane, position)
+        return figure
