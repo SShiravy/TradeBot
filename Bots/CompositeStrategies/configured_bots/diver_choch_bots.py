@@ -36,7 +36,6 @@ xau_5m_rsi_choch = OscillatorDiverChochBot(
         [],
         name="RSI_Diver",
         body_candle=True,
-        inverse_diver_long=False,
     ),
     choch_strategy=ChochQueueFilter(
         pivot_length=2,
@@ -72,7 +71,6 @@ xau_15m_rsi_choch = OscillatorDiverChochBot(
         [],
         name="RSI_Diver",
         body_candle=True,
-        inverse_diver_long=False,
     ),
     choch_strategy=ChochQueueFilter(
         pivot_length=2,
@@ -107,7 +105,6 @@ eurusd_5m_rsi_choch = OscillatorDiverChochBot(
         [],
         name="RSI_Diver",
         body_candle=True,
-        inverse_diver_long=False,
     ),
     choch_strategy=ChochQueueFilter(
         pivot_length=2,
@@ -142,7 +139,6 @@ eurusd_15m_rsi_choch = OscillatorDiverChochBot(
         [],
         name="RSI_Diver",
         body_candle=True,
-        inverse_diver_long=False,
     ),
     choch_strategy=ChochQueueFilter(
         pivot_length=2,
@@ -178,7 +174,6 @@ usdjpy_5m_rsi_choch = OscillatorDiverChochBot(
         [],
         name="RSI_Diver",
         body_candle=True,
-        inverse_diver_long=False,
     ),
     choch_strategy=ChochQueueFilter(
         pivot_length=2,
@@ -213,7 +208,6 @@ usdjpy_15m_rsi_choch = OscillatorDiverChochBot(
         [],
         name="RSI_Diver",
         body_candle=True,
-        inverse_diver_long=False,
     ),
     choch_strategy=ChochQueueFilter(
         pivot_length=2,
@@ -249,7 +243,6 @@ gbpusd_5m_rsi_choch = OscillatorDiverChochBot(
         [],
         name="RSI_Diver",
         body_candle=True,
-        inverse_diver_long=False,
     ),
     choch_strategy=ChochQueueFilter(
         pivot_length=2,
@@ -284,7 +277,6 @@ gbpusd_15m_rsi_choch = OscillatorDiverChochBot(
         [],
         name="RSI_Diver",
         body_candle=True,
-        inverse_diver_long=False,
     ),
     choch_strategy=ChochQueueFilter(
         pivot_length=2,
@@ -320,7 +312,6 @@ usdchf_5m_rsi_choch = OscillatorDiverChochBot(
         [],
         name="RSI_Diver",
         body_candle=True,
-        inverse_diver_long=False,
     ),
     choch_strategy=ChochQueueFilter(
         pivot_length=2,
@@ -355,7 +346,6 @@ usdchf_15m_rsi_choch = OscillatorDiverChochBot(
         [],
         name="RSI_Diver",
         body_candle=True,
-        inverse_diver_long=False,
     ),
     choch_strategy=ChochQueueFilter(
         pivot_length=2,
@@ -391,7 +381,6 @@ audusd_5m_rsi_choch = OscillatorDiverChochBot(
         [],
         name="RSI_Diver",
         body_candle=True,
-        inverse_diver_long=False,
     ),
     choch_strategy=ChochQueueFilter(
         pivot_length=2,
@@ -426,7 +415,6 @@ audusd_15m_rsi_choch = OscillatorDiverChochBot(
         [],
         name="RSI_Diver",
         body_candle=True,
-        inverse_diver_long=False,
     ),
     choch_strategy=ChochQueueFilter(
         pivot_length=2,
@@ -462,7 +450,6 @@ usdcad_5m_rsi_choch = OscillatorDiverChochBot(
         [],
         name="RSI_Diver",
         body_candle=True,
-        inverse_diver_long=False,
     ),
     choch_strategy=ChochQueueFilter(
         pivot_length=2,
@@ -497,7 +484,6 @@ usdcad_15m_rsi_choch = OscillatorDiverChochBot(
         [],
         name="RSI_Diver",
         body_candle=True,
-        inverse_diver_long=False,
     ),
     choch_strategy=ChochQueueFilter(
         pivot_length=2,
@@ -533,7 +519,6 @@ nzdusd_5m_rsi_choch = OscillatorDiverChochBot(
         [],
         name="RSI_Diver",
         body_candle=True,
-        inverse_diver_long=False,
     ),
     choch_strategy=ChochQueueFilter(
         pivot_length=2,
@@ -568,7 +553,6 @@ nzdusd_15m_rsi_choch = OscillatorDiverChochBot(
         [],
         name="RSI_Diver",
         body_candle=True,
-        inverse_diver_long=False,
     ),
     choch_strategy=ChochQueueFilter(
         pivot_length=2,
@@ -618,7 +602,6 @@ xau_5m_rsi_double_diver_choch = OscillatorDiverChochBot(
         [],
         name="RSI_Double_Diver",
         body_candle=True,
-        inverse_diver_long=False,
     ),
     choch_strategy=ChochQueueFilter(
         pivot_length=2,
@@ -655,7 +638,6 @@ xau_15m_rsi_double_diver_choch = OscillatorDiverChochBot(
         [],
         name="RSI_Double_Diver",
         body_candle=True,
-        inverse_diver_long=False,
     ),
     choch_strategy=ChochQueueFilter(
         pivot_length=2,
@@ -691,7 +673,6 @@ eurusd_5m_rsi_double_diver_choch = OscillatorDiverChochBot(
         [],
         name="RSI_Double_Diver",
         body_candle=True,
-        inverse_diver_long=False,
     ),
     choch_strategy=ChochQueueFilter(
         pivot_length=2,
@@ -727,7 +708,6 @@ eurusd_15m_rsi_double_diver_choch = OscillatorDiverChochBot(
         [],
         name="RSI_Double_Diver",
         body_candle=True,
-        inverse_diver_long=False,
     ),
     choch_strategy=ChochQueueFilter(
         pivot_length=2,
@@ -764,7 +744,6 @@ usdjpy_5m_rsi_double_diver_choch = OscillatorDiverChochBot(
         [],
         name="RSI_Double_Diver",
         body_candle=True,
-        inverse_diver_long=False,
     ),
     choch_strategy=ChochQueueFilter(
         pivot_length=2,
@@ -800,7 +779,6 @@ usdjpy_15m_rsi_double_diver_choch = OscillatorDiverChochBot(
         [],
         name="RSI_Double_Diver",
         body_candle=True,
-        inverse_diver_long=False,
     ),
     choch_strategy=ChochQueueFilter(
         pivot_length=2,
@@ -837,7 +815,6 @@ gbpusd_5m_rsi_double_diver_choch = OscillatorDiverChochBot(
         [],
         name="RSI_Double_Diver",
         body_candle=True,
-        inverse_diver_long=False,
     ),
     choch_strategy=ChochQueueFilter(
         pivot_length=2,
@@ -873,7 +850,6 @@ gbpusd_15m_rsi_double_diver_choch = OscillatorDiverChochBot(
         [],
         name="RSI_Double_Diver",
         body_candle=True,
-        inverse_diver_long=False,
     ),
     choch_strategy=ChochQueueFilter(
         pivot_length=2,
@@ -910,7 +886,6 @@ usdchf_5m_rsi_double_diver_choch = OscillatorDiverChochBot(
         [],
         name="RSI_Double_Diver",
         body_candle=True,
-        inverse_diver_long=False,
     ),
     choch_strategy=ChochQueueFilter(
         pivot_length=2,
@@ -946,7 +921,6 @@ usdchf_15m_rsi_double_diver_choch = OscillatorDiverChochBot(
         [],
         name="RSI_Double_Diver",
         body_candle=True,
-        inverse_diver_long=False,
     ),
     choch_strategy=ChochQueueFilter(
         pivot_length=2,
@@ -983,7 +957,6 @@ audusd_5m_rsi_double_diver_choch = OscillatorDiverChochBot(
         [],
         name="RSI_Double_Diver",
         body_candle=True,
-        inverse_diver_long=False,
     ),
     choch_strategy=ChochQueueFilter(
         pivot_length=2,
@@ -1019,7 +992,6 @@ audusd_15m_rsi_double_diver_choch = OscillatorDiverChochBot(
         [],
         name="RSI_Double_Diver",
         body_candle=True,
-        inverse_diver_long=False,
     ),
     choch_strategy=ChochQueueFilter(
         pivot_length=2,
@@ -1056,7 +1028,6 @@ usdcad_5m_rsi_double_diver_choch = OscillatorDiverChochBot(
         [],
         name="RSI_Double_Diver",
         body_candle=True,
-        inverse_diver_long=False,
     ),
     choch_strategy=ChochQueueFilter(
         pivot_length=2,
@@ -1092,7 +1063,6 @@ usdcad_15m_rsi_double_diver_choch = OscillatorDiverChochBot(
         [],
         name="RSI_Double_Diver",
         body_candle=True,
-        inverse_diver_long=False,
     ),
     choch_strategy=ChochQueueFilter(
         pivot_length=2,
@@ -1129,7 +1099,6 @@ nzdusd_5m_rsi_double_diver_choch = OscillatorDiverChochBot(
         [],
         name="RSI_Double_Diver",
         body_candle=True,
-        inverse_diver_long=False,
     ),
     choch_strategy=ChochQueueFilter(
         pivot_length=2,
@@ -1165,7 +1134,6 @@ nzdusd_15m_rsi_double_diver_choch = OscillatorDiverChochBot(
         [],
         name="RSI_Double_Diver",
         body_candle=True,
-        inverse_diver_long=False,
     ),
     choch_strategy=ChochQueueFilter(
         pivot_length=2,

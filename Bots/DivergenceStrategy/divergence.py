@@ -70,7 +70,7 @@ class Divergence(Strategy):
         long_support_conditions=SupportCandlesPattern.RED_GREEN,
         short_support_conditions=SupportCandlesPattern.GREEN_RED,
         name="Divergence",
-        inverse_diver_long: bool = True,
+        inverse_diver_long: bool = False,
         inverse_diver_short: bool = True,
         long_other_chart_line_validation: bool = True,
         short_other_chart_line_validation: bool = True,

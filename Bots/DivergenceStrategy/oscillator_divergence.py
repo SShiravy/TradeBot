@@ -36,7 +36,7 @@ class OscillatorDivergence(Strategy):
         long_support_conditions=SupportCandlesPattern.RAW,
         short_support_conditions=SupportCandlesPattern.RAW,
         name="OscillatorDivergence",
-        inverse_diver_long: bool = True,
+        inverse_diver_long: bool = False,
         inverse_diver_short: bool = True,
         long_other_chart_line_validation: bool = True,
         short_other_chart_line_validation: bool = True,
