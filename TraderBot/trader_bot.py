@@ -29,6 +29,7 @@ class TraderBot:
         self.bar_between_signals = bar_between_signals
         self.n_candle_check = n_candle_check
         self.consider_position = consider_position
+        self.consider_figure = True
 
     def post_init(self):
         if not self.agent.prepare_chart(self.chart):
@@ -99,7 +100,9 @@ class TraderBot:
         position: Position | None = None,
         *args,
         **kwargs,
-    ) -> Figure:
+    ) -> Figure | None:
+        if not self.consider_figure:
+            return None
         figure = SingleChartFigure(
             chartdata,
             self.n_candle_check,
@@ -109,7 +112,7 @@ class TraderBot:
             PositionPlotter()(figure.main_pane, position)
         return figure
 
-    def trade(self, position: Position, plot: Figure) -> Position | None:
+    def trade(self, position: Position, plot: Figure|None) -> Position | None:
         report_command = None
         if self.trades_manager.reporter and self.trades_manager.reporter.enable:
             report_command = commands.NewPositionReport(plot=plot)

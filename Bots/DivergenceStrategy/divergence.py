@@ -245,6 +245,7 @@ class DivergenceBot(TraderBot):
         self.bar_between_signals = bar_between_signals
         self.n_candle_check = n_candle_check
         self.consider_position = consider_position
+        self.consider_figure = True
 
     def post_init(self):
         if not self.agent.prepare_chart(self.second_chart):
@@ -283,7 +284,9 @@ class DivergenceBot(TraderBot):
         second_chartdata: ChartData,
         signal: DivergenceSignal,
         position: Position | None = None,
-    ) -> DoubleChartFigure:
+    ) -> DoubleChartFigure|None:
+        if not self.consider_figure:
+            return None
         figure = DoubleChartFigure(
             chartdata,
             second_chartdata,

@@ -74,11 +74,6 @@ class ChochPlotter(StrategyPlotter):
 
     @staticmethod
     def _candle_index(pane: ChartPane, candle: Candle) -> int | None:
-        """
-        Position of `candle` in the pane's visible window, or None when it
-        falls outside it -- the pane only holds the tail that is actually
-        drawn, so an older model's candle simply has nothing to mark.
-        """
         chartdata = pane.chartdata
         if chartdata is None:
             return None
@@ -847,7 +842,7 @@ class ChochQueueFilter(Strategy):
         signal = ChochSignal(
             self.chart,
             touch_candle,
-            newest_validated.side,
+            newest_validated.side, # type: ignore
             self.name,
             newest_validated,
         )
@@ -875,7 +870,7 @@ class ChochQueueFilter(Strategy):
             if self.use_bos
             else []
         )
-        self.plotter.draw_all(
+        self.plotter.draw_all( # type: ignore
             pane,
             self.choch_events,
             bos_models,

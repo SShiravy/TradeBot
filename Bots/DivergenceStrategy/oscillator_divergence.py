@@ -230,6 +230,7 @@ class OscillatorDiverBot(TraderBot):
         self.bar_between_signals = bar_between_signals
         self.n_candle_check = n_candle_check
         self.consider_position = consider_position
+        self.consider_figure = True
 
     def generate_figure(
         self,
@@ -238,7 +239,9 @@ class OscillatorDiverBot(TraderBot):
         position: Position | None = None,
         *args,
         **kwargs,
-    ) -> ChartWithOscillatorFigure:
+    ) -> ChartWithOscillatorFigure|None:
+        if not self.consider_figure:
+            return None
         figure = ChartWithOscillatorFigure(
             chartdata,
             self.strategy.oscillator_indicator.data,

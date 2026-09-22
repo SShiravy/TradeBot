@@ -274,7 +274,9 @@ class OscillatorDiverChochBot(TraderBot):
         position: Position | None = None,
         *args,
         **kwargs,
-    ) -> Figure:
+    ) -> Figure|None:
+        if not self.consider_figure:
+            return None
         figure = SingleChartFigure(chartdata, self.n_candle_check)
         self.choch_strategy.plotter(
             figure.main_pane,
@@ -286,7 +288,7 @@ class OscillatorDiverChochBot(TraderBot):
             PositionPlotter()(figure.main_pane, position)
         return figure
 
-    def trade(self, position: Position, plot: Figure) -> Position | None:
+    def trade(self, position: Position, plot: Figure|None) -> Position | None:
         """
         TraderBot.trade, with the position report threaded as a reply to the
         divergence message that armed this trade.

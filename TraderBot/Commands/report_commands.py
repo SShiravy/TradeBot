@@ -29,7 +29,7 @@ class NewSignalReport(Command):
         if not self.reporter:
             logger.warning("Reporter not initialized, cannot send new signal report")
             return True
-        path = self.reporter.save_path or "Records/"
+        path = self.reporter.save_path or f"Records/SignalsImg/{self.signal.source}/"
         msg = self.reporter.msg_formater.new_signal(self.signal)
         res = await self.reporter.send_msg(
             msg,
@@ -61,10 +61,10 @@ class NewPositionReport(Command):
             logger.warning("Reporter not initialized, cannot send new position report")
             return True
         msg = self.context.reporter.msg_formater.new_position(self.context.position)
-        path = self.context.reporter.save_path or "Records/"
+        path = self.context.reporter.save_path or f"Records/PositionImg/{self.context.position.source}/"
         res = await self.context.reporter.send_msg(
             msg,
-            img_path=self.plot.save_image(name=str(self.context.position.id), path=path)
+            img_path=self.plot.save_image(name=str(self.context.position.defined_timestamp), path=path)
             if self.plot
             else None,
             reply_id=self.reply_id,

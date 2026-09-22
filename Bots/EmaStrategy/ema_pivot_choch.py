@@ -667,7 +667,7 @@ class EmaPivotChochBot(TraderBot):
         htf_chartdata: ChartData | None = None,
         *args,
         **kwargs,
-    ) -> DoubleChartFigure:
+    ) -> DoubleChartFigure|None:
         """
         The base builds a SingleChartFigure and calls the plotter as
         `plotter(main_pane, signal, indicators)`. This plotter is the
@@ -675,6 +675,8 @@ class EmaPivotChochBot(TraderBot):
         would bind to `second_pane` -- hence the override. `htf_chartdata`
         comes after `position` so the base's positional order still holds.
         """
+        if not self.consider_figure:
+            return None
         if htf_chartdata is None:
             raise ValueError("EmaPivotChochBot.generate_figure needs htf_chartdata")
         figure = self._make_figure(chartdata, htf_chartdata)
@@ -736,7 +738,7 @@ class EmaPivotChochBot(TraderBot):
             img_path=image_path,
         )
 
-    def trade(self, position: Position, plot: Figure) -> Position | None:
+    def trade(self, position: Position, plot: Figure|None) -> Position | None:
         report_command = None
         if self._reporter is not None:
             report_command = commands.NewPositionReport(plot=plot)
