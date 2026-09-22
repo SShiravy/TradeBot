@@ -284,7 +284,7 @@ class DivergenceBot(TraderBot):
         second_chartdata: ChartData,
         signal: DivergenceSignal,
         position: Position | None = None,
-    ) -> DoubleChartFigure|None:
+    ) -> DoubleChartFigure | None:
         if not self.consider_figure:
             return None
         figure = DoubleChartFigure(

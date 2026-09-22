@@ -95,7 +95,6 @@ class OscillatorDiverChochBot(TraderBot):
         )
 
         self.last_diver_signal: DiverSignal | None = None
-        self.last_diver_report_id: int | None = None
         self._diver_report_command: commands.NewSignalReport | None = None
         self.last_diver_checked_timestamp: int | None = None
         self.last_mtr_checked_timestamp: int | None = None
@@ -173,7 +172,6 @@ class OscillatorDiverChochBot(TraderBot):
             return None
 
         self.last_diver_signal = signal
-        self.last_diver_report_id = None
         self._diver_report_command = None
         logger.info(f"OscillatorDiver Signal:{signal}")
 
@@ -200,14 +198,10 @@ class OscillatorDiverChochBot(TraderBot):
         return True
 
     def _diver_reply_id(self) -> int | None:
-        # send() only queues the report -- the id exists once it has run
-        if self.last_diver_report_id is not None:
-            return self.last_diver_report_id
         return getattr(self._diver_report_command, "msg_id", None)
 
     def _clear_diver(self) -> None:
         self.last_diver_signal = None
-        self.last_diver_report_id = None
         self._diver_report_command = None
 
     # --- MTR (informational only) --------------------
@@ -250,6 +244,7 @@ class OscillatorDiverChochBot(TraderBot):
         commands.NewSignalReport(
             self.last_mtr_signal,
             plot=self.generate_mtr_figure(choch_chartdata, self.last_mtr_signal),
+            reply_id=self._diver_reply_id(),
         ).send(reporter=self.trades_manager.reporter)
 
     # --- ENTRY ---------------------------------------
@@ -274,7 +269,7 @@ class OscillatorDiverChochBot(TraderBot):
         position: Position | None = None,
         *args,
         **kwargs,
-    ) -> Figure|None:
+    ) -> Figure | None:
         if not self.consider_figure:
             return None
         figure = SingleChartFigure(chartdata, self.n_candle_check)
@@ -288,7 +283,7 @@ class OscillatorDiverChochBot(TraderBot):
             PositionPlotter()(figure.main_pane, position)
         return figure
 
-    def trade(self, position: Position, plot: Figure|None) -> Position | None:
+    def trade(self, position: Position, plot: Figure | None) -> Position | None:
         """
         TraderBot.trade, with the position report threaded as a reply to the
         divergence message that armed this trade.
@@ -342,6 +337,7 @@ class OscillatorDiverChochBot(TraderBot):
             commands.NewSignalReport(
                 choch_signal,
                 plot=self.generate_figure(choch_chartdata, choch_signal),
+                reply_id=self._diver_reply_id(),
             ).send(reporter=self.trades_manager.reporter)
 
         # the setup has been consumed -- a new divergence must arm the next

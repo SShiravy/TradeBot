@@ -239,7 +239,7 @@ class OscillatorDiverBot(TraderBot):
         position: Position | None = None,
         *args,
         **kwargs,
-    ) -> ChartWithOscillatorFigure|None:
+    ) -> ChartWithOscillatorFigure | None:
         if not self.consider_figure:
             return None
         figure = ChartWithOscillatorFigure(

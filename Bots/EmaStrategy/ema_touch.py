@@ -450,7 +450,7 @@ class EmaTouchBot(TraderBot):
         position: Position | None = None,
         *args,
         **kwargs,
-    ) -> SingleChartFigure|None:
+    ) -> SingleChartFigure | None:
         if not self.consider_figure:
             return None
         figure = SingleChartFigure(chartdata, self.n_candle_check)

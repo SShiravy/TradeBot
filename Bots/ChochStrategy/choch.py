@@ -842,7 +842,7 @@ class ChochQueueFilter(Strategy):
         signal = ChochSignal(
             self.chart,
             touch_candle,
-            newest_validated.side, # type: ignore
+            newest_validated.side,  # type: ignore
             self.name,
             newest_validated,
         )
@@ -870,7 +870,7 @@ class ChochQueueFilter(Strategy):
             if self.use_bos
             else []
         )
-        self.plotter.draw_all( # type: ignore
+        self.plotter.draw_all(  # type: ignore
             pane,
             self.choch_events,
             bos_models,

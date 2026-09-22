@@ -112,7 +112,7 @@ class TraderBot:
             PositionPlotter()(figure.main_pane, position)
         return figure
 
-    def trade(self, position: Position, plot: Figure|None) -> Position | None:
+    def trade(self, position: Position, plot: Figure | None) -> Position | None:
         report_command = None
         if self.trades_manager.reporter and self.trades_manager.reporter.enable:
             report_command = commands.NewPositionReport(plot=plot)

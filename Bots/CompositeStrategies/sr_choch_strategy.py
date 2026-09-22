@@ -65,7 +65,6 @@ class SRChochBot(TraderBot):
         self.n_sr_candle_check = n_sr_candle_check or n_candle_check
 
         self.last_sr_signal: SRSignal | None = None
-        self.last_sr_report_id: int | None = None
         self._sr_report_command: commands.NewSignalReport | None = None
         self.last_static_sr_checked_timestamp: int | None = None
         self.last_dynamic_sr_checked_timestamp: int | None = None
@@ -138,12 +137,13 @@ class SRChochBot(TraderBot):
     def _arm_sr(self, signal: SRSignal) -> None:
         """Record the touch that arms the setup. Reporting is the caller's."""
         self.last_sr_signal = signal
-        self.last_sr_report_id = None
         self._sr_report_command = None
         logger.info(f"S&R Signal:{signal}")
 
     def _report_sr(self, signal: SRSignal, figure: Figure) -> None:
-        command = commands.NewSignalReport(signal, plot=figure)
+        command = commands.NewSignalReport(
+            signal, plot=figure, reply_id=self._sr_reply_id()
+        )
         command.send(reporter=self.trades_manager.reporter)
         self._sr_report_command = command
 
@@ -260,14 +260,10 @@ class SRChochBot(TraderBot):
         return True
 
     def _sr_reply_id(self) -> int | None:
-        # send() only queues the report -- the id exists once it has run
-        if self.last_sr_report_id is not None:
-            return self.last_sr_report_id
         return getattr(self._sr_report_command, "msg_id", None)
 
     def _clear_sr(self) -> None:
         self.last_sr_signal = None
-        self.last_sr_report_id = None
         self._sr_report_command = None
 
     # --- ENTRY ---------------------------------------
@@ -292,7 +288,7 @@ class SRChochBot(TraderBot):
         position: Position | None = None,
         *args,
         **kwargs,
-    ) -> Figure|None:
+    ) -> Figure | None:
         if not self.consider_figure:
             return None
         figure = SingleChartFigure(chartdata, self.n_candle_check)
@@ -306,7 +302,7 @@ class SRChochBot(TraderBot):
             PositionPlotter()(figure.main_pane, position)
         return figure
 
-    def trade(self, position: Position, plot: Figure|None) -> Position | None:
+    def trade(self, position: Position, plot: Figure | None) -> Position | None:
         """
         TraderBot.trade, with the position report threaded as a reply to the
         S&R message that armed this trade.
@@ -358,6 +354,7 @@ class SRChochBot(TraderBot):
             commands.NewSignalReport(
                 choch_signal,
                 plot=self.generate_figure(choch_chartdata, choch_signal),
+                reply_id=self._sr_reply_id(),
             ).send(reporter=self.trades_manager.reporter)
 
         # the setup has been consumed -- a new S&R touch must arm the next

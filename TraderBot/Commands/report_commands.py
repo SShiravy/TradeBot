@@ -13,12 +13,14 @@ class NewSignalReport(Command):
         signal: Signal,
         bounded_command: Command | None = None,
         plot: Figure | None = None,
+        reply_id: int | None = None,
     ):
         super().__init__(bounded_command)
         self.signal = signal
         self.plot = plot
         self.msg_id: int | None = None
         self.reporter: ReporterBot | None
+        self.reply_id = reply_id
 
     def send(self, context=None, reporter: ReporterBot | None = None):
         # TODO: Creat specific context for this command and remove extra param
@@ -38,8 +40,10 @@ class NewSignalReport(Command):
             )
             if self.plot
             else None,
+            reply_id=self.reply_id,
         )
         if not res:
+            logger.warning(f"result of sending {self.signal}: {res}")
             return False
         self.msg_id = getattr(res, "message_id", res)
         return True
@@ -61,15 +65,21 @@ class NewPositionReport(Command):
             logger.warning("Reporter not initialized, cannot send new position report")
             return True
         msg = self.context.reporter.msg_formater.new_position(self.context.position)
-        path = self.context.reporter.save_path or f"Records/PositionImg/{self.context.position.source}/"
+        path = (
+            self.context.reporter.save_path
+            or f"Records/PositionImg/{self.context.position.source}/"
+        )
         res = await self.context.reporter.send_msg(
             msg,
-            img_path=self.plot.save_image(name=str(self.context.position.defined_timestamp), path=path)
+            img_path=self.plot.save_image(
+                name=str(self.context.position.defined_timestamp), path=path
+            )
             if self.plot
             else None,
             reply_id=self.reply_id,
         )
         if not res:
+            logger.warning(f"result of sending {self.context.position}: {res}")
             return False
         self.context.position.report_id = getattr(res, "message_id", res)
         return True

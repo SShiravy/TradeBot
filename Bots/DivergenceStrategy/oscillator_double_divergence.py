@@ -101,7 +101,7 @@ class OscillatorDoubleDiverBot(OscillatorDiverBot):
         chartdata: ChartData,
         signal: OscillatorDoubleDiverSignal,
         position: Position | None = None,
-    ) -> ChartWithOscillatorFigure|None:
+    ) -> ChartWithOscillatorFigure | None:
         if not self.consider_figure:
             return None
         figure = ChartWithOscillatorFigure(

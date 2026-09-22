@@ -667,7 +667,7 @@ class EmaPivotChochBot(TraderBot):
         htf_chartdata: ChartData | None = None,
         *args,
         **kwargs,
-    ) -> DoubleChartFigure|None:
+    ) -> DoubleChartFigure | None:
         """
         The base builds a SingleChartFigure and calls the plotter as
         `plotter(main_pane, signal, indicators)`. This plotter is the
@@ -738,7 +738,7 @@ class EmaPivotChochBot(TraderBot):
             img_path=image_path,
         )
 
-    def trade(self, position: Position, plot: Figure|None) -> Position | None:
+    def trade(self, position: Position, plot: Figure | None) -> Position | None:
         report_command = None
         if self._reporter is not None:
             report_command = commands.NewPositionReport(plot=plot)
