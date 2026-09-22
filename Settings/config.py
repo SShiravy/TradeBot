@@ -25,8 +25,9 @@ class Settings(BaseSettings):
     SECOND_METATRADER_TERMINAL_PATH: str
     BROKER_UTC_SHIFT: int
 
-    # LocalBacktest DB
-    LOCAL_BACKTEST_DB_NAME: str
+    # Database
+    BACKTEST_DB_NAME: str
+    LIVE_DB_NAME: str
 
     model_config = SettingsConfigDict(env_file=".env")
 

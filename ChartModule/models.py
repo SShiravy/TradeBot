@@ -168,7 +168,7 @@ class Chart:
             "symbol": self.symbol,
             "timeframe": self.timeframe.value,
             "precision": self.precision,
-            "chart_type": self.chart_type,
+            "chart_type": self.chart_type.name,
             "pip_factor": self.pip_factor,
             "contract_size": self.contract_size,
         }

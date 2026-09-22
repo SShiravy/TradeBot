@@ -229,5 +229,9 @@ class BacktestReporter(ReporterBot):
         self.msg_formater = BacktestReportCollector()
         self.save_path = "BackTest/Records/"
 
+    @property
+    def all_signals(self):
+        return self.msg_formater.signals
+
     async def send_msg(self, *args, **kwargs):
         return 1

@@ -35,6 +35,7 @@ xau_jpy_1m = DivergenceBot(
         reporter=reporter,
         agent_check=False,
     ),
+
     n_candle_check=150,
     consider_position=False,
 )
