@@ -254,7 +254,7 @@ class SRChochBot(TraderBot):
         elapsed = choch_chartdata[-1].timestamp - self.last_sr_signal.candle.timestamp
         allowed = self.give_allowed_time()
         if elapsed > allowed:
-            logger.warning(f"S&R was too old {elapsed=} > {allowed}")
+            logger.info(f"S&R was too old {elapsed=} > {allowed}")
             self._clear_sr()
             return False
         return True
@@ -332,7 +332,7 @@ class SRChochBot(TraderBot):
             return None
 
         if choch_signal.side is not self.last_sr_signal.side:
-            logger.warning(
+            logger.info(
                 f"different side for SR & choch: "
                 f"{self.last_sr_signal.side} | {choch_signal.side}"
             )

@@ -192,7 +192,7 @@ class OscillatorDiverChochBot(TraderBot):
         )
         allowed = self.give_allowed_time()
         if elapsed > allowed:
-            logger.warning(f"divergence was too old {elapsed=} > {allowed}")
+            logger.info(f"divergence was too old {elapsed=} > {allowed}")
             self._clear_diver()
             return False
         return True

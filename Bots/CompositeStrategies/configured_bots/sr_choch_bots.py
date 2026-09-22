@@ -135,7 +135,7 @@ eurusd_sr_choch_1h_5m = SRChochBot(
     bar_between_signals=2,
     n_candle_confirmation=60,
     n_candle_check=300,
-    consider_position=True,
+    consider_position=False,
     trades_manager=TradesManager(
         mt5_agent,
         ForexStepping(),
@@ -200,7 +200,7 @@ usdjpy_sr_choch_1h_5m = SRChochBot(
     bar_between_signals=2,
     n_candle_confirmation=60,
     n_candle_check=300,
-    consider_position=True,
+    consider_position=False,
     trades_manager=TradesManager(
         mt5_agent,
         ForexStepping(),
@@ -265,7 +265,7 @@ gbpusd_sr_choch_1h_5m = SRChochBot(
     bar_between_signals=2,
     n_candle_confirmation=60,
     n_candle_check=300,
-    consider_position=True,
+    consider_position=False,
     trades_manager=TradesManager(
         mt5_agent,
         ForexStepping(),
@@ -330,7 +330,7 @@ usdchf_sr_choch_1h_5m = SRChochBot(
     bar_between_signals=2,
     n_candle_confirmation=60,
     n_candle_check=300,
-    consider_position=True,
+    consider_position=False,
     trades_manager=TradesManager(
         mt5_agent,
         ForexStepping(),
@@ -395,7 +395,7 @@ audusd_sr_choch_1h_5m = SRChochBot(
     bar_between_signals=2,
     n_candle_confirmation=60,
     n_candle_check=300,
-    consider_position=True,
+    consider_position=False,
     trades_manager=TradesManager(
         mt5_agent,
         ForexStepping(),
@@ -460,7 +460,7 @@ usdcad_sr_choch_1h_5m = SRChochBot(
     bar_between_signals=2,
     n_candle_confirmation=60,
     n_candle_check=300,
-    consider_position=True,
+    consider_position=False,
     trades_manager=TradesManager(
         mt5_agent,
         ForexStepping(),
@@ -525,7 +525,7 @@ nzdusd_sr_choch_1h_5m = SRChochBot(
     bar_between_signals=2,
     n_candle_confirmation=60,
     n_candle_check=300,
-    consider_position=True,
+    consider_position=False,
     trades_manager=TradesManager(
         mt5_agent,
         ForexStepping(),
