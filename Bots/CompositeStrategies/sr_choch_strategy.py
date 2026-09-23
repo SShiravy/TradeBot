@@ -65,7 +65,7 @@ class SRChochBot(TraderBot):
         self.n_sr_candle_check = n_sr_candle_check or n_candle_check
 
         self.last_sr_signal: SRSignal | None = None
-        self._sr_report_command: commands.NewSignalReport | None = None
+        self._sr_report_command: commands.ReportNewSignal | None = None
         self.last_static_sr_checked_timestamp: int | None = None
         self.last_dynamic_sr_checked_timestamp: int | None = None
 
@@ -141,7 +141,7 @@ class SRChochBot(TraderBot):
         logger.info(f"S&R Signal:{signal}")
 
     def _report_sr(self, signal: SRSignal, figure: Figure) -> None:
-        command = commands.NewSignalReport(
+        command = commands.ReportNewSignal(
             signal, plot=figure, reply_id=self._sr_reply_id()
         )
         command.send(reporter=self.trades_manager.reporter)
@@ -309,7 +309,7 @@ class SRChochBot(TraderBot):
         """
         report_command = None
         if self._reporter is not None:
-            report_command = commands.NewPositionReport(
+            report_command = commands.ReportNewPosition(
                 plot=plot, reply_id=self._sr_reply_id()
             )
         commands.OpenPosition(report_command).send(
@@ -351,7 +351,7 @@ class SRChochBot(TraderBot):
             )
             logger.info("SR & CHoCH Signal")
         else:
-            commands.NewSignalReport(
+            commands.ReportNewSignal(
                 choch_signal,
                 plot=self.generate_figure(choch_chartdata, choch_signal),
                 reply_id=self._sr_reply_id(),

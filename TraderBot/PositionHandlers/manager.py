@@ -1,8 +1,10 @@
 from Settings import TimeHandler
 from ChartModule import Signal, MarketSide, Chart, TimeFrame
 from TraderBot import Position, PositionSide, ExchangeAgent
+from TraderBot.Commands.report_commands import ReportCommandContext
+from TraderBot.Commands.trade_commands import TradeCommandContext
 from TraderBot.PositionHandlers.trading_constraints import TradingConstraint
-from TraderBot.models import Command, CommandContext, PositionType, ReporterBot, Trigger
+from TraderBot.models import Command, PositionType, ReporterBot, Trigger
 from abc import ABC, abstractmethod
 import numpy as np
 import logging
@@ -69,10 +71,10 @@ class TradesManager:
         self,
         exchange_agent: ExchangeAgent,
         generator: PositionGenerator,
+        reporter: ReporterBot,
         long_trade: bool = True,
         short_trade: bool = True,
         trading_constraints: list[TradingConstraint] = [],
-        reporter: ReporterBot | None = None,
         agent_check: bool = False,
     ):
         self.exchange_agent = exchange_agent
@@ -92,9 +94,6 @@ class TradesManager:
             "short_trade": self.short_trade,
             "constraints": [c.export_config() for c in self.trading_constraints],
         }
-
-    def give_command_contex(self, position: Position):
-        return CommandContext(position, self.exchange_agent, self.reporter)
 
     def generate_position(self, signal: Signal, *args, **kwargs) -> Position | None:
         if signal.side is MarketSide.BEARISH:
@@ -132,14 +131,22 @@ class TradesManager:
     def triggers_handler(self, position: Position, ticks: np.ndarray):
         if position.stoploss.check(ticks):
             logger.debug(f"SL hit for {position}")
-            if position.stoploss.command:
-                position.stoploss.command.send(self.give_command_contex(position))
+            position.stoploss.event.occure(
+                trade_context=TradeCommandContext(position, self.exchange_agent),
+                report_context=ReportCommandContext(self.reporter)
+                if self.reporter
+                else None,
+            )
             return
         for trigger in position.steps:
             if trigger.check(ticks):
                 logger.debug(f"Trigger Hit: {Trigger=}|{Position=}")
-                if trigger.command:
-                    trigger.command.send(self.give_command_contex(position))
+                trigger.event.occure(
+                    trade_context=TradeCommandContext(position, self.exchange_agent),
+                    report_context=ReportCommandContext(self.reporter)
+                    if self.reporter
+                    else None,
+                )
                 continue
             return
 

@@ -741,7 +741,7 @@ class EmaPivotChochBot(TraderBot):
     def trade(self, position: Position, plot: Figure | None) -> Position | None:
         report_command = None
         if self._reporter is not None:
-            report_command = commands.NewPositionReport(plot=plot)
+            report_command = commands.ReportNewPosition(plot=plot)
         commands.OpenPosition(report_command).send(
             self.trades_manager.give_command_contex(position)
         )
@@ -785,7 +785,7 @@ class EmaPivotChochBot(TraderBot):
                 self.generate_figure(chartdata, signal, position, htf_chartdata),
             )
         else:
-            commands.NewSignalReport(
+            commands.ReportNewSignal(
                 signal,
                 plot=self.generate_figure(chartdata, signal, None, htf_chartdata),
             ).send(reporter=self.trades_manager.reporter)

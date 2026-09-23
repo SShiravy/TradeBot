@@ -1,12 +1,12 @@
 from ChartModule.models import Chart, Signal
 from TraderBot.PositionHandlers.manager import PositionGenerator
 import TraderBot.Commands as commands
+from TraderBot.events import StopLossHit, TakeProfitHit
 from TraderBot.models import (
     PositionSide,
     Position,
     PositionType,
     Trigger,
-    TriggerType,
 )
 import logging
 
@@ -57,23 +57,9 @@ class ForexStepping(PositionGenerator):
                 entry_price - side.factor * self.sl_pip * chart.pip_factor,
                 chart.precision,
             ),
+            event=StopLossHit(),
             volume=self.initial_volume,
             cross_direction=side.factor,
-            command=commands.StopLoss(bounded_command=commands.StoplossHitReport()),
-            type=TriggerType.SL,
-        )
-
-    def give_tp_trailstop_command(self, new_sl: float):
-        return commands.TakeProfit(
-            commands.TrailStoploss(
-                new_stoploss=new_sl,
-                bounded_command=commands.TriggerHitReport(trail_stop=True),
-            )
-        )
-
-    def give_tp_command(self):
-        return commands.TakeProfit(
-            bounded_command=commands.TriggerHitReport(trail_stop=False)
         )
 
     def generate_triggers(
@@ -91,9 +77,9 @@ class ForexStepping(PositionGenerator):
                         entry_price + pip * side.factor * chart.pip_factor,
                         chart.precision,
                     ),
+                    event=TakeProfitHit(),
                     volume=volume,
                     cross_direction=side.factor,
-                    type=TriggerType.TP,
                 )
             )
 
@@ -104,20 +90,17 @@ class ForexStepping(PositionGenerator):
                     price=round(
                         entry_price + sl_distance * ratio * side.factor, chart.precision
                     ),
+                    event=TakeProfitHit(),
                     volume=volume,
                     cross_direction=side.factor,
-                    type=TriggerType.TP,
                 )
             )
 
         steps.sort(key=lambda t: t.price * side.factor)
-
-        for i, step in enumerate(steps):
-            if self.trail_stop:
+        if self.trail_stop:
+            for i, step in enumerate(steps):
                 previous_price = steps[i - 1].price if i > 0 else entry_price
-                step.command = self.give_tp_trailstop_command(previous_price)
-            else:
-                step.command = self.give_tp_command()
+                step.event.trail_stop = previous_price  # type:ignore
 
         return steps
 

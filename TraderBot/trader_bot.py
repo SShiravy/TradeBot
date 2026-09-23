@@ -2,10 +2,12 @@ import hashlib
 import json
 from Settings import TimeHandler
 from TraderBot import ExchangeAgent, Position
-import TraderBot.Commands as commands
+from TraderBot.Commands.report_commands import ReportCommandContext
+from TraderBot.Commands.trade_commands import TradeCommandContext
 from TraderBot.PositionHandlers.manager import TradesManager
 from ChartModule.models import Chart, Signal, ChartData
 from TraderBot.PositionHandlers.plot import PositionPlotter
+from TraderBot.events import NewPosition, NewSignal
 from TraderBot.models import Strategy
 from ChartModule.plot import SingleChartFigure, Figure
 import logging
@@ -113,11 +115,11 @@ class TraderBot:
         return figure
 
     def trade(self, position: Position, plot: Figure | None) -> Position | None:
-        report_command = None
-        if self.trades_manager.reporter and self.trades_manager.reporter.enable:
-            report_command = commands.NewPositionReport(plot=plot)
-        commands.OpenPosition(report_command).send(
-            self.trades_manager.give_command_contex(position)
+        NewPosition(
+            trade_context=TradeCommandContext(position, self.agent),
+            report_context=ReportCommandContext(
+                self.trades_manager.reporter, figure=plot
+            ),
         )
         return position
 
@@ -134,8 +136,11 @@ class TraderBot:
                     self.trade(position, figure)
             else:
                 figure = self.generate_figure(chartdata, signal)
-                commands.NewSignalReport(signal, plot=figure).send(
-                    reporter=self.trades_manager.reporter
+                NewSignal(
+                    signal,
+                    report_context=ReportCommandContext(
+                        self.trades_manager.reporter, figure
+                    ),
                 )
 
         return self.give_delay(last_timestamp)

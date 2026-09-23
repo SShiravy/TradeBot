@@ -95,7 +95,7 @@ class OscillatorDiverChochBot(TraderBot):
         )
 
         self.last_diver_signal: DiverSignal | None = None
-        self._diver_report_command: commands.NewSignalReport | None = None
+        self._diver_report_command: commands.ReportNewSignal | None = None
         self.last_diver_checked_timestamp: int | None = None
         self.last_mtr_checked_timestamp: int | None = None
         self.last_mtr_signal: MTRSignal | None = None
@@ -178,7 +178,7 @@ class OscillatorDiverChochBot(TraderBot):
         if self._reporter is None:
             return None
         figure = self.diver_bot.generate_figure(oscillator_chartdata, signal)  # type: ignore
-        command = commands.NewSignalReport(signal, plot=figure)
+        command = commands.ReportNewSignal(signal, plot=figure)
 
         command.send(reporter=self.trades_manager.reporter)
         self._diver_report_command = command
@@ -241,7 +241,7 @@ class OscillatorDiverChochBot(TraderBot):
 
         if self._reporter is None:
             return None
-        commands.NewSignalReport(
+        commands.ReportNewSignal(
             self.last_mtr_signal,
             plot=self.generate_mtr_figure(choch_chartdata, self.last_mtr_signal),
             reply_id=self._diver_reply_id(),
@@ -290,7 +290,7 @@ class OscillatorDiverChochBot(TraderBot):
         """
         report_command = None
         if self._reporter is not None:
-            report_command = commands.NewPositionReport(
+            report_command = commands.ReportNewPosition(
                 plot=plot, reply_id=self._diver_reply_id()
             )
         commands.OpenPosition(report_command).send(
@@ -334,7 +334,7 @@ class OscillatorDiverChochBot(TraderBot):
             )
             logger.info("Divergence & CHoCH Signal")
         else:
-            commands.NewSignalReport(
+            commands.ReportNewSignal(
                 choch_signal,
                 plot=self.generate_figure(choch_chartdata, choch_signal),
                 reply_id=self._diver_reply_id(),

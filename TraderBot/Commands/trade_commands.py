@@ -1,14 +1,36 @@
-import logging
+from dataclasses import dataclass
 from Settings.timing import TimeHandler
-from TraderBot.models import Command, Trigger, TriggerType
+from TraderBot.models import (
+    Command,
+    CommandContext,
+    ExchangeAgent,
+    Position,
+    Trigger,
+    TriggerType,
+)
+import logging
 
 
 logger = logging.getLogger("Commands")
 
 
-class OpenPosition(Command):
+@dataclass(slots=True)
+class TradeCommandContext(CommandContext):
+    position: Position
+    agent: ExchangeAgent
+
+
+class TradeCommand(Command):
+    def __init__(
+        self, context: TradeCommandContext, bounded_commands: list[Command] = []
+    ):
+        self.context: TradeCommandContext
+        super().__init__(context, bounded_commands)
+
+
+class OpenPosition(TradeCommand):
     async def command(self):
-        entry_price = self.context.exchange_agent.open_position(self.context.position)
+        entry_price = self.context.agent.open_position(self.context.position)
         if entry_price:
             self.context.position.entry_price = entry_price
             self.context.position.open_timestamp = TimeHandler.now()
@@ -16,24 +38,29 @@ class OpenPosition(Command):
         return False
 
 
-class StopLoss(Command):
+class StopLoss(TradeCommand):
     async def command(self):
         self.context.position.closed_timestamp = TimeHandler.now()
         return True
 
 
-class TakeProfit(Command):
+class TakeProfit(TradeCommand):
     async def command(self) -> bool:
         return True
 
 
-class TrailStoploss(Command):
-    def __init__(self, new_stoploss: float, bounded_command: Command | None = None):
-        super().__init__(bounded_command)
+class TrailStoploss(TradeCommand):
+    def __init__(
+        self,
+        new_stoploss: float,
+        context: TradeCommandContext,
+        bounded_command: list[Command] = [],
+    ):
+        super().__init__(context, bounded_command)
         self.stoploss_price = new_stoploss
 
     async def command(self):
-        if self.context.exchange_agent.change_stoploss(
+        if self.context.agent.change_stoploss(
             self.context.position, self.stoploss_price
         ):
             return False
@@ -41,7 +68,7 @@ class TrailStoploss(Command):
             self.stoploss_price,
             self.context.position.volume,
             -1,
-            StopLoss(),
+            StopLoss(self.context),
             TriggerType.SL,
         )
         return True

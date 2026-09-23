@@ -1,46 +1,56 @@
+from dataclasses import dataclass
 import logging
 from ChartModule.models import Signal
 from ChartModule.plot import Figure
-from TraderBot.models import Command, CommandStatus, PnLReport, ReporterBot
+from TraderBot.models import Command, CommandContext, PnLReport, Position, ReporterBot
 from TraderBot.PositionHandlers.trades_pnl import PnLReportGenerator
 
-logger = logging.getLogger("Reporter")
+logger = logging.getLogger("Commands")
 
 
-class NewSignalReport(Command):
+@dataclass(slots=True)
+class ReportCommandContext(CommandContext):
+    reporter: ReporterBot
+    figure: Figure | None = None
+    reply_id: int | None = None
+
+
+class ReportCommand(Command):
+    def __init__(
+        self, context: ReportCommandContext, bounded_commands: list[Command] = []
+    ):
+        self.context: ReportCommandContext
+        super().__init__(context, bounded_commands)
+
+
+class ReportNewSignal(ReportCommand):
     def __init__(
         self,
         signal: Signal,
-        bounded_command: Command | None = None,
-        plot: Figure | None = None,
-        reply_id: int | None = None,
+        context: ReportCommandContext,
+        bounded_commands: list[Command] = [],
     ):
-        super().__init__(bounded_command)
+        super().__init__(context, bounded_commands)
         self.signal = signal
-        self.plot = plot
         self.msg_id: int | None = None
-        self.reporter: ReporterBot | None
-        self.reply_id = reply_id
-
-    def send(self, context=None, reporter: ReporterBot | None = None):
-        # TODO: Creat specific context for this command and remove extra param
-        self.reporter = reporter
-        self.status = CommandStatus.PENDING
 
     async def command(self):
-        if not self.reporter:
+        if not self.context.reporter:
             logger.warning("Reporter not initialized, cannot send new signal report")
             return True
-        path = self.reporter.save_path or f"Records/SignalsImg/{self.signal.source}/"
-        msg = self.reporter.msg_formater.new_signal(self.signal)
-        res = await self.reporter.send_msg(
+        path = (
+            self.context.reporter.save_path
+            or f"Records/SignalsImg/{self.signal.source}/"
+        )
+        msg = self.context.reporter.msg_formater.new_signal(self.signal)
+        res = await self.context.reporter.send_msg(
             msg,
-            img_path=self.plot.save_image(
+            img_path=self.context.figure.save_image(
                 name=str(self.signal.candle.timestamp), path=path
             )
-            if self.plot
+            if self.context.figure
             else None,
-            reply_id=self.reply_id,
+            reply_id=self.context.reply_id,
         )
         if not res:
             logger.warning(f"result of sending {self.signal}: {res}")
@@ -49,48 +59,54 @@ class NewSignalReport(Command):
         return True
 
 
-class NewPositionReport(Command):
+class ReportNewPosition(ReportCommand):
     def __init__(
         self,
-        bounded_command: Command | None = None,
-        plot: Figure | None = None,
-        reply_id: None | int = None,
+        position: Position,
+        context: ReportCommandContext,
+        bounded_commands: list[Command] = [],
     ):
-        super().__init__(bounded_command)
-        self.plot = plot
-        self.reply_id = reply_id
+        super().__init__(context, bounded_commands)
+        self.position = position
 
     async def command(self):
-        msg = self.context.reporter.msg_formater.new_position(self.context.position)
+        msg = self.context.reporter.msg_formater.new_position(self.position)
         path = (
             self.context.reporter.save_path
-            or f"Records/PositionImg/{self.context.position.source}/"
+            or f"Records/PositionImg/{self.position.source}/"
         )
         res = await self.context.reporter.send_msg(
             msg,
-            img_path=self.plot.save_image(
-                name=str(self.context.position.defined_timestamp), path=path
+            img_path=self.context.figure.save_image(
+                name=str(self.position.defined_timestamp), path=path
             )
-            if self.plot
+            if self.context.figure
             else None,
-            reply_id=self.reply_id,
+            reply_id=self.context.reply_id,
         )
         if not res:
-            logger.warning(f"result of sending {self.context.position}: {res}")
+            logger.warning(f"result of sending {self.position}: {res}")
             return False
-        self.context.position.report_id = getattr(res, "message_id", res)
+        self.position.report_id = getattr(res, "message_id", res)
         return True
 
 
-class StoplossHitReport(Command):
-    def __init__(self, bounded_command: Command | None = None):
-        super().__init__(bounded_command)
-        self._pnl_report: PnLReport | None = None
+class StoplossHitReport(ReportCommand):
+    def __init__(
+        self,
+        position: Position,
+        context: ReportCommandContext,
+        pnl_report: PnLReport | None = None,
+        bounded_commands: list[Command] = [],
+    ):
+        super().__init__(context, bounded_commands)
+        self.pnl_report = pnl_report
+        self.position = position
 
     def give_pnl_report(self):
-        if self._pnl_report == None:
-            self._pnl_report = PnLReportGenerator.position_report(self.context.position)
-        return self._pnl_report
+        if self.pnl_report == None:
+            self.pnl_report = PnLReportGenerator.position_report(self.position)
+        return self.pnl_report
 
     async def command(self):
         if not self.context.reporter:
@@ -98,28 +114,34 @@ class StoplossHitReport(Command):
             return True
         if self.context.reporter:
             msg = self.context.reporter.msg_formater.position_closed(
-                self.context.position, self.give_pnl_report()
+                self.position, self.give_pnl_report()
             )
             res = await self.context.reporter.send_msg(
-                msg, reply_id=self.context.position.report_id
+                msg, reply_id=self.position.report_id
             )
             if not res:
                 return False
         return True
 
 
-class TriggerHitReport(Command):
+class TriggerHitReport(ReportCommand):
     def __init__(
-        self, bounded_command: Command | None = None, trail_stop: bool = False
+        self,
+        position: Position,
+        context: ReportCommandContext,
+        trail_stop: bool = False,
+        pnl_report: PnLReport | None = None,
+        bounded_commands: list[Command] = [],
     ):
-        super().__init__(bounded_command)
-        self._pnl_report: PnLReport | None = None
+        super().__init__(context, bounded_commands)
+        self.position = position
+        self.pnl_report = pnl_report
         self.trail_stop = trail_stop
 
     def give_pnl_report(self):
-        if self._pnl_report == None:
-            self._pnl_report = PnLReportGenerator.position_report(self.context.position)
-        return self._pnl_report
+        if self.pnl_report == None:
+            self.pnl_report = PnLReportGenerator.position_report(self.position)
+        return self.pnl_report
 
     async def command(self):
         if not self.context.reporter:
@@ -127,14 +149,14 @@ class TriggerHitReport(Command):
             return True
         if self.context.reporter:
             msg = self.context.reporter.msg_formater.trigger_hit(
-                self.context.position, self.give_pnl_report()
+                self.position, self.give_pnl_report()
             )
             if self.trail_stop:
                 msg += "\n\n" + self.context.reporter.msg_formater.sl_trailed(
-                    self.context.position
+                    self.position
                 )
             res = await self.context.reporter.send_msg(
-                msg, reply_id=self.context.position.report_id
+                msg, reply_id=self.position.report_id
             )
             if not res:
                 return False

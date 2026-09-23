@@ -31,16 +31,23 @@ class CommandStatus(Enum):
     FAILED = "Failed"
 
 
+@dataclass(slots=True)
+class CommandContext:
+    def __str__(self) -> str:
+        return self.__class__.__name__
+
+
 class Command(ABC):
     pending_commands = []
     __executed_record = {}
     __failed_record = {}
     N_ATTEMPTS = 2
 
-    def __init__(self, bounded_commands: list["Command"] = []):
+    def __init__(self, context: CommandContext, bounded_commands: list["Command"] = []):
+        self.context = context
+        self.next_commands = bounded_commands
         self.failed_attempt: int = 0
         self.__status = CommandStatus.DEFINED
-        self.next_commands = bounded_commands
         self.define_timestamp: int = TimeHandler.now()
         self.send_timestamp: Optional[int] = None
         self.execution_timestamp: Optional[int] = None
@@ -136,20 +143,38 @@ class Command(ABC):
         return msg
 
 
-class TriggerType(Enum):
-    SL = "Stoploss"
-    TP = "Takeprofit"
-    TRAILING_STOPLOSS = "Trailing Stoploss"
-    OTHER = "Other"
+class _Event(ABC):
+    occurred_events: dict[str, int] = {}
+    consider_report: bool = True
+    consider_db_record: bool = True
+    consider_trade: bool = True
+
+    @property
+    def name(self):
+        return self.__class__.__name__
+
+    @abstractmethod
+    def report_command(self, *args, **kwargs):
+        pass
+
+    @abstractmethod
+    def database_command(self, *args, **kwargs):
+        pass
+
+    @abstractmethod
+    def trade_command(self, *args, **kwargs):
+        pass
+
+    def occure(*args, **kwargs):
+        pass
 
 
 @dataclass(slots=True)
 class Trigger:
     price: float
+    event: _Event
     volume: float = field(default=0.0)
     cross_direction: Literal[1, -1] = 1
-    command: Command | None = field(default=None)
-    type: TriggerType = field(default=TriggerType.OTHER)
     defined_timestamp: int = field(default_factory=TimeHandler.now, init=False)
     triggered_timestamp: int | None = field(default=None, init=False)
     exchange_id: str = field(default="", init=False)
@@ -165,7 +190,7 @@ class Trigger:
 
     def execute(self):
         self.triggered_timestamp = TimeHandler.now()
-        return self.command
+        return self.event
 
     def check(self, ticks: np.ndarray) -> bool:
         if self.triggered_timestamp:

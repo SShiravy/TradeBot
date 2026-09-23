@@ -318,7 +318,7 @@ class DivergenceBot(TraderBot):
                     self.trade(position, figure)
             else:
                 figure = self.generate_figure(chartdata, second_chartdata, signal)
-                commands.NewSignalReport(signal, plot=figure).send(
+                commands.ReportNewSignal(signal, plot=figure).send(
                     reporter=self.trades_manager.reporter
                 )
 
