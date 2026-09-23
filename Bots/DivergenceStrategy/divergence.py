@@ -13,9 +13,10 @@ from ChartModule.Indicators import (
 )
 from ChartModule.plot import ChartPane, DoubleChartFigure
 from TraderBot.PositionHandlers.manager import TradesManager
-import TraderBot.Commands as commands
+from TraderBot.Commands.report_commands import ReportCommandContext
 from TraderBot.PositionHandlers.plot import PositionPlotter
 from TraderBot.trader_bot import TraderBot
+from TraderBot.events import NewSignal
 from TraderBot.models import ExchangeAgent, Position, Strategy, StrategyPlotter
 from dataclasses import dataclass
 from typing import Literal
@@ -318,9 +319,12 @@ class DivergenceBot(TraderBot):
                     self.trade(position, figure)
             else:
                 figure = self.generate_figure(chartdata, second_chartdata, signal)
-                commands.ReportNewSignal(signal, plot=figure).send(
-                    reporter=self.trades_manager.reporter
-                )
+                NewSignal(
+                    signal,
+                    report_context=ReportCommandContext(
+                        self.trades_manager.reporter, figure
+                    ),
+                ).occur()
 
         return self.give_delay(last_timestamp)
 

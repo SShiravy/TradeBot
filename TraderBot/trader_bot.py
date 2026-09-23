@@ -120,7 +120,7 @@ class TraderBot:
             report_context=ReportCommandContext(
                 self.trades_manager.reporter, figure=plot
             ),
-        )
+        ).occur()
         return position
 
     async def task(self):
@@ -141,6 +141,6 @@ class TraderBot:
                     report_context=ReportCommandContext(
                         self.trades_manager.reporter, figure
                     ),
-                )
+                ).occur()
 
         return self.give_delay(last_timestamp)

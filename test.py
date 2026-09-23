@@ -22,7 +22,8 @@ async def test_positions():
     from TraderBot.PositionHandlers import TradesManager
     from ChartModule import Signal, Chart, TimeFrame, MarketSide
     from TraderBot.models import Command
-    from TraderBot.Commands import OpenPosition
+    from TraderBot.Commands import TradeCommandContext
+    from TraderBot.events import NewPosition
 
     from TraderBot.PositionHandlers.PositionGenerators import ForexStepping
     from ExchangeAgents import MT5Agent
@@ -36,6 +37,7 @@ async def test_positions():
     manager = TradesManager(
         agent,
         generator,
+        reporter=None,  # type: ignore[arg-type]
     )
     agent.prepare_chart(chart)
     logger.info(f"{chart.precision=}")
@@ -51,7 +53,7 @@ async def test_positions():
     for step in pos.steps:
         logger.info(str(step))
     logger.info(pos.stoploss)
-    OpenPosition().send(manager.give_command_contex(pos))
+    NewPosition(trade_context=TradeCommandContext(pos, agent)).occur()
 
     while True:
         logger.info(agent.get_current_tick(chart, pos.side))

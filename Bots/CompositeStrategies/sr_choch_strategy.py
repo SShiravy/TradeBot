@@ -8,7 +8,9 @@ from TraderBot.models import ExchangeAgent, Position
 from TraderBot.PositionHandlers.manager import TradesManager
 from TraderBot.PositionHandlers.plot import PositionPlotter
 from TraderBot.trader_bot import TraderBot
-import TraderBot.Commands as commands
+from TraderBot.Commands.report_commands import ReportCommandContext, ReportNewSignal
+from TraderBot.Commands.trade_commands import TradeCommandContext
+from TraderBot.events import NewPosition, NewSignal
 import logging
 
 
@@ -65,7 +67,7 @@ class SRChochBot(TraderBot):
         self.n_sr_candle_check = n_sr_candle_check or n_candle_check
 
         self.last_sr_signal: SRSignal | None = None
-        self._sr_report_command: commands.ReportNewSignal | None = None
+        self._sr_report_command: ReportNewSignal | None = None
         self.last_static_sr_checked_timestamp: int | None = None
         self.last_dynamic_sr_checked_timestamp: int | None = None
 
@@ -99,11 +101,7 @@ class SRChochBot(TraderBot):
         """Seconds an S&R touch stays valid while waiting for its CHoCH."""
         return self.n_candle_confirmation * self.chart.timeframe.minutes * 60
 
-    @property
-    def _reporter(self):
-        reporter = self.trades_manager.reporter
-        return reporter if reporter and reporter.enable else None
-
+  
     # --- S&R (arms the setup) ------------------------
 
     def generate_static_sr_figure(
@@ -141,10 +139,16 @@ class SRChochBot(TraderBot):
         logger.info(f"S&R Signal:{signal}")
 
     def _report_sr(self, signal: SRSignal, figure: Figure) -> None:
-        command = commands.ReportNewSignal(
-            signal, plot=figure, reply_id=self._sr_reply_id()
+        # everything that follows replies to this message, and the id only
+        # exists on the command itself, so it is built here and handed to
+        # the event to be sent instead of being made inside it
+        command = ReportNewSignal(
+            signal,
+            ReportCommandContext(
+                self.trades_manager.reporter, figure, reply_id=self._sr_reply_id()
+            ),
         )
-        command.send(reporter=self.trades_manager.reporter)
+        NewSignal(signal, extra_commands=[command]).occur()
         self._sr_report_command = command
 
     def _check_static_sr(self, chartdata: ChartData) -> None:
@@ -199,8 +203,7 @@ class SRChochBot(TraderBot):
         )
 
         self._arm_sr(signal)
-        if self._reporter is None:
-            return None
+
         self._report_sr(signal, self.generate_static_sr_figure(chartdata, signal))
 
     def _check_dynamic_sr(self, chartdata: ChartData) -> None:
@@ -244,8 +247,7 @@ class SRChochBot(TraderBot):
         )
 
         self._arm_sr(signal)
-        if self._reporter is None:
-            return None
+
         self._report_sr(signal, self.generate_dynamic_sr_figure(chartdata, signal))
 
     def _sr_still_valid(self, choch_chartdata: ChartData) -> bool:
@@ -307,14 +309,12 @@ class SRChochBot(TraderBot):
         TraderBot.trade, with the position report threaded as a reply to the
         S&R message that armed this trade.
         """
-        report_command = None
-        if self._reporter is not None:
-            report_command = commands.ReportNewPosition(
-                plot=plot, reply_id=self._sr_reply_id()
+        NewPosition(
+            trade_context=TradeCommandContext(position, self.agent),
+            report_context=ReportCommandContext(
+                self.trades_manager.reporter, figure=plot, reply_id=self._sr_reply_id()
             )
-        commands.OpenPosition(report_command).send(
-            self.trades_manager.give_command_contex(position)
-        )
+        ).occur()
         return position
 
     def find_signal(
@@ -351,11 +351,14 @@ class SRChochBot(TraderBot):
             )
             logger.info("SR & CHoCH Signal")
         else:
-            commands.ReportNewSignal(
+            NewSignal(
                 choch_signal,
-                plot=self.generate_figure(choch_chartdata, choch_signal),
-                reply_id=self._sr_reply_id(),
-            ).send(reporter=self.trades_manager.reporter)
+                report_context=ReportCommandContext(
+                    self.trades_manager.reporter,
+                    self.generate_figure(choch_chartdata, choch_signal),
+                    reply_id=self._sr_reply_id(),
+                ),
+            ).occur()
 
         # the setup has been consumed -- a new S&R touch must arm the next
         self._clear_sr()

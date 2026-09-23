@@ -16,7 +16,9 @@ from TraderBot.models import ExchangeAgent, Position
 from TraderBot.PositionHandlers.manager import TradesManager
 from TraderBot.PositionHandlers.plot import PositionPlotter
 from TraderBot.trader_bot import TraderBot
-import TraderBot.Commands as commands
+from TraderBot.Commands.report_commands import ReportCommandContext, ReportNewSignal
+from TraderBot.Commands.trade_commands import TradeCommandContext
+from TraderBot.events import NewPosition, NewSignal
 from typing import cast
 import logging
 
@@ -95,7 +97,7 @@ class OscillatorDiverChochBot(TraderBot):
         )
 
         self.last_diver_signal: DiverSignal | None = None
-        self._diver_report_command: commands.ReportNewSignal | None = None
+        self._diver_report_command: ReportNewSignal | None = None
         self.last_diver_checked_timestamp: int | None = None
         self.last_mtr_checked_timestamp: int | None = None
         self.last_mtr_signal: MTRSignal | None = None
@@ -136,11 +138,6 @@ class OscillatorDiverChochBot(TraderBot):
         """Seconds a divergence stays valid while waiting for its CHoCH."""
         return self.n_candle_confirmation * self.chart.timeframe.minutes * 60
 
-    @property
-    def _reporter(self):
-        reporter = self.trades_manager.reporter
-        return reporter if reporter and reporter.enable else None
-
     def _sync_diver_bot(self) -> None:
         """
         The delegate is handed the same objects at construction, but `agent`
@@ -175,12 +172,10 @@ class OscillatorDiverChochBot(TraderBot):
         self._diver_report_command = None
         logger.info(f"OscillatorDiver Signal:{signal}")
 
-        if self._reporter is None:
-            return None
-        figure = self.diver_bot.generate_figure(oscillator_chartdata, signal)  # type: ignore
-        command = commands.ReportNewSignal(signal, plot=figure)
 
-        command.send(reporter=self.trades_manager.reporter)
+        figure = self.diver_bot.generate_figure(oscillator_chartdata, signal)  # type: ignore
+        command = ReportNewSignal(signal, ReportCommandContext(self.trades_manager.reporter, figure))
+        NewSignal(signal, extra_commands=[command]).occur()
         self._diver_report_command = command
 
     def _diver_still_valid(self, choch_chartdata: ChartData) -> bool:
@@ -239,13 +234,14 @@ class OscillatorDiverChochBot(TraderBot):
         )
         logger.info(f"MTR Signal: {self.last_mtr_signal}")
 
-        if self._reporter is None:
-            return None
-        commands.ReportNewSignal(
+        NewSignal(
             self.last_mtr_signal,
-            plot=self.generate_mtr_figure(choch_chartdata, self.last_mtr_signal),
-            reply_id=self._diver_reply_id(),
-        ).send(reporter=self.trades_manager.reporter)
+            report_context=ReportCommandContext(
+                self.trades_manager.reporter,
+                self.generate_mtr_figure(choch_chartdata, self.last_mtr_signal),
+                reply_id=self._diver_reply_id(),
+            ),
+        ).occur()
 
     # --- ENTRY ---------------------------------------
 
@@ -288,14 +284,14 @@ class OscillatorDiverChochBot(TraderBot):
         TraderBot.trade, with the position report threaded as a reply to the
         divergence message that armed this trade.
         """
-        report_command = None
-        if self._reporter is not None:
-            report_command = commands.ReportNewPosition(
-                plot=plot, reply_id=self._diver_reply_id()
+        NewPosition(
+            trade_context=TradeCommandContext(position, self.agent),
+            report_context=ReportCommandContext(
+                self.trades_manager.reporter, figure=plot, reply_id=self._diver_reply_id()
             )
-        commands.OpenPosition(report_command).send(
-            self.trades_manager.give_command_contex(position)
-        )
+            if self.trades_manager.reporter is not None
+            else None,
+        ).occur()
         return position
 
     def find_signal(
@@ -334,11 +330,14 @@ class OscillatorDiverChochBot(TraderBot):
             )
             logger.info("Divergence & CHoCH Signal")
         else:
-            commands.ReportNewSignal(
+            NewSignal(
                 choch_signal,
-                plot=self.generate_figure(choch_chartdata, choch_signal),
-                reply_id=self._diver_reply_id(),
-            ).send(reporter=self.trades_manager.reporter)
+                report_context=ReportCommandContext(
+                    self.trades_manager.reporter,
+                    self.generate_figure(choch_chartdata, choch_signal),
+                    reply_id=self._diver_reply_id(),
+                ),
+            ).occur()
 
         # the setup has been consumed -- a new divergence must arm the next
         self._clear_diver()

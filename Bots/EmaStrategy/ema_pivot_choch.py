@@ -16,7 +16,9 @@ from TraderBot.models import ExchangeAgent, Position, Strategy, StrategyPlotter
 from TraderBot.PositionHandlers.manager import TradesManager
 from TraderBot.PositionHandlers.plot import PositionPlotter
 from TraderBot.trader_bot import TraderBot
-import TraderBot.Commands as commands
+from TraderBot.Commands.report_commands import ReportCommandContext
+from TraderBot.Commands.trade_commands import TradeCommandContext
+from TraderBot.events import NewPosition, NewSignal
 from dataclasses import dataclass
 import pandas as pd
 import numpy as np
@@ -641,10 +643,6 @@ class EmaPivotChochBot(TraderBot):
         )
         return conf_dict
 
-    @property
-    def _reporter(self):
-        reporter = self.trades_manager.reporter
-        return reporter if reporter and reporter.enable else None
 
     def get_ema_htf_chartdata(self) -> ChartData | None:
         if not self.n_ema_htf_candle_check:
@@ -725,13 +723,10 @@ class EmaPivotChochBot(TraderBot):
         a direct send. The image still lands under the reporter's save_path
         the way every queued report does.
         """
-        reporter = self._reporter
-        if reporter is None:
-            return
         figure = self.generate_touch_figure(ltf_chartdata, htf_chartdata)
         image_path = figure.save_image(
             name=self._touch_report_name(ltf_chartdata),
-            path=reporter.save_path or "Records/",
+            path=self.trades_manager.reporter.save_path or "Records/",
         )
         await reporter.send_msg(
             f"{self.strategy.name}\n📈 {self.chart}\nEMA-pivot touch report",
@@ -739,12 +734,10 @@ class EmaPivotChochBot(TraderBot):
         )
 
     def trade(self, position: Position, plot: Figure | None) -> Position | None:
-        report_command = None
-        if self._reporter is not None:
-            report_command = commands.ReportNewPosition(plot=plot)
-        commands.OpenPosition(report_command).send(
-            self.trades_manager.give_command_contex(position)
-        )
+        NewPosition(
+            trade_context=TradeCommandContext(position, self.agent),
+            report_context=ReportCommandContext(self.trades_manager.reporter, figure=plot)
+        ).occur()
         return position
 
     def check_signal(  # type: ignore[override]
@@ -785,10 +778,13 @@ class EmaPivotChochBot(TraderBot):
                 self.generate_figure(chartdata, signal, position, htf_chartdata),
             )
         else:
-            commands.ReportNewSignal(
+            NewSignal(
                 signal,
-                plot=self.generate_figure(chartdata, signal, None, htf_chartdata),
-            ).send(reporter=self.trades_manager.reporter)
+                report_context=ReportCommandContext(
+                    self.trades_manager.reporter,
+                    self.generate_figure(chartdata, signal, None, htf_chartdata),
+                ),
+            ).occur()
         return signal
 
     async def task(self):
