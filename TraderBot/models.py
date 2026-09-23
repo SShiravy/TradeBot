@@ -31,27 +31,19 @@ class CommandStatus(Enum):
     FAILED = "Failed"
 
 
-@dataclass
-class CommandContext:
-    position: "Position"
-    exchange_agent: "ExchangeAgent"
-    reporter: "ReporterBot | None"
-
-
 class Command(ABC):
     pending_commands = []
     __executed_record = {}
     __failed_record = {}
     N_ATTEMPTS = 2
 
-    def __init__(self, bounded_command: "Command|None" = None):
+    def __init__(self, bounded_commands: list["Command"] = []):
         self.failed_attempt: int = 0
         self.__status = CommandStatus.DEFINED
-        self.next_command = bounded_command
+        self.next_commands = bounded_commands
         self.define_timestamp: int = TimeHandler.now()
         self.send_timestamp: Optional[int] = None
         self.execution_timestamp: Optional[int] = None
-        self.context: CommandContext
         command_logger.debug(self)
 
     @property
@@ -84,8 +76,7 @@ class Command(ABC):
             self.__record(self, self.__failed_record)
         self.__status = value
 
-    def send(self, context: CommandContext, *args, **kwargs):
-        self.context = context
+    def send(self, *args, **kwargs):
         self.status = CommandStatus.PENDING
 
     @abstractmethod
@@ -107,16 +98,12 @@ class Command(ABC):
         res = await self.command()
         if res:
             self.status = CommandStatus.EXECUTED
-            if self.next_command:
-                if self.next_command.status == CommandStatus.DEFINED:
-                    self.next_command.send(self.context)
-                    command_logger.debug(
-                        f"next command {self.next_command.name} sended"
-                    )
+            for command in self.next_commands:
+                if command.status == CommandStatus.DEFINED:
+                    command.send()
+                    command_logger.debug(f"next command {command.name} sended")
                 else:
-                    command_logger.warning(
-                        f"bounded command status: {self.next_command.status}"
-                    )
+                    command_logger.warning(f"bounded command status: {command.status}")
             return True
 
         else:
@@ -289,7 +276,7 @@ class ExchangeAgent(ABC):
         pass
 
     @abstractmethod
-    def get_current_tick(self, chart: Chart) -> float:
+    def get_current_tick(self, chart: Chart, side: PositionSide | None = None) -> float:
         pass
 
     def get_candles_since(self, chart: Chart, time: datetime) -> list[Candle]:

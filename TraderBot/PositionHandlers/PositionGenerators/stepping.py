@@ -1,4 +1,4 @@
-from ChartModule.models import Signal
+from ChartModule.models import Chart, Signal
 from TraderBot.PositionHandlers.manager import PositionGenerator
 import TraderBot.Commands as commands
 from TraderBot.models import (
@@ -18,9 +18,9 @@ class ForexStepping(PositionGenerator):
     def __init__(
         self,
         leverage: int = 1,
-        sl_pip: int = 3,
+        sl_pip: int = 5,
         tp_ratio: list[float] = [1, 2, 3],
-        tp_ratio_volumes: list[float] = [0.01, 0.01, 0.1],
+        tp_ratio_volumes: list[float] = [0.01, 0.01, 0.01],
         tp_pip: list[float] = [],
         tp_pip_volumes: list[float] = [],
         trail_stop: bool = True,
@@ -39,7 +39,7 @@ class ForexStepping(PositionGenerator):
                              {len(tp_pip_volumes)} != {len(tp_pip)}"
             )
 
-        initial_volume = sum(tp_ratio_volumes) + sum(tp_pip_volumes)
+        initial_volume = round(sum(tp_ratio_volumes) + sum(tp_pip_volumes), 2)
         self.initial_volume = initial_volume
         self.leverage = leverage
         self.trail_stop = trail_stop
@@ -50,10 +50,13 @@ class ForexStepping(PositionGenerator):
         self.tp_ratio_volumes = tp_ratio_volumes
 
     def init_stoploss(
-        self, entry_price: float, side: PositionSide, pip_factor: float
+        self, entry_price: float, side: PositionSide, chart: Chart
     ) -> Trigger:
         return Trigger(
-            price=entry_price - side.factor * self.sl_pip * pip_factor,
+            price=round(
+                entry_price - side.factor * self.sl_pip * chart.pip_factor,
+                chart.precision,
+            ),
             volume=self.initial_volume,
             cross_direction=side.factor,
             command=commands.StopLoss(bounded_command=commands.StoplossHitReport()),
@@ -78,13 +81,16 @@ class ForexStepping(PositionGenerator):
         entry_price: float,
         side: PositionSide,
         sl_price: float,
-        pip_factor: float,
+        chart: Chart,
     ) -> list[Trigger]:
         steps: list[Trigger] = []
         for pip, volume in zip(self.tp_pip, self.tp_pip_volumes):
             steps.append(
                 Trigger(
-                    price=entry_price + pip * side.factor * pip_factor,
+                    price=round(
+                        entry_price + pip * side.factor * chart.pip_factor,
+                        chart.precision,
+                    ),
                     volume=volume,
                     cross_direction=side.factor,
                     type=TriggerType.TP,
@@ -95,7 +101,9 @@ class ForexStepping(PositionGenerator):
         for ratio, volume in zip(self.tp_ratio, self.tp_ratio_volumes):
             steps.append(
                 Trigger(
-                    price=entry_price + sl_distance * ratio * side.factor,
+                    price=round(
+                        entry_price + sl_distance * ratio * side.factor, chart.precision
+                    ),
                     volume=volume,
                     cross_direction=side.factor,
                     type=TriggerType.TP,
@@ -136,10 +144,8 @@ class ForexStepping(PositionGenerator):
         """
         side = PositionSide.convert_market_side(signal.side)
         sl_base_price = kwargs.get("sl_base_price", entry_price)
-        sl = self.init_stoploss(sl_base_price, side, signal.chart.pip_factor)
-        triggers = self.generate_triggers(
-            entry_price, side, sl.price, signal.chart.pip_factor
-        )
+        sl = self.init_stoploss(sl_base_price, side, signal.chart)
+        triggers = self.generate_triggers(entry_price, side, sl.price, signal.chart)
         position = Position(
             signal.chart,
             side,

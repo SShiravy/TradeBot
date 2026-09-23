@@ -29,7 +29,9 @@ if __name__ == "__main__":
 
     bot.chart = SOLUSD_1m_5000_test
     bot.second_chart = XAUUSD_1m_5000_test
-    backtest_agent = BacktestAgent(bot.agent, [SOLUSD_1m_5000_test, XAUUSD_1m_5000_test])
+    backtest_agent = BacktestAgent(
+        bot.agent, [SOLUSD_1m_5000_test, XAUUSD_1m_5000_test]
+    )
 
     simulator = SignalBacktest(bot, backtest_agent)
     asyncio.run(simulator.run())

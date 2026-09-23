@@ -22,13 +22,13 @@ class PositionGenerator(ABC):
 
     @abstractmethod
     def init_stoploss(
-        self, entry_price: float, side: PositionSide, *args, **kwargs
+        self, entry_price: float, side: PositionSide, chart: Chart, *args, **kwargs
     ) -> Trigger:
         pass
 
     @abstractmethod
     def generate_triggers(
-        self, entry_price: float, side: PositionSide, *args, **kwargs
+        self, entry_price: float, side: PositionSide, chart: Chart, *args, **kwargs
     ) -> list[Trigger]:
         pass
 
@@ -42,7 +42,7 @@ class PositionGenerator(ABC):
     def generate(
         self,
         signal: Signal,
-        entry_price: float,
+        last_price: float,
         *args,
         **kwargs,
     ) -> Position | None:
@@ -51,10 +51,10 @@ class PositionGenerator(ABC):
         position = Position(
             signal.chart,
             side,
-            entry_price,
+            last_price,
             self.initial_volume,
-            self.generate_triggers(entry_price, side, signal.chart),
-            self.init_stoploss(entry_price, side),
+            self.generate_triggers(last_price, side, signal.chart),
+            self.init_stoploss(last_price, side, signal.chart),
             self.leverage,
             type=PositionType.MARKET,
             source=signal.source,
@@ -112,6 +112,7 @@ class TradesManager:
                 ):
                     return None
             self.current_positions.append(pos)
+            logger.debug(f"New Position {pos}")
         return pos
 
     def modify_init_sl_tp(self, position: Position):
@@ -130,9 +131,13 @@ class TradesManager:
 
     def triggers_handler(self, position: Position, ticks: np.ndarray):
         if position.stoploss.check(ticks):
+            logger.debug(f"SL hit for {position}")
+            if position.stoploss.command:
+                position.stoploss.command.send(self.give_command_contex(position))
             return
         for trigger in position.steps:
             if trigger.check(ticks):
+                logger.debug(f"Trigger Hit: {Trigger=}|{Position=}")
                 if trigger.command:
                     trigger.command.send(self.give_command_contex(position))
                 continue
@@ -156,13 +161,14 @@ class TradesManager:
             if candle.timestamp < position.last_check_timestamp:
                 continue
             ticks += [candle.open, candle.low, candle.high, candle.close]
+            print(ticks)
         position.last_check_timestamp = chartdata[-1].timestamp
-        return self.triggers_handler(position, np.ndarray(ticks))
+        return self.triggers_handler(position, np.array(ticks))
 
     def manage_positions(self):
         all_pos = self.current_positions.copy()
         for pos in all_pos:
-            if self.agent_handler:
+            if self.agent_check:
                 self.agent_handler(pos)
             else:
                 self.ochl_handler(pos)

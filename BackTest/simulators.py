@@ -1,5 +1,5 @@
 from BackTest.models import CsvChart
-from Database import store_signals,store_trader_bot, backtest_engine
+from Database import store_signals, store_trader_bot, backtest_engine
 from Settings import TimeHandler
 from TraderBot import TraderBot
 from TraderBot.models import Command
@@ -10,8 +10,12 @@ import logging
 
 
 logger = logging.getLogger("Backtest")
+
+
 class SignalBacktest:
-    def __init__(self, bot: TraderBot, backtest_agent: BacktestAgent, store_in_db:bool=True) -> None:
+    def __init__(
+        self, bot: TraderBot, backtest_agent: BacktestAgent, store_in_db: bool = True
+    ) -> None:
         if not isinstance(bot.chart, CsvChart):
             raise ValueError(f"bot's chart is not a csv chart: {bot.chart}")
 
@@ -37,9 +41,10 @@ class SignalBacktest:
 
     def conclusion(self):
         if self.store_in_db:
-            store_trader_bot(self.bot,db_engine=backtest_engine)
-            store_signals(self.reporter.all_signals,
-                          self.bot,db_engine=backtest_engine)
+            store_trader_bot(self.bot, db_engine=backtest_engine)
+            store_signals(
+                self.reporter.all_signals, self.bot, db_engine=backtest_engine
+            )
 
         logger.info(Command.close_records())
 

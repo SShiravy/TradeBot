@@ -61,9 +61,6 @@ class NewPositionReport(Command):
         self.reply_id = reply_id
 
     async def command(self):
-        if not self.context.reporter:
-            logger.warning("Reporter not initialized, cannot send new position report")
-            return True
         msg = self.context.reporter.msg_formater.new_position(self.context.position)
         path = (
             self.context.reporter.save_path

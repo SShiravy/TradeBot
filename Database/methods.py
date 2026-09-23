@@ -86,7 +86,7 @@ def fetch_signals(bot: TraderBot, db_engine: Engine = engine) -> list[SignalRow]
         statement = (
             select(SignalRow)
             .where(SignalRow.trader_bot_id == bot_row.id)
-            .order_by(SignalRow.timestamp) # type: ignore
+            .order_by(SignalRow.timestamp)  # type: ignore
         )
         return list(session.exec(statement).all())
 

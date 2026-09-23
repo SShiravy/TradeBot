@@ -167,13 +167,13 @@ class MT5Agent(ExchangeAgent):
                 "volume": trigger.volume,
                 "type": trade_side,
                 "price": price,
-                "sl": position.stoploss,
+                "sl": position.stoploss.price,
                 "tp": trigger.price,
                 "deviation": 20,
                 "magic": 80713,
                 "comment": position.source,
                 "type_time": mt5.ORDER_TIME_GTC,
-                "type_filling": mt5.ORDER_FILLING_IOC,
+                "type_filling": mt5.ORDER_FILLING_FOK,
             }
 
             result = mt5.order_send(request)
@@ -224,10 +224,22 @@ class MT5Agent(ExchangeAgent):
         logger.debug(f"TP Changed of {position=}\n{result=}")
         return True
 
-    # TODO: implement below methods
+    def get_current_tick(self, chart: Chart, side: PositionSide | None = None) -> float:
+        if not self.select_chart(chart):
+            raise LookupError(f"Failed to select {chart=}")
 
-    def get_current_tick(self, chart: Chart) -> float:
-        return 0.0
+        tick = mt5.symbol_info_tick(chart.symbol)
+        if tick is None:
+            raise LookupError(f"Failed to get tick data for {chart.symbol}")
+
+        if side is PositionSide.LONG:
+            price = tick.ask
+        elif side is PositionSide.SHORT:
+            price = tick.bid
+        else:
+            price = (tick.ask + tick.bid) / 2
+
+        return price
 
     def partial_close(self, position: Position, volume) -> float | None:
         # if position.side == PositionSide.LONG:
