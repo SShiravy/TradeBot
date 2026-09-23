@@ -14,6 +14,7 @@ from TraderBot.Commands.report_commands import (
     TriggerHitReport,
     ReportCommandContext,
 )
+from TraderBot.Commands.db_commands import RecordSignal, DatabaseCommandContext
 
 
 __all__ = [
@@ -29,4 +30,6 @@ __all__ = [
     "ReportNewPosition",
     "StoplossHitReport",
     "TriggerHitReport",
+    "DatabaseCommandContext",
+    "RecordSignal",
 ]

@@ -101,7 +101,6 @@ class SRChochBot(TraderBot):
         """Seconds an S&R touch stays valid while waiting for its CHoCH."""
         return self.n_candle_confirmation * self.chart.timeframe.minutes * 60
 
-  
     # --- S&R (arms the setup) ------------------------
 
     def generate_static_sr_figure(
@@ -313,7 +312,7 @@ class SRChochBot(TraderBot):
             trade_context=TradeCommandContext(position, self.agent),
             report_context=ReportCommandContext(
                 self.trades_manager.reporter, figure=plot, reply_id=self._sr_reply_id()
-            )
+            ),
         ).occur()
         return position
 

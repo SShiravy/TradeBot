@@ -172,9 +172,10 @@ class OscillatorDiverChochBot(TraderBot):
         self._diver_report_command = None
         logger.info(f"OscillatorDiver Signal:{signal}")
 
-
         figure = self.diver_bot.generate_figure(oscillator_chartdata, signal)  # type: ignore
-        command = ReportNewSignal(signal, ReportCommandContext(self.trades_manager.reporter, figure))
+        command = ReportNewSignal(
+            signal, ReportCommandContext(self.trades_manager.reporter, figure)
+        )
         NewSignal(signal, extra_commands=[command]).occur()
         self._diver_report_command = command
 
@@ -287,7 +288,9 @@ class OscillatorDiverChochBot(TraderBot):
         NewPosition(
             trade_context=TradeCommandContext(position, self.agent),
             report_context=ReportCommandContext(
-                self.trades_manager.reporter, figure=plot, reply_id=self._diver_reply_id()
+                self.trades_manager.reporter,
+                figure=plot,
+                reply_id=self._diver_reply_id(),
             )
             if self.trades_manager.reporter is not None
             else None,

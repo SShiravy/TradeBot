@@ -643,7 +643,6 @@ class EmaPivotChochBot(TraderBot):
         )
         return conf_dict
 
-
     def get_ema_htf_chartdata(self) -> ChartData | None:
         if not self.n_ema_htf_candle_check:
             return None
@@ -736,7 +735,9 @@ class EmaPivotChochBot(TraderBot):
     def trade(self, position: Position, plot: Figure | None) -> Position | None:
         NewPosition(
             trade_context=TradeCommandContext(position, self.agent),
-            report_context=ReportCommandContext(self.trades_manager.reporter, figure=plot)
+            report_context=ReportCommandContext(
+                self.trades_manager.reporter, figure=plot
+            ),
         ).occur()
         return position
 

@@ -10,8 +10,10 @@ from Database.methods import (
     fetch_signal,
     fetch_signals,
     fetch_trader_bot,
+    fetch_trader_bot_by_hash,
     give_trader_bot_id,
     store_signal,
+    store_signal_by_bot_id,
     store_signals,
     store_trader_bot,
 )
@@ -28,10 +30,12 @@ __all__ = [
     "SignalRow",
     "TraderBotRow",
     "fetch_trader_bot",
+    "fetch_trader_bot_by_hash",
     "store_trader_bot",
     "give_trader_bot_id",
     "fetch_signal",
     "fetch_signals",
     "store_signal",
+    "store_signal_by_bot_id",
     "store_signals",
 ]

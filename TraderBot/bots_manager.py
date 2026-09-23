@@ -5,6 +5,7 @@ import tracemalloc
 import asyncio
 import logging
 from datetime import timedelta
+from TraderBot.events import Event
 from TraderBot.PositionHandlers.trades_pnl import PnLReportGenerator
 from TraderBot.models import Command, ReporterBot
 from Settings.timing import TimeHandler
@@ -20,6 +21,7 @@ class BotsManager:
         manage_interval: float = 2.0,
         heartbeat_interval: float = 3600.0,
         enable_profiling: bool = True,
+        enable_db: bool = True,
         report_shift: int = 30,
     ) -> None:
         self.name = name
@@ -34,6 +36,8 @@ class BotsManager:
         self._last_snapshot: tracemalloc.Snapshot | None = None
         self.enable_profiling = enable_profiling
         self._profilers: dict[str, cProfile.Profile] = {}
+
+        Event.consider_db_record = enable_db
 
     def _memory_report(self) -> str:
         snapshot = tracemalloc.take_snapshot()

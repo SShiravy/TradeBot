@@ -14,21 +14,19 @@ logger = logging.getLogger("Database")
 # Trader Bot ----------
 
 
-def fetch_trader_bot(bot: TraderBot, db_engine: Engine = engine) -> TraderBotRow | None:
-    """Fetch the row whose config hash matches ``bot``, or None."""
-    config_hash = TraderBotRow.give_config_hash(bot)
+def fetch_trader_bot_by_hash(
+    config_hash: str, db_engine: Engine = engine
+) -> TraderBotRow | None:
     with Session(db_engine) as session:
         statement = select(TraderBotRow).where(TraderBotRow.config_hash == config_hash)
         return session.exec(statement).first()
 
 
-def store_trader_bot(bot: TraderBot, db_engine: Engine = engine) -> TraderBotRow:
-    """
-    Store the configuration of ``bot``.
+def fetch_trader_bot(bot: TraderBot, db_engine: Engine = engine) -> TraderBotRow | None:
+    return fetch_trader_bot_by_hash(TraderBotRow.give_config_hash(bot), db_engine)
 
-    A bot already stored under the same config hash is returned untouched,
-    so calling this on every startup is safe.
-    """
+
+def store_trader_bot(bot: TraderBot, db_engine: Engine = engine) -> TraderBotRow:
     stored = fetch_trader_bot(bot, db_engine)
     if stored:
         logger.info(f"Trader bot already in db: {stored}")
@@ -44,7 +42,6 @@ def store_trader_bot(bot: TraderBot, db_engine: Engine = engine) -> TraderBotRow
 
 
 def give_trader_bot_id(bot: TraderBot, db_engine: Engine = engine) -> int:
-    """Id of ``bot`` in the db, storing it first when it is not there yet."""
     row = store_trader_bot(bot, db_engine)
     if row.id is None:
         raise ValueError(f"Trader bot row without id: {row}")
@@ -57,7 +54,6 @@ def give_trader_bot_id(bot: TraderBot, db_engine: Engine = engine) -> int:
 def fetch_signal(
     signal: Signal, bot: TraderBot, db_engine: Engine = engine
 ) -> SignalRow | None:
-    """Fetch the row of ``signal`` for ``bot``, or None."""
     bot_row = fetch_trader_bot(bot, db_engine)
     if bot_row is None:
         logger.info("No trader bot related to this bot in db")
@@ -76,7 +72,6 @@ def fetch_signal(
 
 
 def fetch_signals(bot: TraderBot, db_engine: Engine = engine) -> list[SignalRow]:
-    """Every signal stored for ``bot``, oldest first."""
     bot_row = fetch_trader_bot(bot, db_engine)
     if bot_row is None:
         logger.info("No trader bot related to this bot in db")
@@ -91,11 +86,10 @@ def fetch_signals(bot: TraderBot, db_engine: Engine = engine) -> list[SignalRow]
         return list(session.exec(statement).all())
 
 
-def store_signal(
-    signal: Signal, bot: TraderBot, db_engine: Engine = engine
+def store_signal_by_bot_id(
+    signal: Signal, trader_bot_id: int, db_engine: Engine = engine
 ) -> SignalRow:
-    """Store ``signal`` under ``bot``, storing the bot config when needed."""
-    datapoint = SignalRow.generate_datapoint(signal, give_trader_bot_id(bot, db_engine))
+    datapoint = SignalRow.generate_datapoint(signal, trader_bot_id)
     with Session(db_engine) as session:
         session.add(datapoint)
         session.commit()
@@ -104,10 +98,15 @@ def store_signal(
     return datapoint
 
 
+def store_signal(
+    signal: Signal, bot: TraderBot, db_engine: Engine = engine
+) -> SignalRow:
+    return store_signal_by_bot_id(signal, give_trader_bot_id(bot, db_engine), db_engine)
+
+
 def store_signals(
     signals: list[Signal], bot: TraderBot, db_engine: Engine = engine
 ) -> list[SignalRow]:
-    """Store ``signals`` under ``bot`` in a single transaction."""
     if not signals:
         return []
 

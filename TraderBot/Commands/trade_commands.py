@@ -5,8 +5,6 @@ from TraderBot.models import (
     CommandContext,
     ExchangeAgent,
     Position,
-    Trigger,
-    TriggerType,
 )
 import logging
 
@@ -64,11 +62,5 @@ class TrailStoploss(TradeCommand):
             self.context.position, self.stoploss_price
         ):
             return False
-        self.context.position.stoploss = Trigger(
-            self.stoploss_price,
-            self.context.position.volume,
-            -1,
-            StopLoss(self.context),
-            TriggerType.SL,
-        )
+        self.context.position.stoploss.price = self.stoploss_price
         return True

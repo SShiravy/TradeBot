@@ -1,4 +1,3 @@
-from abc import ABC, abstractmethod
 from TraderBot.models import _Event, Command, PnLReport
 from ChartModule.models import Signal
 from Settings.timing import TimeHandler
@@ -19,10 +18,12 @@ class Event(_Event):
         self,
         trade_context: commands.TradeCommandContext | None = None,
         report_context: commands.ReportCommandContext | None = None,
+        record_context: commands.DatabaseCommandContext | None = None,
         extra_commands: list[Command] = [],
     ):
         self.trade_context = trade_context
         self.report_context = report_context
+        self.record_context = record_context
         self.occur_timestamps: int | None = None
         self.extra_commands = extra_commands
 
@@ -58,6 +59,7 @@ class Event(_Event):
         self,
         trade_context: commands.TradeCommandContext | None = None,
         report_context: commands.ReportCommandContext | None = None,
+        record_context: commands.DatabaseCommandContext | None = None,
         *args,
         **kwargs,
     ):
@@ -65,6 +67,8 @@ class Event(_Event):
             self.trade_context = trade_context
         if report_context:
             self.report_context = report_context
+        if record_context:
+            self.record_context = record_context
 
         logger.info(f"{self.name} event occure")
         self.occur_timestamps = TimeHandler.now()
@@ -94,9 +98,10 @@ class NewSignal(Event):
         signal: Signal,
         trade_context: commands.TradeCommandContext | None = None,
         report_context: commands.ReportCommandContext | None = None,
+        record_context: commands.DatabaseCommandContext | None = None,
         extra_commands: list[Command] = [],
     ):
-        super().__init__(trade_context, report_context, extra_commands)
+        super().__init__(trade_context, report_context, record_context, extra_commands)
         self.signal = signal
 
     def report_command(self):
@@ -104,16 +109,22 @@ class NewSignal(Event):
             return
         commands.ReportNewSignal(self.signal, self.report_context).send()
 
+    def database_command(self):
+        if not self.record_context:
+            return
+        commands.RecordSignal(self.signal, self.record_context)
+
 
 class StopLossHit(Event):
     def __init__(
         self,
         trade_context: commands.TradeCommandContext | None = None,
         report_context: commands.ReportCommandContext | None = None,
+        record_context: commands.DatabaseCommandContext | None = None,
         pnl_report: PnLReport | None = None,
         extra_commands: list[Command] = [],
     ):
-        super().__init__(trade_context, report_context, extra_commands)
+        super().__init__(trade_context, report_context, record_context, extra_commands)
         self.pnl_report = pnl_report
 
     def report_command(self):
@@ -136,12 +147,15 @@ class StopLossHit(Event):
         pnl_report: PnLReport | None = None,
         trade_context: commands.TradeCommandContext | None = None,
         report_context: commands.ReportCommandContext | None = None,
+        record_context: commands.DatabaseCommandContext | None = None,
         *args,
         **kwargs,
     ):
         if pnl_report:
             self.pnl_report = pnl_report
-        return super().occur(trade_context, report_context, *args, **kwargs)
+        return super().occur(
+            trade_context, report_context, record_context, *args, **kwargs
+        )
 
 
 class TakeProfitHit(Event):
@@ -149,11 +163,12 @@ class TakeProfitHit(Event):
         self,
         trade_context: commands.TradeCommandContext | None = None,
         report_context: commands.ReportCommandContext | None = None,
+        record_context: commands.DatabaseCommandContext | None = None,
         pnl_report: PnLReport | None = None,
         trail_stop: float | None = None,
         extra_commands: list[Command] = [],
     ):
-        super().__init__(trade_context, report_context, extra_commands)
+        super().__init__(trade_context, report_context, record_context, extra_commands)
         self.pnl_report = pnl_report
         self.trail_stop = trail_stop
 
@@ -183,6 +198,7 @@ class TakeProfitHit(Event):
         trail_stop: float | None = None,
         trade_context: commands.TradeCommandContext | None = None,
         report_context: commands.ReportCommandContext | None = None,
+        record_context: commands.DatabaseCommandContext | None = None,
         *args,
         **kwargs,
     ):
@@ -190,10 +206,6 @@ class TakeProfitHit(Event):
             self.pnl_report = pnl_report
         if trail_stop:
             self.trail_stop = trail_stop
-        return super().occur(trade_context, report_context, *args, **kwargs)
-
-
-# store pos pnl
-# store new signal
-# store bot
-# daily report
+        return super().occur(
+            trade_context, report_context, record_context, *args, **kwargs
+        )
