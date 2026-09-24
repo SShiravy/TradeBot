@@ -364,10 +364,10 @@ class MT5Agent(ExchangeAgent):
             exits_pnl = []
             exits_volume = []
             for deal in all_deals:
-                if deal.entry not in (mt5.DEAL_ENTRY_OUT, mt5.DEAL_ENTRY_OUT_BY):
-                    continue
+                # many brokers charge commission on the entry deal. so pnl sum up all values
+                if deal.entry in (mt5.DEAL_ENTRY_OUT, mt5.DEAL_ENTRY_OUT_BY):
+                    exits_volume.append(deal.volume)
                 exits_pnl.append(deal.profit + deal.commission + deal.swap + deal.fee)
-                exits_volume.append(deal.volume)
 
             pnl = sum(exits_pnl)
             volume = sum(exits_volume)
@@ -379,10 +379,11 @@ class MT5Agent(ExchangeAgent):
             now = TimeHandler.now()
             position.last_check_timestamp = now
             trigger.triggered_timestamp = now
-            report = PnLReportGenerator.from_pnl(position, pnl)
+            report = PnLReportGenerator.from_pnl(position, pnl, volume)
             final_report += report
             if pnl > 0:
                 trigger.event.pnl_report = report
+                position.stoploss.volume = round(position.stoploss.volume - volume, 8)
             logger.info(f"{ticket=}|{exits_pnl=}|{exits_volume}|{sum(exits_pnl)}")
 
         if (

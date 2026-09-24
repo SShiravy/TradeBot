@@ -4,7 +4,7 @@ from TraderBot import Position, PositionSide, ExchangeAgent
 from TraderBot.Commands.report_commands import ReportCommandContext
 from TraderBot.Commands.trade_commands import TradeCommandContext
 from TraderBot.PositionHandlers.trading_constraints import TradingConstraint
-from TraderBot.models import Command, PositionType, ReporterBot, Trigger
+from TraderBot.models import PnLReport, PositionType, ReporterBot, Trigger
 from abc import ABC, abstractmethod
 import numpy as np
 import logging
@@ -150,7 +150,7 @@ class TradesManager:
             if trigger.triggered_timestamp:
                 continue
             if trigger.check(ticks):
-                logger.debug(f"Trigger Hit: {Trigger=}|{Position=}")
+                logger.debug(f"Trigger Hit: {trigger=}|{position=}")
                 trigger.event.occur(
                     trade_context=TradeCommandContext(position, self.exchange_agent),
                     report_context=ReportCommandContext(
@@ -163,11 +163,22 @@ class TradesManager:
             return
 
     def agent_handler(self, position: Position):
+        if not position.open_timestamp:
+            logger.debug(f"Position is not open yet.")
+            return
+
         pnl_report = self.exchange_agent.check_position_closed(position)
         if not pnl_report:
             return None
         if pnl_report.pnl_dollar <= 0:
-            # TODO: add condition pnl_report.volume == position.stoploss.volume
+            sl_report: PnLReport | None = getattr(
+                position.stoploss.event, "pnl_report", None
+            )
+            if sl_report is None or round(sl_report.volume, 8) < round(
+                position.stoploss.volume, 8
+            ):
+                logger.debug(f"{position} stoploss partially closed: {sl_report}")
+                return None
             position.stoploss.event.occur(
                 trade_context=TradeCommandContext(position, self.exchange_agent),
                 report_context=ReportCommandContext(
@@ -178,9 +189,12 @@ class TradesManager:
             )
         else:
             for trigger in position.steps:
-                if trigger.triggered_timestamp is None:
+                if (
+                    trigger.triggered_timestamp is None
+                    or trigger.event.occur_timestamps
+                ):
                     continue
-                logger.debug(f"Trigger Hit: {Trigger=}|{Position=}")
+                logger.debug(f"Trigger Hit: {trigger=}|{position=}")
                 trigger.event.occur(
                     trade_context=TradeCommandContext(position, self.exchange_agent),
                     report_context=ReportCommandContext(

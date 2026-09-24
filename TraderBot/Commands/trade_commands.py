@@ -35,6 +35,8 @@ class StopLoss(TradeCommand):
 
 class TakeProfit(TradeCommand):
     async def command(self) -> bool:
+        if self.context.position.steps[-1].triggered_timestamp:
+            self.context.position.closed_timestamp = TimeHandler.now()
         return True
 
 

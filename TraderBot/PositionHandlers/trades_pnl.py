@@ -34,7 +34,7 @@ class PnLCalculator:
 
 class PnLReportGenerator:
     @staticmethod
-    def from_pnl(position: Position, pnl_dollar: float) -> PnLReport:
+    def from_pnl(position: Position, pnl_dollar: float, volume: float) -> PnLReport:
         last_time = position.closed_timestamp or position.last_check_timestamp
         report = PnLReport(
             chart=position.chart,
@@ -44,6 +44,7 @@ class PnLReportGenerator:
             last_time=last_time,
         )
         report.pnl_dollar = pnl_dollar
+        report.volume = volume
         # report.pnl_percent =
         # report.pnl_pips =
         return report
@@ -116,6 +117,8 @@ class PnLReportGenerator:
             weighted_percent += event_percent * remaining_volume
             weighted_pips += event_pips * remaining_volume
             closed_volume += remaining_volume
+
+        report.volume = closed_volume
 
         # volume-weighted average across every close event (TP hits + SL, if any)
         if closed_volume > 0:

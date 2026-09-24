@@ -510,6 +510,7 @@ class PnLReport:
     pnl_dollar: float = field(default=0.0, init=False)
     pnl_percent: float = field(default=0.0, init=False)
     pnl_pips: float = field(default=0.0, init=False)
+    volume: float = field(default=0.0, init=False)
 
     wins: int = field(default=0, init=False)
     flats: int = field(default=0, init=False)
@@ -527,11 +528,12 @@ class PnLReport:
     def identifier(self) -> str:
         return f"{self.source}_{self.side}_{self.chart}"
 
+    @property
     def duration(self):
         return timedelta(seconds=self.last_time - self.first_time)
 
-    def __add__(self, other: "PnLReport | None") -> "PnLReport":
-        if other is None:
+    def __add__(self, other: "PnLReport | int|float|None ") -> "PnLReport":
+        if other is None or isinstance(other, (int, float)):
             return self
         if not isinstance(other, PnLReport):
             return NotImplemented
@@ -546,6 +548,7 @@ class PnLReport:
         merged.pnl_dollar = self.pnl_dollar + other.pnl_dollar
         merged.pnl_percent = self.pnl_percent + other.pnl_percent
         merged.pnl_pips = self.pnl_pips + other.pnl_pips
+        merged.volume = self.volume + other.volume
         merged.wins = self.wins + other.wins
         merged.flats = self.flats + other.flats
         merged.loses = self.loses + other.loses
@@ -574,13 +577,14 @@ class PnLReport:
             "source": self.source,
             "first_time": self.first_time,
             "last_time": self.last_time,
-            "duration": str(self.duration()),
+            "duration": str(self.duration),
             "duration_seconds": self.last_time - self.first_time,
             "pnl": {
                 "dollar": self.pnl_dollar,
                 "percent": self.pnl_percent,
                 "pips": self.pnl_pips,
             },
+            "volume": self.volume,
             "positions": {
                 "total": self.total_positions,
                 "wins": self.wins,
@@ -621,6 +625,7 @@ class PnLReport:
             f"Dollar           : {data['pnl']['dollar']}\n"
             f"Percent          : {data['pnl']['percent']}%\n"
             f"Pips             : {data['pnl']['pips']}\n"
+            f"Volume           : {data['volume']}\n"
             f"\n"
             f"Positions\n"
             f"{'-' * 60}\n"
