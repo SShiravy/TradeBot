@@ -196,6 +196,8 @@ class MT5Agent(ExchangeAgent):
         if not entry_prices:
             logger.warning(f"Fail on Opening Position {position}")
         position.exchange_id = exchange_id if exchange_id else ""
+        if not entry_prices:
+            return None
         return round(sum(entry_prices) / len(entry_prices), position.chart.precision)
 
     def change_stoploss(self, position: Position, price) -> bool:
@@ -339,6 +341,12 @@ class MT5Agent(ExchangeAgent):
 
     def check_position_closed(self, position: Position):
         final_report = None
+        sl_report = None
+        day = int(timedelta(days=1).total_seconds())
+        all_deals = mt5.history_deals_get(
+            position.defined_timestamp - day,
+            TimeHandler.now() + day,
+        )
         for trigger in position.steps:
             if trigger.triggered_timestamp or not isinstance(
                 trigger.event, TakeProfitHit
@@ -350,23 +358,22 @@ class MT5Agent(ExchangeAgent):
             if mt5.positions_get(ticket=ticket):
                 continue
 
-            day = int(timedelta(days=1).total_seconds())
-            all_deals = mt5.history_deals_get(
-                position.defined_timestamp - day,
-                TimeHandler.now() + day,
-                position=ticket,
-            )
-
-            if not all_deals:
+            # with a date range mt5 ignores the position filter and returns all deals
+            deals = [d for d in all_deals or [] if d.position_id == ticket]
+            if not deals:
                 logger.warning(f"{ticket=} isn't open but no deals found for it yet")
                 continue
 
             exits_pnl = []
             exits_volume = []
-            for deal in all_deals:
+            tp_hit = False
+            for deal in deals:
+                if deal.reason == mt5.DEAL_REASON_EXPERT:
+                    continue
                 # many brokers charge commission on the entry deal. so pnl sum up all values
                 if deal.entry in (mt5.DEAL_ENTRY_OUT, mt5.DEAL_ENTRY_OUT_BY):
                     exits_volume.append(deal.volume)
+                    tp_hit = deal.reason == mt5.DEAL_REASON_TP
                 exits_pnl.append(deal.profit + deal.commission + deal.swap + deal.fee)
 
             pnl = sum(exits_pnl)
@@ -378,20 +385,19 @@ class MT5Agent(ExchangeAgent):
                 continue
             now = TimeHandler.now()
             position.last_check_timestamp = now
-            trigger.triggered_timestamp = now
             report = PnLReportGenerator.from_pnl(position, pnl, volume)
             final_report += report
-            if pnl > 0:
+            if tp_hit:
+                trigger.triggered_timestamp = now
                 trigger.event.pnl_report = report
                 position.stoploss.volume = round(position.stoploss.volume - volume, 8)
-            logger.info(f"{ticket=}|{exits_pnl=}|{exits_volume}|{sum(exits_pnl)}")
+            else:
+                # left untriggered (not a tp), so it's summed again next check
+                sl_report += report
+            logger.info(f"{ticket=}|{tp_hit=}|{exits_pnl=}|{exits_volume}|{pnl}")
 
-        if (
-            final_report
-            and final_report.pnl_dollar <= 0
-            and isinstance(position.stoploss.event, StopLossHit)
-        ):
-            position.stoploss.event.pnl_report += final_report
+        if sl_report and isinstance(position.stoploss.event, StopLossHit):
+            position.stoploss.event.pnl_report += sl_report
         return final_report
 
 

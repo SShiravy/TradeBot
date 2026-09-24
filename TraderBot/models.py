@@ -260,7 +260,7 @@ class Trigger:
     exchange_id: str = field(default="", init=False)
 
     def __str__(self) -> str:
-        return f"{asdict(self)}"
+        return str(asdict(self))
 
     def _check_cross(self, ticks: np.ndarray):
         res = (ticks - self.price) * self.cross_direction

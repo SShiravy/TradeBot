@@ -184,7 +184,7 @@ class BacktestAgent(ExchangeAgent):
         """
         pass
 
-    def check_position_closed(self, *args, **kwargs) -> float | None:
+    def check_position_closed(self, position: Position, *args, **kwargs):
         pass
 
 

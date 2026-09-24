@@ -102,7 +102,9 @@ class TradesManager:
         else:  # signal.side is MarketSide.BULLISH:
             if not self.long_trade:
                 return None
-        entry_price = self.exchange_agent.get_current_tick(signal.chart)
+        entry_price = self.exchange_agent.get_current_tick(
+            signal.chart, PositionSide.convert_market_side(signal.side)
+        )
         pos = self.generator.generate(signal, entry_price, *args, **kwargs)
         if pos:
             for constraint in self.trading_constraints:
@@ -166,20 +168,20 @@ class TradesManager:
         if not position.open_timestamp:
             logger.debug(f"Position is not open yet.")
             return
+        if position.stoploss.triggered_timestamp:
+            logger.debug(f"stoploss of {position} hit, waiting for its command")
+            return
 
         pnl_report = self.exchange_agent.check_position_closed(position)
         if not pnl_report:
             return None
-        if pnl_report.pnl_dollar <= 0:
-            sl_report: PnLReport | None = getattr(
-                position.stoploss.event, "pnl_report", None
-            )
-            if sl_report is None or round(sl_report.volume, 8) < round(
-                position.stoploss.volume, 8
-            ):
-                logger.debug(f"{position} stoploss partially closed: {sl_report}")
-                return None
-            position.stoploss.event.occur(
+
+        # the agent triggers only the ones closed on their tp
+        for trigger in position.steps:
+            if trigger.triggered_timestamp is None or trigger.event.occur_timestamps:
+                continue
+            logger.debug(f"Trigger Hit: {trigger=}|{position=}")
+            trigger.event.occur(
                 trade_context=TradeCommandContext(position, self.exchange_agent),
                 report_context=ReportCommandContext(
                     self.reporter, reply_id=position.report_id
@@ -187,22 +189,25 @@ class TradesManager:
                 if self.reporter
                 else None,
             )
-        else:
-            for trigger in position.steps:
-                if (
-                    trigger.triggered_timestamp is None
-                    or trigger.event.occur_timestamps
-                ):
-                    continue
-                logger.debug(f"Trigger Hit: {trigger=}|{position=}")
-                trigger.event.occur(
-                    trade_context=TradeCommandContext(position, self.exchange_agent),
-                    report_context=ReportCommandContext(
-                        self.reporter, reply_id=position.report_id
-                    )
-                    if self.reporter
-                    else None,
-                )
+
+        # and sums the others on the stoploss event
+        sl_report: PnLReport | None = getattr(
+            position.stoploss.event, "pnl_report", None
+        )
+        if sl_report is None or round(sl_report.volume, 3) < round(
+            position.stoploss.volume, 3
+        ):
+            logger.debug(f"{position} stoploss partially closed: {sl_report}")
+            return None
+        logger.debug(f"SL hit for {position}")
+        position.stoploss.execute().occur(
+            trade_context=TradeCommandContext(position, self.exchange_agent),
+            report_context=ReportCommandContext(
+                self.reporter, reply_id=position.report_id
+            )
+            if self.reporter
+            else None,
+        )
 
     def ochl_handler(self, position: Position):
         ticks = []

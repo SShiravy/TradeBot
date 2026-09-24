@@ -66,12 +66,12 @@ class TelegramMsgFormater(ReportMsgFormater):
     def sl_trailed(self, position: Position) -> str:
         trail_type_msg = (
             "📝 Risk Free"
-            if position.stoploss == position.entry_price
+            if position.stoploss.price == position.entry_price
             else "📝 Trailing Stop"
         )
         msg_list = [
             trail_type_msg,
-            f"💲 New SL = {position.stoploss}",
+            f"💲 New SL = {position.stoploss.price}",
         ]
         msg = "\n\n".join(msg_list)
         return msg

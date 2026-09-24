@@ -21,22 +21,21 @@ def initialize_DBs():
 async def test_positions():
     from TraderBot.PositionHandlers import TradesManager
     from ChartModule import Signal, Chart, TimeFrame, MarketSide
-    from TraderBot.models import Command, TradeCommandContext
+    from TraderBot.models import Command, ReportCommandContext, TradeCommandContext
     from TraderBot.events import NewPosition
+    from BackTest import BacktestReporter
 
     from TraderBot.PositionHandlers.PositionGenerators import ForexStepping
     from ExchangeAgents import MT5Agent
     from Settings import settings
 
     agent = MT5Agent(settings.METATRADER_TERMINAL_PATH)
-    generator = ForexStepping(sl_pip=10)
-    chart = Chart("XAUUSD", TimeFrame.one_minute)
+    generator = ForexStepping(sl_pip=20)
+    chart = Chart("ETHUSD", TimeFrame.one_minute)
     side = MarketSide.BULLISH
 
     manager = TradesManager(
-        agent,
-        generator,
-        reporter=None,  # type: ignore[arg-type]
+        agent, generator, reporter=BacktestReporter(), agent_check=True
     )
     agent.prepare_chart(chart)
     logger.info(f"{chart.precision=}")
@@ -52,7 +51,10 @@ async def test_positions():
     for step in pos.steps:
         logger.info(str(step))
     logger.info(pos.stoploss)
-    NewPosition(trade_context=TradeCommandContext(pos, agent)).occur()
+    NewPosition(
+        trade_context=TradeCommandContext(pos, agent),
+        report_context=ReportCommandContext(manager.reporter),
+    ).occur()
 
     while True:
         logger.info(agent.get_current_tick(chart, pos.side))
