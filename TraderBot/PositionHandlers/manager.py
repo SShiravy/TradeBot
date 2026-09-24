@@ -131,7 +131,7 @@ class TradesManager:
     def triggers_handler(self, position: Position, ticks: np.ndarray):
         if position.stoploss.check(ticks):
             logger.debug(f"SL hit for {position}")
-            position.stoploss.event.occure(
+            position.stoploss.event.occur(
                 trade_context=TradeCommandContext(position, self.exchange_agent),
                 report_context=ReportCommandContext(self.reporter)
                 if self.reporter
@@ -139,9 +139,11 @@ class TradesManager:
             )
             return
         for trigger in position.steps:
+            if trigger.triggered_timestamp:
+                continue
             if trigger.check(ticks):
                 logger.debug(f"Trigger Hit: {Trigger=}|{Position=}")
-                trigger.event.occure(
+                trigger.event.occur(
                     trade_context=TradeCommandContext(position, self.exchange_agent),
                     report_context=ReportCommandContext(self.reporter)
                     if self.reporter

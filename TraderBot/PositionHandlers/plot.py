@@ -1,6 +1,7 @@
 from ChartModule.plot import ChartPane, ObjectPlotter
 from Settings.timing import TimeHandler
-from TraderBot.models import Position, Trigger, TriggerType
+from TraderBot.events import TakeProfitHit
+from TraderBot.models import Position
 
 
 class PositionPlotter(ObjectPlotter):
@@ -43,7 +44,7 @@ class PositionPlotter(ObjectPlotter):
                 step.price,
                 step_end,
                 step.price,
-                "#00B957" if step.type is TriggerType.TP else "#5C00B9",
+                "#00B957" if step.event.name is TakeProfitHit.name else "#5C00B9",
                 width=2,
             )
 

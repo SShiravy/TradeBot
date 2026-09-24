@@ -1,18 +1,9 @@
-from dataclasses import dataclass
 import logging
 from ChartModule.models import Signal
-from ChartModule.plot import Figure
-from TraderBot.models import Command, CommandContext, PnLReport, Position, ReporterBot
+from TraderBot.models import Command, PnLReport, Position, ReportCommandContext
 from TraderBot.PositionHandlers.trades_pnl import PnLReportGenerator
 
 logger = logging.getLogger("Commands")
-
-
-@dataclass(slots=True)
-class ReportCommandContext(CommandContext):
-    reporter: ReporterBot
-    figure: Figure | None = None
-    reply_id: int | None = None
 
 
 class ReportCommand(Command):
@@ -35,9 +26,6 @@ class ReportNewSignal(ReportCommand):
         self.msg_id: int | None = None
 
     async def command(self):
-        if not self.context.reporter:
-            logger.warning("Reporter not initialized, cannot send new signal report")
-            return True
         path = (
             self.context.reporter.save_path
             or f"Records/SignalsImg/{self.signal.source}/"
@@ -109,18 +97,14 @@ class StoplossHitReport(ReportCommand):
         return self.pnl_report
 
     async def command(self):
-        if not self.context.reporter:
-            logger.warning("Reporter not initialized, cannot send new position report")
-            return True
-        if self.context.reporter:
-            msg = self.context.reporter.msg_formater.position_closed(
-                self.position, self.give_pnl_report()
-            )
-            res = await self.context.reporter.send_msg(
-                msg, reply_id=self.position.report_id
-            )
-            if not res:
-                return False
+        msg = self.context.reporter.msg_formater.position_closed(
+            self.position, self.give_pnl_report()
+        )
+        res = await self.context.reporter.send_msg(
+            msg, reply_id=self.position.report_id
+        )
+        if not res:
+            return False
         return True
 
 
@@ -144,20 +128,14 @@ class TriggerHitReport(ReportCommand):
         return self.pnl_report
 
     async def command(self):
-        if not self.context.reporter:
-            logger.warning("Reporter not initialized, cannot send new position report")
-            return True
-        if self.context.reporter:
-            msg = self.context.reporter.msg_formater.trigger_hit(
-                self.position, self.give_pnl_report()
-            )
-            if self.trail_stop:
-                msg += "\n\n" + self.context.reporter.msg_formater.sl_trailed(
-                    self.position
-                )
-            res = await self.context.reporter.send_msg(
-                msg, reply_id=self.position.report_id
-            )
-            if not res:
-                return False
+        msg = self.context.reporter.msg_formater.trigger_hit(
+            self.position, self.give_pnl_report()
+        )
+        if self.trail_stop:
+            msg += "\n\n" + self.context.reporter.msg_formater.sl_trailed(self.position)
+        res = await self.context.reporter.send_msg(
+            msg, reply_id=self.position.report_id
+        )
+        if not res:
+            return False
         return True

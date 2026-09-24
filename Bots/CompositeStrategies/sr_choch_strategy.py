@@ -138,16 +138,17 @@ class SRChochBot(TraderBot):
         logger.info(f"S&R Signal:{signal}")
 
     def _report_sr(self, signal: SRSignal, figure: Figure) -> None:
-        # everything that follows replies to this message, and the id only
-        # exists on the command itself, so it is built here and handed to
-        # the event to be sent instead of being made inside it
         command = ReportNewSignal(
             signal,
             ReportCommandContext(
                 self.trades_manager.reporter, figure, reply_id=self._sr_reply_id()
             ),
         )
-        NewSignal(signal, extra_commands=[command]).occur()
+        NewSignal(
+            signal,
+            record_context=self.give_record_context(),
+            extra_commands=[command],
+        ).occur()
         self._sr_report_command = command
 
     def _check_static_sr(self, chartdata: ChartData) -> None:
@@ -319,7 +320,6 @@ class SRChochBot(TraderBot):
     def find_signal(
         self, sr_chartdata: ChartData, choch_chartdata: ChartData
     ) -> ChochSignal | None:
-        # S&R first -- it is what arms the setup
         self._check_static_sr(sr_chartdata)
         self._check_dynamic_sr(sr_chartdata)
         if not self._sr_still_valid(choch_chartdata):
@@ -357,9 +357,9 @@ class SRChochBot(TraderBot):
                     self.generate_figure(choch_chartdata, choch_signal),
                     reply_id=self._sr_reply_id(),
                 ),
+                record_context=self.give_record_context(),
             ).occur()
 
-        # the setup has been consumed -- a new S&R touch must arm the next
         self._clear_sr()
         return choch_signal
 

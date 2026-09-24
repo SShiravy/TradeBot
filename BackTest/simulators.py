@@ -1,8 +1,9 @@
 from BackTest.models import CsvChart
-from Database import store_signals, store_trader_bot, backtest_engine
+from Database import store_signals, store_trader_bot, backtest_db_engine
 from Settings import TimeHandler
+from TraderBot.Commands.db_commands import DatabaseCommand
 from TraderBot import TraderBot
-from TraderBot.models import Command
+from TraderBot.models import Command, Event
 from BackTest import BacktestAgent, BacktestReporter
 import cProfile
 import pstats
@@ -38,12 +39,14 @@ class SignalBacktest:
         bot.trades_manager.exchange_agent = backtest_agent
         bot.consider_position = False
         self.bot = bot
+        DatabaseCommand.db_engine = None
+        Event.consider_db_record = False
 
     def conclusion(self):
         if self.store_in_db:
-            store_trader_bot(self.bot, db_engine=backtest_engine)
+            store_trader_bot(self.bot, db_engine=backtest_db_engine)
             store_signals(
-                self.reporter.all_signals, self.bot, db_engine=backtest_engine
+                self.reporter.all_signals, self.bot, db_engine=backtest_db_engine
             )
 
         logger.info(Command.close_records())

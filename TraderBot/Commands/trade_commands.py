@@ -1,21 +1,12 @@
-from dataclasses import dataclass
 from Settings.timing import TimeHandler
 from TraderBot.models import (
     Command,
-    CommandContext,
-    ExchangeAgent,
-    Position,
+    TradeCommandContext,
 )
 import logging
 
 
 logger = logging.getLogger("Commands")
-
-
-@dataclass(slots=True)
-class TradeCommandContext(CommandContext):
-    position: Position
-    agent: ExchangeAgent
 
 
 class TradeCommand(Command):
@@ -58,7 +49,7 @@ class TrailStoploss(TradeCommand):
         self.stoploss_price = new_stoploss
 
     async def command(self):
-        if self.context.agent.change_stoploss(
+        if not self.context.agent.change_stoploss(
             self.context.position, self.stoploss_price
         ):
             return False

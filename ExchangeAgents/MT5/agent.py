@@ -1,7 +1,8 @@
 import numpy as np
 from ChartModule import Chart, ChartData, TimeFrame
 from Settings.timing import TimeHandler
-from TraderBot.models import ExchangeAgent, Position, PositionSide, Trigger, TriggerType
+from TraderBot.events import StopLossHit, TakeProfitHit
+from TraderBot.models import ExchangeAgent, Position, PositionSide, Trigger
 from datetime import datetime, timedelta, timezone
 from enum import Enum
 import mt5_wrapper as mt5
@@ -158,7 +159,7 @@ class MT5Agent(ExchangeAgent):
         exchange_id = None
         entry_prices = []
         for trigger in position.triggers:
-            if trigger.type != TriggerType.TP or trigger.exchange_id:
+            if trigger.event.name != TakeProfitHit.name or trigger.exchange_id:
                 continue
             # Build request
             request = {
@@ -191,7 +192,7 @@ class MT5Agent(ExchangeAgent):
 
     def change_stoploss(self, position: Position, price) -> bool:
         for trigger in position.triggers:
-            if trigger.type != TriggerType.TP or not trigger.exchange_id:
+            if trigger.event.name != TakeProfitHit.name or not trigger.exchange_id:
                 continue
             request = {
                 "action": mt5.TRADE_ACTION_SLTP,
@@ -298,11 +299,9 @@ class MT5Agent(ExchangeAgent):
             side=side,
             entry_price=mt5_pos.price_open,
             volume=mt5_pos.volume,
-            stoploss=Trigger(
-                mt5_pos.sl, mt5_pos.volume, side.factor, type=TriggerType.SL
-            ),
+            stoploss=Trigger(mt5_pos.sl, StopLossHit(), mt5_pos.volume, side.factor),
             triggers=[
-                Trigger(mt5_pos.tp, mt5_pos.volume, side.factor, type=TriggerType.TP)
+                Trigger(mt5_pos.tp, TakeProfitHit(), mt5_pos.volume, side.factor)
             ],
             leverage=mt5_pos.volume,  # / mt5_pos.volume_real,  # type: ignore
             source=f"MetaTrader|{mt5_pos.comment}",

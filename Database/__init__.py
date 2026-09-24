@@ -1,9 +1,9 @@
 from Database.create_db import (
     TABLES,
     create_db,
-    engine,
+    live_db_engine,
     give_engine,
-    backtest_engine,
+    backtest_db_engine,
 )
 from Database.hashing import generate_hash, serialize_config
 from Database.methods import (
@@ -22,8 +22,8 @@ from Database.models import SignalRow, TraderBotRow
 __all__ = [
     "create_db",
     "give_engine",
-    "engine",
-    "backtest_engine",
+    "live_db_engine",
+    "backtest_db_engine",
     "TABLES",
     "generate_hash",
     "serialize_config",

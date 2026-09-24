@@ -12,10 +12,10 @@ logger = build_logger(
 
 
 def initialize_DBs():
-    from Database import engine, backtest_engine, create_db
+    from Database import live_db_engine, backtest_db_engine, create_db
 
-    create_db(backtest_engine)
-    create_db(engine)
+    create_db(backtest_db_engine)
+    create_db(live_db_engine)
 
 
 async def test_positions():

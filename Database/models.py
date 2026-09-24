@@ -64,7 +64,6 @@ class SignalRow(SQLModel, table=True):
     timestamp: int = Field(index=True)
     side: str = Field(index=True)
     source: str
-    report_id: int | None = Field(default=None)
 
     trader_bot_id: int = Field(foreign_key="Trader_Bots.id", index=True)
 
@@ -76,7 +75,6 @@ class SignalRow(SQLModel, table=True):
             timestamp=signal.candle.timestamp,
             side=signal.side.value,
             source=signal.source,
-            report_id=signal.report_id,
             trader_bot_id=trader_bot_id,
         )
 

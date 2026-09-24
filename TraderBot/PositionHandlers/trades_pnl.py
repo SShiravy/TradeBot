@@ -1,6 +1,7 @@
 from ChartModule.models import Chart
 from Settings.timing import TimeHandler
-from TraderBot.models import PnLReport, Position, PositionSide, TriggerType
+from TraderBot.events import TakeProfitHit
+from TraderBot.models import PnLReport, Position, PositionSide
 
 
 class PnLCalculator:
@@ -55,7 +56,10 @@ class PnLReportGenerator:
 
         # all triggered TP
         for i, step in enumerate(position.steps):
-            if step.type is not TriggerType.TP or step.triggered_timestamp is None:
+            if (
+                step.event.name is not TakeProfitHit.name
+                or step.triggered_timestamp is None
+            ):
                 continue
 
             event_pnl = PnLCalculator.dollar(

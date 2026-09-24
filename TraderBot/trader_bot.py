@@ -2,6 +2,7 @@ import hashlib
 import json
 from Settings import TimeHandler
 from TraderBot import ExchangeAgent, Position
+from TraderBot.Commands.db_commands import DatabaseCommandContext
 from TraderBot.Commands.report_commands import ReportCommandContext
 from TraderBot.Commands.trade_commands import TradeCommandContext
 from TraderBot.PositionHandlers.manager import TradesManager
@@ -52,11 +53,29 @@ class TraderBot:
         }
 
     def __hash__(self):
-        raw = json.dumps(
-            self.export_config(),
-            sort_keys=True,
-        ).encode()
-        return int(hashlib.sha256(raw).hexdigest(), 16)
+        if getattr(self, "_hash", None) is None:
+            raw = json.dumps(
+                self.export_config(),
+                sort_keys=True,
+            ).encode()
+            self._hash = int(hashlib.sha256(raw).hexdigest(), 16)
+        return self._hash
+
+    @property
+    def config_hash(self) -> str:
+        """
+        The hash this bot is recorded under in the db, the one every row of
+        it hangs on. Database imports this module, so it is imported here.
+        """
+        if getattr(self, "_config_hash", None) is None:
+            from Database import TraderBotRow
+
+            self._config_hash = TraderBotRow.give_config_hash(self)
+        return self._config_hash
+
+    def give_record_context(self) -> DatabaseCommandContext:
+        """The context the db commands of this bot run on."""
+        return DatabaseCommandContext(bot_hash=self.config_hash)
 
     def get_chartdata(
         self, n_bar: int | None = None, chart: Chart | None = None
@@ -141,6 +160,7 @@ class TraderBot:
                     report_context=ReportCommandContext(
                         self.trades_manager.reporter, figure
                     ),
+                    record_context=self.give_record_context(),
                 ).occur()
 
         return self.give_delay(last_timestamp)

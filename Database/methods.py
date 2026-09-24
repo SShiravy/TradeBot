@@ -4,7 +4,7 @@ from sqlalchemy.engine import Engine
 from sqlmodel import Session, select
 
 from ChartModule.models import Signal
-from Database.create_db import engine
+from Database.create_db import live_db_engine
 from Database.models import SignalRow, TraderBotRow
 from TraderBot.trader_bot import TraderBot
 
@@ -15,18 +15,22 @@ logger = logging.getLogger("Database")
 
 
 def fetch_trader_bot_by_hash(
-    config_hash: str, db_engine: Engine = engine
+    config_hash: str, db_engine: Engine = live_db_engine
 ) -> TraderBotRow | None:
     with Session(db_engine) as session:
         statement = select(TraderBotRow).where(TraderBotRow.config_hash == config_hash)
         return session.exec(statement).first()
 
 
-def fetch_trader_bot(bot: TraderBot, db_engine: Engine = engine) -> TraderBotRow | None:
+def fetch_trader_bot(
+    bot: TraderBot, db_engine: Engine = live_db_engine
+) -> TraderBotRow | None:
     return fetch_trader_bot_by_hash(TraderBotRow.give_config_hash(bot), db_engine)
 
 
-def store_trader_bot(bot: TraderBot, db_engine: Engine = engine) -> TraderBotRow:
+def store_trader_bot(
+    bot: TraderBot, db_engine: Engine = live_db_engine
+) -> TraderBotRow:
     stored = fetch_trader_bot(bot, db_engine)
     if stored:
         logger.info(f"Trader bot already in db: {stored}")
@@ -41,7 +45,7 @@ def store_trader_bot(bot: TraderBot, db_engine: Engine = engine) -> TraderBotRow
     return datapoint
 
 
-def give_trader_bot_id(bot: TraderBot, db_engine: Engine = engine) -> int:
+def give_trader_bot_id(bot: TraderBot, db_engine: Engine = live_db_engine) -> int:
     row = store_trader_bot(bot, db_engine)
     if row.id is None:
         raise ValueError(f"Trader bot row without id: {row}")
@@ -52,7 +56,7 @@ def give_trader_bot_id(bot: TraderBot, db_engine: Engine = engine) -> int:
 
 
 def fetch_signal(
-    signal: Signal, bot: TraderBot, db_engine: Engine = engine
+    signal: Signal, bot: TraderBot, db_engine: Engine = live_db_engine
 ) -> SignalRow | None:
     bot_row = fetch_trader_bot(bot, db_engine)
     if bot_row is None:
@@ -71,7 +75,9 @@ def fetch_signal(
         return session.exec(statement).first()
 
 
-def fetch_signals(bot: TraderBot, db_engine: Engine = engine) -> list[SignalRow]:
+def fetch_signals(
+    bot: TraderBot, db_engine: Engine = live_db_engine
+) -> list[SignalRow]:
     bot_row = fetch_trader_bot(bot, db_engine)
     if bot_row is None:
         logger.info("No trader bot related to this bot in db")
@@ -87,7 +93,7 @@ def fetch_signals(bot: TraderBot, db_engine: Engine = engine) -> list[SignalRow]
 
 
 def store_signal_by_bot_id(
-    signal: Signal, trader_bot_id: int, db_engine: Engine = engine
+    signal: Signal, trader_bot_id: int, db_engine: Engine = live_db_engine
 ) -> SignalRow:
     datapoint = SignalRow.generate_datapoint(signal, trader_bot_id)
     with Session(db_engine) as session:
@@ -99,13 +105,13 @@ def store_signal_by_bot_id(
 
 
 def store_signal(
-    signal: Signal, bot: TraderBot, db_engine: Engine = engine
+    signal: Signal, bot: TraderBot, db_engine: Engine = live_db_engine
 ) -> SignalRow:
     return store_signal_by_bot_id(signal, give_trader_bot_id(bot, db_engine), db_engine)
 
 
 def store_signals(
-    signals: list[Signal], bot: TraderBot, db_engine: Engine = engine
+    signals: list[Signal], bot: TraderBot, db_engine: Engine = live_db_engine
 ) -> list[SignalRow]:
     if not signals:
         return []

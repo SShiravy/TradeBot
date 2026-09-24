@@ -176,7 +176,11 @@ class OscillatorDiverChochBot(TraderBot):
         command = ReportNewSignal(
             signal, ReportCommandContext(self.trades_manager.reporter, figure)
         )
-        NewSignal(signal, extra_commands=[command]).occur()
+        NewSignal(
+            signal,
+            record_context=self.give_record_context(),
+            extra_commands=[command],
+        ).occur()
         self._diver_report_command = command
 
     def _diver_still_valid(self, choch_chartdata: ChartData) -> bool:
@@ -242,6 +246,7 @@ class OscillatorDiverChochBot(TraderBot):
                 self.generate_mtr_figure(choch_chartdata, self.last_mtr_signal),
                 reply_id=self._diver_reply_id(),
             ),
+            record_context=self.give_record_context(),
         ).occur()
 
     # --- ENTRY ---------------------------------------
@@ -340,6 +345,7 @@ class OscillatorDiverChochBot(TraderBot):
                     self.generate_figure(choch_chartdata, choch_signal),
                     reply_id=self._diver_reply_id(),
                 ),
+                record_context=self.give_record_context(),
             ).occur()
 
         # the setup has been consumed -- a new divergence must arm the next

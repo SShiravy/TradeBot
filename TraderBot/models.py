@@ -6,7 +6,13 @@ from ChartModule.models import (
     Candle,
     Signal,
 )
-from ChartModule.plot import ChartPane, SignalPlotter, ObjectPlotter, SignalPlotter
+from ChartModule.plot import (
+    ChartPane,
+    Figure,
+    SignalPlotter,
+    ObjectPlotter,
+    SignalPlotter,
+)
 from Settings.timing import TimeHandler
 from ChartModule.Indicators import Indicator, SupportCandlesPattern
 from dataclasses import asdict, dataclass, field
@@ -22,6 +28,7 @@ import logging
 
 
 command_logger = logging.getLogger("Commands")
+event_logger = logging.getLogger("Events")
 
 
 class CommandStatus(Enum):
@@ -35,6 +42,24 @@ class CommandStatus(Enum):
 class CommandContext:
     def __str__(self) -> str:
         return self.__class__.__name__
+
+
+@dataclass(slots=True)
+class TradeCommandContext(CommandContext):
+    position: "Position"
+    agent: "ExchangeAgent"
+
+
+@dataclass(slots=True)
+class ReportCommandContext(CommandContext):
+    reporter: "ReporterBot"
+    figure: Figure | None = None
+    reply_id: int | None = None
+
+
+@dataclass(slots=True)
+class DatabaseCommandContext(CommandContext):
+    bot_hash: str
 
 
 class Command(ABC):
@@ -76,15 +101,22 @@ class Command(ABC):
             self.pending_commands.append(self)
         elif value is CommandStatus.EXECUTED:
             self.execution_timestamp = TimeHandler.now()
-            self.pending_commands.remove(self)
+            try:
+                self.pending_commands.remove(self)
+            except Exception as error:
+                command_logger.warning(f"executed command wasn't pending! {error=}")
             self.__record(self, self.__executed_record)
         elif value is CommandStatus.FAILED:
-            self.pending_commands.remove(self)
+            try:
+                self.pending_commands.remove(self)
+            except Exception as error:
+                command_logger.warning(f"Failed command wasn't pending! {error=}")
             self.__record(self, self.__failed_record)
         self.__status = value
 
     def send(self, *args, **kwargs):
         self.status = CommandStatus.PENDING
+        self.send_timestamp = TimeHandler.now()
 
     @abstractmethod
     async def command(self) -> bool:
@@ -102,7 +134,11 @@ class Command(ABC):
             command_logger.warning(
                 f"attempt to execute already Failed {self.name} Command!"
             )
-        res = await self.command()
+        try:
+            res = await self.command()
+        except Exception as error:
+            command_logger.warning(f"{self.name} Command not executed. {error=}")
+            res = False
         if res:
             self.status = CommandStatus.EXECUTED
             for command in self.next_commands:
@@ -143,36 +179,80 @@ class Command(ABC):
         return msg
 
 
-class _Event(ABC):
+class Event:
     occurred_events: dict[str, int] = {}
     consider_report: bool = True
     consider_db_record: bool = True
     consider_trade: bool = True
 
+    def __init__(
+        self,
+        trade_context: TradeCommandContext | None = None,
+        report_context: ReportCommandContext | None = None,
+        record_context: DatabaseCommandContext | None = None,
+        extra_commands: list[Command] = [],
+    ):
+        self.trade_context = trade_context
+        self.report_context = report_context
+        self.record_context = record_context
+        self.occur_timestamps: int | None = None
+        self.extra_commands = extra_commands
+
     @property
     def name(self):
         return self.__class__.__name__
 
-    @abstractmethod
+    def __str__(self) -> str:
+        return f"{self.name}|time:{self.occur_timestamps}"
+
+    def __record(self):
+        n = self.occurred_events.get(self.name, 0)
+        self.occurred_events[self.name] = n + 1
+
     def report_command(self, *args, **kwargs):
         pass
 
-    @abstractmethod
     def database_command(self, *args, **kwargs):
         pass
 
-    @abstractmethod
     def trade_command(self, *args, **kwargs):
         pass
 
-    def occure(*args, **kwargs):
-        pass
+    def send_commands(self, *args, **kwargs):
+        if self.consider_trade:
+            self.trade_command(*args, **kwargs)
+        if self.consider_report:
+            self.report_command(*args, **kwargs)
+        if self.consider_db_record:
+            self.database_command(*args, **kwargs)
+
+    def occur(
+        self,
+        trade_context: TradeCommandContext | None = None,
+        report_context: ReportCommandContext | None = None,
+        record_context: DatabaseCommandContext | None = None,
+        *args,
+        **kwargs,
+    ):
+        if trade_context:
+            self.trade_context = trade_context
+        if report_context:
+            self.report_context = report_context
+        if record_context:
+            self.record_context = record_context
+
+        event_logger.info(f"{self.name} event occure")
+        self.occur_timestamps = TimeHandler.now()
+        self.__record()
+        self.send_commands()
+        for command in self.extra_commands:
+            command.send()
 
 
 @dataclass(slots=True)
 class Trigger:
     price: float
-    event: _Event
+    event: Event
     volume: float = field(default=0.0)
     cross_direction: Literal[1, -1] = 1
     defined_timestamp: int = field(default_factory=TimeHandler.now, init=False)

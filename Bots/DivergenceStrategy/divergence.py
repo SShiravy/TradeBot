@@ -324,6 +324,7 @@ class DivergenceBot(TraderBot):
                     report_context=ReportCommandContext(
                         self.trades_manager.reporter, figure
                     ),
+                    record_context=self.give_record_context(),
                 ).occur()
 
         return self.give_delay(last_timestamp)

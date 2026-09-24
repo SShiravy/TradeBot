@@ -2,6 +2,7 @@ import logging
 from typing import Any
 from telegram import Bot
 from ChartModule.models import MarketSide, Signal
+from TraderBot.events import TakeProfitHit
 from TraderBot.models import (
     PnLReport,
     Position,
@@ -30,7 +31,12 @@ class TelegramMsgFormater(ReportMsgFormater):
         if position.triggers:
             msg_list.append("🎯Triggers:")
             for trigger in position.steps:
-                tgr_msg = f"  {trigger.type} {trigger.price}"
+                name = (
+                    "TakeProfit"
+                    if trigger.event.name == TakeProfitHit.name
+                    else trigger.event.name
+                )
+                tgr_msg = f"  {name} {trigger.price}"
                 if trigger.volume:
                     tgr_msg += f"|{trigger.volume}💰"
                 msg_list.append(tgr_msg)
@@ -75,8 +81,13 @@ class TelegramMsgFormater(ReportMsgFormater):
             return self.position_closed(position, pnl_report)
         triggers_msg = []
         for trigger in position.steps:
+            name = (
+                "TakeProfit"
+                if trigger.event.name == TakeProfitHit.name
+                else trigger.event.name
+            )
             if trigger.triggered_timestamp:
-                msg = f"🎯 {trigger.type} {trigger.price}"
+                msg = f"🎯 {name} {trigger.price}"
                 if trigger.volume:
                     msg += f"|{trigger.volume}💰"
                 triggers_msg.append(msg)

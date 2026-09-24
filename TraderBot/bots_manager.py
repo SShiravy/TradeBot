@@ -5,11 +5,18 @@ import tracemalloc
 import asyncio
 import logging
 from datetime import timedelta
+from Database import store_trader_bot, live_db_engine
+from TraderBot.Commands.db_commands import DatabaseCommand
 from TraderBot.events import Event
 from TraderBot.PositionHandlers.trades_pnl import PnLReportGenerator
 from TraderBot.models import Command, ReporterBot
 from Settings.timing import TimeHandler
 from TraderBot.trader_bot import TraderBot
+from typing import TYPE_CHECKING
+
+
+if TYPE_CHECKING:
+    from sqlalchemy.engine import Engine
 
 
 class BotsManager:
@@ -21,7 +28,7 @@ class BotsManager:
         manage_interval: float = 2.0,
         heartbeat_interval: float = 3600.0,
         enable_profiling: bool = True,
-        enable_db: bool = True,
+        database_engine: "Engine|None" = live_db_engine,
         report_shift: int = 30,
     ) -> None:
         self.name = name
@@ -37,7 +44,11 @@ class BotsManager:
         self.enable_profiling = enable_profiling
         self._profilers: dict[str, cProfile.Profile] = {}
 
-        Event.consider_db_record = enable_db
+        if database_engine:
+            Event.consider_db_record = True
+            DatabaseCommand.db_engine = live_db_engine
+        else:
+            Event.consider_db_record = False
 
     def _memory_report(self) -> str:
         snapshot = tracemalloc.take_snapshot()
@@ -164,6 +175,9 @@ class BotsManager:
         )
         async with asyncio.TaskGroup() as tg:
             for bot in self.bots:
+                if Event.consider_db_record:
+                    store_trader_bot(bot)
+
                 bot.post_init()
                 tg.create_task(self._trade_task(bot))
             tg.create_task(self._manage_loop())

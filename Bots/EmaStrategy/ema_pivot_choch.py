@@ -785,6 +785,7 @@ class EmaPivotChochBot(TraderBot):
                     self.trades_manager.reporter,
                     self.generate_figure(chartdata, signal, None, htf_chartdata),
                 ),
+                record_context=self.give_record_context(),
             ).occur()
         return signal
 
