@@ -1,12 +1,16 @@
 import io
 import cProfile
 import pstats
+import shutil
+import sqlite3
+import tempfile
 import tracemalloc
 import asyncio
 import logging
 import random
 import Database as db
 from datetime import timedelta
+from pathlib import Path
 from TraderBot.Commands.db_commands import DatabaseCommand
 from TraderBot.events import Event
 from TraderBot.PositionHandlers.trades_pnl import PnLReportGenerator
@@ -14,6 +18,10 @@ from TraderBot.models import Command, ReporterBot
 from Settings.timing import TimeHandler
 from TraderBot.trader_bot import TraderBot
 from Settings import settings
+
+
+# telegram refuses a document over 50 MB, the rest of the report still goes out
+MAX_UPLOAD_BYTES = 45 * 1024 * 1024
 
 
 class BotsManager:
@@ -132,11 +140,80 @@ class BotsManager:
 
     def _daily_report_sleeptime(self):
         now = TimeHandler.to_datetime(TimeHandler.now())
-        next_report = now.replace(hour=20, minute=self.report_seconds_shift)
+        # next_report = now.replace(hour=20, minute=self.report_seconds_shift)
+        next_report = now.replace(hour=23, minute=40)
         next_report = (
             next_report if next_report > now else next_report + timedelta(days=1)
         )
         return next_report - now
+
+    @staticmethod
+    def _log_files() -> list[Path]:
+        """Every file the root logger writes to, its rotated backups included."""
+        files: list[Path] = []
+        for handler in logging.getLogger().handlers:
+            if not isinstance(handler, logging.FileHandler):
+                continue
+            base = Path(handler.baseFilename)
+            files.append(base)
+            for index in range(1, getattr(handler, "backupCount", 0) + 1):
+                files.append(base.with_name(f"{base.name}.{index}"))
+        return [file for file in files if file.exists()]
+
+    def _database_snapshot(self) -> "tuple[Path, str] | None":
+        """
+        A consistent copy of the db the bots record on, safe to upload while
+        they keep writing to it, with the name of the db it was copied from.
+        None when this manager holds no sqlite db.
+        """
+        if self.db_engin is None:
+            return None
+
+        url = self.db_engin.url
+        if not url.get_backend_name().startswith("sqlite") or not url.database:
+            logging.warning(f"no sqlite database to send: {url}")
+            return None
+
+        database = Path(url.database)
+        # its own directory, so the upload carries the real db name
+        snapshot = Path(tempfile.mkdtemp(prefix=f"{self.name}_")) / database.name
+        source = sqlite3.connect(f"file:{database}?mode=ro", uri=True)
+        target = sqlite3.connect(snapshot)
+        try:
+            source.backup(target)
+        finally:
+            target.close()
+            source.close()
+        return snapshot, database.name
+
+    async def _send_file(self, path: Path, caption: str) -> None:
+        """Upload one file. A failure here never breaks the report."""
+        size = path.stat().st_size
+        if size > MAX_UPLOAD_BYTES:
+            logging.warning(f"{path.name} is {size / 1024 / 1024:.1f} MB, not sent")
+            return
+        try:
+            await self.reporter.send_msg(caption, file_path=str(path))
+        except Exception as e:
+            logging.exception(f"Failed to send {path.name}: {e}")
+
+    async def _send_records(self) -> None:
+        """Send the log files and the database the bots record on."""
+        for log_file in self._log_files():
+            await self._send_file(log_file, f"🗒 {self.name} log: {log_file.name}")
+
+        snapshot = None
+        try:
+            copied = self._database_snapshot()
+            if copied is None:
+                return
+            snapshot, database_name = copied
+            await self._send_file(snapshot, f"🗄 {self.name} db: {database_name}")
+        except Exception as e:
+            logging.exception(f"Failed to send the database: {e}")
+        finally:
+            if snapshot:
+                shutil.rmtree(snapshot.parent, ignore_errors=True)
 
     async def _daily_report_loop(self) -> None:
         while not self._stop_event.is_set():
@@ -154,6 +231,7 @@ class BotsManager:
                         await self.reporter.send_msg(
                             f"🧾 Profiling {bot.identifier}:\n{report}"
                         )
+                        await asyncio.sleep(2)
 
             per_bot_reports = []
             for bot in self.bots:
@@ -169,6 +247,8 @@ class BotsManager:
                 f"Overall of {self.name}:\n{sum(per_bot_reports)}"
             )
 
+            await self._send_records()
+
     async def start(self) -> None:
         tracemalloc.start()
         await self.reporter.send_msg(
@@ -176,9 +256,9 @@ class BotsManager:
         )
         async with asyncio.TaskGroup() as tg:
             for bot in self.bots:
+                bot.post_init()
                 if self.db_engin:
                     db.store_trader_bot(bot, self.db_engin)
-                bot.post_init()
                 tg.create_task(self._trade_task(bot))
             tg.create_task(self._manage_loop())
             tg.create_task(self._heartbeat_loop())

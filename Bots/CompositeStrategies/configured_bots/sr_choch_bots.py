@@ -71,7 +71,7 @@ xau_sr_choch_5m_1m = SRChochBot(
     bar_between_signals=2,
     n_candle_confirmation=60,
     n_candle_check=300,
-    consider_position=False,
+    consider_position=True,
     trades_manager=TradesManager(
         mt5_agent,
         ForexStepping(),
@@ -79,7 +79,7 @@ xau_sr_choch_5m_1m = SRChochBot(
         short_trade=True,
         trading_constraints=[],
         reporter=sr_choch_reporter,
-        agent_check=False,
+        agent_check=True,
     ),
 )
 
@@ -135,7 +135,7 @@ eurusd_sr_choch_1h_5m = SRChochBot(
     bar_between_signals=2,
     n_candle_confirmation=60,
     n_candle_check=300,
-    consider_position=False,
+    consider_position=True,
     trades_manager=TradesManager(
         mt5_agent,
         ForexStepping(),
@@ -143,7 +143,7 @@ eurusd_sr_choch_1h_5m = SRChochBot(
         short_trade=True,
         trading_constraints=[],
         reporter=sr_choch_reporter,
-        agent_check=False,
+        agent_check=True,
     ),
 )
 
@@ -200,7 +200,7 @@ usdjpy_sr_choch_1h_5m = SRChochBot(
     bar_between_signals=2,
     n_candle_confirmation=60,
     n_candle_check=300,
-    consider_position=False,
+    consider_position=True,
     trades_manager=TradesManager(
         mt5_agent,
         ForexStepping(),
@@ -208,7 +208,7 @@ usdjpy_sr_choch_1h_5m = SRChochBot(
         short_trade=True,
         trading_constraints=[],
         reporter=sr_choch_reporter,
-        agent_check=False,
+        agent_check=True,
     ),
 )
 
@@ -265,7 +265,7 @@ gbpusd_sr_choch_1h_5m = SRChochBot(
     bar_between_signals=2,
     n_candle_confirmation=60,
     n_candle_check=300,
-    consider_position=False,
+    consider_position=True,
     trades_manager=TradesManager(
         mt5_agent,
         ForexStepping(),
@@ -273,7 +273,7 @@ gbpusd_sr_choch_1h_5m = SRChochBot(
         short_trade=True,
         trading_constraints=[],
         reporter=sr_choch_reporter,
-        agent_check=False,
+        agent_check=True,
     ),
 )
 
@@ -330,7 +330,7 @@ usdchf_sr_choch_1h_5m = SRChochBot(
     bar_between_signals=2,
     n_candle_confirmation=60,
     n_candle_check=300,
-    consider_position=False,
+    consider_position=True,
     trades_manager=TradesManager(
         mt5_agent,
         ForexStepping(),
@@ -338,7 +338,7 @@ usdchf_sr_choch_1h_5m = SRChochBot(
         short_trade=True,
         trading_constraints=[],
         reporter=sr_choch_reporter,
-        agent_check=False,
+        agent_check=True,
     ),
 )
 
@@ -395,7 +395,7 @@ audusd_sr_choch_1h_5m = SRChochBot(
     bar_between_signals=2,
     n_candle_confirmation=60,
     n_candle_check=300,
-    consider_position=False,
+    consider_position=True,
     trades_manager=TradesManager(
         mt5_agent,
         ForexStepping(),
@@ -403,7 +403,7 @@ audusd_sr_choch_1h_5m = SRChochBot(
         short_trade=True,
         trading_constraints=[],
         reporter=sr_choch_reporter,
-        agent_check=False,
+        agent_check=True,
     ),
 )
 
@@ -460,7 +460,7 @@ usdcad_sr_choch_1h_5m = SRChochBot(
     bar_between_signals=2,
     n_candle_confirmation=60,
     n_candle_check=300,
-    consider_position=False,
+    consider_position=True,
     trades_manager=TradesManager(
         mt5_agent,
         ForexStepping(),
@@ -468,7 +468,7 @@ usdcad_sr_choch_1h_5m = SRChochBot(
         short_trade=True,
         trading_constraints=[],
         reporter=sr_choch_reporter,
-        agent_check=False,
+        agent_check=True,
     ),
 )
 
@@ -525,7 +525,7 @@ nzdusd_sr_choch_1h_5m = SRChochBot(
     bar_between_signals=2,
     n_candle_confirmation=60,
     n_candle_check=300,
-    consider_position=False,
+    consider_position=True,
     trades_manager=TradesManager(
         mt5_agent,
         ForexStepping(),
@@ -533,6 +533,6 @@ nzdusd_sr_choch_1h_5m = SRChochBot(
         short_trade=True,
         trading_constraints=[],
         reporter=sr_choch_reporter,
-        agent_check=False,
+        agent_check=True,
     ),
 )

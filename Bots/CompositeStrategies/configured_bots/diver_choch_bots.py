@@ -53,10 +53,10 @@ xau_5m_rsi_choch = OscillatorDiverChochBot(
         short_trade=True,
         trading_constraints=[],
         reporter=rsi_choch_reporter,
-        agent_check=False,
+        agent_check=True,
     ),
     n_candle_check=150,
-    consider_position=False,
+    consider_position=True,
 )
 
 
@@ -88,10 +88,10 @@ xau_15m_rsi_choch = OscillatorDiverChochBot(
         short_trade=True,
         trading_constraints=[],
         reporter=rsi_choch_reporter,
-        agent_check=False,
+        agent_check=True,
     ),
     n_candle_check=150,
-    consider_position=False,
+    consider_position=True,
 )
 
 eurusd_5m_rsi_choch = OscillatorDiverChochBot(
@@ -122,10 +122,10 @@ eurusd_5m_rsi_choch = OscillatorDiverChochBot(
         short_trade=True,
         trading_constraints=[],
         reporter=rsi_choch_reporter,
-        agent_check=False,
+        agent_check=True,
     ),
     n_candle_check=150,
-    consider_position=False,
+    consider_position=True,
 )
 
 eurusd_15m_rsi_choch = OscillatorDiverChochBot(
@@ -156,10 +156,10 @@ eurusd_15m_rsi_choch = OscillatorDiverChochBot(
         short_trade=True,
         trading_constraints=[],
         reporter=rsi_choch_reporter,
-        agent_check=False,
+        agent_check=True,
     ),
     n_candle_check=150,
-    consider_position=False,
+    consider_position=True,
 )
 
 
@@ -191,10 +191,10 @@ usdjpy_5m_rsi_choch = OscillatorDiverChochBot(
         short_trade=True,
         trading_constraints=[],
         reporter=rsi_choch_reporter,
-        agent_check=False,
+        agent_check=True,
     ),
     n_candle_check=150,
-    consider_position=False,
+    consider_position=True,
 )
 
 usdjpy_15m_rsi_choch = OscillatorDiverChochBot(
@@ -225,10 +225,10 @@ usdjpy_15m_rsi_choch = OscillatorDiverChochBot(
         short_trade=True,
         trading_constraints=[],
         reporter=rsi_choch_reporter,
-        agent_check=False,
+        agent_check=True,
     ),
     n_candle_check=150,
-    consider_position=False,
+    consider_position=True,
 )
 
 
@@ -260,10 +260,10 @@ gbpusd_5m_rsi_choch = OscillatorDiverChochBot(
         short_trade=True,
         trading_constraints=[],
         reporter=rsi_choch_reporter,
-        agent_check=False,
+        agent_check=True,
     ),
     n_candle_check=150,
-    consider_position=False,
+    consider_position=True,
 )
 
 gbpusd_15m_rsi_choch = OscillatorDiverChochBot(
@@ -294,10 +294,10 @@ gbpusd_15m_rsi_choch = OscillatorDiverChochBot(
         short_trade=True,
         trading_constraints=[],
         reporter=rsi_choch_reporter,
-        agent_check=False,
+        agent_check=True,
     ),
     n_candle_check=150,
-    consider_position=False,
+    consider_position=True,
 )
 
 
@@ -329,10 +329,10 @@ usdchf_5m_rsi_choch = OscillatorDiverChochBot(
         short_trade=True,
         trading_constraints=[],
         reporter=rsi_choch_reporter,
-        agent_check=False,
+        agent_check=True,
     ),
     n_candle_check=150,
-    consider_position=False,
+    consider_position=True,
 )
 
 usdchf_15m_rsi_choch = OscillatorDiverChochBot(
@@ -363,10 +363,10 @@ usdchf_15m_rsi_choch = OscillatorDiverChochBot(
         short_trade=True,
         trading_constraints=[],
         reporter=rsi_choch_reporter,
-        agent_check=False,
+        agent_check=True,
     ),
     n_candle_check=150,
-    consider_position=False,
+    consider_position=True,
 )
 
 
@@ -398,10 +398,10 @@ audusd_5m_rsi_choch = OscillatorDiverChochBot(
         short_trade=True,
         trading_constraints=[],
         reporter=rsi_choch_reporter,
-        agent_check=False,
+        agent_check=True,
     ),
     n_candle_check=150,
-    consider_position=False,
+    consider_position=True,
 )
 
 audusd_15m_rsi_choch = OscillatorDiverChochBot(
@@ -432,10 +432,10 @@ audusd_15m_rsi_choch = OscillatorDiverChochBot(
         short_trade=True,
         trading_constraints=[],
         reporter=rsi_choch_reporter,
-        agent_check=False,
+        agent_check=True,
     ),
     n_candle_check=150,
-    consider_position=False,
+    consider_position=True,
 )
 
 
@@ -467,10 +467,10 @@ usdcad_5m_rsi_choch = OscillatorDiverChochBot(
         short_trade=True,
         trading_constraints=[],
         reporter=rsi_choch_reporter,
-        agent_check=False,
+        agent_check=True,
     ),
     n_candle_check=150,
-    consider_position=False,
+    consider_position=True,
 )
 
 usdcad_15m_rsi_choch = OscillatorDiverChochBot(
@@ -501,10 +501,10 @@ usdcad_15m_rsi_choch = OscillatorDiverChochBot(
         short_trade=True,
         trading_constraints=[],
         reporter=rsi_choch_reporter,
-        agent_check=False,
+        agent_check=True,
     ),
     n_candle_check=150,
-    consider_position=False,
+    consider_position=True,
 )
 
 
@@ -536,10 +536,10 @@ nzdusd_5m_rsi_choch = OscillatorDiverChochBot(
         short_trade=True,
         trading_constraints=[],
         reporter=rsi_choch_reporter,
-        agent_check=False,
+        agent_check=True,
     ),
     n_candle_check=150,
-    consider_position=False,
+    consider_position=True,
 )
 
 nzdusd_15m_rsi_choch = OscillatorDiverChochBot(
@@ -570,10 +570,10 @@ nzdusd_15m_rsi_choch = OscillatorDiverChochBot(
         short_trade=True,
         trading_constraints=[],
         reporter=rsi_choch_reporter,
-        agent_check=False,
+        agent_check=True,
     ),
     n_candle_check=150,
-    consider_position=False,
+    consider_position=True,
 )
 
 
@@ -619,11 +619,11 @@ xau_5m_rsi_double_diver_choch = OscillatorDiverChochBot(
         short_trade=True,
         trading_constraints=[],
         reporter=rsi_double_diver_choch_reporter,
-        agent_check=False,
+        agent_check=True,
     ),
     n_candle_check=150,
     double_diver=True,
-    consider_position=False,
+    consider_position=True,
 )
 
 
@@ -655,11 +655,11 @@ xau_15m_rsi_double_diver_choch = OscillatorDiverChochBot(
         short_trade=True,
         trading_constraints=[],
         reporter=rsi_double_diver_choch_reporter,
-        agent_check=False,
+        agent_check=True,
     ),
     n_candle_check=150,
     double_diver=True,
-    consider_position=False,
+    consider_position=True,
 )
 
 eurusd_5m_rsi_double_diver_choch = OscillatorDiverChochBot(
@@ -690,11 +690,11 @@ eurusd_5m_rsi_double_diver_choch = OscillatorDiverChochBot(
         short_trade=True,
         trading_constraints=[],
         reporter=rsi_double_diver_choch_reporter,
-        agent_check=False,
+        agent_check=True,
     ),
     n_candle_check=150,
     double_diver=True,
-    consider_position=False,
+    consider_position=True,
 )
 
 eurusd_15m_rsi_double_diver_choch = OscillatorDiverChochBot(
@@ -725,11 +725,11 @@ eurusd_15m_rsi_double_diver_choch = OscillatorDiverChochBot(
         short_trade=True,
         trading_constraints=[],
         reporter=rsi_double_diver_choch_reporter,
-        agent_check=False,
+        agent_check=True,
     ),
     n_candle_check=150,
     double_diver=True,
-    consider_position=False,
+    consider_position=True,
 )
 
 
@@ -761,11 +761,11 @@ usdjpy_5m_rsi_double_diver_choch = OscillatorDiverChochBot(
         short_trade=True,
         trading_constraints=[],
         reporter=rsi_double_diver_choch_reporter,
-        agent_check=False,
+        agent_check=True,
     ),
     n_candle_check=150,
     double_diver=True,
-    consider_position=False,
+    consider_position=True,
 )
 
 usdjpy_15m_rsi_double_diver_choch = OscillatorDiverChochBot(
@@ -796,11 +796,11 @@ usdjpy_15m_rsi_double_diver_choch = OscillatorDiverChochBot(
         short_trade=True,
         trading_constraints=[],
         reporter=rsi_double_diver_choch_reporter,
-        agent_check=False,
+        agent_check=True,
     ),
     n_candle_check=150,
     double_diver=True,
-    consider_position=False,
+    consider_position=True,
 )
 
 
@@ -832,11 +832,11 @@ gbpusd_5m_rsi_double_diver_choch = OscillatorDiverChochBot(
         short_trade=True,
         trading_constraints=[],
         reporter=rsi_double_diver_choch_reporter,
-        agent_check=False,
+        agent_check=True,
     ),
     n_candle_check=150,
     double_diver=True,
-    consider_position=False,
+    consider_position=True,
 )
 
 gbpusd_15m_rsi_double_diver_choch = OscillatorDiverChochBot(
@@ -867,11 +867,11 @@ gbpusd_15m_rsi_double_diver_choch = OscillatorDiverChochBot(
         short_trade=True,
         trading_constraints=[],
         reporter=rsi_double_diver_choch_reporter,
-        agent_check=False,
+        agent_check=True,
     ),
     n_candle_check=150,
     double_diver=True,
-    consider_position=False,
+    consider_position=True,
 )
 
 
@@ -903,11 +903,11 @@ usdchf_5m_rsi_double_diver_choch = OscillatorDiverChochBot(
         short_trade=True,
         trading_constraints=[],
         reporter=rsi_double_diver_choch_reporter,
-        agent_check=False,
+        agent_check=True,
     ),
     n_candle_check=150,
     double_diver=True,
-    consider_position=False,
+    consider_position=True,
 )
 
 usdchf_15m_rsi_double_diver_choch = OscillatorDiverChochBot(
@@ -938,11 +938,11 @@ usdchf_15m_rsi_double_diver_choch = OscillatorDiverChochBot(
         short_trade=True,
         trading_constraints=[],
         reporter=rsi_double_diver_choch_reporter,
-        agent_check=False,
+        agent_check=True,
     ),
     n_candle_check=150,
     double_diver=True,
-    consider_position=False,
+    consider_position=True,
 )
 
 
@@ -974,11 +974,11 @@ audusd_5m_rsi_double_diver_choch = OscillatorDiverChochBot(
         short_trade=True,
         trading_constraints=[],
         reporter=rsi_double_diver_choch_reporter,
-        agent_check=False,
+        agent_check=True,
     ),
     n_candle_check=150,
     double_diver=True,
-    consider_position=False,
+    consider_position=True,
 )
 
 audusd_15m_rsi_double_diver_choch = OscillatorDiverChochBot(
@@ -1009,11 +1009,11 @@ audusd_15m_rsi_double_diver_choch = OscillatorDiverChochBot(
         short_trade=True,
         trading_constraints=[],
         reporter=rsi_double_diver_choch_reporter,
-        agent_check=False,
+        agent_check=True,
     ),
     n_candle_check=150,
     double_diver=True,
-    consider_position=False,
+    consider_position=True,
 )
 
 
@@ -1045,11 +1045,11 @@ usdcad_5m_rsi_double_diver_choch = OscillatorDiverChochBot(
         short_trade=True,
         trading_constraints=[],
         reporter=rsi_double_diver_choch_reporter,
-        agent_check=False,
+        agent_check=True,
     ),
     n_candle_check=150,
     double_diver=True,
-    consider_position=False,
+    consider_position=True,
 )
 
 usdcad_15m_rsi_double_diver_choch = OscillatorDiverChochBot(
@@ -1080,11 +1080,11 @@ usdcad_15m_rsi_double_diver_choch = OscillatorDiverChochBot(
         short_trade=True,
         trading_constraints=[],
         reporter=rsi_double_diver_choch_reporter,
-        agent_check=False,
+        agent_check=True,
     ),
     n_candle_check=150,
     double_diver=True,
-    consider_position=False,
+    consider_position=True,
 )
 
 
@@ -1116,11 +1116,11 @@ nzdusd_5m_rsi_double_diver_choch = OscillatorDiverChochBot(
         short_trade=True,
         trading_constraints=[],
         reporter=rsi_double_diver_choch_reporter,
-        agent_check=False,
+        agent_check=True,
     ),
     n_candle_check=150,
     double_diver=True,
-    consider_position=False,
+    consider_position=True,
 )
 
 nzdusd_15m_rsi_double_diver_choch = OscillatorDiverChochBot(
@@ -1151,9 +1151,9 @@ nzdusd_15m_rsi_double_diver_choch = OscillatorDiverChochBot(
         short_trade=True,
         trading_constraints=[],
         reporter=rsi_double_diver_choch_reporter,
-        agent_check=False,
+        agent_check=True,
     ),
     n_candle_check=150,
     double_diver=True,
-    consider_position=False,
+    consider_position=True,
 )
