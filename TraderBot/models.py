@@ -326,7 +326,9 @@ class Position:
     defined_timestamp: int = field(
         default_factory=lambda: TimeHandler.now(), init=False
     )
-    last_check_timestamp: int | None = field(default=None, init=False)
+    last_check_timestamp: int = field(
+        default_factory=lambda: TimeHandler.now(), init=False
+    )
     open_timestamp: int | None = field(default=None, init=False)
     closed_timestamp: int | None = field(default=None, init=False)
 

@@ -129,10 +129,12 @@ class TradesManager:
         pass
 
     def triggers_handler(self, position: Position, ticks: np.ndarray):
+        if not position.open_timestamp:
+            logger.debug(f"Position is not open yet.")
+            return
         if position.stoploss.triggered_timestamp:
-            logger.warning(
-                f"Trying to check Stoploss hited prosition again! {position=}"
-            )
+            logger.debug(f"stoploss of {position} hit, waiting for its command")
+            return
         if position.stoploss.check(ticks):
             logger.debug(f"SL hit for {position}")
             position.stoploss.event.occur(
@@ -162,8 +164,6 @@ class TradesManager:
 
     def ochl_handler(self, position: Position) -> Command | None:
         ticks = []
-        if position.last_check_timestamp is None:
-            position.last_check_timestamp = TimeHandler.now()
 
         chart_1m = Chart(position.chart.symbol, TimeFrame.one_minute)
         chartdata = self.exchange_agent.get_chartdata(chart_1m, 3)

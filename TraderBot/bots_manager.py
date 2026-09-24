@@ -13,12 +13,7 @@ from TraderBot.PositionHandlers.trades_pnl import PnLReportGenerator
 from TraderBot.models import Command, ReporterBot
 from Settings.timing import TimeHandler
 from TraderBot.trader_bot import TraderBot
-from typing import TYPE_CHECKING
 from Settings import settings
-
-
-if TYPE_CHECKING:
-    from sqlalchemy.engine import Engine
 
 
 class BotsManager:
@@ -38,7 +33,7 @@ class BotsManager:
         self.manage_interval = manage_interval
         self.heartbeat_interval = heartbeat_interval
 
-        self.report_seconds_shift = random.randrange(1, 3600, 5)
+        self.report_seconds_shift = random.randrange(0, 59)
         self._start_time = TimeHandler.now()
         self._stop_event = asyncio.Event()
 
@@ -137,7 +132,7 @@ class BotsManager:
 
     def _daily_report_sleeptime(self):
         now = TimeHandler.to_datetime(TimeHandler.now())
-        next_report = now.replace(hour=20, minute=60 - self.report_seconds_shift)
+        next_report = now.replace(hour=20, minute=self.report_seconds_shift)
         next_report = (
             next_report if next_report > now else next_report + timedelta(days=1)
         )

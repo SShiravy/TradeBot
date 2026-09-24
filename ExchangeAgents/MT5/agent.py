@@ -187,6 +187,8 @@ class MT5Agent(ExchangeAgent):
             trigger.exchange_id = exchange_id
             entry_prices.append(result.price)
             logger.info(f"Position Opened: {position}\n{result=}")
+        if not entry_prices:
+            logger.warning(f"Fail on Opening Position {position}")
         position.exchange_id = exchange_id if exchange_id else ""
         return round(sum(entry_prices) / len(entry_prices), position.chart.precision)
 

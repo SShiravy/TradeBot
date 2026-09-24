@@ -59,7 +59,7 @@ class ForexStepping(PositionGenerator):
             ),
             event=StopLossHit(),
             volume=self.initial_volume,
-            cross_direction=-side.factor,
+            cross_direction=side.factor * -1,
         )
 
     def generate_triggers(

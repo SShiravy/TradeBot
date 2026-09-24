@@ -35,11 +35,7 @@ class PnLCalculator:
 class PnLReportGenerator:
     @staticmethod
     def position_report(position: Position) -> PnLReport:
-        last_time = (
-            position.closed_timestamp
-            or position.last_check_timestamp
-            or position.defined_timestamp
-        )
+        last_time = position.closed_timestamp or position.last_check_timestamp
 
         report = PnLReport(
             chart=position.chart,
@@ -57,7 +53,7 @@ class PnLReportGenerator:
         # all triggered TP
         for i, step in enumerate(position.steps):
             if (
-                step.event.name is not TakeProfitHit.name
+                not isinstance(step.event, TakeProfitHit)
                 or step.triggered_timestamp is None
             ):
                 continue

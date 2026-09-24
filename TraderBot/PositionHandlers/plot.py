@@ -13,7 +13,7 @@ class PositionPlotter(ObjectPlotter):
 
         if position.closed_timestamp:
             end_of_line = position.closed_timestamp
-            start_of_line = position.last_check_timestamp or start_time
+            start_of_line = position.last_check_timestamp
             pane.draw_line(
                 start_time,
                 position.entry_price,
