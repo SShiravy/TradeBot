@@ -139,7 +139,9 @@ class TradesManager:
             logger.debug(f"SL hit for {position}")
             position.stoploss.event.occur(
                 trade_context=TradeCommandContext(position, self.exchange_agent),
-                report_context=ReportCommandContext(self.reporter)
+                report_context=ReportCommandContext(
+                    self.reporter, reply_id=position.report_id
+                )
                 if self.reporter
                 else None,
             )
@@ -151,18 +153,44 @@ class TradesManager:
                 logger.debug(f"Trigger Hit: {Trigger=}|{Position=}")
                 trigger.event.occur(
                     trade_context=TradeCommandContext(position, self.exchange_agent),
-                    report_context=ReportCommandContext(self.reporter)
+                    report_context=ReportCommandContext(
+                        self.reporter, reply_id=position.report_id
+                    )
                     if self.reporter
                     else None,
                 )
                 continue
             return
 
-    def agent_handler(self, position: Position) -> Command | None:
-        # TODO: complete here
-        pass
+    def agent_handler(self, position: Position):
+        pnl_report = self.exchange_agent.check_position_closed(position)
+        if not pnl_report:
+            return None
+        if pnl_report.pnl_dollar <= 0:
+            # TODO: add condition pnl_report.volume == position.stoploss.volume
+            position.stoploss.event.occur(
+                trade_context=TradeCommandContext(position, self.exchange_agent),
+                report_context=ReportCommandContext(
+                    self.reporter, reply_id=position.report_id
+                )
+                if self.reporter
+                else None,
+            )
+        else:
+            for trigger in position.steps:
+                if trigger.triggered_timestamp is None:
+                    continue
+                logger.debug(f"Trigger Hit: {Trigger=}|{Position=}")
+                trigger.event.occur(
+                    trade_context=TradeCommandContext(position, self.exchange_agent),
+                    report_context=ReportCommandContext(
+                        self.reporter, reply_id=position.report_id
+                    )
+                    if self.reporter
+                    else None,
+                )
 
-    def ochl_handler(self, position: Position) -> Command | None:
+    def ochl_handler(self, position: Position):
         ticks = []
 
         chart_1m = Chart(position.chart.symbol, TimeFrame.one_minute)

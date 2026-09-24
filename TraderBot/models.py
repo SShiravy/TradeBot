@@ -432,7 +432,9 @@ class ExchangeAgent(ABC):
         pass
 
     @abstractmethod
-    def check_position_closed(self, *args, **kwargs) -> float | None:
+    def check_position_closed(
+        self, position: Position, *args, **kwargs
+    ) -> "PnLReport|None":
         pass
 
 
@@ -528,8 +530,8 @@ class PnLReport:
     def duration(self):
         return timedelta(seconds=self.last_time - self.first_time)
 
-    def __add__(self, other: "PnLReport | int | float") -> "PnLReport":
-        if isinstance(other, (int, float)):
+    def __add__(self, other: "PnLReport | None") -> "PnLReport":
+        if other is None:
             return self
         if not isinstance(other, PnLReport):
             return NotImplemented

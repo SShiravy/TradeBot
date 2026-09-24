@@ -34,7 +34,22 @@ class PnLCalculator:
 
 class PnLReportGenerator:
     @staticmethod
-    def position_report(position: Position) -> PnLReport:
+    def from_pnl(position: Position, pnl_dollar: float) -> PnLReport:
+        last_time = position.closed_timestamp or position.last_check_timestamp
+        report = PnLReport(
+            chart=position.chart,
+            side=position.side,
+            source=position.source,
+            first_time=position.defined_timestamp,
+            last_time=last_time,
+        )
+        report.pnl_dollar = pnl_dollar
+        # report.pnl_percent =
+        # report.pnl_pips =
+        return report
+
+    @staticmethod
+    def from_position(position: Position) -> PnLReport:
         last_time = position.closed_timestamp or position.last_check_timestamp
 
         report = PnLReport(
@@ -121,7 +136,7 @@ class PnLReportGenerator:
         """Return one merged report per unique (chart, side, source) identifier."""
         reports_dict: dict[str, PnLReport] = {}
         for pos in all_positions:
-            report = PnLReportGenerator.position_report(pos)
+            report = PnLReportGenerator.from_position(pos)
             if report.identifier not in reports_dict:
                 reports_dict[report.identifier] = report
             else:
@@ -136,9 +151,9 @@ class PnLReportGenerator:
         )
         win_in_a_row = 0
         lose_in_a_row = 0
-        overall_report = PnLReportGenerator.position_report(ordered_positions[0])
+        overall_report = PnLReportGenerator.from_position(ordered_positions[0])
         for pos in ordered_positions[1:]:
-            report = PnLReportGenerator.position_report(pos)
+            report = PnLReportGenerator.from_position(pos)
             if report.pnl_dollar > 0:
                 win_in_a_row += 1
                 lose_in_a_row = 0

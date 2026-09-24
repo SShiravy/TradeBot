@@ -93,7 +93,7 @@ class StoplossHitReport(ReportCommand):
 
     def give_pnl_report(self):
         if self.pnl_report == None:
-            self.pnl_report = PnLReportGenerator.position_report(self.position)
+            self.pnl_report = PnLReportGenerator.from_position(self.position)
         return self.pnl_report
 
     async def command(self):
@@ -124,7 +124,7 @@ class TriggerHitReport(ReportCommand):
 
     def give_pnl_report(self):
         if self.pnl_report == None:
-            self.pnl_report = PnLReportGenerator.position_report(self.position)
+            self.pnl_report = PnLReportGenerator.from_position(self.position)
         return self.pnl_report
 
     async def command(self):

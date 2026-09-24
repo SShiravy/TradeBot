@@ -49,6 +49,9 @@ class TrailStoploss(TradeCommand):
         self.stoploss_price = new_stoploss
 
     async def command(self):
+        if self.context.position.stoploss.triggered_timestamp:
+            logger.debug(f"stoploss of {self.context.position} already hit")
+            return True
         if not self.context.agent.change_stoploss(
             self.context.position, self.stoploss_price
         ):

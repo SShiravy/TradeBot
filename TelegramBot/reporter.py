@@ -52,7 +52,7 @@ class TelegramMsgFormater(ReportMsgFormater):
         if pnl_report.pnl_dollar > 0:
             close_type_msg = "✅ Profitable Close"
         elif pnl_report.pnl_dollar < 0:
-            close_type_msg = "⛔️ "
+            close_type_msg = "⛔️ Loss"
 
         msg_list = [
             *self.identifier(position),

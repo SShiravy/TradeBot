@@ -1,9 +1,15 @@
 import numpy as np
 from ChartModule import Chart, ChartData, TimeFrame
 from Settings.timing import TimeHandler
+from TraderBot.PositionHandlers.trades_pnl import PnLReportGenerator
 from TraderBot.events import StopLossHit, TakeProfitHit
-from TraderBot.models import ExchangeAgent, Position, PositionSide, Trigger
-from datetime import datetime, timedelta, timezone
+from TraderBot.models import (
+    ExchangeAgent,
+    Position,
+    PositionSide,
+    Trigger,
+)
+from datetime import datetime, timedelta
 from enum import Enum
 import mt5_wrapper as mt5
 import logging
@@ -194,6 +200,8 @@ class MT5Agent(ExchangeAgent):
 
     def change_stoploss(self, position: Position, price) -> bool:
         for trigger in position.triggers:
+            if trigger.triggered_timestamp:  # its exchange position is closed
+                continue
             if not isinstance(trigger.event, TakeProfitHit) or not trigger.exchange_id:
                 continue
             request = {
@@ -329,29 +337,61 @@ class MT5Agent(ExchangeAgent):
             logger.debug(f"mt5 filtered open pos: {open_poses}")
         return filtered_poses
 
-    def check_position_closed(
-        self,
-        position_ticket: int | None = None,
-        comment_filter: str = "",
-    ) -> float | None:
-        if not position_ticket and not comment_filter:
-            logger.error("No Ticket nor comment_filter is given")
-            return None
-        position = mt5.positions_get(ticket=position_ticket)
-        if position:
-            return None
-        to_time = datetime.now(timezone.utc)
-        from_time = to_time - timedelta(days=3)
-        deals = mt5.history_deals_get(from_time, to_time, ticket=position_ticket)
-        if not deals:
-            raise ValueError(
-                f"Position isn't open but no deals found for ticket {position_ticket}"
+    def check_position_closed(self, position: Position):
+        final_report = None
+        for trigger in position.steps:
+            if trigger.triggered_timestamp or not isinstance(
+                trigger.event, TakeProfitHit
+            ):
+                continue
+
+            ticket = int(trigger.exchange_id)
+
+            if mt5.positions_get(ticket=ticket):
+                continue
+
+            day = int(timedelta(days=1).total_seconds())
+            all_deals = mt5.history_deals_get(
+                position.defined_timestamp - day,
+                TimeHandler.now() + day,
+                position=ticket,
             )
-        profit = sum(d.profit + d.commission + d.swap for d in deals)
-        logger.debug(
-            f"Deals found for closed position {position_ticket}: {deals} \n{profit=}"
-        )
-        return profit
+
+            if not all_deals:
+                logger.warning(f"{ticket=} isn't open but no deals found for it yet")
+                continue
+
+            exits_pnl = []
+            exits_volume = []
+            for deal in all_deals:
+                if deal.entry not in (mt5.DEAL_ENTRY_OUT, mt5.DEAL_ENTRY_OUT_BY):
+                    continue
+                exits_pnl.append(deal.profit + deal.commission + deal.swap + deal.fee)
+                exits_volume.append(deal.volume)
+
+            pnl = sum(exits_pnl)
+            volume = sum(exits_volume)
+            if volume < trigger.volume:
+                logger.debug(
+                    f"Trigger doesn't filled yet. filled {volume=}|{trigger.volume=}"
+                )
+                continue
+            now = TimeHandler.now()
+            position.last_check_timestamp = now
+            trigger.triggered_timestamp = now
+            report = PnLReportGenerator.from_pnl(position, pnl)
+            final_report += report
+            if pnl > 0:
+                trigger.event.pnl_report = report
+            logger.info(f"{ticket=}|{exits_pnl=}|{exits_volume}|{sum(exits_pnl)}")
+
+        if (
+            final_report
+            and final_report.pnl_dollar <= 0
+            and isinstance(position.stoploss.event, StopLossHit)
+        ):
+            position.stoploss.event.pnl_report += final_report
+        return final_report
 
 
 def forex_timeframe_mapper(timeframe: TimeFrame):

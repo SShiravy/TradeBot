@@ -128,5 +128,5 @@ class BitUnixAgent(ExchangeAgent):
     def get_open_positions(self, chart: Chart, *args, **kwargs):
         pass
 
-    def check_position_closed(self):
+    def check_position_closed(self, position: Position, exchange_id: str):
         pass

@@ -115,7 +115,7 @@ class LoseInRowConstraint(TradingConstraint):
             if passed_candle > self.n_bar:
                 continue
             if pos.side == new_position.side:
-                if PnLReportGenerator.position_report(pos).pnl_dollar >= 0:
+                if PnLReportGenerator.from_position(pos).pnl_dollar >= 0:
                     return True
                 lose_in_row_counter += 1
             if lose_in_row_counter >= constraint:
