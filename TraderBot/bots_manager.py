@@ -4,8 +4,9 @@ import pstats
 import tracemalloc
 import asyncio
 import logging
+import random
+import Database as db
 from datetime import timedelta
-from Database import store_trader_bot, live_db_engine
 from TraderBot.Commands.db_commands import DatabaseCommand
 from TraderBot.events import Event
 from TraderBot.PositionHandlers.trades_pnl import PnLReportGenerator
@@ -13,6 +14,7 @@ from TraderBot.models import Command, ReporterBot
 from Settings.timing import TimeHandler
 from TraderBot.trader_bot import TraderBot
 from typing import TYPE_CHECKING
+from Settings import settings
 
 
 if TYPE_CHECKING:
@@ -28,15 +30,15 @@ class BotsManager:
         manage_interval: float = 2.0,
         heartbeat_interval: float = 3600.0,
         enable_profiling: bool = True,
-        database_engine: "Engine|None" = live_db_engine,
-        report_shift: int = 30,
+        database_name: "str|None" = settings.LIVE_DB_NAME,
     ) -> None:
         self.name = name
         self.reporter = reporter
         self.bots = bots
         self.manage_interval = manage_interval
         self.heartbeat_interval = heartbeat_interval
-        self.report_shift = report_shift
+
+        self.report_seconds_shift = random.randrange(1, 3600, 5)
         self._start_time = TimeHandler.now()
         self._stop_event = asyncio.Event()
 
@@ -44,11 +46,15 @@ class BotsManager:
         self.enable_profiling = enable_profiling
         self._profilers: dict[str, cProfile.Profile] = {}
 
-        if database_engine:
+        if database_name:
+            engine = db.give_engine(database_name)
+            db.create_db(engine)
             Event.consider_db_record = True
-            DatabaseCommand.db_engine = live_db_engine
+            DatabaseCommand.db_engine = engine
+            self.db_engin = engine
         else:
             Event.consider_db_record = False
+            self.db_engin = None
 
     def _memory_report(self) -> str:
         snapshot = tracemalloc.take_snapshot()
@@ -131,7 +137,7 @@ class BotsManager:
 
     def _daily_report_sleeptime(self):
         now = TimeHandler.to_datetime(TimeHandler.now())
-        next_report = now.replace(hour=20, minute=60 - self.report_shift)
+        next_report = now.replace(hour=20, minute=60 - self.report_seconds_shift)
         next_report = (
             next_report if next_report > now else next_report + timedelta(days=1)
         )
@@ -175,9 +181,8 @@ class BotsManager:
         )
         async with asyncio.TaskGroup() as tg:
             for bot in self.bots:
-                if Event.consider_db_record:
-                    store_trader_bot(bot)
-
+                if self.db_engin:
+                    db.store_trader_bot(bot, self.db_engin)
                 bot.post_init()
                 tg.create_task(self._trade_task(bot))
             tg.create_task(self._manage_loop())

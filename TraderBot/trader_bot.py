@@ -153,6 +153,9 @@ class TraderBot:
                 if position:
                     figure = self.generate_figure(chartdata, signal, position)
                     self.trade(position, figure)
+                    # the signal behind a traded position is recorded as well,
+                    # reporting it is the position report's job
+                    NewSignal(signal, record_context=self.give_record_context()).occur()
             else:
                 figure = self.generate_figure(chartdata, signal)
                 NewSignal(

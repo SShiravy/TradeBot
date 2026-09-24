@@ -159,7 +159,7 @@ class MT5Agent(ExchangeAgent):
         exchange_id = None
         entry_prices = []
         for trigger in position.triggers:
-            if trigger.event.name != TakeProfitHit.name or trigger.exchange_id:
+            if not isinstance(trigger.event, TakeProfitHit) or trigger.exchange_id:
                 continue
             # Build request
             request = {
@@ -192,7 +192,7 @@ class MT5Agent(ExchangeAgent):
 
     def change_stoploss(self, position: Position, price) -> bool:
         for trigger in position.triggers:
-            if trigger.event.name != TakeProfitHit.name or not trigger.exchange_id:
+            if not isinstance(trigger.event, TakeProfitHit) or not trigger.exchange_id:
                 continue
             request = {
                 "action": mt5.TRADE_ACTION_SLTP,

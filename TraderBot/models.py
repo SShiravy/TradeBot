@@ -104,13 +104,13 @@ class Command(ABC):
             try:
                 self.pending_commands.remove(self)
             except Exception as error:
-                command_logger.warning(f"executed command wasn't pending! {error=}")
+                command_logger.exception(f"executed command wasn't pending! {error=}")
             self.__record(self, self.__executed_record)
         elif value is CommandStatus.FAILED:
             try:
                 self.pending_commands.remove(self)
             except Exception as error:
-                command_logger.warning(f"Failed command wasn't pending! {error=}")
+                command_logger.exception(f"Failed command wasn't pending! {error=}")
             self.__record(self, self.__failed_record)
         self.__status = value
 
@@ -137,7 +137,7 @@ class Command(ABC):
         try:
             res = await self.command()
         except Exception as error:
-            command_logger.warning(f"{self.name} Command not executed. {error=}")
+            command_logger.exception(f"{self.name} Command not executed. {error=}")
             res = False
         if res:
             self.status = CommandStatus.EXECUTED
@@ -330,7 +330,7 @@ class Position:
     open_timestamp: int | None = field(default=None, init=False)
     closed_timestamp: int | None = field(default=None, init=False)
 
-    initial_stoploss: Trigger = field(init=False)
+    initial_stoploss_price: float = field(init=False)
     exchange_id: str = field(default="", init=False)
     report_id: Any = field(default=None, init=False)
 
@@ -339,7 +339,7 @@ class Position:
     )
 
     def __post_init__(self):
-        self.initial_stoploss = self.stoploss
+        self.initial_stoploss_price = self.stoploss.price
 
     @property
     def steps(self):

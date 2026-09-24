@@ -3,6 +3,7 @@ from Settings.timing import TimeHandler
 from TraderBot.models import (
     PnLReport,
     Position,
+    PositionSide,
     ReportMsgFormater,
     ReporterBot,
 )
@@ -151,7 +152,7 @@ class BacktestAgent(ExchangeAgent):
         idx = max(chartdata.timestamp_index(timestamp), n_bars)
         return chartdata.subdata(idx - n_bars, idx)
 
-    def get_current_tick(self, chart: Chart) -> float:
+    def get_current_tick(self, chart: Chart, side: PositionSide | None = None) -> float:
         # TODO: complete here
         return 0.0
 

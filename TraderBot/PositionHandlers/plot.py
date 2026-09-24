@@ -51,7 +51,7 @@ class PositionPlotter(ObjectPlotter):
         pane.draw_horizontal_line(
             start_of_step,
             end_of_line,
-            position.initial_stoploss.price,
+            position.initial_stoploss_price,
             "#FF2200",
             width=2,
         )

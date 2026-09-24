@@ -778,6 +778,7 @@ class EmaPivotChochBot(TraderBot):
                 position,
                 self.generate_figure(chartdata, signal, position, htf_chartdata),
             )
+            NewSignal(signal, record_context=self.give_record_context()).occur()
         else:
             NewSignal(
                 signal,

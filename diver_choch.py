@@ -1,6 +1,6 @@
 import asyncio
 import logging
-from TraderBot import BotsManager
+from TraderBot.bots_manager import BotsManager
 from TelegramBot import TelegramReporter
 from Settings import settings, build_logger, LoggerConfig
 from Bots.CompositeStrategies.configured_bots import *

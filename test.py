@@ -21,8 +21,7 @@ def initialize_DBs():
 async def test_positions():
     from TraderBot.PositionHandlers import TradesManager
     from ChartModule import Signal, Chart, TimeFrame, MarketSide
-    from TraderBot.models import Command
-    from TraderBot.Commands import TradeCommandContext
+    from TraderBot.models import Command, TradeCommandContext
     from TraderBot.events import NewPosition
 
     from TraderBot.PositionHandlers.PositionGenerators import ForexStepping

@@ -1,4 +1,11 @@
-from TraderBot.models import Command, Event, PnLReport
+from TraderBot.models import (
+    Command,
+    DatabaseCommandContext,
+    Event,
+    PnLReport,
+    ReportCommandContext,
+    TradeCommandContext,
+)
 from ChartModule.models import Signal
 import TraderBot.Commands as commands
 import logging
@@ -25,9 +32,9 @@ class NewSignal(Event):
     def __init__(
         self,
         signal: Signal,
-        trade_context: commands.TradeCommandContext | None = None,
-        report_context: commands.ReportCommandContext | None = None,
-        record_context: commands.DatabaseCommandContext | None = None,
+        trade_context: TradeCommandContext | None = None,
+        report_context: ReportCommandContext | None = None,
+        record_context: DatabaseCommandContext | None = None,
         extra_commands: list[Command] = [],
     ):
         super().__init__(trade_context, report_context, record_context, extra_commands)
@@ -47,9 +54,9 @@ class NewSignal(Event):
 class StopLossHit(Event):
     def __init__(
         self,
-        trade_context: commands.TradeCommandContext | None = None,
-        report_context: commands.ReportCommandContext | None = None,
-        record_context: commands.DatabaseCommandContext | None = None,
+        trade_context: TradeCommandContext | None = None,
+        report_context: ReportCommandContext | None = None,
+        record_context: DatabaseCommandContext | None = None,
         pnl_report: PnLReport | None = None,
         extra_commands: list[Command] = [],
     ):
@@ -73,9 +80,9 @@ class StopLossHit(Event):
 
     def occur(
         self,
-        trade_context: commands.TradeCommandContext | None = None,
-        report_context: commands.ReportCommandContext | None = None,
-        record_context: commands.DatabaseCommandContext | None = None,
+        trade_context: TradeCommandContext | None = None,
+        report_context: ReportCommandContext | None = None,
+        record_context: DatabaseCommandContext | None = None,
         pnl_report: PnLReport | None = None,
         *args,
         **kwargs,
@@ -90,17 +97,15 @@ class StopLossHit(Event):
 class TakeProfitHit(Event):
     def __init__(
         self,
-        trade_context: commands.TradeCommandContext | None = None,
-        report_context: commands.ReportCommandContext | None = None,
-        record_context: commands.DatabaseCommandContext | None = None,
+        trade_context: TradeCommandContext | None = None,
+        report_context: ReportCommandContext | None = None,
+        record_context: DatabaseCommandContext | None = None,
         pnl_report: PnLReport | None = None,
         trail_stop: float | None = None,
         extra_commands: list[Command] = [],
     ):
-        if pnl_report:
-            self.pnl_report = pnl_report
-        if trail_stop:
-            self.trail_stop = trail_stop
+        self.pnl_report = pnl_report
+        self.trail_stop = trail_stop
         super().__init__(trade_context, report_context, record_context, extra_commands)
 
     def database_command(self):
@@ -125,9 +130,9 @@ class TakeProfitHit(Event):
 
     def occur(
         self,
-        trade_context: commands.TradeCommandContext | None = None,
-        report_context: commands.ReportCommandContext | None = None,
-        record_context: commands.DatabaseCommandContext | None = None,
+        trade_context: TradeCommandContext | None = None,
+        report_context: ReportCommandContext | None = None,
+        record_context: DatabaseCommandContext | None = None,
         pnl_report: PnLReport | None = None,
         trail_stop: float | None = None,
         *args,

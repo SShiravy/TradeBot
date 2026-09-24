@@ -317,6 +317,7 @@ class DivergenceBot(TraderBot):
                         chartdata, second_chartdata, signal, position
                     )
                     self.trade(position, figure)
+                    NewSignal(signal, record_context=self.give_record_context()).occur()
             else:
                 figure = self.generate_figure(chartdata, second_chartdata, signal)
                 NewSignal(

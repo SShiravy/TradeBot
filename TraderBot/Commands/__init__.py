@@ -4,7 +4,6 @@ from TraderBot.Commands.trade_commands import (
     OpenPosition,
     TakeProfit,
     TrailStoploss,
-    TradeCommandContext,
 )
 from TraderBot.Commands.report_commands import (
     ReportCommand,
@@ -12,14 +11,11 @@ from TraderBot.Commands.report_commands import (
     ReportNewPosition,
     StoplossHitReport,
     TriggerHitReport,
-    ReportCommandContext,
 )
-from TraderBot.Commands.db_commands import RecordSignal, DatabaseCommandContext
+from TraderBot.Commands.db_commands import RecordSignal
 
 
 __all__ = [
-    "TradeCommandContext",
-    "ReportCommandContext",
     "TradeCommand",
     "StopLoss",
     "OpenPosition",
@@ -30,6 +26,5 @@ __all__ = [
     "ReportNewPosition",
     "StoplossHitReport",
     "TriggerHitReport",
-    "DatabaseCommandContext",
     "RecordSignal",
 ]

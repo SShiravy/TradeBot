@@ -348,6 +348,7 @@ class SRChochBot(TraderBot):
                 position,
                 self.generate_figure(choch_chartdata, choch_signal, position),
             )
+            NewSignal(choch_signal, record_context=self.give_record_context()).occur()
             logger.info("SR & CHoCH Signal")
         else:
             NewSignal(

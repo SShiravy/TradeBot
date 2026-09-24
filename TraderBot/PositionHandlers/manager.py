@@ -129,6 +129,10 @@ class TradesManager:
         pass
 
     def triggers_handler(self, position: Position, ticks: np.ndarray):
+        if position.stoploss.triggered_timestamp:
+            logger.warning(
+                f"Trying to check Stoploss hited prosition again! {position=}"
+            )
         if position.stoploss.check(ticks):
             logger.debug(f"SL hit for {position}")
             position.stoploss.event.occur(
@@ -170,7 +174,6 @@ class TradesManager:
             if candle.timestamp < position.last_check_timestamp:
                 continue
             ticks += [candle.open, candle.low, candle.high, candle.close]
-            print(ticks)
         position.last_check_timestamp = chartdata[-1].timestamp
         return self.triggers_handler(position, np.array(ticks))
 

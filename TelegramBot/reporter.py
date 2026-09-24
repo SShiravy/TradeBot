@@ -33,7 +33,7 @@ class TelegramMsgFormater(ReportMsgFormater):
             for trigger in position.steps:
                 name = (
                     "TakeProfit"
-                    if trigger.event.name == TakeProfitHit.name
+                    if isinstance(trigger.event, TakeProfitHit)
                     else trigger.event.name
                 )
                 tgr_msg = f"  {name} {trigger.price}"
@@ -83,7 +83,7 @@ class TelegramMsgFormater(ReportMsgFormater):
         for trigger in position.steps:
             name = (
                 "TakeProfit"
-                if trigger.event.name == TakeProfitHit.name
+                if isinstance(trigger.event, TakeProfitHit)
                 else trigger.event.name
             )
             if trigger.triggered_timestamp:
