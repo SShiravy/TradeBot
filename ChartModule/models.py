@@ -1,5 +1,4 @@
 from dataclasses import dataclass, asdict, field
-from datetime import datetime, timedelta, timezone
 from typing import Iterator, Literal, overload
 from enum import Enum
 import pandas as pd
@@ -98,7 +97,7 @@ class MarketSide(Enum):
 @dataclass(slots=True, frozen=True)
 class TickPrice:
     price: float
-    time: datetime
+    timestamp: int
 
     def __str__(self) -> str:
         return f"{asdict(self)}"
@@ -182,7 +181,7 @@ class Signal:
     source: str
 
     def __str__(self) -> str:
-        return f"{self.chart} {self.side} at {datetime.fromtimestamp(self.candle.timestamp, tz=timezone.utc)} from {self.source}"
+        return f"{self.chart} {self.side} at {TimeHandler.format(self.candle.timestamp)} from {self.source}"
 
 
 @dataclass(slots=True)

@@ -1,13 +1,18 @@
-from ExchangeAgents.BitUnix.api import BitUnixAPI
-from ExchangeAgents.BitUnix.agent import BitUnixAgent
-from ExchangeAgents.BitUnix.bot_configs import (
-    BitUnixDiverTradeConfig,
-    BitUnixChochQueueTradeConfig,
+from ExchangeAgents.BitUnix.api import (
+    BitUnixAPI,
+    BitUnixAPIError,
+    MarginMode,
+    PositionMode,
+    StopType,
 )
+from ExchangeAgents.BitUnix.agent import BitUnixAgent, TakeProfitMode
 
 __all__ = [
     "BitUnixAPI",
+    "BitUnixAPIError",
     "BitUnixAgent",
-    "BitUnixDiverTradeConfig",
-    "BitUnixChochQueueTradeConfig",
+    "TakeProfitMode",
+    "MarginMode",
+    "PositionMode",
+    "StopType",
 ]

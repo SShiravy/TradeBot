@@ -9,7 +9,7 @@ from TraderBot.models import (
     PositionSide,
     Trigger,
 )
-from datetime import datetime, timedelta
+from datetime import timedelta
 from enum import Enum
 import mt5_wrapper as mt5
 import logging
@@ -143,8 +143,8 @@ class MT5Agent(ExchangeAgent):
             volume=ohlcv_res["tick_volume"].astype(np.float64),
         )
 
-    def get_candles_since(self, chart: Chart, time: datetime):
-        return super().get_candles_since(chart, time)
+    def get_candles_since(self, chart: Chart, timestamp: int):
+        return super().get_candles_since(chart, timestamp)
 
     def open_position(self, position: Position) -> float | None:
         if not self.select_chart(position.chart):

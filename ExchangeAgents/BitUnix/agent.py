@@ -1,7 +1,6 @@
 from ChartModule import Chart, Candle, ChartData
 from TraderBot import ExchangeAgent, Position
 from ExchangeAgents.BitUnix.api import BitUnixAPI
-from datetime import datetime, timezone
 import logging
 
 

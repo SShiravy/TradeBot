@@ -16,9 +16,8 @@ from ChartModule.plot import (
 from Settings.timing import TimeHandler
 from ChartModule.Indicators import Indicator, SupportCandlesPattern
 from dataclasses import asdict, dataclass, field
-from datetime import datetime, timedelta
+from datetime import timedelta
 from abc import ABC, abstractmethod
-from datetime import timezone
 from typing import Any, Literal, Optional
 from enum import Enum
 import hashlib
@@ -386,13 +385,13 @@ class ExchangeAgent(ABC):
     def get_current_tick(self, chart: Chart, side: PositionSide | None = None) -> float:
         pass
 
-    def get_candles_since(self, chart: Chart, time: datetime) -> list[Candle]:
+    def get_candles_since(self, chart: Chart, timestamp: int) -> list[Candle]:
         chartdata = self.get_chartdata(chart, 3)
         if chartdata is None:
             return []
         candles = []
         for candle in chartdata:
-            if datetime.fromtimestamp(candle.timestamp, tz=timezone.utc) < time:
+            if candle.timestamp < timestamp:
                 continue
             candles.append(candle)
         return candles
@@ -545,8 +544,8 @@ class PnLReport:
             first_time=min(self.first_time, other.first_time),
             last_time=max(self.last_time, other.last_time),
         )
-        merged.pnl_dollar = self.pnl_dollar + other.pnl_dollar
-        merged.pnl_percent = self.pnl_percent + other.pnl_percent
+        merged.pnl_dollar = round(self.pnl_dollar + other.pnl_dollar, 3)
+        merged.pnl_percent = round(self.pnl_percent + other.pnl_percent, 3)
         merged.pnl_pips = self.pnl_pips + other.pnl_pips
         merged.volume = self.volume + other.volume
         merged.wins = self.wins + other.wins
@@ -581,8 +580,8 @@ class PnLReport:
             "duration_seconds": self.last_time - self.first_time,
             "pnl": {
                 "dollar": self.pnl_dollar,
-                "percent": self.pnl_percent,
-                "pips": self.pnl_pips,
+                "percent": round(self.pnl_percent, 3),
+                "pips": round(self.pnl_pips, 3),
             },
             "volume": self.volume,
             "positions": {
@@ -622,8 +621,8 @@ class PnLReport:
             f"\n"
             f"P&L\n"
             f"{'-' * 60}\n"
-            f"Dollar           : {data['pnl']['dollar']}\n"
-            f"Percent          : {data['pnl']['percent']}%\n"
+            f"Dollar           : {round(data['pnl']['dollar'], 3)}\n"
+            f"Percent          : {round(data['pnl']['percent'], 3)}%\n"
             f"Pips             : {data['pnl']['pips']}\n"
             f"Volume           : {data['volume']}\n"
             f"\n"

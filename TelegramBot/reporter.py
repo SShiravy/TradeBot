@@ -26,17 +26,17 @@ class TelegramMsgFormater(ReportMsgFormater):
             else "🔴 Short " + position.type.value,
             f"📣 Entry = {position.entry_price}",
             f"💰 Entry Volume: {position.volume}",
-            f"⛔️ SL = {position.stoploss}",
+            f"⛔️ SL = {position.stoploss.price}",
         ]
         if position.triggers:
             msg_list.append("🎯Triggers:")
-            for trigger in position.steps:
+            for i, trigger in enumerate(position.steps):
                 name = (
                     "TakeProfit"
                     if isinstance(trigger.event, TakeProfitHit)
                     else trigger.event.name
                 )
-                tgr_msg = f"  {name} {trigger.price}"
+                tgr_msg = f"   {i}-{name} {trigger.price}"
                 if trigger.volume:
                     tgr_msg += f"|{trigger.volume}💰"
                 msg_list.append(tgr_msg)
@@ -57,7 +57,7 @@ class TelegramMsgFormater(ReportMsgFormater):
         msg_list = [
             *self.identifier(position),
             close_type_msg,
-            f"💵 PNL = {pnl_report.pnl_dollar}",
+            f"💵 PNL = {round(pnl_report.pnl_dollar, 3)}",
             f"⌛ Duration = {pnl_report.duration}",
         ]
         msg = "\n\n".join(msg_list)
@@ -95,7 +95,7 @@ class TelegramMsgFormater(ReportMsgFormater):
         msg_list = [
             *self.identifier(position),
             *triggers_msg,
-            f"💵 PNL = {pnl_report.pnl_dollar}",
+            f"💵 PNL = {round(pnl_report.pnl_dollar, 3)}",
             f"⌛ Duration = {pnl_report.duration}",
         ]
         msg = "\n\n".join(msg_list)

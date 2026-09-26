@@ -44,7 +44,7 @@ class PositionPlotter(ObjectPlotter):
                 step.price,
                 step_end,
                 step.price,
-                "#00B957" if step.event.name is TakeProfitHit.name else "#5C00B9",
+                "#00B957" if isinstance(step.event, TakeProfitHit) else "#5C00B9",
                 width=2,
             )
 
@@ -52,7 +52,7 @@ class PositionPlotter(ObjectPlotter):
             start_of_step,
             end_of_line,
             position.initial_stoploss_price,
-            "#FF2200",
+            "#ff0000d5",
             width=2,
         )
 

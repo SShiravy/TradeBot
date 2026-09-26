@@ -4,6 +4,7 @@ from enum import Enum
 class ErrorCode(Enum):
     # General error codes (10000-10099)
     SUCCESS = (0, "Success")
+    API_KEY_NOT_ALLOWED = (403, "This API key does not support this operation")
     NETWORK_ERROR = (10001, "Network Error")
     PARAMETER_ERROR = (10002, "Parameter Error")
     API_KEY_EMPTY = (10003, "api-key can't be empty")
@@ -47,6 +48,11 @@ class ErrorCode(Enum):
     )
     ACCOUNT_DELETED = (20014, "Account deleted")
     FUTURES_NOT_SUPPORTED = (20015, "This futures is not supported")
+    BATCH_ORDER_EXCEEDED = (20016, "Batch order exceeded the max size")
+    POSITION_MODE_LOCKED = (
+        200014,
+        "Existing positions or orders, unable to switch holding mode",
+    )
 
     # Trading related error codes (30000-30099)
     ORDER_FAILED_LIQUIDATION = (
@@ -155,12 +161,12 @@ class ErrorCode(Enum):
         self.message = message
 
     @classmethod
-    def get_by_code(cls, code: int) -> "ErrorCode":
+    def get_by_code(cls, code: int) -> "ErrorCode | None":
         """Get the corresponding error enum by error code"""
         for error in cls:
             if error.code == code:
                 return error
-        return None  # type: ignore
+        return None
 
     def __str__(self):
         return f"Error {self.code}: {self.message}"
