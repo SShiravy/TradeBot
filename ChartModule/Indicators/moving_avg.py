@@ -1,254 +1,207 @@
-import math
-from typing import Any
+import numpy as np
 from ChartModule.models import (
-    Candle,
-    MarketSide,
+    ChartData,
     CandlesSource,
+    MarketSide,
 )
-from ChartModule.Indicators.models import IndicatorBaseModel
-from ChartModule.plot import ChartPlot
+from ChartModule.Indicators.models import Indicator, IndicatorPlotter, IndicatorRule
+from ChartModule.plot import ChartPane
 import pandas as pd
 
 
-class SMA(IndicatorBaseModel):
-    """
-    Calculate Simple Moving Average (SMA) over n_bar
-    values: dict{time:sma}
-    """
+class IndicatorLinePlotter(IndicatorPlotter):
+    def __init__(
+        self, color: str = "#650087", thickness: int = 2, name: str | None = None
+    ) -> None:
+        self.color = color
+        self.thickness = thickness
+        self.name = name
 
-    def __init__(self, n_bar: int, source=CandlesSource.Close) -> None:
-        super().__init__()
-        self.n_bar = n_bar
-        self.source = source
-
-    def export_configs(self):
-        configs = super().export_configs()
-        configs.update({"n_bar": self.n_bar, "source": self.source.name})
-        return configs
-
-    def _calculate(self) -> dict:
-        if len(self.candles) < self.n_bar:
-            return {}
-        sma_values = {}
-        values = []
-        for i, candle in enumerate(self.candles):
-            values.append(self.source(candle))
-            if i < self.n_bar:
-                continue
-            sma = sum(values[i - self.n_bar + 1 :]) / (self.n_bar)
-            sma_values[candle.time] = sma
-
-        return sma_values
-
-    def _forcast(self) -> MarketSide:
-        last_candle = self.candles[-1]
-        sma = self.data.get(last_candle.timestamp)
-        if sma is None:
-            return MarketSide.NEUTRAL
-        if sma < last_candle.body_bottom:
-            return MarketSide.BULLISH
-        if sma > last_candle.body_top:
-            return MarketSide.BEARISH
-        return MarketSide.NEUTRAL
-
-    def plot(self, plot: ChartPlot):
-        plot.linear_plot(self.data.keys(), self.data.values(), f"SMA{self.n_bar}")
-
-
-class EMA(IndicatorBaseModel):
-    """
-    Calculate Exponential Moving Average (EMA) over n_bar
-    values: dict{timestamp:ema}
-    """
-
-    def __init__(self, n_bar: int, source=CandlesSource.Close) -> None:
-        super().__init__()
-        self.n_bar = n_bar
-        self.source = source
-
-    def export_configs(self):
-        configs = super().export_configs()
-        configs.update({"n_bar": self.n_bar, "source": self.source.name})
-        return configs
-
-    def _calculate(self) -> dict:
-        source_values = [self.source(c) for c in self.candles]
-        ema_values = (
-            pd.Series(source_values).ewm(span=self.n_bar, adjust=False).mean().to_numpy()
-        )
-        return {candle.timestamp: ema for candle, ema in zip(self.candles, ema_values)}
-
-    def _forcast(self) -> MarketSide:
-        last_candle = self.candles[-1]
-        ema = self.data[last_candle.timestamp]
-        if ema < last_candle.body_bottom:
-            return MarketSide.BULLISH
-        elif ema > last_candle.body_top:
-            return MarketSide.BEARISH
-        else:
-            return MarketSide.NEUTRAL
-
-    def update(self, candles: list[Candle], *args, **kwargs) -> Any:
-        if not self.last_checked_candle:
-            raise ValueError("update with None last_checked_candle!!")
-        if candles[-1].timestamp == self.last_checked_candle.timestamp:
-            return
-
-        alpha = 2 / (1 + self.n_bar)
-        old_len = len(self.candles)
-        self.candles = candles
-
-        for candle in candles[old_len:]:
-            prev_ema = self.data[self.last_checked_candle.timestamp]
-
-            current_price = self.source(candle)
-
-            ema = alpha * current_price + (1 - alpha) * prev_ema
-
-            self.data[candle.timestamp] = ema
-            self.last_checked_candle = candle
-
-    def plot(self, plot: ChartPlot):
-        plot.linear_plot(self.data.keys(), self.data.values(), f"EMA{self.n_bar}")
-
-
-class WMA(IndicatorBaseModel):
-    """
-    Calculate Weighted Moving Average (WMA) over n_bar
-    values: dict{time:wma}
-    """
-
-    def __init__(self, n_bar: int, source=CandlesSource.Close) -> None:
-        super().__init__()
-        self.n_bar = n_bar
-        self.source = source
-
-    def export_configs(self):
-        configs = super().export_configs()
-        configs.update({"n_bar": self.n_bar, "source": self.source.name})
-        return configs
-
-    def _calculate(self) -> dict:
-        if len(self.candles) < self.n_bar:
-            return {}
-
-        weights = list(range(1, self.n_bar + 1))
-        weight_sum = self.n_bar * (self.n_bar + 1) // 2
-
-        wma = {}
-
-        for i in range(len(self.candles)):
-            if i < self.n_bar - 1:
-                continue
-
-            weighted_sum = 0.0
-            for w, j in zip(weights, range(i - self.n_bar + 1, i + 1)):
-                weighted_sum += self.source(self.candles[j]) * w
-
-            wma[self.candles[i].time] = weighted_sum / weight_sum
-
-        return wma
-
-    def _forcast(self) -> MarketSide:
-        last_candle = self.candles[-1]
-        wma = self.data.get(last_candle.time)
-        if wma is None:
-            return MarketSide.NEUTRAL
-        if wma < last_candle.body_bottom:
-            return MarketSide.BULLISH
-        if wma > last_candle.body_top:
-            return MarketSide.BEARISH
-        return MarketSide.NEUTRAL
-
-    def plot(self, plot: ChartPlot):
-        plot.linear_plot(
-            self.data.keys(),
-            self.data.values(),
-            f"WMA{self.n_bar}",
-            color="#FF5733",
+    def __call__(
+        self, pane: ChartPane, indicator_data: pd.Series, *args, **kwargs
+    ) -> None:
+        pane.linear_plot(
+            indicator_data.index.to_numpy(),
+            indicator_data.to_numpy(),
+            legend=self.name,
+            color=self.color,
+            thickness=self.thickness,
         )
 
+        pane.extend_y_range(float(indicator_data.min()), float(indicator_data.max()))
 
-class HMA(IndicatorBaseModel):
-    """
-    Calculate Hull Moving Average (HMA) over n_bar
-    values: dict{time:hma}
-    """
 
-    def __init__(self, n_bar: int, source=CandlesSource.Close) -> None:
-        super().__init__()
+class WMA(Indicator):
+    def __init__(
+        self,
+        n_bar: int,
+        source: CandlesSource = CandlesSource.Close,
+        rules: list[IndicatorRule] = [],
+    ) -> None:
+        super().__init__(rules=rules)
         self.n_bar = n_bar
         self.source = source
+        self.plotter = IndicatorLinePlotter(color=self._default_color())
 
-    def export_configs(self):
+    def _default_color(self) -> str:
+        return "#2a9d8f"
+
+    def export_configs(self) -> dict:
         configs = super().export_configs()
         configs.update({"n_bar": self.n_bar, "source": self.source.name})
         return configs
 
-    def _calculate(self) -> dict:
-        if len(self.candles) < self.n_bar:
-            return {}
-        sqrt_p = int(math.sqrt(self.n_bar))
+    def _weights(self) -> np.ndarray:
+        return np.arange(1, self.n_bar + 1, dtype=np.float64)
 
-        wma_half = WMA(self.n_bar // 2, self.source).set(self.candles)
-        wma_full = WMA(self.n_bar, self.source).set(self.candles)
-
-        times = [c.time for c in self.candles]
-
-        diff = {}
-        for t in times:
-            wh = wma_half.get(t)
-            wf = wma_full.get(t)
-
-            if wh is None or wf is None:
-                continue
-            diff[t] = 2 * wh - wf
-
-        weights = list(range(1, sqrt_p + 1))
-        weight_sum = sqrt_p * (sqrt_p + 1) // 2
-
-        result = {}
-
-        for i, t in enumerate(times):
-            if i < (self.n_bar - 1) + (sqrt_p - 1):
-                result[t] = None
-                continue
-
-            weighted_sum = 0.0
-            for w, j in zip(weights, range(i - sqrt_p + 1, i + 1)):
-                val = diff[times[j]]
-                weighted_sum += val * w
-
-            result[t] = weighted_sum / weight_sum
-
+    @staticmethod
+    def _weighted_rolling(values: np.ndarray, weights: np.ndarray) -> np.ndarray:
+        n_bar = len(weights)
+        weight_sum = weights.sum()
+        result = np.full(len(values), np.nan, dtype=np.float64)
+        for i in range(n_bar - 1, len(values)):
+            window = values[i - n_bar + 1 : i + 1]
+            result[i] = np.dot(window, weights) / weight_sum
         return result
 
-    def _forcast(self) -> MarketSide:
-        last = self.candles[-1]
-        last2 = self.candles[-2]
+    def _calculate(self, chartdata: ChartData, *args, **kwargs) -> pd.Series:
+        values = self.source(chartdata)
+        result = self._weighted_rolling(values, self._weights())
+        return pd.Series(result, index=chartdata.timestamps)
 
-        last_hma = self.data.get(last.time)
-        last2_hma = self.data.get(last2.time)
-        if last_hma > last2_hma:
+    def _calculate_new(
+        self, chartdata: ChartData, start: int, *args, **kwargs
+    ) -> pd.Series:
+        weights = self._weights()
+        lookback = len(weights) - 1
+        slice_start = max(0, start - lookback)
+
+        values = self.source(chartdata)[slice_start:]
+        result = self._weighted_rolling(values, weights)
+
+        offset = start - slice_start
+        return pd.Series(result[offset:], index=chartdata.timestamps[start:])
+
+    def _merge(self, new_segment: pd.Series) -> pd.Series:
+        return self._trim_to_window(pd.concat([self.data, new_segment]))
+
+
+class SMA(WMA):
+    def _default_color(self) -> str:
+        return "#0077b6"
+
+    def _weights(self) -> np.ndarray:
+        return np.ones(self.n_bar, dtype=np.float64)
+
+
+class EMA(WMA):
+    def _default_color(self) -> str:
+        return "#e63946"
+
+    def _calculate(self, chartdata: ChartData, *args, **kwargs) -> pd.Series:
+        values = self.source(chartdata)
+        ema = pd.Series(values).ewm(span=self.n_bar, adjust=False).mean().to_numpy()
+        return pd.Series(ema, index=chartdata.timestamps)
+
+    def _calculate_new(
+        self, chartdata: ChartData, start: int, *args, **kwargs
+    ) -> pd.Series:
+        alpha = 2 / (1 + self.n_bar)
+        values = self.source(chartdata)
+
+        prev_ema = self.data.iloc[-1]
+        new_values = np.empty(len(chartdata) - start, dtype=np.float64)
+        for i, idx in enumerate(range(start, len(chartdata))):
+            prev_ema = alpha * values[idx] + (1 - alpha) * prev_ema
+            new_values[i] = prev_ema
+
+        return pd.Series(new_values, index=chartdata.timestamps[start:])
+
+    def _merge(self, new_segment: pd.Series) -> pd.Series:
+        return self._trim_to_window(pd.concat([self.data, new_segment]))
+
+
+class HMA(WMA):
+    def _default_color(self) -> str:
+        return "#f4a261"
+
+    def _calculate(self, chartdata: ChartData, *args, **kwargs) -> pd.Series:
+        values = self.source(chartdata)
+        return self._hma_from_values(values, chartdata.timestamps)
+
+    def _hma_from_values(self, values: np.ndarray, timestamps: np.ndarray) -> pd.Series:
+        half_n = max(1, self.n_bar // 2)
+        sqrt_n = max(1, int(round(self.n_bar**0.5)))
+
+        wma_half = self._weighted_rolling(
+            values, np.arange(1, half_n + 1, dtype=np.float64)
+        )
+        wma_full = self._weighted_rolling(
+            values, np.arange(1, self.n_bar + 1, dtype=np.float64)
+        )
+        raw = 2 * wma_half - wma_full
+
+        result = self._weighted_rolling(raw, np.arange(1, sqrt_n + 1, dtype=np.float64))
+        return pd.Series(result, index=timestamps)
+
+    def _calculate_new(
+        self, chartdata: ChartData, start: int, *args, **kwargs
+    ) -> pd.Series:
+        sqrt_n = max(1, int(round(self.n_bar**0.5)))
+        lookback = self.n_bar + sqrt_n  # generous margin covering both nested windows
+        slice_start = max(0, start - lookback)
+
+        values = self.source(chartdata)[slice_start:]
+        timestamps = chartdata.timestamps[slice_start:]
+        full_result = self._hma_from_values(values, timestamps)
+
+        offset = start - slice_start
+        return full_result.iloc[offset:]
+
+    def _merge(self, new_segment: pd.Series) -> pd.Series:
+        return self._trim_to_window(pd.concat([self.data, new_segment]))
+
+
+class PriceCrossRule(IndicatorRule):
+    def forecast(self, indicator: Indicator, *args, **kwargs) -> MarketSide:
+        if (
+            indicator.data is None
+            or indicator.chartdata is None
+            or len(indicator.chartdata) < 2
+        ):
+            return MarketSide.NEUTRAL
+
+        close = indicator.chartdata.close
+        line = indicator.data
+
+        last, prev = line.iloc[-1], line.iloc[-2]
+        if np.isnan(last) or np.isnan(prev):
+            return MarketSide.NEUTRAL
+
+        prev_above = close[-2] > prev
+        curr_above = close[-1] > last
+
+        if not prev_above and curr_above:
             return MarketSide.BULLISH
-        else:
+        if prev_above and not curr_above:
             return MarketSide.BEARISH
+        return MarketSide.NEUTRAL
 
-    def plot(self, plot: ChartPlot):
-        green_line_time = []
-        green_line_value = []
 
-        last_value = None
-        for time, value in self.data.items():
-            if last_value:
-                if value > last_value:
-                    green_line_time.append(time)
-                    green_line_value.append(value)
-            last_value = value
+class SlopeRule(IndicatorRule):
+    def __init__(self, lookback: int = 3) -> None:
+        self.lookback = lookback
 
-        plot.linear_plot(
-            self.data.keys(), self.data.values(), color="#F10000", thickness=3
-        )
-        plot.linear_plot(
-            green_line_time, green_line_value, color="#0BAC00", thickness=3
-        )
+    def forecast(self, indicator: Indicator, *args, **kwargs) -> MarketSide:
+        if indicator.data is None or len(indicator.data) <= self.lookback:
+            return MarketSide.NEUTRAL
+
+        recent = indicator.data.iloc[-self.lookback - 1 :]
+        if recent.isna().any():
+            return MarketSide.NEUTRAL
+
+        if recent.iloc[-1] > recent.iloc[0]:
+            return MarketSide.BULLISH
+        if recent.iloc[-1] < recent.iloc[0]:
+            return MarketSide.BEARISH
+        return MarketSide.NEUTRAL

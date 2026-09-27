@@ -1,17 +1,29 @@
-from ChartModule.Indicators.models import IndicatorBaseModel
-from ChartModule.models import Candle
-from ChartModule.plot import ChartPlot
-from typing import Any
+import numpy as np
+
+from ChartModule.Indicators.models import Indicator
+from ChartModule.Indicators.moving_avg import IndicatorLinePlotter
+from ChartModule.models import ChartData
 
 
-class ATR(IndicatorBaseModel):
-    def __init__(self, n_bar: int = 14, max_stored: int = 2000) -> None:
+class ATR(Indicator):
+    """
+    Average True Range (Wilder's smoothing).
+    self.data: np.ndarray, same length as chartdata, aligned by index
+    (first n_bar - 1 entries are NaN -- undefined until enough history
+    exists). data[i] is the average through bar i, current bar included.
+    """
+
+    def __init__(self, n_bar: int = 14) -> None:
         super().__init__()
-        self.data: dict[int, float]
         self.n_bar = n_bar
-        self.max_stored = max_stored
-        self.last_close: float
-        self.avg_tr: float
+        self.plotter = IndicatorLinePlotter(color="#8d6a9f")
+
+        # Wilder recurrence state, needed for incremental updates
+        self._avg_tr: float = 0.0
+        self._last_close: float = 0.0
+        # the seed average only exists once n_bar bars have been seen; until
+        # then there is no state to resume from and an update must recompute
+        self._warm: bool = False
 
     def export_configs(self) -> dict:
         configs = super().export_configs()
@@ -19,79 +31,74 @@ class ATR(IndicatorBaseModel):
         return configs
 
     @staticmethod
-    def _true_range(candle: Candle, prev_close: float | None) -> float:
-        if prev_close is None:
-            return candle.high - candle.low
-        return max(
-            candle.high - candle.low,
-            abs(candle.high - prev_close),
-            abs(candle.low - prev_close),
-        )
+    def _true_ranges(chartdata: ChartData) -> np.ndarray:
+        high, low, close = chartdata.high, chartdata.low, chartdata.close
+        prev_close = np.empty_like(close)
+        prev_close[0] = np.nan
+        prev_close[1:] = close[:-1]
 
-    def _calculate(self) -> dict:
-        if len(self.candles) < self.n_bar + 1:
-            return {}
+        range_hl = high - low
+        range_hc = np.abs(high - prev_close)
+        range_lc = np.abs(low - prev_close)
 
-        true_ranges = []
-        prev_close = None
-        for candle in self.candles:
-            true_ranges.append(self._true_range(candle, prev_close))
-            prev_close = candle.close
+        tr = np.maximum(range_hl, np.maximum(range_hc, range_lc))
+        tr[0] = range_hl[0]  # no prior close -> plain high-low
+        return tr
 
-        values = {}
+    def _calculate(self, chartdata: ChartData, *args, **kwargs) -> np.ndarray:
+        n = len(chartdata)
+        result = np.full(n, np.nan, dtype=np.float64)
 
-        # Initial Wilder average
-        self.avg_tr = sum(true_ranges[: self.n_bar]) / self.n_bar
-        values[self.candles[self.n_bar].timestamp] = self.avg_tr
+        if n < self.n_bar:
+            return result
 
-        # Continue incrementally
-        for i in range(self.n_bar, len(true_ranges)):
-            self.avg_tr = (self.avg_tr * (self.n_bar - 1) + true_ranges[i]) / self.n_bar
-            values[self.candles[i].timestamp] = self.avg_tr
+        true_ranges = self._true_ranges(chartdata)
 
-        self.last_close = self.candles[-1].close
+        # seed sits at n_bar - 1: it is the average OF the first n_bar true
+        # ranges, so it is the average THROUGH bar n_bar - 1. Each later bar
+        # then folds in its own true range -- same convention _calculate_new
+        # resumes with, so a series built in one pass and one built
+        # incrementally agree bar for bar.
+        avg_tr = true_ranges[: self.n_bar].mean()
+        result[self.n_bar - 1] = avg_tr
 
-        self.data = values
-        self._prune()
+        for i in range(self.n_bar, n):
+            avg_tr = (avg_tr * (self.n_bar - 1) + true_ranges[i]) / self.n_bar
+            result[i] = avg_tr
 
-        return self.data
+        self._avg_tr = avg_tr
+        self._last_close = float(chartdata.close[-1])
+        self._warm = True
+        return result
 
-    def update(self, candles: list[Candle], *args, **kwargs) -> Any:
-        if self.last_checked_candle is None:
-            raise ValueError("last_checked_candle is None")
+    def _calculate_new(
+        self, chartdata: ChartData, start: int, *args, **kwargs
+    ) -> np.ndarray:
+        high, low, close = chartdata.high, chartdata.low, chartdata.close
+        n_new = len(chartdata) - start
+        new_values = np.empty(n_new, dtype=np.float64)
 
-        start_index = self.find_new_candle_index(candles)
+        avg_tr, prev_close = self._avg_tr, self._last_close
 
-        if start_index >= len(candles):
-            return
+        for i, idx in enumerate(range(start, len(chartdata))):
+            tr = max(
+                high[idx] - low[idx],
+                abs(high[idx] - prev_close),
+                abs(low[idx] - prev_close),
+            )
+            avg_tr = (avg_tr * (self.n_bar - 1) + tr) / self.n_bar
+            new_values[i] = avg_tr
+            prev_close = close[idx]
 
-        for candle in candles[start_index:]:
-            tr = self._true_range(candle, self.last_close)
+        self._avg_tr, self._last_close = avg_tr, prev_close
+        return new_values
 
-            self.avg_tr = (self.avg_tr * (self.n_bar - 1) + tr) / self.n_bar
+    def _merge(self, new_segment: np.ndarray) -> np.ndarray:
+        return self._trim_to_window(np.concatenate([self.data, new_segment]))
 
-            self.data[candle.timestamp] = self.avg_tr
-            self.last_close = candle.close
-
-        self.candles = candles
-        self.last_checked_candle = candles[-1]
-        self._prune()
-
-    def _prune(self):
-        # `self.data` is keyed by real candle timestamps -- stable across
-        # window shifts, unlike a position index -- but every update()
-        # call only ever ADDS a key and never removes an old one. Nothing
-        # downstream ever needs an ATR value for a candle that fell out of
-        # the fetched window long ago (SRZones' median-ATR buffer keeps
-        # its own separately-capped rolling window), so left unchecked
-        # this dict grows forever over a long-running bot. Keep only the
-        # most recent `max_stored` entries (dicts preserve insertion
-        # order, so the oldest keys are simply the first ones).
-        excess = len(self.data) - self.max_stored
-        if excess <= 0:
-            return
-        for key in list(self.data.keys())[:excess]:
-            del self.data[key]
-
-    def plot(self, plot: ChartPlot, ax=None):
-        plot.linear_plot(self.data.keys(), self.data.values(), legend="ATR", ax=ax)
+    def update(self, chartdata: ChartData, *args, **kwargs) -> np.ndarray:
+        if not self._warm:
+            # nothing was ever seeded (the first call had fewer than n_bar
+            # bars), so there is no recurrence state to carry forward
+            return self._calculate(chartdata, *args, **kwargs)
+        return super().update(chartdata, *args, **kwargs)

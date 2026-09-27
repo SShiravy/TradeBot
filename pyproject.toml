@@ -1,9 +1,0 @@
-[tool.ruff]
-extend-exclude = [
-    "test.py",
-    "test_*.py",
-    "local_backtest.py",
-    "LocalBackTester/"
-]
-[tool.ruff.lint]
-ignore = ["E402"]

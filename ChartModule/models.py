@@ -1,10 +1,10 @@
 from dataclasses import dataclass, asdict, field
-from datetime import datetime, timedelta
-from typing import Literal
+from typing import Iterator, Literal, overload
 from enum import Enum
 import pandas as pd
 import numpy as np
-from copy import copy
+from copy import replace
+from Settings.timing import TimeHandler
 
 
 class TimeFrame(Enum):
@@ -54,10 +54,6 @@ class TimeFrame(Enum):
         }
         return mapping[self]
 
-    @property
-    def time_delta(self) -> timedelta:
-        return timedelta(minutes=self.minutes)
-
     def __str__(self):
         return self.value
 
@@ -72,7 +68,7 @@ class MarketSide(Enum):
         return {
             MarketSide.BEARISH: -1,
             MarketSide.BULLISH: 1,
-            MarketSide.NEUTRAL: 0,
+            MarketSide.BEARISH: 0,
         }[self]
 
     def __add__(self, other: "MarketSide") -> "MarketSide":
@@ -101,7 +97,7 @@ class MarketSide(Enum):
 @dataclass(slots=True, frozen=True)
 class TickPrice:
     price: float
-    time: datetime
+    timestamp: int
 
     def __str__(self) -> str:
         return f"{asdict(self)}"
@@ -126,9 +122,8 @@ class Candle:
     high: float
     low: float
     volume: float
-    time: datetime
     timestamp: int
-    timeframe: TimeFrame | str | None = None
+    timeframe: TimeFrame
 
     @property
     def side(self):
@@ -150,50 +145,31 @@ class Candle:
         return f"{asdict(self)}"
 
 
-class CandlesSource(Enum):
-    High = "high"
-    Low = "low"
-    Top = "top"
-    Bottom = "bottom"
-    Close = "close"
-    Open = "open"
-    Volume = "volume"
-
-    def __call__(self, candle: Candle) -> float:
-        match self:
-            case CandlesSource.High:
-                return candle.high
-            case CandlesSource.Low:
-                return candle.low
-            case CandlesSource.Top:
-                return candle.body_top
-            case CandlesSource.Bottom:
-                return candle.body_bottom
-            case CandlesSource.Close:
-                return candle.close
-            case CandlesSource.Open:
-                return candle.open
-            case CandlesSource.Volume:
-                return candle.volume
+class ChartType(Enum):
+    Simple = ""
+    Heikinashi = "Heikinashi"
 
 
 @dataclass(slots=True)
 class Chart:
     symbol: str
     timeframe: TimeFrame
+    chart_type: ChartType = field(default=ChartType.Simple)
     precision: int = field(default=3, init=False)
     pip_factor: float = field(default=1, init=False)
-    contract_size: float | int = field(default=100000, init=False)
+    contract_size: float | int = field(default=1, init=False)
 
     def __str__(self) -> str:
-        return f"{self.symbol} {self.timeframe.value}"
+        return f"{self.symbol}_{self.timeframe.value}{self.chart_type.value}"
 
     def export_config(self) -> dict:
         return {
             "symbol": self.symbol,
             "timeframe": self.timeframe.value,
-            "pip_factor": self.pip_factor,
             "precision": self.precision,
+            "chart_type": self.chart_type.name,
+            "pip_factor": self.pip_factor,
+            "contract_size": self.contract_size,
         }
 
 
@@ -205,129 +181,125 @@ class Signal:
     source: str
 
     def __str__(self) -> str:
-        return f"{self.chart} {self.side} at {self.candle.time} from {self.source}"
+        return f"{self.chart} {self.side} at {TimeHandler.format(self.candle.timestamp)} from {self.source}"
 
 
 @dataclass(slots=True)
 class ChartData:
     chart: Chart
-    candles: list[Candle] = field(default_factory=list)
+    open: np.ndarray = field(default_factory=lambda: np.array([]))
+    high: np.ndarray = field(default_factory=lambda: np.array([]))
+    low: np.ndarray = field(default_factory=lambda: np.array([]))
+    close: np.ndarray = field(default_factory=lambda: np.array([]))
+    volume: np.ndarray = field(default_factory=lambda: np.array([]))
+    timestamps: np.ndarray = field(default_factory=lambda: np.array([], dtype=np.int64))
+    indices: np.ndarray = field(init=False)
 
     def __len__(self):
-        return len(self.candles)
+        return self.timestamps.shape[0]
 
-    def __iter__(self):
-        return iter(self.candles)
+    def candle(self, i: int) -> Candle:
+        # single-candle construction, O(1), no intermediate allocations
+        ts = int(self.timestamps[i])
+        return Candle(
+            open=float(self.open[i]),
+            high=float(self.high[i]),
+            low=float(self.low[i]),
+            close=float(self.close[i]),
+            volume=float(self.volume[i]),
+            timestamp=ts,
+            timeframe=self.chart.timeframe,
+        )
 
-    def __getitem__(self, index):
-        return self.candles[index]
+    @overload
+    def __getitem__(self, key: int) -> Candle: ...
+    @overload
+    def __getitem__(self, key: slice) -> Iterator[Candle]: ...
+
+    def __getitem__(self, key: int | slice) -> "Candle | Iterator[Candle]":
+        if isinstance(key, slice):
+            # lazy generator, only builds candles as they're consumed
+            indices = range(*key.indices(len(self)))
+            return (self.candle(i) for i in indices)
+        if isinstance(key, int):
+            if key < 0:
+                key += len(self)
+            return self.candle(key)
+        raise TypeError(f"Invalid index type: {type(key)}")
+
+    def __iter__(self) -> Iterator[Candle]:
+        for i in self.indices:
+            yield self.candle(i)
 
     def __str__(self):
-        return f"{self.chart} with {len(self.candles)} candles"
+        return f"{self.chart} with {len(self)} candles"
 
-    def index(self, value: Candle):
-        left = 0
-        right = len(self.candles) - 1
-        candle_time = value.time
+    def timestamp_index(self, timestamp: int) -> int:
+        idx = np.searchsorted(self.timestamps, timestamp)
+        if idx >= len(self):
+            raise ValueError(
+                f"No timestamp >= {timestamp} found in chart data \n{self.timestamps[-5:]}|{len(self)=}"
+            )
+        return int(idx)
 
-        while left <= right:
-            mid = (left + right) // 2
-            mid_time = self.candles[mid].time
-            if mid_time == candle_time:
-                return mid
-            if mid_time < candle_time:
-                left = mid + 1
-            else:
-                right = mid - 1
+    def candle_index(self, candle: Candle) -> int:
+        idx = self.timestamp_index(candle.timestamp)
+        if (
+            self.open[idx] != candle.open
+            or self.high[idx] != candle.high
+            or self.low[idx] != candle.low
+            or self.close[idx] != candle.close
+        ):
+            raise ValueError(
+                f"Candle at timestamp {candle.timestamp} does not match stored data"
+            )
+        return idx
 
-        return self.candles.index(value)
+    @staticmethod
+    def _compute_heikinashi(
+        open_: np.ndarray, high: np.ndarray, low: np.ndarray, close: np.ndarray
+    ) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+        n = open_.shape[0]
+        if n == 0:
+            return open_.copy(), high.copy(), low.copy(), close.copy()
+
+        ha_close = (open_ + high + low + close) / 4.0
+        ha_open = np.empty(n, dtype=np.float64)
+        ha_open[0] = (open_[0] + close[0]) / 2.0
+        for i in range(1, n):
+            ha_open[i] = (ha_open[i - 1] + ha_close[i - 1]) / 2.0
+
+        ha_high = np.maximum.reduce([high, ha_open, ha_close])
+        ha_low = np.minimum.reduce([low, ha_open, ha_close])
+        return ha_open, ha_high, ha_low, ha_close
 
     @classmethod
-    def heikinashi_candles(cls, candles: list[Candle]) -> list[Candle]:
-        ha_candles = []
-
-        # First HA candle
-        first_candle = candles[0]
-        ha_close = (
-            first_candle.open
-            + first_candle.high
-            + first_candle.low
-            + first_candle.close
-        ) / 4
-        ha_open = (first_candle.open + first_candle.close) / 2
-        ha_high = first_candle.high
-        ha_low = first_candle.low
-
-        ha_candles.append(
-            Candle(
-                ha_open,
-                ha_close,
-                ha_high,
-                ha_low,
-                first_candle.volume,
-                first_candle.time,
-                first_candle.timestamp,
-                first_candle.timeframe,
-            )
+    def generate_heikinashi(cls, source: "ChartData") -> "ChartData":
+        ha_open, ha_high, ha_low, ha_close = cls._compute_heikinashi(
+            source.open, source.high, source.low, source.close
         )
-
-        # Rest of HA candles
-        for candle in candles[1:]:
-            prev_ha = ha_candles[-1]
-            digits = len(str(candle.high).split(".")[-1])
-
-            ha_close = round(
-                (candle.open + candle.high + candle.low + candle.close) / 4, digits
-            )
-            ha_open = round((prev_ha.open + prev_ha.close) / 2, digits)
-            ha_high = max(candle.high, ha_open, ha_close)
-            ha_low = min(candle.low, ha_open, ha_close)
-
-            ha_candles.append(
-                Candle(
-                    ha_open,
-                    ha_close,
-                    ha_high,
-                    ha_low,
-                    candle.volume,
-                    candle.time,
-                    candle.timestamp,
-                    candle.timeframe,
-                )
-            )
-
-        return ha_candles
-
-    def give_heikingashi_chartdata(self):
-        return ChartData(self.chart, self.heikinashi_candles(self.candles))
+        ha_chart = replace(source.chart, chart_type=ChartType.Heikinashi)
+        return cls(
+            chart=ha_chart,
+            open=ha_open,
+            high=ha_high,
+            low=ha_low,
+            close=ha_close,
+            volume=source.volume.copy(),
+            timestamps=source.timestamps.copy(),
+        )
 
     def generate_dataframe(self) -> pd.DataFrame:
-        open_list = []
-        high_list = []
-        low_list = []
-        close_list = []
-        volume_list = []
-        time_list = []
-
-        for candle in self.candles:
-            open_list.append(candle.open)
-            high_list.append(candle.high)
-            low_list.append(candle.low)
-            close_list.append(candle.close)
-            volume_list.append(candle.volume)
-            time_list.append(candle.timestamp)
-
-        df = pd.DataFrame(
+        return pd.DataFrame(
             {
-                "open": open_list,
-                "high": high_list,
-                "low": low_list,
-                "close": close_list,
-                "volume": volume_list,
+                "open": self.open,
+                "high": self.high,
+                "low": self.low,
+                "close": self.close,
+                "volume": self.volume,
             },
-            index=time_list,
+            index=pd.to_datetime(self.timestamps, unit="s", utc=True),
         )
-        return df
 
     @classmethod
     def generate_crosspair(
@@ -336,68 +308,114 @@ class ChartData:
         second_chartdata: "ChartData",
         crosspair_chart: Chart,
     ):
-        all_candles_list = []
-        first_index = 0
-        second_index = 0
-        n_bar = max(len(first_chartdata), len(second_chartdata))
-        for _ in range(n_bar):
-            if first_index > len(first_chartdata):
-                break
-            if second_index > len(second_chartdata):
-                break
-            first_candle = first_chartdata.candles[first_index]
-            second_candle = second_chartdata.candles[second_index]
-            if first_candle.time < second_candle.time:
-                first_index += 1
-                continue
-            if second_candle.time < first_candle.time:
-                second_index += 1
-                continue
-
-            all_candles_list.append(
-                Candle(
-                    first_candle.open / second_candle.open,
-                    first_candle.close / second_candle.close,
-                    first_candle.high / second_candle.high,
-                    first_candle.low / second_candle.low,
-                    min(first_candle.volume, second_candle.volume),
-                    first_candle.time,
-                    first_candle.timestamp,
-                    timeframe=crosspair_chart.timeframe,
-                )
+        if first_chartdata.chart.timeframe != second_chartdata.chart.timeframe:
+            raise ValueError(
+                "Both chart data must have the same timeframe to generate a crosspair."
             )
-            first_index += 1
-            second_index += 1
+        return cls(
+            crosspair_chart,
+            first_chartdata.open / second_chartdata.open,
+            first_chartdata.high / second_chartdata.high,
+            first_chartdata.low / second_chartdata.low,
+            first_chartdata.close / second_chartdata.close,
+            np.minimum(first_chartdata.volume, second_chartdata.volume),
+            first_chartdata.timestamps,
+        )
 
-        crosspair_candlestick = ChartData(crosspair_chart, all_candles_list)
-        return crosspair_candlestick
+    def subdata(
+        self, start_index: int = 0, end_index: int = -1, copy: bool = True
+    ) -> "ChartData":
+        n = len(self)
+        if end_index < 0:
+            end_index = len(self) + end_index + 1
+        if end_index < 0:
+            start_index = len(self) + start_index + 1
+        s = slice(start_index, end_index).indices(n)
+        s = slice(*s)
 
-    def give_sub_chartdata(self, sub_candles):
-        chart = copy(self.chart)
-        return ChartData(chart, sub_candles)
+        if copy:
+            return ChartData(
+                chart=self.chart,
+                open=self.open[s].copy(),
+                high=self.high[s].copy(),
+                low=self.low[s].copy(),
+                close=self.close[s].copy(),
+                volume=self.volume[s].copy(),
+                timestamps=self.timestamps[s].copy(),
+            )
 
-    def find_candle_by_time(self, time: datetime | int) -> None | Candle:
-        if isinstance(time, int):  # time is a timestamp
-            timestamp = time
-        else:
-            timestamp = datetime.timestamp(time)
+        return ChartData(
+            chart=self.chart,
+            open=self.open[s],
+            high=self.high[s],
+            low=self.low[s],
+            close=self.close[s],
+            volume=self.volume[s],
+            timestamps=self.timestamps[s],
+        )
 
-        # binary search
-        if (
-            self.candles[-1].timestamp < timestamp
-            or self.candles[0].timestamp > timestamp
-        ):
-            return None
+    def __post_init__(self):
+        self.timestamps = TimeHandler.validate_timestamps(
+            self.timestamps, auto_fix=True
+        )
+        if self.chart.chart_type is ChartType.Heikinashi:
+            ha_open, ha_high, ha_low, ha_close = self._compute_heikinashi(
+                self.open, self.high, self.low, self.close
+            )
+            self.open, self.high, self.low, self.close = (
+                ha_open,
+                ha_high,
+                ha_low,
+                ha_close,
+            )
+        self.indices = np.arange(len(self), dtype=np.int64)
 
-        sub_candles = copy(self.candles)
-        while True:
-            i = round(len(sub_candles) / 2)
-            candle = sub_candles[i - 1]
-            if candle.timestamp < timestamp:
-                sub_candles = sub_candles[i:]
-            elif candle.timestamp > timestamp:
-                sub_candles = sub_candles[: i - 1]
-            else:  # candle.timestamp == timestamp:
-                return candle
-            if len(sub_candles) <= 1:
-                return sub_candles[0]
+    # TODO: cache these methods to avoid repeated calculations
+    @property
+    def body_top(self) -> np.ndarray:
+        return np.maximum(self.open, self.close)
+
+    @property
+    def body_bottom(self) -> np.ndarray:
+        return np.minimum(self.open, self.close)
+
+    @property
+    def body_length(self) -> np.ndarray:
+        return self.body_top - self.body_bottom
+
+    # TODO: add an update method to update the chartdata with new candles
+
+
+class CandlesSource(Enum):
+    High = "high"
+    Low = "low"
+    Top = "top"
+    Bottom = "bottom"
+    Close = "close"
+    Open = "open"
+    Volume = "volume"
+    BodyLength = "body_length"
+
+    @overload
+    def __call__(self, data: Candle) -> float: ...
+    @overload
+    def __call__(self, data: ChartData) -> np.ndarray: ...
+
+    def __call__(self, data: ChartData | Candle) -> np.ndarray | float:
+        match self:
+            case CandlesSource.High:
+                return data.high
+            case CandlesSource.Low:
+                return data.low
+            case CandlesSource.Top:
+                return data.body_top
+            case CandlesSource.Bottom:
+                return data.body_bottom
+            case CandlesSource.Close:
+                return data.close
+            case CandlesSource.Open:
+                return data.open
+            case CandlesSource.Volume:
+                return data.volume
+            case CandlesSource.BodyLength:
+                return data.body_length
