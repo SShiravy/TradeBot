@@ -45,9 +45,7 @@ class PnLReportGenerator:
         )
         report.pnl_dollar = pnl_dollar
         report.volume = volume
-        # report.pnl_percent =
-        # report.pnl_pips =
-        return report
+        return PnLReportGenerator.fill_ratios(report, position)
 
     @staticmethod
     def from_position(position: Position) -> PnLReport:
@@ -135,11 +133,92 @@ class PnLReportGenerator:
         return report
 
     @staticmethod
+    def carried_reports(position: Position) -> list[PnLReport]:
+        """
+        The reports the events of position already carry. The exchange agent
+        fills them from the real deals, so they know the commission, the swap
+        and the fees the price based calculation can not see.
+        """
+        carried = []
+        for trigger in [*position.steps, position.stoploss]:
+            report = getattr(trigger.event, "pnl_report", None)
+            if report is not None:
+                carried.append(report)
+        return carried
+
+    @staticmethod
+    def fill_ratios(report: PnLReport, position: Position) -> PnLReport:
+        """
+        Derive percent and pips out of the dollar pnl, the two the reports
+        carried by the events leave at zero.
+        """
+        closed = report.volume * position.chart.contract_size
+        if closed:
+            report.pnl_percent = (
+                report.pnl_dollar
+                / (closed * position.entry_price)
+                * 100
+                * position.leverage
+            )
+            report.pnl_pips = report.pnl_dollar / (closed * position.chart.pip_factor)
+        return report
+
+    @staticmethod
+    def from_events(position: Position) -> PnLReport | None:
+        """
+        One report for position out of what its events carry, None when they
+        carry nothing. The carried parts are closes of a single position, so
+        they are summed and counted as that one position, not as one each.
+        """
+        carried = PnLReportGenerator.carried_reports(position)
+        if not carried:
+            return None
+
+        # a fresh report to add onto, the carried ones belong to the events
+        report = PnLReport(
+            chart=position.chart,
+            side=position.side,
+            source=position.source,
+            first_time=position.defined_timestamp,
+            last_time=position.closed_timestamp or position.last_check_timestamp,
+        )
+        for part in carried:
+            report += part
+
+        report.first_time = position.defined_timestamp
+        report.last_time = position.closed_timestamp or position.last_check_timestamp
+        report.total_positions = 1
+        report.wins = report.flats = report.loses = 0
+        if report.pnl_dollar > 0:
+            report.wins = 1
+        elif report.pnl_dollar < 0:
+            report.loses = 1
+        else:
+            report.flats = 1
+        report.triggered_steps = {
+            index: 1
+            for index, step in enumerate(position.steps)
+            if isinstance(step.event, TakeProfitHit) and step.triggered_timestamp
+        }
+        report.overall_report = False
+        return PnLReportGenerator.fill_ratios(report, position)
+
+    @staticmethod
+    def report_of(position: Position) -> PnLReport:
+        """
+        The report of position: the one its events carry when they do, the
+        price based calculation otherwise.
+        """
+        return PnLReportGenerator.from_events(
+            position
+        ) or PnLReportGenerator.from_position(position)
+
+    @staticmethod
     def identifier_reports(all_positions: list[Position]) -> list[PnLReport]:
         """Return one merged report per unique (chart, side, source) identifier."""
         reports_dict: dict[str, PnLReport] = {}
         for pos in all_positions:
-            report = PnLReportGenerator.from_position(pos)
+            report = PnLReportGenerator.report_of(pos)
             if report.identifier not in reports_dict:
                 reports_dict[report.identifier] = report
             else:
@@ -154,9 +233,9 @@ class PnLReportGenerator:
         )
         win_in_a_row = 0
         lose_in_a_row = 0
-        overall_report = PnLReportGenerator.from_position(ordered_positions[0])
+        overall_report = PnLReportGenerator.report_of(ordered_positions[0])
         for pos in ordered_positions[1:]:
-            report = PnLReportGenerator.from_position(pos)
+            report = PnLReportGenerator.report_of(pos)
             if report.pnl_dollar > 0:
                 win_in_a_row += 1
                 lose_in_a_row = 0

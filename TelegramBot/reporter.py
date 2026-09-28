@@ -36,7 +36,7 @@ class TelegramMsgFormater(ReportMsgFormater):
                     if isinstance(trigger.event, TakeProfitHit)
                     else trigger.event.name
                 )
-                tgr_msg = f"   {i}-{name} {trigger.price}"
+                tgr_msg = f"   {i+1}-{name} {trigger.price}"
                 if trigger.volume:
                     tgr_msg += f"|{trigger.volume}💰"
                 msg_list.append(tgr_msg)
@@ -80,14 +80,14 @@ class TelegramMsgFormater(ReportMsgFormater):
         if position.steps[-1].triggered_timestamp:
             return self.position_closed(position, pnl_report)
         triggers_msg = []
-        for trigger in position.steps:
+        for i,trigger in enumerate(position.steps):
             name = (
                 "TakeProfit"
                 if isinstance(trigger.event, TakeProfitHit)
                 else trigger.event.name
             )
             if trigger.triggered_timestamp:
-                msg = f"🎯 {name} {trigger.price}"
+                msg = f"🎯 {i+1}-{name} {trigger.price}"
                 if trigger.volume:
                     msg += f"|{trigger.volume}💰"
                 triggers_msg.append(msg)

@@ -525,7 +525,7 @@ class PnLReport:
 
     @property
     def identifier(self) -> str:
-        return f"{self.source}_{self.side}_{self.chart}"
+        return f"{self.source}_{self.chart}"
 
     @property
     def duration(self):

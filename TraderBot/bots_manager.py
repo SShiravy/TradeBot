@@ -14,7 +14,7 @@ from pathlib import Path
 from TraderBot.Commands.db_commands import DatabaseCommand
 from TraderBot.events import Event
 from TraderBot.PositionHandlers.trades_pnl import PnLReportGenerator
-from TraderBot.models import Command, ReporterBot
+from TraderBot.models import Command, PnLReport, ReporterBot
 from Settings.timing import TimeHandler
 from TraderBot.trader_bot import TraderBot
 from Settings import settings
@@ -147,6 +147,19 @@ class BotsManager:
         )
         return next_report - now
 
+    def _record_overall_report(self, bot: TraderBot, report: PnLReport) -> bool:
+        if self.db_engin is None:
+            return True
+
+        try:
+            row = db.store_pnl_report(report, bot, self.db_engin)
+        except Exception as e:
+            logging.exception(f"Failed to record the report of {bot.identifier}: {e}")
+            return False
+
+        logging.info(f"overall report of {bot.identifier} recorded: {row}")
+        return True
+
     @staticmethod
     def _log_files() -> list[Path]:
         """Every file the root logger writes to, its rotated backups included."""
@@ -240,8 +253,13 @@ class BotsManager:
                 pnl = PnLReportGenerator.overall_report(
                     bot.trades_manager.closed_positions
                 )
+                # the row this bot keeps as its overall one, whatever it traded
+                pnl.overall_report = True
                 per_bot_reports.append(pnl)
                 await self.reporter.send_msg(f"📈 {bot.identifier}:\n{pnl}")
+                if self._record_overall_report(bot, pnl):
+                    # reported and recorded, the new day starts on an empty list
+                    bot.trades_manager.flush()
 
             await self.reporter.send_msg(
                 f"Overall of {self.name}:\n{sum(per_bot_reports)}"

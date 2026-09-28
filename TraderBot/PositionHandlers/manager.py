@@ -1,4 +1,3 @@
-from Settings import TimeHandler
 from ChartModule import Signal, MarketSide, Chart, TimeFrame
 from TraderBot import Position, PositionSide, ExchangeAgent
 from TraderBot.Commands.report_commands import ReportCommandContext
@@ -86,6 +85,12 @@ class TradesManager:
         self.agent_check = agent_check
         self.current_positions: list[Position] = []
         self.closed_positions: list[Position] = []
+
+    def flush(self) -> list[Position]:
+        flushed = self.closed_positions
+        self.closed_positions = []
+        logger.info(f"{len(flushed)} closed positions flushed")
+        return flushed
 
     def export_config(self) -> dict:
         return {
