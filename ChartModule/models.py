@@ -328,7 +328,7 @@ class ChartData:
         n = len(self)
         if end_index < 0:
             end_index = len(self) + end_index + 1
-        if end_index < 0:
+        if start_index < 0:
             start_index = len(self) + start_index + 1
         s = slice(start_index, end_index).indices(n)
         s = slice(*s)

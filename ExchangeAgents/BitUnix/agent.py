@@ -307,7 +307,7 @@ class BitUnixAgent(ExchangeAgent):
             )
             final_report += report
             trigger.triggered_timestamp = now
-            if isinstance(trigger.event,TakeProfitHit):
+            if isinstance(trigger.event, TakeProfitHit):
                 trigger.event.pnl_report = report
             position.stoploss.volume = round(
                 position.stoploss.volume - trigger.volume, 8
@@ -323,7 +323,6 @@ class BitUnixAgent(ExchangeAgent):
             self.reported_pnl.pop(position.exchange_id, None)
         logger.info(f"{position.exchange_id=}|{len(hits)=}|{sl_volume=}|{new_pnl=}")
         return final_report
-
 
     def partial_close(self, position: Position, volume) -> float | None:
         pass

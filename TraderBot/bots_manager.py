@@ -140,8 +140,7 @@ class BotsManager:
 
     def _daily_report_sleeptime(self):
         now = TimeHandler.to_datetime(TimeHandler.now())
-        # next_report = now.replace(hour=20, minute=self.report_seconds_shift)
-        next_report = now.replace(hour=23, minute=40)
+        next_report = now.replace(hour=20, minute=self.report_seconds_shift)
         next_report = (
             next_report if next_report > now else next_report + timedelta(days=1)
         )

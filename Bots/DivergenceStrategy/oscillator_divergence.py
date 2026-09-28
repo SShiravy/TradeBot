@@ -33,8 +33,8 @@ class OscillatorDivergence(Strategy):
         min_step: int,
         max_step: int,
         indicators: list[Indicator] = [],
-        long_support_conditions=SupportCandlesPattern.RAW,
-        short_support_conditions=SupportCandlesPattern.RAW,
+        long_support_conditions=SupportCandlesPattern.RED_GREEN,
+        short_support_conditions=SupportCandlesPattern.GREEN_RED,
         name="OscillatorDivergence",
         inverse_diver_long: bool = True,
         inverse_diver_short: bool = True,
@@ -117,8 +117,12 @@ class OscillatorDivergence(Strategy):
                 self.max_step,
                 support_conditions=self.long_support_conditions,
             ),
-            chartdata,
-            oscillator_data,
+            chartdata.subdata(end_index=-2)
+            if self.long_support_conditions is not SupportCandlesPattern.RAW
+            else chartdata,
+            oscillator_data[:-1]
+            if self.long_support_conditions is not SupportCandlesPattern.RAW
+            else oscillator_data,
             self.inverse_diver_long,
             self.long_other_chart_line_validation,
         )
@@ -145,8 +149,12 @@ class OscillatorDivergence(Strategy):
                 self.max_step,
                 support_conditions=self.short_support_conditions,
             ),
-            chartdata,
-            oscillator_data,
+            chartdata.subdata(end_index=-2)
+            if self.short_support_conditions is not SupportCandlesPattern.RAW
+            else chartdata,
+            oscillator_data[:-1]
+            if self.short_support_conditions is not SupportCandlesPattern.RAW
+            else oscillator_data,
             not self.inverse_diver_short,
             self.short_other_chart_line_validation,
         )

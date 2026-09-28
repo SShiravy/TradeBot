@@ -54,9 +54,7 @@ class SteppingGenerator(PositionGenerator):
         self, entry_price: float, side: PositionSide, chart: Chart
     ) -> Trigger:
         return Trigger(
-            price=round(
-                self.stoploss_price(entry_price, side, chart), chart.precision
-            ),
+            price=round(self.stoploss_price(entry_price, side, chart), chart.precision),
             event=StopLossHit(),
             volume=self.initial_volume,
             cross_direction=side.factor * -1,
@@ -193,7 +191,7 @@ class CryptoStepping(SteppingGenerator):
         leverage: int = 1,
         sl_percent: float = 1,
         tp_ratio: list[float] = [1, 2, 3],
-        tp_ratio_volumes: list[float] = [1,1,1],
+        tp_ratio_volumes: list[float] = [1, 1, 1],
         tp_percent: list[float] = [],
         tp_percent_volumes: list[float] = [],
         trail_stop: bool = True,

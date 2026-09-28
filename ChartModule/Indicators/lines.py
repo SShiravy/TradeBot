@@ -258,7 +258,7 @@ class LineFinder(Indicator):
 
         valid_step = None
         if self.support_conditions is not SupportCandlesPattern.RAW:
-            valid_step = lambda i: self.support_conditions.check(chartdata, i)
+            valid_step = lambda i: self.support_conditions.check(chartdata, i + 1)
 
         yield from self.iter_value_lines(
             anchor_values=anchor_values,

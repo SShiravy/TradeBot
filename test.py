@@ -25,15 +25,20 @@ async def test_positions():
     from ChartModule.plot import SingleChartFigure
     from TraderBot.events import NewPosition
     from BackTest import BacktestReporter
-    from TraderBot.PositionHandlers.PositionGenerators import ForexStepping,CryptoStepping
+    from TraderBot.PositionHandlers.PositionGenerators import (
+        ForexStepping,
+        CryptoStepping,
+    )
     from ExchangeAgents import MT5Agent
     from ExchangeAgents import BitUnixAgent
     from Settings import settings
 
     # agent = MT5Agent(settings.METATRADER_TERMINAL_PATH)
     # generator = ForexStepping(sl_pip=20)
-    agent = BitUnixAgent(settings.BITUNIX_API_KEY,settings.BITUNIX_API_SECRET_KEY)
-    generator = CryptoStepping(leverage=1,sl_percent=2,tp_ratio=[1],tp_ratio_volumes=[0.001])
+    agent = BitUnixAgent(settings.BITUNIX_API_KEY, settings.BITUNIX_API_SECRET_KEY)
+    generator = CryptoStepping(
+        leverage=1, sl_percent=2, tp_ratio=[1], tp_ratio_volumes=[0.001]
+    )
 
     chart = Chart("ETHUSDT", TimeFrame.one_minute)
     side = MarketSide.BULLISH
@@ -42,7 +47,9 @@ async def test_positions():
         agent, generator, reporter=BacktestReporter(), agent_check=True
     )
     agent.prepare_chart(chart)
-    logger.info(f"{chart}|precision:{chart.precision}|contract_size:{chart.contract_size}|{chart.pip_factor}")
+    logger.info(
+        f"{chart}|precision:{chart.precision}|contract_size:{chart.contract_size}|{chart.pip_factor}"
+    )
     chartdata = agent.get_chartdata(chart, 200)
     if not chartdata:
         raise ValueError("No Chartdata")

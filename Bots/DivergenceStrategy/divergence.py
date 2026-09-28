@@ -147,8 +147,12 @@ class Divergence(Strategy):
                 self.max_step,
                 support_conditions=self.long_support_conditions,
             ),
-            base_chartdata,
-            second_chartdata,
+            base_chartdata.subdata(end_index=-2)
+            if self.long_support_conditions is not SupportCandlesPattern.RAW
+            else base_chartdata,
+            second_chartdata.subdata(end_index=-2)
+            if self.long_support_conditions is not SupportCandlesPattern.RAW
+            else second_chartdata,
             self.inverse_diver_long,
             self.long_other_chart_line_validation,
         )
@@ -177,8 +181,12 @@ class Divergence(Strategy):
                 self.max_step,
                 support_conditions=self.short_support_conditions,
             ),
-            base_chartdata,
-            second_chartdata,
+            base_chartdata.subdata(end_index=-2)
+            if self.short_support_conditions is not SupportCandlesPattern.RAW
+            else base_chartdata,
+            second_chartdata.subdata(end_index=-2)
+            if self.short_support_conditions is not SupportCandlesPattern.RAW
+            else second_chartdata,
             not self.inverse_diver_short,
             self.short_other_chart_line_validation,
         )

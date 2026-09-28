@@ -128,7 +128,7 @@ class OscillatorDoubleDiverBot(OscillatorDiverBot):
         )
         if not signal:
             return None
-        idx = chartdata.timestamp_index(signal.main_chart_line.start_timestamp) + 1
+        idx = chartdata.timestamp_index(signal.main_chart_line.start_timestamp) + 2
         second_signal = self.strategy.signal_from(
             chartdata.subdata(end_index=idx),
             self.strategy.oscillator_indicator.data[:idx],

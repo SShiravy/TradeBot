@@ -65,7 +65,7 @@ class BitUnixAPI:
 
     def _get(self, path: str, params: dict | None = None) -> Any:
         # query params are signed sorted by key, as key+value
-        params = sorted((k, str(v)) for k, v in (params or {}).items() if v is not None) 
+        params = sorted((k, str(v)) for k, v in (params or {}).items() if v is not None)
         headers = self._sign_auth("".join(k + v for k, v in params))
         response = self.session.get(
             self.base_url + path, params=params, headers=headers, timeout=self.timeout

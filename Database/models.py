@@ -85,7 +85,6 @@ class SignalRow(SQLModel, table=True):
 
 
 class PnLReportRow(SQLModel, table=True):
-
     __tablename__ = "PnL_Reports"  # type: ignore
 
     id: int | None = Field(default=None, primary_key=True)
