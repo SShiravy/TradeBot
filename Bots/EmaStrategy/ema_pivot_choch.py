@@ -247,6 +247,7 @@ class EmaPivotChochFilter(Strategy):
         use_fibo_filter: bool = True,
         use_bos: bool = True,
         use_choch: bool = True,
+        min_choch_candles: int = 3,
         indicators: list[Indicator] = [],
         long_support_conditions=SupportCandlesPattern.RAW,
         short_support_conditions=SupportCandlesPattern.RAW,
@@ -273,6 +274,7 @@ class EmaPivotChochFilter(Strategy):
         self.use_fibo_filter = use_fibo_filter
         self.use_bos = use_bos
         self.use_choch = use_choch
+        self.min_choch_candles = min_choch_candles
         self.ltf_chart: Chart
         self.htf_chart: Chart
         self.last_reported_timestamp: int | None = None
@@ -296,6 +298,11 @@ class EmaPivotChochFilter(Strategy):
         # only - used so a touch-report send reflects that fresh touch alone,
         # not the whole accumulated history in _touch_events.
         self._new_touch_keys: list[tuple] = []
+        # the very first check_signal() call registers every touch already
+        # sitting in the fetched window as pre-existing, not "new" - without
+        # this a freshly (re)started bot would immediately spam a touch
+        # report for every old pivot touch still inside its LTF window.
+        self._warming = True
 
     def export_config(self):
         conf_dict = super().export_config()
@@ -313,6 +320,7 @@ class EmaPivotChochFilter(Strategy):
                 "use_fibo_filter": self.use_fibo_filter,
                 "use_bos": self.use_bos,
                 "use_choch": self.use_choch,
+                "min_choch_candles": self.min_choch_candles,
             }
         )
         return conf_dict
@@ -328,6 +336,9 @@ class EmaPivotChochFilter(Strategy):
             backstep=self.choch_backstep,
             retrace_fib=self.retrace_fib,
             use_fibo_filter=self.use_fibo_filter,
+            use_bos=self.use_bos,
+            min_choch_candles=self.min_choch_candles,
+            choch_mode=2,
             name=f"{self.name}_inner",
         )
 
@@ -426,7 +437,11 @@ class EmaPivotChochFilter(Strategy):
             depth=self.htf_pivot_length, backstep=self.htf_backstep
         )
         pivot_detector.set(htf_chartdata)
-        self._pivots = pivot_detector.data
+        # confirmed pivots PLUS the current still-forming (repainting) one(s)
+        # - without this the newest swing point stays invisible for
+        # `htf_pivot_length` bars after it actually happened, since it only
+        # becomes "confirmed" that much later.
+        self._pivots = [*pivot_detector.data, *pivot_detector.live_pivots]
 
         ema_source = (
             ema_htf_chartdata if ema_htf_chartdata is not None else htf_chartdata
@@ -526,6 +541,12 @@ class EmaPivotChochFilter(Strategy):
                 inner_signal,
             )
             break
+
+        if self._warming:
+            # touches that already existed before this bot (re)started are
+            # registered silently, not reported as new
+            self._warming = False
+            self._new_touch_keys = []
 
         if best_signal is None:
             return None

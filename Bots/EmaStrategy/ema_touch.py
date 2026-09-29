@@ -327,8 +327,17 @@ class EmaTouchFilter(Strategy):
             )
 
             if phase == "waiting_touch":
-                touched = lows[i] <= ema_value <= highs[i]
-                if touched:
+                # a close back through the EMA against the setup is a BREAK
+                # of the setup, not a retest - this is checked BEFORE the
+                # touch test below, even when the same candle's wick also
+                # reaches the EMA (that wick is incidental to the break).
+                if (direction is MarketSide.BEARISH and broke_up) or (
+                    direction is MarketSide.BULLISH and broke_down
+                ):
+                    phase, direction = "idle", None
+                    break_candle = None
+                    break_index = None
+                elif lows[i] <= ema_value <= highs[i]:
                     assert break_index is not None
                     candle = chartdata.candle(i)
                     span = i - break_index
@@ -352,36 +361,24 @@ class EmaTouchFilter(Strategy):
                         phase, direction = "idle", None
                         break_candle = None
                         break_index = None
-                    elif span < self.min_candles_between_touches:
+                    elif span > self.max_candles_between_touches:
                         if self.reanchor_invalid_touch:
-                            # the touch candle itself becomes the new anchor;
-                            # its own close vs ema decides which direction
-                            # we now wait on, same as a fresh break would.
+                            # too late: this touch itself becomes the new
+                            # anchor, same direction, window restarts
                             break_candle, break_index = candle, i
-                            if close < ema_value:
-                                direction = MarketSide.BEARISH
-                            elif close > ema_value:
-                                direction = MarketSide.BULLISH
-                    else:
-                        if self.reanchor_invalid_touch:
-                            break_candle, break_index = candle, i
-                            if close < ema_value:
-                                direction = MarketSide.BEARISH
-                            elif close > ema_value:
-                                direction = MarketSide.BULLISH
                         else:
                             phase, direction = "idle", None
                             break_candle = None
                             break_index = None
+                    elif self.reanchor_invalid_touch:
+                        # too early: ignored unless reanchoring - keep
+                        # waiting on the SAME direction, just re-anchored
+                        # to this touch candle (a touch never flips the
+                        # setup's direction; only a break-back does, and
+                        # that was already handled above)
+                        break_candle, break_index = candle, i
                     prev_close, prev_ema = close, ema_value
                     continue
-
-                if (direction is MarketSide.BEARISH and broke_up) or (
-                    direction is MarketSide.BULLISH and broke_down
-                ):
-                    phase, direction = "idle", None
-                    break_candle = None
-                    break_index = None
 
             if phase == "idle":
                 if broke_down:
