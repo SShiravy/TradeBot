@@ -45,6 +45,8 @@ rsi_double_diver_choch_bots = [
     nzdusd_15m_rsi_double_diver_choch,
 ]
 
+crypto_double_diver_choch = bitunix_rsi_double_diver_choch_bots
+
 
 reporter = TelegramReporter(
     "Divergence", settings.TELEGRAM_BOT_TOKEN, settings.TELEGRAM_REPORT_CHANNEL
@@ -52,7 +54,7 @@ reporter = TelegramReporter(
 manager = BotsManager(
     "Divergence",
     reporter,
-    [*rsi_double_diver_choch_bots, *rsi_diver_choch_bots],
+    [*rsi_double_diver_choch_bots, *rsi_diver_choch_bots, *crypto_double_diver_choch],
 )
 
 if __name__ == "__main__":

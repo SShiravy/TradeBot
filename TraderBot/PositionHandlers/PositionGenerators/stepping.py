@@ -31,7 +31,7 @@ class SteppingGenerator(PositionGenerator):
                              {len(tp_ratio_volumes)} != {len(tp_ratio)}"
             )
 
-        initial_volume = round(sum(tp_ratio_volumes) + sum(fixed_tp_volumes), 2)
+        initial_volume = round(sum(tp_ratio_volumes) + sum(fixed_tp_volumes), 8)
         super().__init__(initial_volume, leverage)
         self.trail_stop = trail_stop
         self.tp_ratio = tp_ratio

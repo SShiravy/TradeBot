@@ -16,6 +16,8 @@ logger = build_logger(
     )
 )
 
+crypto_sr_choch_bots = bitunix_sr_choch_bots
+
 sr_choch_bots = [
     xau_sr_choch_5m_1m,
     eurusd_sr_choch_1h_5m,
@@ -33,7 +35,7 @@ reporter = TelegramReporter(
 manager = BotsManager(
     "SR_CHoCH",
     reporter,
-    [*sr_choch_bots],
+    [*sr_choch_bots, *bitunix_sr_choch_bots],
 )
 
 if __name__ == "__main__":
