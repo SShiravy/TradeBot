@@ -10,7 +10,13 @@ from ChartModule.Indicators import Indicator, SupportCandlesPattern
 from ChartModule.Indicators.swing_pivots import SwingPivots, PivotPoint
 from ChartModule.Indicators.moving_avg import EMA
 from ChartModule.Indicators.atr import ATR
-from ChartModule.plot import ChartPane, DoubleChartFigure, SignalPlotter, Figure
+from ChartModule.plot import (
+    ChartPane,
+    DoubleChartFigure,
+    SingleChartFigure,
+    SignalPlotter,
+    Figure,
+)
 from Bots.ChochStrategy.choch import ChochQueueFilter, ChochSignal, ChochPlotter
 from TraderBot.models import ExchangeAgent, Position, Strategy, StrategyPlotter
 from TraderBot.PositionHandlers.manager import TradesManager
@@ -299,6 +305,11 @@ class EmaPivotChochFilter(Strategy):
         # only - used so a touch-report send reflects that fresh touch alone,
         # not the whole accumulated history in _touch_events.
         self._new_touch_keys: list[tuple] = []
+        # touch_key -> the Telegram message id of that touch's raw-touch
+        # report, kept for the lifetime of the bot so that a CHoCH/BOS
+        # confirmation on the same pivot (often several candles later) can
+        # reply to it instead of posting unlinked
+        self._touch_message_ids: dict[tuple, int] = {}
         # the very first check_signal() call registers every touch already
         # sitting in the fetched window as pre-existing, not "new" - without
         # this a freshly (re)started bot would immediately spam a touch
@@ -721,18 +732,52 @@ class EmaPivotChochBot(TraderBot):
             PositionPlotter()(figure.main_pane, position)
         return figure
 
+    def _make_split_figures(
+        self, ltf_chartdata: ChartData, htf_chartdata: ChartData
+    ) -> tuple[SingleChartFigure, SingleChartFigure]:
+        """
+        LTF and HTF as two independent, same-candle-count figures instead
+        of one combined two-pane screenshot - each becomes its own
+        Telegram photo (HTF replying to LTF), so neither is squeezed into
+        half a stacked image.
+        """
+        ltf_figure = SingleChartFigure(
+            ltf_chartdata, self.PLOT_N_CANDLES, legend_font_size=self.LEGEND_FONT_SIZE
+        )
+        htf_figure = SingleChartFigure(
+            htf_chartdata, self.PLOT_N_CANDLES, legend_font_size=self.LEGEND_FONT_SIZE
+        )
+        return ltf_figure, htf_figure
+
     def generate_touch_figure(
         self, ltf_chartdata: ChartData, htf_chartdata: ChartData
-    ) -> DoubleChartFigure:
-        figure = self._make_figure(ltf_chartdata, htf_chartdata)
-        self.strategy.plotter.draw_emas(figure.second_pane, self.strategy.emas)
+    ) -> tuple[SingleChartFigure, SingleChartFigure]:
+        ltf_figure, htf_figure = self._make_split_figures(ltf_chartdata, htf_chartdata)
+        self.strategy.plotter.draw_emas(htf_figure.main_pane, self.strategy.emas)
         self.strategy.plotter.draw_touches(
-            figure.main_pane,
-            figure.second_pane,
+            ltf_figure.main_pane,
+            htf_figure.main_pane,
             self.strategy._touch_events,
             touch_keys=self.strategy._new_touch_keys,
         )
-        return figure
+        return ltf_figure, htf_figure
+
+    def generate_signal_figures(
+        self,
+        signal: EmaPivotChochSignal,
+        ltf_chartdata: ChartData,
+        htf_chartdata: ChartData,
+    ) -> tuple[SingleChartFigure, SingleChartFigure]:
+        ltf_figure, htf_figure = self._make_split_figures(ltf_chartdata, htf_chartdata)
+        self.strategy.plotter(
+            ltf_figure.main_pane,
+            htf_figure.main_pane,
+            signal,
+            self.strategy.indicators,
+            self.strategy.emas,
+            use_fibo_filter=self.strategy.use_fibo_filter,
+        )
+        return ltf_figure, htf_figure
 
     def _touch_report_name(self, ltf_chartdata: ChartData) -> str:
         """
@@ -746,23 +791,107 @@ class EmaPivotChochBot(TraderBot):
             return str(touch_candle.timestamp)
         return str(ltf_chartdata[-1].timestamp)
 
-    async def send_touch_report(
-        self, ltf_chartdata: ChartData, htf_chartdata: ChartData
-    ) -> None:
+    async def _send_split(
+        self,
+        ltf_figure: SingleChartFigure,
+        htf_figure: SingleChartFigure,
+        name: str,
+        ltf_msg: str,
+        htf_msg: str,
+        reply_id: int | None = None,
+    ) -> int | None:
         """
-        Not a Signal, so it cannot go through NewSignalReport -- this stays
-        a direct send. The image still lands under the reporter's save_path
-        the way every queued report does.
+        Saves and sends the LTF image first, then the HTF image as a reply
+        to it, so the pair stays visibly linked as one thread instead of
+        two unrelated messages. Returns the LTF message id.
         """
-        figure = self.generate_touch_figure(ltf_chartdata, htf_chartdata)
-        image_path = figure.save_image(
-            name=self._touch_report_name(ltf_chartdata),
-            path=self.trades_manager.reporter.save_path or "Records/",
+        path = self.trades_manager.reporter.save_path or "Records/"
+        ltf_path = ltf_figure.save_image(name=f"{name}_LTF", path=path)
+        htf_path = htf_figure.save_image(name=f"{name}_HTF", path=path)
+
+        ltf_msg_id = await self.trades_manager.reporter.send_msg(
+            ltf_msg, img_path=ltf_path, reply_id=reply_id
         )
         await self.trades_manager.reporter.send_msg(
-            f"{self.strategy.name}\n📈 {self.chart}\nEMA-pivot touch report",
-            img_path=image_path,
+            htf_msg, img_path=htf_path, reply_id=ltf_msg_id or reply_id
         )
+        return ltf_msg_id
+
+    async def send_touch_report(
+        self, ltf_chartdata: ChartData, htf_chartdata: ChartData
+    ) -> int | None:
+        """
+        Not a Signal, so it cannot go through NewSignalReport -- this stays
+        a direct send. Returns the LTF message id, so a later CHoCH/BOS
+        confirmation on the same pivot can reply to it.
+        """
+        ltf_figure, htf_figure = self.generate_touch_figure(ltf_chartdata, htf_chartdata)
+        return await self._send_split(
+            ltf_figure,
+            htf_figure,
+            name=self._touch_report_name(ltf_chartdata),
+            ltf_msg=f"{self.strategy.name}\n📈 {self.chart}\nEMA-pivot touch report",
+            htf_msg=f"📊 HTF ({self.htf_chart})",
+        )
+
+    async def send_signal_report(
+        self,
+        signal: EmaPivotChochSignal,
+        ltf_chartdata: ChartData,
+        htf_chartdata: ChartData,
+        reply_id: int | None = None,
+    ) -> None:
+        """
+        The confirmed CHoCH/BOS signal (use_bos/use_choch on). Sent the
+        same split way as the touch report and, when reply_id is given
+        (that pivot's own earlier touch-report message), threaded as a
+        reply to it so the raw touch and its later confirmation stay
+        together.
+        """
+        ltf_figure, htf_figure = self.generate_signal_figures(
+            signal, ltf_chartdata, htf_chartdata
+        )
+        msg = self.trades_manager.reporter.msg_formater.new_signal(signal)
+        await self._send_split(
+            ltf_figure,
+            htf_figure,
+            name=str(signal.candle.timestamp),
+            ltf_msg=msg,
+            htf_msg=f"📊 HTF ({self.htf_chart})",
+            reply_id=reply_id,
+        )
+        NewSignal(signal, record_context=self.give_record_context()).occur()
+
+    async def send_position_report(
+        self,
+        position: Position,
+        signal: EmaPivotChochSignal,
+        ltf_chartdata: ChartData,
+        htf_chartdata: ChartData,
+        reply_id: int | None = None,
+    ) -> None:
+        """
+        Same split LTF/HTF send and same reply-to-the-touch threading as
+        send_signal_report, for when consider_position is on and this
+        CHoCH/BOS confirmation actually opens a position. Stores the LTF
+        message id on the position itself (position.report_id), the way
+        ReportNewPosition normally would, so later trade-lifecycle reports
+        (stoploss hit, trigger hit, ...) still reply to it correctly.
+        """
+        ltf_figure, htf_figure = self.generate_signal_figures(
+            signal, ltf_chartdata, htf_chartdata
+        )
+        PositionPlotter()(ltf_figure.main_pane, position)
+        msg = self.trades_manager.reporter.msg_formater.new_position(position)
+        ltf_msg_id = await self._send_split(
+            ltf_figure,
+            htf_figure,
+            name=str(position.defined_timestamp),
+            ltf_msg=msg,
+            htf_msg=f"📊 HTF ({self.htf_chart})",
+            reply_id=reply_id,
+        )
+        position.report_id = ltf_msg_id
 
     def trade(self, position: Position, plot: Figure | None) -> Position | None:
         NewPosition(
@@ -789,39 +918,6 @@ class EmaPivotChochBot(TraderBot):
             ema_htf_chartdata,
         )
 
-    def find_signal(
-        self,
-        chartdata: ChartData,
-        htf_chartdata: ChartData,
-        ema_htf_chartdata: ChartData | None = None,
-    ) -> EmaPivotChochSignal | None:
-        signal = self.check_signal(chartdata, htf_chartdata, ema_htf_chartdata)
-        if signal is None:
-            return None
-
-        if self.consider_position:
-            position = self.trades_manager.generate_position(
-                signal, sl_base_price=signal.inner_signal.choch_model.anchor
-            )
-            if position is None:
-                logger.warning("Position is None")
-                return None
-            self.trade(
-                position,
-                self.generate_figure(chartdata, signal, position, htf_chartdata),
-            )
-            NewSignal(signal, record_context=self.give_record_context()).occur()
-        else:
-            NewSignal(
-                signal,
-                report_context=ReportCommandContext(
-                    self.trades_manager.reporter,
-                    self.generate_figure(chartdata, signal, None, htf_chartdata),
-                ),
-                record_context=self.give_record_context(),
-            ).occur()
-        return signal
-
     async def task(self):
         chartdata = self.get_chartdata()
         last_timestamp = chartdata.timestamps[-1]
@@ -831,15 +927,43 @@ class EmaPivotChochBot(TraderBot):
         ).subdata(end_index=-2)
         ema_htf_chartdata = self.get_ema_htf_chartdata()
 
-        self.find_signal(chartdata, htf_chartdata, ema_htf_chartdata)
+        signal = self.check_signal(chartdata, htf_chartdata, ema_htf_chartdata)
 
-        # populated fresh by strategy.check_signal() above with only the
-        # touch(es) registered THIS call
-        if (
-            self.strategy._new_touch_keys
-            and not self.strategy.use_bos
-            and not self.strategy.use_choch
-        ):
-            await self.send_touch_report(chartdata, htf_chartdata)
+        # every freshly-registered raw EMA-pivot touch is reported right
+        # away, whatever use_bos/use_choch are set to - this is the
+        # base-level alert, sent in addition to (not instead of) the full
+        # CHoCH/BOS signal below when those are turned on
+        touch_reply_id = None
+        if self.strategy._new_touch_keys:
+            touch_reply_id = await self.send_touch_report(chartdata, htf_chartdata)
+            if touch_reply_id is not None:
+                for touch_key in self.strategy._new_touch_keys:
+                    self.strategy._touch_message_ids[touch_key] = touch_reply_id
+
+        if signal is not None:
+            # reply to THIS pivot's own touch message - reported this very
+            # cycle, or (the usual case) several candles earlier - same
+            # threading whether or not a real position gets opened
+            touch_key = (signal.pivot.candle.timestamp, signal.pivot.is_high)
+            reply_id = self.strategy._touch_message_ids.get(touch_key, touch_reply_id)
+
+            if self.consider_position:
+                position = self.trades_manager.generate_position(
+                    signal, sl_base_price=signal.inner_signal.choch_model.anchor
+                )
+                if position is None:
+                    logger.warning("Position is None")
+                else:
+                    NewPosition(
+                        trade_context=TradeCommandContext(position, self.agent)
+                    ).occur()
+                    await self.send_position_report(
+                        position, signal, chartdata, htf_chartdata, reply_id=reply_id
+                    )
+                    NewSignal(signal, record_context=self.give_record_context()).occur()
+            else:
+                await self.send_signal_report(
+                    signal, chartdata, htf_chartdata, reply_id=reply_id
+                )
 
         return self.give_delay(last_timestamp)

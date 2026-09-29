@@ -38,11 +38,24 @@ class ChartPane:
     A pane may or may not carry candle data -- an oscillator pane has none.
     """
 
-    def __init__(self, ax, chartdata: ChartData | None = None) -> None:
+    def __init__(
+        self,
+        ax,
+        chartdata: ChartData | None = None,
+        legend_font_size: str | None = None,
+    ) -> None:
         self.ax = ax
         self.chartdata = chartdata
         self._y_min: float | None = None
         self._y_max: float | None = None
+        # opt-in (None = finplot's own default size, unchanged for every
+        # pane that doesn't set this). Applied to EVERY legend-bearing
+        # draw call below, not just draw_candles' own legend -- each
+        # `legend=` kwarg passed to fplt.plot() opens its OWN separate
+        # legend box at finplot's default (large) size, so sizing only
+        # draw_candles' legend left every other one (EMA lines, touch/
+        # break markers, ...) untouched and still huge.
+        self.legend_font_size = legend_font_size
 
     def extend_y_range(self, low: float, high: float, pad: float = 0.0005) -> None:
         low, high = min(low, high), max(low, high)
@@ -60,7 +73,10 @@ class ChartPane:
             raise ValueError("This pane has no chartdata to draw candles from")
         df = self.chartdata.generate_dataframe()
         if legend:
-            fplt.add_legend(ax=self.ax, text=_sized(legend, legend_font_size))
+            fplt.add_legend(
+                ax=self.ax,
+                text=_sized(legend, legend_font_size or self.legend_font_size),
+            )
         fplt.candlestick_ochl(df[["open", "close", "high", "low"]], ax=self.ax)
         self.extend_y_range(min(self.chartdata.low), max(self.chartdata.high))
 
@@ -125,7 +141,7 @@ class ChartPane:
             style="^" if bullish else "v",
             color=BULLISH_COLOR if bullish else BEARISH_COLOR,
             width=3,
-            legend=legend,
+            legend=_sized(legend, self.legend_font_size) if legend else legend,
             ax=self.ax,
         )
 
@@ -151,7 +167,7 @@ class ChartPane:
             style="o",
             color=color,
             width=1,
-            legend=legend,
+            legend=_sized(legend, self.legend_font_size) if legend else legend,
             ax=self.ax,
         )
 
@@ -172,7 +188,7 @@ class ChartPane:
         )
 
     def add_legend(self, text: str, font_size: str | None = None) -> None:
-        fplt.add_legend(_sized(text, font_size), ax=self.ax)
+        fplt.add_legend(_sized(text, font_size or self.legend_font_size), ax=self.ax)
 
     def mark_points(
         self,
@@ -193,7 +209,7 @@ class ChartPane:
             style="o",
             color=color,
             width=width,
-            legend=legend,
+            legend=_sized(legend, self.legend_font_size) if legend else legend,
             ax=self.ax,
         )
 
@@ -206,7 +222,13 @@ class ChartPane:
         thickness: int = 2,
     ) -> None:
         fplt.plot(
-            x, y, style="-", ax=self.ax, color=color, legend=legend, width=thickness
+            x,
+            y,
+            style="-",
+            ax=self.ax,
+            color=color,
+            legend=_sized(legend, self.legend_font_size) if legend else legend,
+            width=thickness,
         )
 
 
@@ -300,8 +322,8 @@ class SingleChartFigure(BaseChartFigure):
 
     def _build(self) -> None:
         data = self._tail(self._chartdata, self._plot_n_candles)
-        pane = ChartPane(self._axes[0], data)
-        pane.draw_candles(legend=str(data.chart), legend_font_size=self._legend_font_size)
+        pane = ChartPane(self._axes[0], data, legend_font_size=self._legend_font_size)
+        pane.draw_candles(legend=str(data.chart))
         self.panes.append(pane)
 
 
@@ -322,8 +344,8 @@ class DoubleChartFigure(BaseChartFigure):
     def _build(self) -> None:
         for source, ax in ((self._base, self._axes[0]), (self._second, self._axes[1])):
             data = self._tail(source, self._plot_n_candles)
-            pane = ChartPane(ax, data)
-            pane.draw_candles(legend=str(data.chart), legend_font_size=self._legend_font_size)
+            pane = ChartPane(ax, data, legend_font_size=self._legend_font_size)
+            pane.draw_candles(legend=str(data.chart))
             self.panes.append(pane)
 
     @property
