@@ -759,7 +759,7 @@ class EmaPivotChochBot(TraderBot):
             name=self._touch_report_name(ltf_chartdata),
             path=self.trades_manager.reporter.save_path or "Records/",
         )
-        await reporter.send_msg(
+        await self.trades_manager.reporter.send_msg(
             f"{self.strategy.name}\n📈 {self.chart}\nEMA-pivot touch report",
             img_path=image_path,
         )

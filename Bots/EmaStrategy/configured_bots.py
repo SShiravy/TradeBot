@@ -11,18 +11,27 @@ from Settings import settings
 mt5_agent = MT5Agent(settings.METATRADER_TERMINAL_PATH)
 bitunix_agent = BitUnixAgent(settings.BITUNIX_API_KEY, settings.BITUNIX_API_SECRET_KEY)
 
+# two separate channels, one per strategy.
+# EmaTouch keeps its own pre-existing bot+channel (already admin there).
 ema_touch_reporter = TelegramReporter(
     "EMA_Touch",
     "8937168160:AAHtl4qXCSKXgT6YTSZEvYYDSHs3UcVqD5Y",
     "@crypto_result_1",
 )
-
+# EmaPivotChoch -> @crypto_trader_robot. That channel is already
+# settings.TELEGRAM_CRYPTO_CHANNEL_ID, i.e. the MAIN bot token is the one
+# already added as admin there - NOT the EmaTouch bot above. Using the
+# main token here (instead of a second, unrelated bot token) is what
+# actually lets messages go through to that channel.
 ema_pivot_choch_reporter = TelegramReporter(
     "EMA_Pivot_Choch",
     settings.TELEGRAM_BOT_TOKEN,
     settings.TELEGRAM_CRYPTO_CHANNEL_ID,
 )
 
+# the same forex majors + crypto symbols already traded by the other
+# strategies (Bots/CompositeStrategies/configured_bots/sr_choch_bots.py) -
+# XAUUSD is handled separately below with its own tuned parameters.
 FOREX_MAJORS = [
     "EURUSD!",
     "USDJPY!",
@@ -157,15 +166,19 @@ def _make_ema_pivot_choch_bots(symbol: str, agent, stepping) -> list[EmaPivotCho
 xau_ema_pivot_choch_bots = _make_ema_pivot_choch_bots(
     "XAUUSD", mt5_agent, ForexStepping()
 )
-
+# kept importable under its old name (used by backtest.py) - the 1m/5m
+# variant, closest to the old one-off 1m/3m pairing
 xau_3m = xau_ema_pivot_choch_bots[0]
 
 
 xau_ema_touch_bots = _make_ema_touch_bots("XAUUSD", mt5_agent, ForexStepping())
-
+# kept importable under its old name - the 5m variant, closest to the old
+# one-off 1m bot
 xau_ema_touch_1m = xau_ema_touch_bots[0]
 
 
+# forex majors (MT5) + crypto (BitUnix), same symbol universe the other
+# strategies already trade
 forex_ema_touch_bots = [
     bot
     for symbol in FOREX_MAJORS
