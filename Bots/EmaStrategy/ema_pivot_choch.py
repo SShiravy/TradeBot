@@ -101,7 +101,8 @@ class EmaPivotChochPlotter(StrategyPlotter):
             " ".join(
                 f"<span style='color:{colors[period]}'>EMA{period}</span>"
                 for period in emas
-            )
+            ),
+            font_size="7pt",
         )
 
     def __call__(
@@ -671,11 +672,21 @@ class EmaPivotChochBot(TraderBot):
             n_bar=self.n_ema_htf_candle_check, chart=self.htf_chart
         ).subdata(end_index=-2)
 
+    # candles shown in the Telegram image (both panes) - independent of
+    # n_candle_check/n_htf_candle_check, which control how much history is
+    # FETCHED for the strategy to compute on
+    PLOT_N_CANDLES = 150
+    LEGEND_FONT_SIZE = "7pt"
+
     def _make_figure(
         self, ltf_chartdata: ChartData, htf_chartdata: ChartData
     ) -> DoubleChartFigure:
-        plot_n_candles = max(len(ltf_chartdata), len(htf_chartdata))
-        return DoubleChartFigure(ltf_chartdata, htf_chartdata, plot_n_candles)
+        return DoubleChartFigure(
+            ltf_chartdata,
+            htf_chartdata,
+            self.PLOT_N_CANDLES,
+            legend_font_size=self.LEGEND_FONT_SIZE,
+        )
 
     def generate_figure(  # type: ignore[override]
         self,

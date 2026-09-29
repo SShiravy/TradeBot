@@ -440,6 +440,11 @@ class EmaTouchBot(TraderBot):
             consider_position,
         )
 
+    # candles shown in the Telegram image - independent of n_candle_check
+    # (how much history is FETCHED for the strategy to compute on)
+    PLOT_N_CANDLES = 150
+    LEGEND_FONT_SIZE = "7pt"
+
     def generate_figure(  # type: ignore[override]
         self,
         chartdata: ChartData,
@@ -450,7 +455,9 @@ class EmaTouchBot(TraderBot):
     ) -> SingleChartFigure | None:
         if not self.consider_figure:
             return None
-        figure = SingleChartFigure(chartdata, self.n_candle_check)
+        figure = SingleChartFigure(
+            chartdata, self.PLOT_N_CANDLES, legend_font_size=self.LEGEND_FONT_SIZE
+        )
         self.strategy.plotter(
             figure.main_pane,
             signal,

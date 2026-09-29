@@ -11,16 +11,18 @@ from Settings import settings
 mt5_agent = MT5Agent(settings.METATRADER_TERMINAL_PATH)
 bitunix_agent = BitUnixAgent(settings.BITUNIX_API_KEY, settings.BITUNIX_API_SECRET_KEY)
 
-# same bot token, two separate channels - one per strategy
-_BOT_TOKEN = "8937168160:AAHtl4qXCSKXgT6YTSZEvYYDSHs3UcVqD5Y"
-ema_touch_reporter = TelegramReporter("EMA_Touch", _BOT_TOKEN, "@crypto_result_1")
-ema_pivot_choch_reporter = TelegramReporter(
-    "EMA_Pivot_Choch", _BOT_TOKEN, "@crypto_trader_robot"
+ema_touch_reporter = TelegramReporter(
+    "EMA_Touch",
+    "8937168160:AAHtl4qXCSKXgT6YTSZEvYYDSHs3UcVqD5Y",
+    "@crypto_result_1",
 )
 
-# the same forex majors + crypto symbols already traded by the other
-# strategies (Bots/CompositeStrategies/configured_bots/sr_choch_bots.py) -
-# XAUUSD is handled separately below with its own tuned parameters.
+ema_pivot_choch_reporter = TelegramReporter(
+    "EMA_Pivot_Choch",
+    settings.TELEGRAM_BOT_TOKEN,
+    settings.TELEGRAM_CRYPTO_CHANNEL_ID,
+)
+
 FOREX_MAJORS = [
     "EURUSD!",
     "USDJPY!",
@@ -56,15 +58,23 @@ CRYPTO_SYMBOLS = [
 ]
 
 
-def _make_ema_touch_bot(symbol: str, agent, stepping) -> EmaTouchBot:
+# EmaTouch runs on 3 timeframes per symbol: 5m, 1h, 4h
+EMA_TOUCH_TIMEFRAMES = [
+    TimeFrame.five_minutes,
+    TimeFrame.one_hour,
+    TimeFrame.four_hours,
+]
+
+
+def _make_ema_touch_bot(symbol: str, timeframe: TimeFrame, agent, stepping) -> EmaTouchBot:
     return EmaTouchBot(
-        chart=Chart(symbol, TimeFrame.five_minutes),
+        chart=Chart(symbol, timeframe),
         agent=agent,
         strategy=EmaTouchFilter(
             ema_periods=[20, 50, 100],
             min_candles_between_touches=15,
             max_candles_between_touches=200,
-            reanchor_invalid_touch=False,
+            reanchor_invalid_touch=True,
             name="EmaTouch",
         ),
         trades_manager=TradesManager(
@@ -82,10 +92,28 @@ def _make_ema_touch_bot(symbol: str, agent, stepping) -> EmaTouchBot:
     )
 
 
-def _make_ema_pivot_choch_bot(symbol: str, agent, stepping) -> EmaPivotChochBot:
+def _make_ema_touch_bots(symbol: str, agent, stepping) -> list[EmaTouchBot]:
+    return [
+        _make_ema_touch_bot(symbol, timeframe, agent, stepping)
+        for timeframe in EMA_TOUCH_TIMEFRAMES
+    ]
+
+
+# EmaPivotChoch runs on 3 LTF/HTF pairs per symbol:
+#   1m/5m, 5m/1h, 5m/4h
+LTF_HTF_PAIRS = [
+    (TimeFrame.one_minute, TimeFrame.five_minutes),
+    (TimeFrame.five_minutes, TimeFrame.one_hour),
+    (TimeFrame.five_minutes, TimeFrame.four_hours),
+]
+
+
+def _make_ema_pivot_choch_bot(
+    symbol: str, ltf: TimeFrame, htf: TimeFrame, agent, stepping
+) -> EmaPivotChochBot:
     return EmaPivotChochBot(
-        chart=Chart(symbol, TimeFrame.five_minutes),
-        htf_chart=Chart(symbol, TimeFrame.one_hour),
+        chart=Chart(symbol, ltf),
+        htf_chart=Chart(symbol, htf),
         n_ema_htf_candle_check=120,
         n_htf_candle_check=120,
         strategy=EmaPivotChochFilter(
@@ -119,74 +147,34 @@ def _make_ema_pivot_choch_bot(symbol: str, agent, stepping) -> EmaPivotChochBot:
     )
 
 
-xau_3m = EmaPivotChochBot(
-    chart=Chart("XAUUSD", TimeFrame.one_minute),
-    htf_chart=Chart("XAUUSD", TimeFrame.three_minutes),
-    n_ema_htf_candle_check=120,
-    n_htf_candle_check=120,
-    strategy=EmaPivotChochFilter(
-        ema_periods=[20, 40, 60],
-        htf_pivot_length=12,
-        htf_backstep=2,
-        atr_period=14,
-        atr_multiplier=1.0,
-        max_bars_after_pivot=100,
-        choch_pivot_length=2,
-        choch_backstep=2,
-        retrace_fib=0.5,
-        use_fibo_filter=False,
-        use_bos=False,
-        use_choch=False,
-        name="EmaPivotChoch",
-    ),
-    trades_manager=TradesManager(
-        mt5_agent,
-        ForexStepping(),
-        long_trade=True,
-        short_trade=True,
-        trading_constraints=[],
-        reporter=ema_pivot_choch_reporter,
-        agent_check=False,
-    ),
-    bar_between_signals=2,
-    consider_position=False,
-    agent=mt5_agent,
-    n_candle_check=150,
+def _make_ema_pivot_choch_bots(symbol: str, agent, stepping) -> list[EmaPivotChochBot]:
+    return [
+        _make_ema_pivot_choch_bot(symbol, ltf, htf, agent, stepping)
+        for ltf, htf in LTF_HTF_PAIRS
+    ]
+
+
+xau_ema_pivot_choch_bots = _make_ema_pivot_choch_bots(
+    "XAUUSD", mt5_agent, ForexStepping()
 )
 
-
-xau_ema_touch_1m = EmaTouchBot(
-    chart=Chart("XAUUSD", TimeFrame.one_minute),
-    agent=mt5_agent,
-    strategy=EmaTouchFilter(
-        ema_periods=[20, 50, 100],
-        min_candles_between_touches=15,
-        max_candles_between_touches=200,
-        reanchor_invalid_touch=False,
-        name="EmaTouch",
-    ),
-    trades_manager=TradesManager(
-        mt5_agent,
-        ForexStepping(),
-        long_trade=True,
-        short_trade=True,
-        trading_constraints=[],
-        reporter=ema_touch_reporter,
-        agent_check=False,
-    ),
-    bar_between_signals=2,
-    consider_position=False,
-    n_candle_check=500,
-)
+xau_3m = xau_ema_pivot_choch_bots[0]
 
 
-# forex majors (MT5) + crypto (BitUnix), same symbol universe the other
-# strategies already trade
+xau_ema_touch_bots = _make_ema_touch_bots("XAUUSD", mt5_agent, ForexStepping())
+
+xau_ema_touch_1m = xau_ema_touch_bots[0]
+
+
 forex_ema_touch_bots = [
-    _make_ema_touch_bot(symbol, mt5_agent, ForexStepping()) for symbol in FOREX_MAJORS
+    bot
+    for symbol in FOREX_MAJORS
+    for bot in _make_ema_touch_bots(symbol, mt5_agent, ForexStepping())
 ]
 crypto_ema_touch_bots = [
-    _make_ema_touch_bot(
+    bot
+    for symbol in CRYPTO_SYMBOLS
+    for bot in _make_ema_touch_bots(
         symbol,
         bitunix_agent,
         CryptoStepping(
@@ -196,15 +184,17 @@ crypto_ema_touch_bots = [
             tp_ratio_volumes=[0.0003, 0.0003, 0.0003],
         ),
     )
-    for symbol in CRYPTO_SYMBOLS
 ]
 
 forex_ema_pivot_choch_bots = [
-    _make_ema_pivot_choch_bot(symbol, mt5_agent, ForexStepping())
+    bot
     for symbol in FOREX_MAJORS
+    for bot in _make_ema_pivot_choch_bots(symbol, mt5_agent, ForexStepping())
 ]
 crypto_ema_pivot_choch_bots = [
-    _make_ema_pivot_choch_bot(
+    bot
+    for symbol in CRYPTO_SYMBOLS
+    for bot in _make_ema_pivot_choch_bots(
         symbol,
         bitunix_agent,
         CryptoStepping(
@@ -214,8 +204,11 @@ crypto_ema_pivot_choch_bots = [
             tp_ratio_volumes=[0.0003, 0.0003, 0.0003],
         ),
     )
-    for symbol in CRYPTO_SYMBOLS
 ]
 
-ema_touch_bots = [xau_ema_touch_1m, *forex_ema_touch_bots, *crypto_ema_touch_bots]
-ema_pivot_choch_bots = [xau_3m, *forex_ema_pivot_choch_bots, *crypto_ema_pivot_choch_bots]
+ema_touch_bots = [*xau_ema_touch_bots, *forex_ema_touch_bots, *crypto_ema_touch_bots]
+ema_pivot_choch_bots = [
+    *xau_ema_pivot_choch_bots,
+    *forex_ema_pivot_choch_bots,
+    *crypto_ema_pivot_choch_bots,
+]

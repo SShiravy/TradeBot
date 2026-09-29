@@ -24,6 +24,14 @@ def apply_theme() -> None:
 apply_theme()
 
 
+def _sized(text: str, font_size: str | None) -> str:
+    """Wrap legend text in a smaller font - opt-in (None keeps the caller's
+    default finplot legend size), so it never changes any other chart."""
+    if not font_size:
+        return text
+    return f"<span style='font-size:{font_size}'>{text}</span>"
+
+
 class ChartPane:
     """
     One axis. Owns its own y-range tracking and every drawing primitive.
@@ -47,12 +55,12 @@ class ChartPane:
         if self._y_min is not None and self._y_max is not None:
             fplt.set_y_range(self._y_min, self._y_max, self.ax)
 
-    def draw_candles(self, legend: str | None = None) -> None:
+    def draw_candles(self, legend: str | None = None, legend_font_size: str | None = None) -> None:
         if self.chartdata is None:
             raise ValueError("This pane has no chartdata to draw candles from")
         df = self.chartdata.generate_dataframe()
         if legend:
-            fplt.add_legend(ax=self.ax, text=legend)
+            fplt.add_legend(ax=self.ax, text=_sized(legend, legend_font_size))
         fplt.candlestick_ochl(df[["open", "close", "high", "low"]], ax=self.ax)
         self.extend_y_range(min(self.chartdata.low), max(self.chartdata.high))
 
@@ -163,8 +171,8 @@ class ChartPane:
             ax=self.ax,
         )
 
-    def add_legend(self, text: str) -> None:
-        fplt.add_legend(text, ax=self.ax)
+    def add_legend(self, text: str, font_size: str | None = None) -> None:
+        fplt.add_legend(_sized(text, font_size), ax=self.ax)
 
     def mark_points(
         self,
@@ -279,15 +287,21 @@ class BaseChartFigure(ABC):
 
 
 class SingleChartFigure(BaseChartFigure):
-    def __init__(self, chartdata: ChartData, plot_n_candles: int = 200) -> None:
+    def __init__(
+        self,
+        chartdata: ChartData,
+        plot_n_candles: int = 200,
+        legend_font_size: str | None = None,
+    ) -> None:
         self._chartdata = chartdata
         self._plot_n_candles = plot_n_candles
+        self._legend_font_size = legend_font_size
         super().__init__(f"TimeFrame: {chartdata.chart.timeframe.value}", rows=1)
 
     def _build(self) -> None:
         data = self._tail(self._chartdata, self._plot_n_candles)
         pane = ChartPane(self._axes[0], data)
-        pane.draw_candles(legend=str(data.chart))
+        pane.draw_candles(legend=str(data.chart), legend_font_size=self._legend_font_size)
         self.panes.append(pane)
 
 
@@ -297,17 +311,19 @@ class DoubleChartFigure(BaseChartFigure):
         base_chartdata: ChartData,
         second_chartdata: ChartData,
         plot_n_candles: int = 100,
+        legend_font_size: str | None = None,
     ) -> None:
         self._base = base_chartdata
         self._second = second_chartdata
         self._plot_n_candles = plot_n_candles
+        self._legend_font_size = legend_font_size
         super().__init__(f"TimeFrame: {base_chartdata.chart.timeframe.value}", rows=2)
 
     def _build(self) -> None:
         for source, ax in ((self._base, self._axes[0]), (self._second, self._axes[1])):
             data = self._tail(source, self._plot_n_candles)
             pane = ChartPane(ax, data)
-            pane.draw_candles(legend=str(data.chart))
+            pane.draw_candles(legend=str(data.chart), legend_font_size=self._legend_font_size)
             self.panes.append(pane)
 
     @property
