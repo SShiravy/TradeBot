@@ -4,6 +4,7 @@ import requests
 import hashlib
 import logging
 import json
+import threading
 import time
 import uuid
 
@@ -12,9 +13,36 @@ logger = logging.getLogger("BitUnixAPI")
 
 
 class BitUnixAPIError(Exception):
-    def __init__(self, message: str, code: int | None = None) -> None:
+    def __init__(self, message: str, code: int | None = None, http_status: int | None = None) -> None:
         super().__init__(message)
-        self.code = code
+        self.code = code  # bitunix's own error code
+        self.http_status = http_status
+
+
+# bitunix rejects a request (it is NOT executed) with these when the IP goes
+# over its rate limit (10 requests/s) - always safe to wait and retry
+RATE_LIMIT_CODES = {10005, 10006}
+
+
+class _RateLimiter:
+    """
+    Process-wide spacing between two requests. Every configured_bots module
+    builds its own BitUnixAgent (so its own BitUnixAPI), but they all share
+    the one ip limit, so the spacing is shared by every instance.
+    """
+
+    def __init__(self, max_per_second: float) -> None:
+        self.min_interval = 1.0 / max_per_second
+        self._lock = threading.Lock()
+        self._next_time = 0.0
+
+    def wait(self) -> None:
+        with self._lock:
+            now = time.monotonic()
+            if self._next_time > now:
+                time.sleep(self._next_time - now)
+                now = self._next_time
+            self._next_time = now + self.min_interval
 
 
 class BitUnixAPI:
@@ -25,6 +53,10 @@ class BitUnixAPI:
     """
 
     base_url = "https://fapi.bitunix.com"
+    # under bitunix's 10 requests/s per ip, shared by every instance
+    rate_limiter = _RateLimiter(max_per_second=8)
+    # attempts of a request hitting the rate limit / a temporary failure
+    max_attempts = 4
 
     def __init__(self, api_key: str, secret_key: str, timeout: float = 10) -> None:
         self.__api_key = api_key
@@ -54,7 +86,9 @@ class BitUnixAPI:
 
     def _handle_response(self, response: requests.Response) -> Any:
         if response.status_code != 200:
-            raise BitUnixAPIError(f"HTTP {response.status_code}: {response.text}")
+            raise BitUnixAPIError(
+                f"HTTP {response.status_code}: {response.text}", http_status=response.status_code
+            )
         data = response.json()
         if data.get("code") != 0:
             error = ErrorCode.get_by_code(data.get("code"))
@@ -63,27 +97,74 @@ class BitUnixAPI:
             )
         return data.get("data")
 
+    def _send(self, send, path: str, idempotent: bool) -> Any:
+        """
+        Spaces every request out (rate_limiter) and retries, with a growing
+        pause, what failed only because of the moment it was sent: the rate
+        limit, a 429/5xx, and - for a read (idempotent) request only - a
+        network error or timeout. A POST that may have reached bitunix is
+        never resent, so an order is never placed twice.
+        """
+        delay = 0.5
+        for attempt in range(1, self.max_attempts + 1):
+            self.rate_limiter.wait()
+            try:
+                return self._handle_response(send())
+            except BitUnixAPIError as error:
+                status = error.http_status
+                temporary = (
+                    error.code in RATE_LIMIT_CODES
+                    or status == 429
+                    or (idempotent and status is not None and status >= 500)
+                )
+                if not temporary or attempt == self.max_attempts:
+                    raise
+                logger.warning(f"{path} failed (attempt {attempt}): {error} - retrying in {delay}s")
+            except (requests.ConnectionError, requests.Timeout) as error:
+                if not idempotent:
+                    raise  # may have reached bitunix (an order!) - never resent, never hidden
+                if attempt == self.max_attempts:
+                    raise BitUnixAPIError(f"{path}: {error!r}") from error
+                logger.warning(f"{path} failed (attempt {attempt}): {error!r} - retrying in {delay}s")
+            except ValueError as error:  # not a json body
+                if not idempotent:
+                    raise
+                if attempt == self.max_attempts:
+                    raise BitUnixAPIError(f"{path}: invalid response {error!r}") from error
+                logger.warning(f"{path} invalid response (attempt {attempt}) - retrying in {delay}s")
+            time.sleep(delay)
+            delay *= 2
+
     def _get(self, path: str, params: dict | None = None) -> Any:
         # query params are signed sorted by key, as key+value
         params = sorted((k, str(v)) for k, v in (params or {}).items() if v is not None)
-        headers = self._sign_auth("".join(k + v for k, v in params))
-        response = self.session.get(
-            self.base_url + path, params=params, headers=headers, timeout=self.timeout
+        query = "".join(k + v for k, v in params)
+        return self._send(
+            lambda: self.session.get(
+                self.base_url + path,
+                params=params,
+                headers=self._sign_auth(query),  # fresh nonce/timestamp per attempt
+                timeout=self.timeout,
+            ),
+            path,
+            idempotent=True,
         )
-        return self._handle_response(response)
 
     def _post(self, path: str, data: dict) -> Any:
         # the signed body has to be exactly the sent one, without spaces
         body = json.dumps(
             {k: v for k, v in data.items() if v is not None}, separators=(",", ":")
         )
-        response = self.session.post(
-            self.base_url + path,
-            data=body,
-            headers=self._sign_auth(body=body),
-            timeout=self.timeout,
+        return self._send(
+            lambda: self.session.post(
+                self.base_url + path,
+                data=body,
+                headers=self._sign_auth(body=body),
+                timeout=self.timeout,
+            ),
+            path,
+            idempotent=False,
         )
-        return self._handle_response(response)
 
     # market
 

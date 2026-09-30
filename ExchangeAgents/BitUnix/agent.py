@@ -64,10 +64,10 @@ class BitUnixAgent(ExchangeAgent):
                 # the oldest open time, an unaligned end time makes bitunix skip a candle
                 end_time = int(page[-1]["time"])
         except BitUnixAPIError as error:
-            logger.error(f"fetching chart data failed: {chart=}\n{error}")
+            logger.error(f"fetching chart data failed: {chart} ({n_bars} bars): {error}")
             return None
         if not candles:
-            logger.error(f"fetching chart data failed: {chart=}")
+            logger.error(f"fetching chart data failed: {chart} ({n_bars} bars): bitunix returned no candles")
             return None
 
         timestamps = sorted(candles)
