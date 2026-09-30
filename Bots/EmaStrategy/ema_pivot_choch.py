@@ -35,6 +35,22 @@ logger = logging.getLogger("EmaPivotChoch")
 
 TouchEvent = tuple[PivotPoint, tuple["EmaTouch", ...], Candle]
 
+# _touch_message_ids value for an HTF signal whose Telegram send failed:
+# its confirmation is then sent standalone rather than lost
+TOUCH_SEND_FAILED = -1
+
+
+@dataclass(slots=True)
+class _Anchor:
+    """An HTF signal (pivot EMA-touch) waiting for its LTF confirmation."""
+
+    pivot: PivotPoint
+    touches: tuple["EmaTouch", ...]
+    side: MarketSide
+    armed_at: int  # close time of the HTF bar that revealed it: a confirming LTF bar must start at/after it
+    expires_at: int  # ...and start before this (max_bars_after_pivot LTF bars from the pivot)
+    seq: int
+
 
 @dataclass(slots=True, frozen=True)
 class EmaTouch:
@@ -145,6 +161,30 @@ class EmaPivotChochPlotter(StrategyPlotter):
         for indicator in indicators:
             if indicator.data is not None:
                 indicator.plotter(pane, indicator.data)
+
+    def draw_htf_touch(self, htf_pane: ChartPane, pivot: PivotPoint) -> None:
+        """The HTF signal image: the pivot whose zone the EMAs touched."""
+        if htf_pane.chartdata is None or pivot.candle.timestamp not in set(htf_pane.chartdata.timestamps.tolist()):
+            return
+        source = CandlesSource.High if pivot.is_high else CandlesSource.Low
+        htf_pane.mark_points(
+            [(pivot.candle.timestamp, source(pivot.candle))],
+            color=self.BEARISH_COLOR if pivot.is_high else self.BULLISH_COLOR,
+        )
+
+    def draw_confirmation(
+        self,
+        ltf_pane: ChartPane,
+        signal: EmaPivotChochSignal,
+        indicators: list[Indicator] = [],
+        use_fibo_filter: bool = True,
+    ) -> None:
+        """The LTF confirmation image: the inner CHoCH/BOS and the signal."""
+        self.choch_plotter.draw_model(ltf_pane, signal.inner_signal.choch_model, use_fibo_filter)
+        SignalPlotter()(ltf_pane, signal.inner_signal)
+        for indicator in indicators:
+            if indicator.data is not None:
+                indicator.plotter(ltf_pane, indicator.data)
 
     def draw_touches(
         self,
@@ -302,14 +342,19 @@ class EmaPivotChochFilter(Strategy):
         self.debug_last_call: dict = {}
         self._touch_events: dict[tuple, TouchEvent] = {}
         # touch_key(s) newly registered by the most recent check_signal() call
-        # only - used so a touch-report send reflects that fresh touch alone,
-        # not the whole accumulated history in _touch_events.
+        # only - each one is an HTF signal the bot sends right away.
         self._new_touch_keys: list[tuple] = []
-        # touch_key -> the Telegram message id of that touch's raw-touch
-        # report, kept for the lifetime of the bot so that a CHoCH/BOS
-        # confirmation on the same pivot (often several candles later) can
-        # reply to it instead of posting unlinked
+        # touch_key -> Telegram message id of that touch's HTF signal, or
+        # TOUCH_SEND_FAILED - so its LTF confirmation can reply to it
         self._touch_message_ids: dict[tuple, int] = {}
+        # HTF signals still waiting for their LTF confirmation:
+        # touch_key -> _Anchor. Only touches that were actually reported
+        # (never the pre-existing ones registered while warming) get one,
+        # so a confirmation always has an HTF signal to reply to.
+        self._anchors: dict[tuple, _Anchor] = {}
+        self._anchor_seq = 0
+        # the touch_key the last returned signal confirms (its reply target)
+        self.last_confirmed_touch_key: tuple | None = None
         # the very first check_signal() call registers every touch already
         # sitting in the fetched window as pre-existing, not "new" - without
         # this a freshly (re)started bot would immediately spam a touch
@@ -485,104 +530,130 @@ class EmaPivotChochFilter(Strategy):
             ),
         }
 
-        best_signal: EmaPivotChochSignal | None = None
-        for pivot_index in range(len(self._pivots) - 1, -1, -1):
-            pivot = self._pivots[pivot_index]
+        htf_seconds = self.htf_chart.timeframe.minutes * 60
+        ltf_seconds = self.ltf_chart.timeframe.minutes * 60
+        # the moment these HTF bars are known: the last closed one's close
+        htf_known_at = int(htf_chartdata.timestamps[-1]) + htf_seconds if len(htf_chartdata) else 0
+        confirmations_on = self.use_choch or self.use_bos
+
+        # --- 1. HTF signals: every new pivot EMA-touch -------------------
+        for pivot_index, pivot in enumerate(self._pivots):
             if last_ltf_candle.timestamp < pivot.candle.timestamp:
                 continue
-            required_side = MarketSide.BEARISH if pivot.is_high else MarketSide.BULLISH
-            if required_side is MarketSide.BEARISH and (not check_short):
+            touch_key = (pivot.candle.timestamp, pivot.is_high)
+            if touch_key in self._touch_events:
                 continue
-            if required_side is MarketSide.BULLISH and (not check_long):
+            if pivot.is_high and not check_short:
+                continue
+            if not pivot.is_high and not check_long:
+                continue
+            start_index = self._find_start_index(ltf_timestamps, pivot.candle.timestamp)
+            # Only register (and report) a touch whose pivot candle actually
+            # falls inside the fetched LTF window - the HTF window covers far
+            # more history than the LTF one.
+            if start_index >= len(ltf_chartdata) or pivot.candle.timestamp < int(ltf_timestamps[0]):
                 continue
             touches = self._touching_emas(pivot, pivot_index)
             if not touches:
                 continue
             self.debug_counters["touched_by_ema"] += 1
-            start_index = self._find_start_index(ltf_timestamps, pivot.candle.timestamp)
-            # Only register (and later report) a touch whose pivot candle
-            # actually falls inside the fetched LTF window - the HTF window
-            # covers far more history than the LTF one, so an older pivot
-            # would otherwise get pinned to index 0 by _find_start_index and
-            # get reported as "new" even though it cannot be meaningfully
-            # shown on the chart being sent.
-            if start_index < len(ltf_chartdata) and pivot.candle.timestamp >= int(
-                ltf_timestamps[0]
-            ):
-                touch_key = (pivot.candle.timestamp, pivot.is_high)
-                if touch_key not in self._touch_events:
-                    self._touch_events[touch_key] = (
-                        pivot,
-                        tuple(touches),
-                        ltf_chartdata.candle(start_index),
-                    )
-                    self._new_touch_keys.append(touch_key)
-            if not self.use_choch:
-                continue
-            if start_index >= len(ltf_chartdata):
-                continue
-            window_length = len(ltf_chartdata) - start_index
-            if window_length > self.max_bars_after_pivot + 1:
-                continue
-            if window_length < 3:
-                continue
-            self.debug_counters["pivots_in_window"] += 1
-            self.debug_counters["ltf_window_ok"] += 1
-            window_chartdata = ltf_chartdata.subdata(start_index=start_index)
-            self.debug_counters["inner_choch_called"] += 1
-            inner_signal = self._make_inner_filter().check_signal(
-                window_chartdata,
-                check_long=required_side is MarketSide.BULLISH,
-                check_short=required_side is MarketSide.BEARISH,
-            )
-            if (
-                inner_signal is None
-                or inner_signal.candle.timestamp != last_ltf_candle.timestamp
-            ):
-                continue
-            if not self.use_bos and (not inner_signal.choch_model.is_choch):
-                continue
-            self.debug_counters["inner_choch_fresh_match"] += 1
-            best_signal = EmaPivotChochSignal(
-                self.ltf_chart,
-                inner_signal.candle,
-                required_side,
-                self.name,
-                pivot,
-                tuple(touches),
-                inner_signal,
-            )
-            break
+            self._touch_events[touch_key] = (pivot, tuple(touches), ltf_chartdata.candle(start_index))
+            self._new_touch_keys.append(touch_key)
 
         if self._warming:
             # touches that already existed before this bot (re)started are
-            # registered silently, not reported as new
+            # registered silently: not reported, so never confirmed either
             self._warming = False
             self._new_touch_keys = []
+        elif confirmations_on:
+            for touch_key in self._new_touch_keys:
+                pivot, touches, _ = self._touch_events[touch_key]
+                self._anchor_seq += 1
+                self._anchors[touch_key] = _Anchor(
+                    pivot=pivot, touches=touches,
+                    side=MarketSide.BEARISH if pivot.is_high else MarketSide.BULLISH,
+                    armed_at=htf_known_at,
+                    expires_at=pivot.candle.timestamp + (self.max_bars_after_pivot + 1) * ltf_seconds,
+                    seq=self._anchor_seq,
+                )
 
-        if best_signal is None:
+        # --- 2. LTF confirmation - only of a reported HTF signal ---------
+        self.last_confirmed_touch_key = None
+        if not self._anchors:
             return None
+        live_keys = {(p.candle.timestamp, p.is_high) for p in self._pivots}
+        for touch_key, anchor in list(self._anchors.items()):
+            # window over, or a still-forming pivot replaced by a newer extreme
+            if last_ltf_candle.timestamp >= anchor.expires_at or touch_key not in live_keys:
+                del self._anchors[touch_key]
+
+        qualified: list[tuple[tuple, _Anchor, EmaPivotChochSignal]] = []
+        for touch_key, anchor in sorted(self._anchors.items(), key=lambda kv: kv[1].seq, reverse=True):
+            if last_ltf_candle.timestamp < anchor.armed_at:
+                continue  # the confirming LTF bar must start after the HTF signal
+            if anchor.side is MarketSide.BEARISH and not check_short:
+                continue
+            if anchor.side is MarketSide.BULLISH and not check_long:
+                continue
+            signal = self._confirm(anchor, ltf_chartdata, last_ltf_candle)
+            if signal is not None:
+                qualified.append((touch_key, anchor, signal))
+        if not qualified:
+            return None
+
+        # newest waiting HTF signal wins; every same-direction one this very
+        # move confirmed is used up too (one reply per HTF signal)
+        touch_key, anchor, best_signal = qualified[0]
+        for key, a, _ in qualified:
+            if a.side is anchor.side:
+                self._anchors.pop(key, None)
         if (
             self.last_reported_timestamp is not None
             and best_signal.candle.timestamp <= self.last_reported_timestamp
         ):
             return None
-        confirmations = self.get_indicators_confirmation(ltf_chartdata)
-        if (
-            best_signal.side is MarketSide.BULLISH
-            and MarketSide.BEARISH in confirmations
-        ):
-            logger.debug(f"indicators rejected the signal: {best_signal}")
-            return None
-        if (
-            best_signal.side is MarketSide.BEARISH
-            and MarketSide.BULLISH in confirmations
-        ):
-            logger.debug(f"indicators rejected the signal: {best_signal}")
-            return None
         self.last_reported_timestamp = best_signal.candle.timestamp
+        self.last_confirmed_touch_key = touch_key
         logger.info(f"Signal: {best_signal}")
         return best_signal
+
+    def _confirm(
+        self, anchor: _Anchor, ltf_chartdata: ChartData, last_ltf_candle: Candle
+    ) -> EmaPivotChochSignal | None:
+        """The inner CHoCH (use_choch) / BOS (use_bos) confirming this
+        anchor's pivot exactly on the last LTF candle, replayed from the
+        pivot's own candle - or None."""
+        start_index = self._find_start_index(ltf_chartdata.timestamps, anchor.pivot.candle.timestamp)
+        if start_index >= len(ltf_chartdata):
+            return None
+        window_length = len(ltf_chartdata) - start_index
+        if window_length > self.max_bars_after_pivot + 1 or window_length < 3:
+            return None
+        self.debug_counters["pivots_in_window"] += 1
+        self.debug_counters["ltf_window_ok"] += 1
+        self.debug_counters["inner_choch_called"] += 1
+        inner_signal = self._make_inner_filter().check_signal(
+            ltf_chartdata.subdata(start_index=start_index),
+            check_long=anchor.side is MarketSide.BULLISH,
+            check_short=anchor.side is MarketSide.BEARISH,
+        )
+        if inner_signal is None or inner_signal.candle.timestamp != last_ltf_candle.timestamp:
+            return None
+        if inner_signal.choch_model.is_choch and not self.use_choch:
+            return None
+        if not inner_signal.choch_model.is_choch and not self.use_bos:
+            return None
+        signal = EmaPivotChochSignal(
+            self.ltf_chart, inner_signal.candle, anchor.side, self.name,
+            anchor.pivot, anchor.touches, inner_signal,
+        )
+        confirmations = self.get_indicators_confirmation(ltf_chartdata)
+        opposite = MarketSide.BEARISH if anchor.side is MarketSide.BULLISH else MarketSide.BULLISH
+        if opposite in confirmations:
+            logger.debug(f"indicators rejected the signal: {signal}")
+            return None
+        self.debug_counters["inner_choch_fresh_match"] += 1
+        return signal
 
     def describe_touches(self) -> list[dict]:
         htf_span = (
@@ -732,166 +803,69 @@ class EmaPivotChochBot(TraderBot):
             PositionPlotter()(figure.main_pane, position)
         return figure
 
-    def _make_split_figures(
-        self, ltf_chartdata: ChartData, htf_chartdata: ChartData
-    ) -> tuple[SingleChartFigure, SingleChartFigure]:
-        """
-        LTF and HTF as two independent, same-candle-count figures instead
-        of one combined two-pane screenshot - each becomes its own
-        Telegram photo (HTF replying to LTF), so neither is squeezed into
-        half a stacked image.
-        """
-        ltf_figure = SingleChartFigure(
-            ltf_chartdata, self.PLOT_N_CANDLES, legend_font_size=self.LEGEND_FONT_SIZE
-        )
-        htf_figure = SingleChartFigure(
-            htf_chartdata, self.PLOT_N_CANDLES, legend_font_size=self.LEGEND_FONT_SIZE
-        )
-        return ltf_figure, htf_figure
+    # --- reporting: HTF signal first, LTF confirmation as a reply ---------
+    #
+    #   - every new HTF pivot EMA-touch is sent right away as its own HTF
+    #     image (send_touch_report), whatever use_choch/use_bos are set to;
+    #   - an LTF confirmation (inner CHoCH if use_choch, inner BOS if
+    #     use_bos - both off: never) of a pivot whose HTF signal was sent,
+    #     on an LTF bar starting after that HTF bar closed, is sent as its
+    #     own LTF image REPLYING to that HTF message (send_signal_report /
+    #     send_position_report). Only if sending the HTF signal itself failed
+    #     does the confirmation go out standalone, rather than being lost.
 
-    def generate_touch_figure(
-        self, ltf_chartdata: ChartData, htf_chartdata: ChartData
-    ) -> tuple[SingleChartFigure, SingleChartFigure]:
-        ltf_figure, htf_figure = self._make_split_figures(ltf_chartdata, htf_chartdata)
+    def _figure(self, chartdata: ChartData) -> SingleChartFigure:
+        return SingleChartFigure(chartdata, self.PLOT_N_CANDLES, legend_font_size=self.LEGEND_FONT_SIZE)
+
+    def generate_touch_figure(self, touch_key: tuple, htf_chartdata: ChartData) -> SingleChartFigure:
+        htf_figure = self._figure(htf_chartdata)
         self.strategy.plotter.draw_emas(htf_figure.main_pane, self.strategy.emas)
-        self.strategy.plotter.draw_touches(
-            ltf_figure.main_pane,
-            htf_figure.main_pane,
-            self.strategy._touch_events,
-            touch_keys=self.strategy._new_touch_keys,
+        pivot, _touches, _ = self.strategy._touch_events[touch_key]
+        self.strategy.plotter.draw_htf_touch(htf_figure.main_pane, pivot)
+        return htf_figure
+
+    def generate_signal_figure(self, signal: EmaPivotChochSignal, ltf_chartdata: ChartData) -> SingleChartFigure:
+        ltf_figure = self._figure(ltf_chartdata)
+        self.strategy.plotter.draw_confirmation(
+            ltf_figure.main_pane, signal, self.strategy.indicators, use_fibo_filter=self.strategy.use_fibo_filter
         )
-        return ltf_figure, htf_figure
+        return ltf_figure
 
-    def generate_signal_figures(
-        self,
-        signal: EmaPivotChochSignal,
-        ltf_chartdata: ChartData,
-        htf_chartdata: ChartData,
-    ) -> tuple[SingleChartFigure, SingleChartFigure]:
-        ltf_figure, htf_figure = self._make_split_figures(ltf_chartdata, htf_chartdata)
-        self.strategy.plotter(
-            ltf_figure.main_pane,
-            htf_figure.main_pane,
-            signal,
-            self.strategy.indicators,
-            self.strategy.emas,
-            use_fibo_filter=self.strategy.use_fibo_filter,
-        )
-        return ltf_figure, htf_figure
-
-    def _touch_report_name(self, ltf_chartdata: ChartData) -> str:
-        """
-        Named after the touch it is reporting, the way NewSignalReport
-        names a signal image after its candle. A fixed name would have
-        every touch overwrite the previous one in the same file.
-        """
-        keys = self.strategy._new_touch_keys
-        if keys:
-            _pivot, _touches, touch_candle = self.strategy._touch_events[keys[-1]]
-            return str(touch_candle.timestamp)
-        return str(ltf_chartdata[-1].timestamp)
-
-    async def _send_split(
-        self,
-        ltf_figure: SingleChartFigure,
-        htf_figure: SingleChartFigure,
-        name: str,
-        ltf_msg: str,
-        htf_msg: str,
-        reply_id: int | None = None,
-    ) -> int | None:
-        """
-        Saves and sends the LTF image first, then the HTF image as a reply
-        to it, so the pair stays visibly linked as one thread instead of
-        two unrelated messages. Returns the LTF message id.
-        """
+    async def _send(self, figure: SingleChartFigure, name: str, msg: str, reply_id: int | None = None) -> int | None:
         path = self.trades_manager.reporter.save_path or "Records/"
-        ltf_path = ltf_figure.save_image(name=f"{name}_LTF", path=path)
-        htf_path = htf_figure.save_image(name=f"{name}_HTF", path=path)
+        img_path = figure.save_image(name=name, path=path)
+        return await self.trades_manager.reporter.send_msg(msg, img_path=img_path, reply_id=reply_id)
 
-        ltf_msg_id = await self.trades_manager.reporter.send_msg(
-            ltf_msg, img_path=ltf_path, reply_id=reply_id
-        )
-        await self.trades_manager.reporter.send_msg(
-            htf_msg, img_path=htf_path, reply_id=ltf_msg_id or reply_id
-        )
-        return ltf_msg_id
-
-    async def send_touch_report(
-        self, ltf_chartdata: ChartData, htf_chartdata: ChartData
-    ) -> int | None:
-        """
-        Not a Signal, so it cannot go through NewSignalReport -- this stays
-        a direct send. Returns the LTF message id, so a later CHoCH/BOS
-        confirmation on the same pivot can reply to it.
-        """
-        ltf_figure, htf_figure = self.generate_touch_figure(ltf_chartdata, htf_chartdata)
-        return await self._send_split(
-            ltf_figure,
-            htf_figure,
-            name=self._touch_report_name(ltf_chartdata),
-            ltf_msg=f"{self.strategy.name}\n📈 {self.chart}\nEMA-pivot touch report",
-            htf_msg=f"📊 HTF ({self.htf_chart})",
+    async def send_touch_report(self, touch_key: tuple, htf_chartdata: ChartData) -> int | None:
+        """One HTF signal (a new pivot EMA-touch), as its own HTF image.
+        Returns its message id (None/False: not sent)."""
+        pivot, touches, _ = self.strategy._touch_events[touch_key]
+        side = "🔴 SELL setup (high pivot)" if pivot.is_high else "🟢 BUY setup (low pivot)"
+        touches_str = ", ".join(str(t) for t in touches)
+        return await self._send(
+            self.generate_touch_figure(touch_key, htf_chartdata),
+            name=f"{pivot.candle.timestamp}_{'H' if pivot.is_high else 'L'}_HTF",
+            msg=f"{self.strategy.name}\n📈 {self.chart} | HTF {self.htf_chart}\nEMA-pivot touch: {side}\n{touches_str}",
         )
 
     async def send_signal_report(
-        self,
-        signal: EmaPivotChochSignal,
-        ltf_chartdata: ChartData,
-        htf_chartdata: ChartData,
-        reply_id: int | None = None,
+        self, signal: EmaPivotChochSignal, ltf_chartdata: ChartData, reply_id: int | None = None
     ) -> None:
-        """
-        The confirmed CHoCH/BOS signal (use_bos/use_choch on). Sent the
-        same split way as the touch report and, when reply_id is given
-        (that pivot's own earlier touch-report message), threaded as a
-        reply to it so the raw touch and its later confirmation stay
-        together.
-        """
-        ltf_figure, htf_figure = self.generate_signal_figures(
-            signal, ltf_chartdata, htf_chartdata
-        )
+        """The LTF confirmation (consider_position off), replying to its HTF signal."""
         msg = self.trades_manager.reporter.msg_formater.new_signal(signal)
-        await self._send_split(
-            ltf_figure,
-            htf_figure,
-            name=str(signal.candle.timestamp),
-            ltf_msg=msg,
-            htf_msg=f"📊 HTF ({self.htf_chart})",
-            reply_id=reply_id,
-        )
+        await self._send(self.generate_signal_figure(signal, ltf_chartdata), name=f"{signal.candle.timestamp}_LTF", msg=msg, reply_id=reply_id)
         NewSignal(signal, record_context=self.give_record_context()).occur()
 
     async def send_position_report(
-        self,
-        position: Position,
-        signal: EmaPivotChochSignal,
-        ltf_chartdata: ChartData,
-        htf_chartdata: ChartData,
-        reply_id: int | None = None,
+        self, position: Position, signal: EmaPivotChochSignal, ltf_chartdata: ChartData, reply_id: int | None = None
     ) -> None:
-        """
-        Same split LTF/HTF send and same reply-to-the-touch threading as
-        send_signal_report, for when consider_position is on and this
-        CHoCH/BOS confirmation actually opens a position. Stores the LTF
-        message id on the position itself (position.report_id), the way
-        ReportNewPosition normally would, so later trade-lifecycle reports
-        (stoploss hit, trigger hit, ...) still reply to it correctly.
-        """
-        ltf_figure, htf_figure = self.generate_signal_figures(
-            signal, ltf_chartdata, htf_chartdata
-        )
-        PositionPlotter()(ltf_figure.main_pane, position)
+        """The LTF confirmation that opened a position (consider_position on),
+        replying to its HTF signal. Its message id becomes position.report_id,
+        so later trade-lifecycle reports (stoploss hit, ...) reply to it."""
+        figure = self.generate_signal_figure(signal, ltf_chartdata)
+        PositionPlotter()(figure.main_pane, position)
         msg = self.trades_manager.reporter.msg_formater.new_position(position)
-        ltf_msg_id = await self._send_split(
-            ltf_figure,
-            htf_figure,
-            name=str(position.defined_timestamp),
-            ltf_msg=msg,
-            htf_msg=f"📊 HTF ({self.htf_chart})",
-            reply_id=reply_id,
-        )
-        position.report_id = ltf_msg_id
+        position.report_id = await self._send(figure, name=f"{position.defined_timestamp}_LTF", msg=msg, reply_id=reply_id)
 
     def trade(self, position: Position, plot: Figure | None) -> Position | None:
         NewPosition(
@@ -929,23 +903,27 @@ class EmaPivotChochBot(TraderBot):
 
         signal = self.check_signal(chartdata, htf_chartdata, ema_htf_chartdata)
 
-        # every freshly-registered raw EMA-pivot touch is reported right
-        # away, whatever use_bos/use_choch are set to - this is the
-        # base-level alert, sent in addition to (not instead of) the full
-        # CHoCH/BOS signal below when those are turned on
-        touch_reply_id = None
-        if self.strategy._new_touch_keys:
-            touch_reply_id = await self.send_touch_report(chartdata, htf_chartdata)
-            if touch_reply_id is not None:
-                for touch_key in self.strategy._new_touch_keys:
-                    self.strategy._touch_message_ids[touch_key] = touch_reply_id
+        # 1. every new HTF signal goes out first, one message each, always
+        for touch_key in self.strategy._new_touch_keys:
+            try:
+                message_id = await self.send_touch_report(touch_key, htf_chartdata)
+            except Exception:
+                logger.exception(f"{self.identifier}: sending the HTF signal {touch_key} failed")
+                message_id = None
+            self.strategy._touch_message_ids[touch_key] = message_id or TOUCH_SEND_FAILED
 
+        # 2. an LTF confirmation only ever as a reply to its own HTF signal
         if signal is not None:
-            # reply to THIS pivot's own touch message - reported this very
-            # cycle, or (the usual case) several candles earlier - same
-            # threading whether or not a real position gets opened
-            touch_key = (signal.pivot.candle.timestamp, signal.pivot.is_high)
-            reply_id = self.strategy._touch_message_ids.get(touch_key, touch_reply_id)
+            touch_key = self.strategy.last_confirmed_touch_key
+            reply_id = self.strategy._touch_message_ids.get(touch_key)
+            if reply_id is None:
+                # (the filter only confirms HTF signals it reported, so this
+                # can't normally happen)
+                logger.warning(f"{self.identifier}: confirmation {signal} has no HTF signal to reply to - not sent")
+                return self.give_delay(last_timestamp)
+            if reply_id == TOUCH_SEND_FAILED:
+                logger.warning(f"{self.identifier}: the HTF signal of {signal} failed to send - sending the confirmation standalone")
+                reply_id = None
 
             if self.consider_position:
                 position = self.trades_manager.generate_position(
@@ -957,13 +935,9 @@ class EmaPivotChochBot(TraderBot):
                     NewPosition(
                         trade_context=TradeCommandContext(position, self.agent)
                     ).occur()
-                    await self.send_position_report(
-                        position, signal, chartdata, htf_chartdata, reply_id=reply_id
-                    )
+                    await self.send_position_report(position, signal, chartdata, reply_id=reply_id)
                     NewSignal(signal, record_context=self.give_record_context()).occur()
             else:
-                await self.send_signal_report(
-                    signal, chartdata, htf_chartdata, reply_id=reply_id
-                )
+                await self.send_signal_report(signal, chartdata, reply_id=reply_id)
 
         return self.give_delay(last_timestamp)
