@@ -94,9 +94,9 @@ cython_debug/
 # zencoder copilet
 .zencoder
 
-# images
+# images, except the ones README.md shows
 *.png
-Images
+!Images/**/*.png
 
 # rar
 *.rar

@@ -155,7 +155,7 @@ TraderBot/
 ├── BackTest/            # CsvChart, BacktestAgent, BacktestReporter, SignalBacktest, CSV helpers
 ├── Records/             # SQLite databases (git-ignored)
 ├── Logs/                # rotating log files (git-ignored)
-└── Images/              # rendered chart images (git-ignored)
+└── Images/              # README images: strategy charts, Telegram screenshots, statistics plots
 ```
 
 ## Architecture
@@ -207,6 +207,23 @@ Key ideas:
 
 Composite bots report the setup signal (divergence or S/R touch) as soon as it appears, then thread the entry report as a reply to it.
 
+Signal charts as the bots render them for their reports:
+
+<table>
+  <tr>
+    <td width="50%" valign="top"><img src="Images/RSI_Diver_Long.png" alt="Bullish RSI divergence on EURUSD 5m"><br>Bullish RSI divergence, <code>OscillatorDivergence</code> (EURUSD 5m)</td>
+    <td width="50%" valign="top"><img src="Images/RSI_Diver_Short.png" alt="Bearish RSI divergence on USDCAD 5m"><br>Bearish RSI divergence, <code>OscillatorDivergence</code> (USDCAD 5m)</td>
+  </tr>
+  <tr>
+    <td valign="top"><img src="Images/CHOCH.png" alt="Bearish CHoCH entry on USDJPY 1m with stoploss and three take-profits"><br>Bearish CHoCH entry, <code>ChochQueueFilter</code>, with its stoploss and three take-profit steps (USDJPY 1m)</td>
+    <td valign="top"><img src="Images/TwoSymbol_Diver_Heikenashi.png" alt="Divergence between XAUUSD and USDJPY on Heikin-Ashi candles"><br>Divergence between XAUUSD and USDJPY on Heikin-Ashi candles, <code>Divergence</code>, with the position's steps</td>
+  </tr>
+  <tr>
+    <td valign="top"><img src="Images/EMA.png" alt="EMA touch after a break on DOTUSD 1h"><br>EMA touch after a break, <code>EmaTouchFilter</code> (DOTUSD 1h)</td>
+    <td valign="top"><img src="Images/3EMA.png" alt="EMA 20/40/60 setup on DOGEUSDT 5m"><br>EMA 20/40/60 setup, <code>EmaPivotChochFilter</code> (DOGEUSDT 5m)</td>
+  </tr>
+</table>
+
 ## Indicators
 
 All in [ChartModule/Indicators/](ChartModule/Indicators/). Each indicator implements `set(chartdata)`, `forecast()`, `export_configs()` and has a plotter.
@@ -217,6 +234,13 @@ All in [ChartModule/Indicators/](ChartModule/Indicators/). Each indicator implem
 - `AutoTrendlines` – automatic trendlines, touches, breaks and MTR events
 - `LineFinder` / `Line` – generic line detection
 - `SupportCandlesPattern` – candle pattern flags used as long/short support conditions
+
+<table>
+  <tr>
+    <td width="50%" valign="top"><img src="Images/orderblock.png" alt="Support and resistance zones on POLUSDT 1h"><br>Support (teal) and resistance (red) zones, <code>SRZones</code> (POLUSDT 1h)</td>
+    <td width="50%" valign="top"><img src="Images/MTR.png" alt="Auto trendlines and MTR events on BTCUSDT 1h"><br>Auto trendlines and multi-trendline-break events, <code>AutoTrendlines</code> (BTCUSDT 1h)</td>
+  </tr>
+</table>
 
 `ChartData` also supports Heikin-Ashi generation, cross-pair series (`generate_crosspair`) and cheap slicing (`subdata`).
 
@@ -279,6 +303,13 @@ Every agent implements the abstract `ExchangeAgent` in [TraderBot/models.py](Tra
   - a daily report at 20:xx UTC with command statistics, memory and profiling reports, per-bot and overall PnL, log files and a consistent SQLite snapshot (files over 45 MB are skipped)
   - an alert after a bot fails 3 times, and a removal notice when it fails more than 6 times
 
+A position in the Telegram channel: the entry report with its chart, then the take-profit hits with their PnL and the trailed stoploss, threaded as replies.
+
+<p>
+  <img src="Images/Telegram%20Channel%20Screenshot1.png" alt="Telegram new position report with entry chart, stoploss and take-profits" width="360">
+  <img src="Images/Telegram%20Channel%20Screenshot2.png" alt="Telegram take-profit hit replies with PnL and trailed stoploss" width="200">
+</p>
+
 ## Database
 
 SQLModel tables in [Database/models.py](Database/models.py):
@@ -320,6 +351,15 @@ SQLModel tables in [Database/models.py](Database/models.py):
 
 `SignalBacktest` freezes `TimeHandler` at the end of the first `n_candle_check` candles, then calls `bot.task()` repeatedly and advances the clock by the returned delay until the CSV ends. It runs in signal-only mode with a `BacktestReporter` that collects signals, positions and PnL reports in memory instead of sending them. Finally it stores the bot and its signals in the backtest DB and prints a cProfile summary.
 
+`PositionBacktest` runs the same loop but trades. It calls `bot.post_init()` so precision, pip factor and contract size come from the real exchange, fills each position at the open of the running candle (no spread), and manages it on the CSV candles. At the end the closed positions go through a `StatisticsSuite` and its plots are saved to `Images/Statistics/`:
+
+```python
+simulator = PositionBacktest(bot, agent, statistics=StatisticsSuite.standard())
+asyncio.run(simulator.run())
+```
+
+Set `consider_figure = False` on the bot (and on `bot.diver_bot` for divergence composites) to skip rendering a chart for every signal; it makes long backtests much faster.
+
 ## Statistics
 
 [TraderBot/PositionHandlers/Statistics/](TraderBot/PositionHandlers/Statistics/) analyses closed positions. `Analyses/` computes results and `Plots/` draws them.
@@ -339,6 +379,29 @@ mfe.plot(show=True)
 ```
 
 Available analyses: `PerformanceAnalysis`, `PnLBreakdown`, `HourlyPnL`, `WeekdayPnL`, `SessionPnL` (with `FOREX_SESSIONS`), `MaxFavorableExcursion` and `StopLossOvershoot`.
+
+Plots of a `PositionBacktest` of `xau_5m_rsi_choch` (XAUUSD 1m entries on 5m RSI divergence, January 27 to May 8, 2026, with tick data for the excursions):
+
+<img src="Images/Statistics/Csv_XAUUSD_1m_Csv_XAUUSD_5m_RSI_Diver_Choch_Performance_equity.png" alt="Equity and drawdown per trade">
+
+<table>
+  <tr>
+    <td width="50%" valign="top"><img src="Images/Statistics/Csv_XAUUSD_1m_Csv_XAUUSD_5m_RSI_Diver_Choch_Performance_running.png" alt="Running performance"><br><code>PerformanceAnalysis</code>: cumulative PnL (%), win/loss score, running win rate and average trade</td>
+    <td width="50%" valign="top"><img src="Images/Statistics/Csv_XAUUSD_1m_Csv_XAUUSD_5m_RSI_Diver_Choch_Performance_streaks.png" alt="Win and loss streaks"><br><code>PerformanceAnalysis</code>: win and loss streak lengths</td>
+  </tr>
+  <tr>
+    <td valign="top"><img src="Images/Statistics/Csv_XAUUSD_1m_Csv_XAUUSD_5m_RSI_Diver_Choch_PnL_Breakdown_pnl.png" alt="PnL breakdown"><br><code>PnLBreakdown</code>: PnL per chart, side and source</td>
+    <td valign="top"><img src="Images/Statistics/Csv_XAUUSD_1m_Csv_XAUUSD_5m_RSI_Diver_Choch_Session_PnL_pnl.png" alt="PnL by trading session"><br><code>SessionPnL</code>: PnL by Forex session of entry</td>
+  </tr>
+  <tr>
+    <td valign="top"><img src="Images/Statistics/Csv_XAUUSD_1m_Csv_XAUUSD_5m_RSI_Diver_Choch_Hourly_PnL_pnl.png" alt="PnL by hour"><br><code>HourlyPnL</code>: PnL by entry hour (UTC)</td>
+    <td valign="top"><img src="Images/Statistics/Csv_XAUUSD_1m_Csv_XAUUSD_5m_RSI_Diver_Choch_Weekday_PnL_pnl.png" alt="PnL by weekday"><br><code>WeekdayPnL</code>: PnL by entry weekday</td>
+  </tr>
+  <tr>
+    <td valign="top"><img src="Images/Statistics/Csv_XAUUSD_1m_Csv_XAUUSD_5m_RSI_Diver_Choch_Max_Favorable_Excursion_pips_30candles.png" alt="Max favorable excursion"><br><code>MaxFavorableExcursion</code>: best move in the position's favour within 30 candles, before the stop</td>
+    <td valign="top"><img src="Images/Statistics/Csv_XAUUSD_1m_Csv_XAUUSD_5m_RSI_Diver_Choch_Stop_Loss_Overshoot_pips_30candles.png" alt="Stop-loss overshoot"><br><code>StopLossOvershoot</code>: how far price ran past the stop before trading back through it</td>
+  </tr>
+</table>
 
 ## Adding a new bot
 

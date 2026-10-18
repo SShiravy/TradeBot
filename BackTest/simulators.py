@@ -4,7 +4,10 @@ from Settings import TimeHandler
 from TraderBot.Commands.db_commands import DatabaseCommand
 from TraderBot import TraderBot
 from TraderBot.models import Command, Event
+from TraderBot.PositionHandlers.Statistics import StatisticsSuite
+from TraderBot.PositionHandlers.Statistics.base import DEFAULT_PLOTS_DIR
 from BackTest import BacktestAgent, BacktestReporter
+from pathlib import Path
 import cProfile
 import pstats
 import logging
@@ -51,17 +54,20 @@ class SignalBacktest:
 
         logger.info(Command.close_records())
 
+    async def step(self):
+        delay = await self.bot.task()
+        if delay <= 0:
+            delay = 5
+        TimeHandler.advance(delay)
+        await Command.execute_pending_commands()
+
     async def run(self):
         end_timestamp = self.backtest_agent.last_timestamp(self.bot.chart)
         profiler = cProfile.Profile()
         profiler.enable()
 
         while TimeHandler.now() < end_timestamp:
-            delay = await self.bot.task()
-            if delay <= 0:
-                delay = 5
-            TimeHandler.advance(delay)
-            await Command.execute_pending_commands()
+            await self.step()
 
         profiler.disable()
         stats = pstats.Stats(profiler)
@@ -69,3 +75,49 @@ class SignalBacktest:
         stats.print_stats(30)
 
         self.conclusion()
+
+
+class PositionBacktest(SignalBacktest):
+    """
+    SignalBacktest that trades: the bot's positions are filled at the open of
+    the running candle and managed on the csv candles (TradesManager's ochl
+    check, no spread). At the end the closed positions are analysed by
+    `statistics` and its plots are saved under `plots_dir`.
+    """
+
+    def __init__(
+        self,
+        bot: TraderBot,
+        backtest_agent: BacktestAgent,
+        statistics: StatisticsSuite | None = None,
+        plots_dir: str | Path | None = DEFAULT_PLOTS_DIR,
+        store_in_db: bool = True,
+    ) -> None:
+        super().__init__(bot, backtest_agent, store_in_db)
+        # precision, pip_factor and contract_size, the pnl depends on them
+        bot.post_init()
+        bot.consider_position = True
+        bot.trades_manager.agent_check = False
+        self.statistics = statistics or StatisticsSuite.standard()
+        self.plots_dir = plots_dir
+        self.plot_paths: list[Path] = []
+
+    async def step(self):
+        delay = await self.bot.task()
+        # open the new positions at the price their triggers were set from
+        await Command.execute_pending_commands()
+        if delay <= 0:
+            delay = 5
+        TimeHandler.advance(delay)
+        self.bot.trades_manager.manage_positions()
+        await Command.execute_pending_commands()
+
+    def conclusion(self):
+        super().conclusion()
+        manager = self.bot.trades_manager
+        self.statistics.analyze(manager.closed_positions + manager.current_positions)
+        logger.info(f"\n{self.statistics}")
+        self.plot_paths = self.statistics.plot(
+            label=self.bot.identifier, show=False, save_dir=self.plots_dir
+        )
+        logger.info(f"{len(self.plot_paths)} statistics plots saved")

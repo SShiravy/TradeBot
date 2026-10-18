@@ -139,6 +139,8 @@ class TradesManager:
         if not position.open_timestamp:
             logger.debug(f"Position is not open yet.")
             return
+        if position.closed_timestamp:
+            return
         if position.stoploss.triggered_timestamp:
             logger.debug(f"stoploss of {position} hit, waiting for its command")
             return
