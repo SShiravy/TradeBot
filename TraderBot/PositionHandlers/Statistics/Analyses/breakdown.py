@@ -57,7 +57,10 @@ class BreakdownResult(AnalysisResult):
 
 
 class PnLBreakdown(StatisticalAnalysis[BreakdownResult]):
-    """Net result per (source, side, chart) from `PnLReportGenerator.identifier_reports`."""
+    """
+    Net result per (source, side, chart). Not `identifier_reports`: its
+    identifier has no side, so it would merge both sides under the first one.
+    """
 
     title = "PnL Breakdown"
 
@@ -65,8 +68,12 @@ class PnLBreakdown(StatisticalAnalysis[BreakdownResult]):
         super().__init__(plotter or BreakdownPlotter())
 
     def _compute(self, positions: list[Position]) -> BreakdownResult:
-        reports = PnLReportGenerator.identifier_reports(positions)
+        merged: dict[tuple[str, str, str], PnLReport] = {}
+        for pos in positions:
+            report = PnLReportGenerator.report_of(pos)
+            key = (report.source, report.side.value, str(report.chart))
+            merged[key] = merged[key] + report if key in merged else report
         return BreakdownResult(
             title=self.title,
-            reports=sorted(reports, key=lambda r: r.pnl_dollar, reverse=True),
+            reports=sorted(merged.values(), key=lambda r: r.pnl_dollar, reverse=True),
         )

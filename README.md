@@ -390,7 +390,7 @@ Plots of a `PositionBacktest` of `xau_5m_rsi_choch` (XAUUSD 1m entries on 5m RSI
     <td width="50%" valign="top"><img src="Images/Statistics/Csv_XAUUSD_1m_Csv_XAUUSD_5m_RSI_Diver_Choch_Performance_streaks.png" alt="Win and loss streaks"><br><code>PerformanceAnalysis</code>: win and loss streak lengths</td>
   </tr>
   <tr>
-    <td valign="top"><img src="Images/Statistics/Csv_XAUUSD_1m_Csv_XAUUSD_5m_RSI_Diver_Choch_PnL_Breakdown_pnl.png" alt="PnL breakdown"><br><code>PnLBreakdown</code>: PnL per chart, side and source</td>
+    <td valign="top"><img src="Images/Statistics/S_R_Choch_BTCUSDT_SOLUSDT_PnL_Breakdown_pnl.png" alt="PnL breakdown"><br><code>PnLBreakdown</code>: PnL per source, side and chart, here over the BTCUSDT and SOLUSDT S/R + CHoCH bots (April 14 to May 31, 2026)</td>
     <td valign="top"><img src="Images/Statistics/Csv_XAUUSD_1m_Csv_XAUUSD_5m_RSI_Diver_Choch_Session_PnL_pnl.png" alt="PnL by trading session"><br><code>SessionPnL</code>: PnL by Forex session of entry</td>
   </tr>
   <tr>

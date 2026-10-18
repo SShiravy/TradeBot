@@ -105,7 +105,9 @@ class SRChochBot(TraderBot):
 
     def generate_static_sr_figure(
         self, chartdata: ChartData, signal: StaticSRSignal
-    ) -> Figure:
+    ) -> Figure | None:
+        if not self.consider_figure:
+            return None
         figure = SingleChartFigure(chartdata, self.n_sr_candle_check)
         self.static_sr_indicator.plotter(
             figure.main_pane,
@@ -119,7 +121,9 @@ class SRChochBot(TraderBot):
 
     def generate_dynamic_sr_figure(
         self, chartdata: ChartData, signal: DynamicSRSignal
-    ) -> Figure:
+    ) -> Figure | None:
+        if not self.consider_figure:
+            return None
         figure = SingleChartFigure(chartdata, self.n_sr_candle_check)
         self.dynamic_sr_indicator.plotter(
             figure.main_pane,
@@ -137,7 +141,7 @@ class SRChochBot(TraderBot):
         self._sr_report_command = None
         logger.info(f"S&R Signal:{signal}")
 
-    def _report_sr(self, signal: SRSignal, figure: Figure) -> None:
+    def _report_sr(self, signal: SRSignal, figure: Figure | None) -> None:
         command = ReportNewSignal(
             signal,
             ReportCommandContext(

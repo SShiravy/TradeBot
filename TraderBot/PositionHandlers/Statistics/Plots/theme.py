@@ -5,6 +5,8 @@ from matplotlib.figure import Figure
 from matplotlib.ticker import FuncFormatter, MaxNLocator
 from typing import Iterable, Sequence
 import matplotlib.pyplot as plt
+import numpy as np
+import math
 
 
 # chrome
@@ -131,9 +133,27 @@ def baseline(ax: Axes, value: float = 0.0, vertical: bool = False) -> None:
     line(value, color=BASELINE, linewidth=1, zorder=1.5)
 
 
-def number_axis(ax: Axes, decimals: int = 0, axis: str = "y") -> None:
-    formatter = FuncFormatter(lambda v, _: f"{v:,.{decimals}f}")
-    (ax.yaxis if axis == "y" else ax.xaxis).set_major_formatter(formatter)
+def step_decimals(step: float) -> int:
+    """Decimals that tell ticks `step` apart: 200 -> 0, 2.5 -> 1, 0.5 -> 1, 0.25 -> 2"""
+    if step <= 0:
+        return 0
+    exponent = math.floor(math.log10(step))
+    mantissa = round(step / 10**exponent, 6)
+    return max(0, -exponent + (0 if mantissa.is_integer() else 1))
+
+
+def number_axis(ax: Axes, decimals: int | None = None, axis: str = "y") -> None:
+    """Thousands-separated ticks; decimals=None uses as many as the tick step needs."""
+    target = ax.yaxis if axis == "y" else ax.xaxis
+
+    def label(value: float, _) -> str:
+        places = decimals
+        if places is None:
+            ticks = target.get_majorticklocs()
+            places = step_decimals(float(np.diff(ticks).min())) if len(ticks) > 1 else 0
+        return f"{value:,.{places}f}"
+
+    target.set_major_formatter(FuncFormatter(label))
 
 
 def share_axis(ax: Axes) -> None:
